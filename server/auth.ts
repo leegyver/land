@@ -139,4 +139,82 @@ export function setupAuth(app: Express) {
       next(error);
     }
   });
+
+  // 회원 정보 수정 API
+  app.patch("/api/users/profile", async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증이 필요합니다." });
+      }
+
+      const userId = req.user.id;
+      const { currentPassword, password, email, phone } = req.body;
+      
+      // 현재 사용자 정보 가져오기
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
+      }
+
+      // 비밀번호 변경 시 현재 비밀번호 확인
+      if (password) {
+        if (!currentPassword) {
+          return res.status(400).json({ message: "현재 비밀번호를 입력해주세요." });
+        }
+
+        const isPasswordValid = await comparePasswords(currentPassword, user.password);
+        if (!isPasswordValid) {
+          return res.status(400).json({ message: "현재 비밀번호가 일치하지 않습니다." });
+        }
+      }
+
+      // 업데이트할 데이터 준비
+      const updateData: any = {};
+      if (password) {
+        updateData.password = await hashPassword(password);
+      }
+      if (email !== undefined) {
+        updateData.email = email;
+      }
+      if (phone !== undefined) {
+        updateData.phone = phone;
+      }
+
+      // 사용자 정보 업데이트
+      const updatedUser = await storage.updateUser(userId, updateData);
+      if (!updatedUser) {
+        return res.status(500).json({ message: "사용자 정보 업데이트에 실패했습니다." });
+      }
+
+      // 비밀번호 제외하고 응답
+      const { password: _, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // 관리자 권한으로 회원 삭제 API
+  app.delete("/api/admin/users/:id", isAdmin, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = parseInt(req.params.id);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "유효하지 않은 사용자 ID입니다." });
+      }
+
+      // 관리자는 자기 자신을 삭제할 수 없음
+      if (userId === req.user.id) {
+        return res.status(400).json({ message: "관리자는 자신의 계정을 삭제할 수 없습니다." });
+      }
+
+      const success = await storage.deleteUser(userId);
+      if (!success) {
+        return res.status(404).json({ message: "해당 사용자를 찾을 수 없습니다." });
+      }
+
+      res.status(200).json({ message: "사용자가 성공적으로 삭제되었습니다." });
+    } catch (error) {
+      next(error);
+    }
+  });
 }

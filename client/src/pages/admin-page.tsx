@@ -93,7 +93,7 @@ const propertyFormSchema = insertPropertySchema.extend({
 type PropertyFormValues = z.infer<typeof propertyFormSchema>;
 
 export default function AdminPage() {
-  const { user } = useAuth();
+  const { user: currentUser } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("properties");
@@ -120,7 +120,7 @@ export default function AdminPage() {
   } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
     queryFn: getQueryFn({ on401: "throw" }),
-    enabled: user?.role === "admin",
+    enabled: currentUser?.role === "admin",
   });
 
   // 부동산 등록/수정 폼
@@ -372,7 +372,7 @@ export default function AdminPage() {
         </div>
         <div className="flex items-center gap-4">
           <p className="text-muted-foreground">
-            <span className="font-bold">{user?.username}</span> ({user?.role})
+            <span className="font-bold">{currentUser?.username}</span> ({currentUser?.role})
           </p>
         </div>
       </div>
@@ -380,7 +380,7 @@ export default function AdminPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="properties">부동산 관리</TabsTrigger>
-          <TabsTrigger value="users" disabled={user?.role !== "admin"}>
+          <TabsTrigger value="users" disabled={currentUser?.role !== "admin"}>
             사용자 관리
           </TabsTrigger>
         </TabsList>
@@ -837,7 +837,8 @@ export default function AdminPage() {
                         <TableCell>{user.email || "-"}</TableCell>
                         <TableCell>{user.phone || "-"}</TableCell>
                         <TableCell className="text-right">
-                          {user.id !== user?.id && (
+                          {/* 현재 로그인한 관리자 자신이 아닌 경우에만 삭제 버튼 표시 */}
+                          {user.id !== currentUser?.id && (
                             <Button
                               variant="destructive"
                               size="sm"

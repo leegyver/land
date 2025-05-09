@@ -284,54 +284,89 @@ export class DatabaseStorage implements IStorage {
   
   // News methods
   async getNews(): Promise<News[]> {
-    return await db.select().from(news).orderBy(desc(news.createdAt));
+    try {
+      return await db.select().from(news).orderBy(desc(news.createdAt));
+    } catch (error) {
+      console.error("Error fetching news:", error);
+      return [];
+    }
   }
   
   async getLatestNews(limit: number = 6): Promise<News[]> {
-    return await db.select()
-      .from(news)
-      .orderBy(desc(news.createdAt))
-      .limit(limit);
+    try {
+      return await db.select()
+        .from(news)
+        .orderBy(desc(news.createdAt))
+        .limit(limit);
+    } catch (error) {
+      console.error("Error fetching latest news:", error);
+      return [];
+    }
   }
   
   async getNewsById(id: number): Promise<News | undefined> {
-    const result = await db.select().from(news).where(eq(news.id, id));
-    return result[0];
+    try {
+      const result = await db.select().from(news).where(eq(news.id, id));
+      return result[0];
+    } catch (error) {
+      console.error("Error fetching news by id:", error);
+      return undefined;
+    }
   }
   
   async getNewsByCategory(category: string): Promise<News[]> {
-    return await db.select()
-      .from(news)
-      .where(eq(news.category, category))
-      .orderBy(desc(news.createdAt));
+    try {
+      return await db.select()
+        .from(news)
+        .where(eq(news.category, category))
+        .orderBy(desc(news.createdAt));
+    } catch (error) {
+      console.error("Error fetching news by category:", error);
+      return [];
+    }
   }
   
   async createNews(newsItem: InsertNews): Promise<News> {
-    const result = await db.insert(news)
-      .values({
-        ...newsItem,
-        createdAt: new Date()
-      })
-      .returning();
-    
-    return result[0];
+    try {
+      const result = await db.insert(news)
+        .values({
+          ...newsItem,
+          createdAt: new Date()
+        })
+        .returning();
+      
+      return result[0];
+    } catch (error) {
+      console.error("Error creating news:", error);
+      throw error;
+    }
   }
   
   async updateNews(id: number, newsItem: Partial<InsertNews>): Promise<News | undefined> {
-    const result = await db.update(news)
-      .set(newsItem)
-      .where(eq(news.id, id))
-      .returning();
-    
-    return result[0];
+    try {
+      const result = await db.update(news)
+        .set(newsItem)
+        .where(eq(news.id, id))
+        .returning();
+      
+      return result[0];
+    } catch (error) {
+      console.error("Error updating news:", error);
+      return undefined;
+    }
   }
   
   async deleteNews(id: number): Promise<boolean> {
-    const result = await db.delete(news)
-      .where(eq(news.id, id))
-      .returning();
-    
-    return result.length > 0;
+    try {
+      const result = await db.delete(news)
+        .where(eq(news.id, id))
+        .returning();
+      
+      return result.length > 0;
+    } catch (error) {
+      console.error("Error deleting news:", error);
+      return false;
+    }
   }
   
   // 초기 데이터 설정
@@ -516,6 +551,86 @@ export class DatabaseStorage implements IStorage {
       
       for (const testimonial of testimonials) {
         await this.createTestimonial(testimonial);
+      }
+      
+      // 뉴스 데이터
+      const newsItems: InsertNews[] = [
+        {
+          title: "인천시, 강화군 지역 부동산 개발 계획 발표",
+          summary: "인천시가 강화군 지역 부동산 개발을 위한 새로운 계획을 발표했습니다.",
+          description: "인천광역시가 강화군 지역 발전을 위한 대규모 부동산 개발 계획을 발표했습니다. 이번 계획은 지역 경제 활성화와 관광객 유치에 중점을 두고 있습니다.",
+          content: "인천광역시는 오늘 강화군 지역 발전을 위한 새로운 부동산 개발 계획을 발표했습니다. 이 계획에 따르면 강화군 내 유휴 부지를 활용한 복합 문화 공간과 관광 시설이 들어설 예정입니다.\n\n시 관계자는 \"이번 개발을 통해 강화군의 관광 인프라를 확충하고 지역 경제에 활력을 불어넣을 것\"이라고 밝혔습니다. 총 사업비는 약 2,000억원으로 예상되며, 2026년까지 단계적으로 진행될 예정입니다.\n\n특히 강화읍 일대에는 전통 한옥 스타일의 숙박 시설과 문화 체험 공간이 조성되어 역사 관광과 연계된 개발이 이루어질 계획입니다.",
+          source: "인천일보",
+          sourceUrl: "https://www.incheonilbo.com",
+          url: "https://www.incheonilbo.com/news/article/property-development-plan",
+          imageUrl: "https://images.unsplash.com/photo-1460317442991-0ec209397118?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500",
+          category: "인천 부동산",
+          isPinned: true
+        },
+        {
+          title: "강화도 부동산 시장 동향: 전년 대비 거래량 15% 증가",
+          summary: "강화도 지역 부동산 거래량이 전년 동기 대비 15% 증가한 것으로 나타났습니다.",
+          description: "최근 발표된 부동산 통계에 따르면 강화도 지역의 부동산 거래량이 전년 동기 대비 15% 증가했습니다. 특히 단독주택과 토지 거래가 크게 늘어난 것으로 조사되었습니다.",
+          content: "한국부동산원이 발표한 최근 통계에 따르면, 강화도 지역의 부동산 거래량이 전년 동기 대비 15% 증가한 것으로 나타났습니다. 특히 단독주택과 토지 거래가 각각 22%, 18% 증가하며 전체 거래량 상승을 이끌었습니다.\n\n전문가들은 이러한 증가세의 배경으로 코로나19 이후 교외 주거 선호도 증가와 강화도의 개발 호재가 복합적으로 작용했다고 분석합니다.\n\n또한 정부의 규제 완화 정책과 금리 인하 기조도 거래량 증가에 영향을 미친 것으로 보입니다. 부동산 업계 관계자들은 \"강화도는 수도권과의 접근성이 개선되고 있고, 자연환경이 우수해 실거주 목적의 매수세가 꾸준히 유입되고 있다\"고 설명했습니다.",
+          source: "부동산 뉴스",
+          sourceUrl: "https://www.realestate-news.kr",
+          url: "https://www.realestate-news.kr/news/article/ganghwa-property-trend",
+          imageUrl: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500",
+          category: "강화군 부동산",
+          isPinned: false
+        },
+        {
+          title: "국토부, 부동산 정책 방향 재설정...규제 완화 기조 유지",
+          summary: "국토교통부가 부동산 시장 안정을 위한 새로운 정책 방향을 발표했습니다.",
+          description: "국토교통부가 부동산 시장 안정과 거래 활성화를 위한 새로운 정책 방향을 발표했습니다. 기존의 규제 완화 기조를 유지하면서 실수요자 중심의 정책을 강화할 예정입니다.",
+          content: "국토교통부는 어제 부동산 시장 안정과 거래 활성화를 위한 새로운 정책 방향을 발표했습니다. 이번 발표에 따르면, 정부는 기존의 규제 완화 기조를 유지하면서도 실수요자 중심의 정책을 더욱 강화할 예정입니다.\n\n주요 내용으로는 1) 생애 첫 주택 구매자에 대한 금융 지원 확대, 2) 재건축·재개발 절차 간소화, 3) 공공주택 공급 확대 등이 포함되었습니다.\n\n국토부 관계자는 \"부동산 시장이 점차 안정을 찾아가고 있으나, 여전히 실수요자들의 내 집 마련 부담은 높은 상황\"이라며 \"이번 정책을 통해 실수요자 중심의 시장 형성을 유도할 것\"이라고 밝혔습니다.\n\n전문가들은 이번 정책이 단기적으로는 시장에 긍정적 영향을 줄 수 있지만, 장기적인 시장 안정을 위해서는 공급 물량 확대가 관건이라고 지적하고 있습니다.",
+          source: "국토교통부",
+          sourceUrl: "https://www.molit.go.kr",
+          url: "https://www.molit.go.kr/news/article/property-policy-direction",
+          imageUrl: "https://images.unsplash.com/photo-1592595896616-c37162298647?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500",
+          category: "부동산 정책",
+          isPinned: false
+        },
+        {
+          title: "강화군, 친환경 스마트시티 조성 추진",
+          summary: "강화군이 지역 활성화를 위한 친환경 스마트시티 조성 계획을 발표했습니다.",
+          description: "강화군이 지역 경제 활성화와 미래 성장 동력 확보를 위한 친환경 스마트시티 조성 계획을 발표했습니다. 2027년까지 약 3,000억원이 투입될 예정입니다.",
+          content: "강화군은 지난 25일 지역 경제 활성화와 미래 성장 동력 확보를 위한 '강화 그린 스마트시티' 조성 계획을 발표했습니다. 이 계획에 따르면 강화읍 일대 약 50만㎡ 부지에 친환경 주거단지와 스마트 농업 단지, 관광 인프라가 조성됩니다.\n\n총 사업비는 약 3,000억원으로, 2023년부터 2027년까지 단계적으로 진행될 예정입니다. 특히 재생에너지를 활용한 에너지 자립형 주거 환경과 IoT 기술을 접목한 스마트팜 단지가 핵심 사업으로 추진됩니다.\n\n강화군 관계자는 \"이번 사업을 통해 강화군을 수도권의 대표적인 친환경 미래 도시로 발전시키고, 청년층의 유입과 일자리 창출 효과도 기대하고 있다\"고 밝혔습니다.\n\n부동산 전문가들은 이번 계획이 실현될 경우 강화 지역의 부동산 가치 상승과 지역 경제 활성화에 긍정적인 영향을 미칠 것으로 전망하고 있습니다.",
+          source: "강화군청",
+          sourceUrl: "https://www.ganghwa.go.kr",
+          url: "https://www.ganghwa.go.kr/news/article/smart-city-plan",
+          imageUrl: "https://images.unsplash.com/photo-1542889601-399c4f3a8402?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500",
+          category: "강화군 부동산",
+          isPinned: true
+        },
+        {
+          title: "인천 지역 아파트 매매가 6개월 연속 상승세",
+          summary: "인천 지역 아파트 매매가격이 6개월 연속 상승세를 이어가고 있습니다.",
+          description: "한국부동산원 통계에 따르면 인천 지역 아파트 매매가격이 6개월 연속 상승세를 기록했습니다. 특히 송도, 청라 지역의 상승폭이 두드러진 것으로 나타났습니다.",
+          content: "한국부동산원이 발표한 최근 주간 아파트 가격 동향에 따르면, 인천 지역 아파트 매매가격이 6개월 연속 상승세를 기록하고 있습니다. 지난달 기준 인천 아파트 매매가격은 전월 대비 0.38% 상승했으며, 특히 송도와 청라 지역은 각각 0.62%, 0.57%로 상승폭이 더 컸습니다.\n\n이러한 상승세의 배경으로는 정부의 규제 완화 정책과 GTX 등 교통 인프라 개선 기대감, 상대적으로 서울보다 저렴한 가격대 등이 복합적으로 작용한 것으로 분석됩니다.\n\n부동산 전문가들은 \"인천은 서울에 비해 가격 메리트가 있고, 교통 개선과 신도시 개발 등 호재가 많아 당분간 상승세가 이어질 가능성이 높다\"고 전망했습니다.\n\n다만 일부 전문가들은 금리 인상과 경기 침체 우려 등 대외 변수가 있어 하반기에는 상승폭이 제한될 수 있다고 조심스럽게 전망하고 있습니다.",
+          source: "인천경제",
+          sourceUrl: "https://www.incheoneconomy.com",
+          url: "https://www.incheoneconomy.com/news/article/apartment-price-trend",
+          imageUrl: "https://images.unsplash.com/photo-1519501025264-65ba15a82390?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500",
+          category: "인천 부동산",
+          isPinned: false
+        },
+        {
+          title: "정부, 농어촌 빈집 활용 지원사업 예산 확대",
+          summary: "농림축산식품부가 농어촌 빈집 활용 지원사업 예산을 전년 대비 30% 확대했습니다.",
+          description: "농림축산식품부가 농어촌 지역 빈집 활용을 위한 지원사업 예산을 전년 대비 30% 확대했습니다. 강화군을 비롯한 농어촌 지역의 주거환경 개선과 관광자원화를 추진합니다.",
+          content: "농림축산식품부는 농어촌 지역 빈집 활용을 위한 지원사업 예산을 전년 대비 30% 확대한 650억원으로 편성했다고 밝혔습니다. 이 사업은 농어촌 지역의 빈집을 리모델링하여 주거환경을 개선하고 관광자원으로 활용하는 것을 목표로 합니다.\n\n특히 강화군과 같은 수도권 인접 농어촌 지역은 우선 지원 대상으로 선정되었으며, 빈집을 활용한 게스트하우스, 농촌체험시설, 청년 창업 공간 등 다양한 용도로의 전환을 지원합니다.\n\n농식품부 관계자는 \"이번 사업을 통해 농어촌 지역의 빈집 문제를 해결하고, 동시에 지역 경제 활성화와 인구 유입 효과도 기대하고 있다\"고 설명했습니다.\n\n강화군 관계자는 \"강화도 내 노후 빈집을 활용한 특색있는 관광 숙박시설과 문화공간을 조성할 계획\"이라며, \"이를 통해 강화도의 관광 경쟁력을 높이고 농촌 지역의 새로운 가치를 창출할 것\"이라고 밝혔습니다.",
+          source: "농림축산식품부",
+          sourceUrl: "https://www.mafra.go.kr",
+          url: "https://www.mafra.go.kr/news/article/rural-empty-houses",
+          imageUrl: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500",
+          category: "부동산 정책",
+          isPinned: false
+        }
+      ];
+      
+      for (const newsItem of newsItems) {
+        await this.createNews(newsItem);
       }
     }
   }

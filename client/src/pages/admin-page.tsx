@@ -837,7 +837,7 @@ export default function AdminPage() {
                         <TableCell>{user.email || "-"}</TableCell>
                         <TableCell>{user.phone || "-"}</TableCell>
                         <TableCell className="text-right">
-                          {user.id !== (user as any).id && (
+                          {user.id !== user?.id && (
                             <Button
                               variant="destructive"
                               size="sm"

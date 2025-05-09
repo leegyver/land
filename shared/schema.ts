@@ -172,8 +172,4 @@ export type News = typeof news.$inferSelect;
 export type InsertNews = z.infer<typeof insertNewsSchema>;
 
 // Session schema (for connect-pg-simple)
-export const session = pgTable("session", {
-  sid: varchar("sid").primaryKey(),
-  sess: json("sess").notNull(),
-  expire: timestamp("expire").notNull(),
-});
+// Removed schema mapping from Drizzle to avoid conflicts with connect-pg-simple's own schema

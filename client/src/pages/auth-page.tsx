@@ -33,12 +33,6 @@ export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [, setLocation] = useLocation();
 
-  // 이미 로그인되어 있으면 홈으로 리다이렉트
-  if (user) {
-    setLocation("/");
-    return null;
-  }
-
   // 로그인 폼
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -70,6 +64,14 @@ export default function AuthPage() {
   const onRegisterSubmit = (data: RegisterFormValues) => {
     registerMutation.mutate(data);
   };
+
+  // 이미 로그인되어 있으면 홈으로 리다이렉트
+  if (user) {
+    // useEffect를 사용하지 않고 리다이렉트할 때는 다음 렌더링에서 처리되므로 
+    // 빈 페이지를 잠시 보여주는 게 안전합니다.
+    setTimeout(() => setLocation("/"), 0);
+    return <div className="flex min-h-screen items-center justify-center">리다이렉트 중...</div>;
+  }
 
   return (
     <div className="flex min-h-screen">

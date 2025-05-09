@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { News } from "@shared/schema";
 import { Helmet } from "react-helmet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   Pagination, 
@@ -21,7 +20,6 @@ const ITEMS_PER_PAGE = 15;
 
 export default function NewsPage() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [activeTab, setActiveTab] = useState("latest");
 
   // 최신 뉴스 가져오기 (6개)
   const { data: latestNews, isLoading: isLoadingLatest } = useQuery<News[]>({
@@ -103,14 +101,11 @@ export default function NewsPage() {
         <p className="text-neutral-600">강화도와 관련된 부동산 뉴스를 게시합니다</p>
       </div>
 
-      <Tabs defaultValue="latest" value={activeTab} onValueChange={setActiveTab} className="w-full mb-8">
-        <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
-          <TabsTrigger value="latest">최신 뉴스</TabsTrigger>
-          <TabsTrigger value="all">전체 뉴스</TabsTrigger>
-        </TabsList>
-
+      <div className="space-y-12">
         {/* 최신 뉴스 (갤러리 형식) */}
-        <TabsContent value="latest" className="mt-6">
+        <div>
+          <h2 className="text-2xl font-bold mb-6">최신 부동산 뉴스</h2>
+          
           {isLoadingLatest ? (
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6 animate-pulse">
               {[...Array(6)].map((_, index) => (
@@ -171,10 +166,12 @@ export default function NewsPage() {
               <p className="mt-2 text-neutral-500">곧 새로운 부동산 뉴스가 업데이트될 예정입니다.</p>
             </div>
           )}
-        </TabsContent>
+        </div>
 
         {/* 전체 뉴스 (게시판 형식) */}
-        <TabsContent value="all" className="mt-6">
+        <div>
+          <h2 className="text-2xl font-bold mb-6">전체 부동산 뉴스</h2>
+          
           {isLoadingAll ? (
             <div className="space-y-2 animate-pulse">
               {[...Array(10)].map((_, index) => (
@@ -198,7 +195,9 @@ export default function NewsPage() {
                       <tr key={news.id} className="border-b hover:bg-neutral-50">
                         <td className="py-3 px-4">
                           <div>
-                            <p className="font-medium line-clamp-1">{news.title}</p>
+                            <a href={`/news/${news.id}`} className="font-medium line-clamp-1 hover:text-primary transition-colors">
+                              {news.title}
+                            </a>
                             <p className="text-sm text-neutral-500 line-clamp-1 mt-1">{news.description}</p>
                           </div>
                         </td>
@@ -264,8 +263,8 @@ export default function NewsPage() {
               <p className="mt-2 text-neutral-500">곧 새로운 부동산 뉴스가 업데이트될 예정입니다.</p>
             </div>
           )}
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
     </div>
   );
 }

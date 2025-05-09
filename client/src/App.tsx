@@ -18,6 +18,7 @@ import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
 import AuthPage from "@/pages/auth-page";
 import AdminPage from "@/pages/admin-page";
+import ProfilePage from "@/pages/profile-page";
 
 function Router() {
   return (
@@ -30,6 +31,7 @@ function Router() {
       <Route path="/about" component={AboutPage} />
       <Route path="/contact" component={ContactPage} />
       <Route path="/auth" component={AuthPage} />
+      <ProtectedRoute path="/profile" component={ProfilePage} />
       <ProtectedRoute path="/admin" component={AdminPage} admin={true} />
       <Route component={NotFound} />
     </Switch>

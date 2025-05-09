@@ -103,7 +103,9 @@ export default function ProfilePage() {
   // 비밀번호 변경 뮤테이션
   const changePasswordMutation = useMutation({
     mutationFn: async (data: PasswordFormValues) => {
-      const res = await apiRequest("PATCH", "/api/users/password", data);
+      // confirmPassword 필드는 서버로 보내지 않고 currentPassword와 newPassword만 전송
+      const { confirmPassword, ...requestData } = data;
+      const res = await apiRequest("PATCH", "/api/users/password", requestData);
       return await res.json();
     },
     onSuccess: () => {
@@ -129,6 +131,7 @@ export default function ProfilePage() {
 
   // 비밀번호 폼 제출 처리
   const onPasswordSubmit = (data: PasswordFormValues) => {
+    console.log("비밀번호 변경 요청:", data);
     changePasswordMutation.mutate(data);
   };
 

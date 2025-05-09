@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
-import { insertInquirySchema } from "@shared/schema";
+import { insertInquirySchema, insertPropertySchema } from "@shared/schema";
 import { setupAuth } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -168,6 +168,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(properties);
     } catch (error) {
       res.status(500).json({ message: "Failed to search properties" });
+    }
+  });
+  
+  // 관리자 전용 API 엔드포인트
+  // 부동산 생성
+  app.post("/api/properties", async (req, res) => {
+    try {
+      // 인증 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const validatedData = insertPropertySchema.parse(req.body);
+      const property = await storage.createProperty(validatedData);
+      res.status(201).json(property);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid property data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create property" });
+    }
+  });
+  
+  // 부동산 수정
+  app.patch("/api/properties/:id", async (req, res) => {
+    try {
+      // 인증 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid property ID" });
+      }
+      
+      const existingProperty = await storage.getProperty(id);
+      if (!existingProperty) {
+        return res.status(404).json({ message: "Property not found" });
+      }
+      
+      const validatedData = insertPropertySchema.partial().parse(req.body);
+      const updatedProperty = await storage.updateProperty(id, validatedData);
+      
+      res.json(updatedProperty);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid property data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update property" });
+    }
+  });
+  
+  // 부동산 삭제
+  app.delete("/api/properties/:id", async (req, res) => {
+    try {
+      // 인증 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid property ID" });
+      }
+      
+      const exists = await storage.getProperty(id);
+      if (!exists) {
+        return res.status(404).json({ message: "Property not found" });
+      }
+      
+      const result = await storage.deleteProperty(id);
+      
+      if (result) {
+        res.json({ success: true });
+      } else {
+        res.status(500).json({ message: "Failed to delete property" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete property" });
+    }
+  });
+  
+  // 관리자 전용 사용자 목록 조회
+  app.get("/api/admin/users", async (req, res) => {
+    try {
+      // 인증 및 관리자 권한 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const user = req.user;
+      if (!user || user.role !== "admin") {
+        return res.status(403).json({ message: "Admin permission required" });
+      }
+      
+      const users = await storage.getAllUsers();
+      
+      // 비밀번호 정보 제외하고 반환
+      const usersWithoutPasswords = users.map(({ password, ...userData }) => userData);
+      
+      res.json(usersWithoutPasswords);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch users" });
     }
   });
 

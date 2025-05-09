@@ -223,7 +223,11 @@ export class MemStorage implements IStorage {
   
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.userCurrentId++;
-    const user: User = { ...insertUser, id };
+    const user: User = { 
+      ...insertUser, 
+      id,
+      role: insertUser.role || "user" // 기본값으로 user 역할 설정
+    };
     this.users.set(id, user);
     return user;
   }
@@ -247,6 +251,20 @@ export class MemStorage implements IStorage {
   
   // Initialize with sample data
   private initializeSampleData() {
+    // 관리자 계정 생성
+    this.createUser({
+      username: "admin",
+      password: "adminpass", // 실제 환경에서는 보안을 위해 더 복잡한 비밀번호 사용
+      role: "admin"
+    });
+    
+    // 일반 사용자 계정 생성
+    this.createUser({
+      username: "user",
+      password: "userpass",
+      role: "user"
+    });
+    
     // Sample Agents
     const agents: InsertAgent[] = [
       {

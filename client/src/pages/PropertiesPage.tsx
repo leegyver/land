@@ -132,13 +132,21 @@ const PropertiesPage = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="all">서울 전체</SelectItem>
-                          <SelectItem value="강남구">강남구</SelectItem>
-                          <SelectItem value="서초구">서초구</SelectItem>
-                          <SelectItem value="마포구">마포구</SelectItem>
-                          <SelectItem value="용산구">용산구</SelectItem>
-                          <SelectItem value="송파구">송파구</SelectItem>
-                          <SelectItem value="성북구">성북구</SelectItem>
+                          <SelectItem value="all">전체</SelectItem>
+                          <SelectItem value="강화읍">강화읍</SelectItem>
+                          <SelectItem value="교동면">교동면</SelectItem>
+                          <SelectItem value="길상면">길상면</SelectItem>
+                          <SelectItem value="내가면">내가면</SelectItem>
+                          <SelectItem value="불은면">불은면</SelectItem>
+                          <SelectItem value="삼산면">삼산면</SelectItem>
+                          <SelectItem value="서도면">서도면</SelectItem>
+                          <SelectItem value="선원면">선원면</SelectItem>
+                          <SelectItem value="송해면">송해면</SelectItem>
+                          <SelectItem value="양도면">양도면</SelectItem>
+                          <SelectItem value="양사면">양사면</SelectItem>
+                          <SelectItem value="하점면">하점면</SelectItem>
+                          <SelectItem value="화도면">화도면</SelectItem>
+                          <SelectItem value="강화외지역">강화외지역</SelectItem>
                         </SelectContent>
                       </Select>
                     </FormItem>
@@ -162,11 +170,11 @@ const PropertiesPage = () => {
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="all">전체</SelectItem>
-                          <SelectItem value="아파트">아파트</SelectItem>
-                          <SelectItem value="빌라">빌라</SelectItem>
+                          <SelectItem value="토지">토지</SelectItem>
                           <SelectItem value="주택">주택</SelectItem>
-                          <SelectItem value="오피스텔">오피스텔</SelectItem>
-                          <SelectItem value="펜트하우스">펜트하우스</SelectItem>
+                          <SelectItem value="아파트연립다세대">아파트/연립/다세대</SelectItem>
+                          <SelectItem value="원투룸">원룸/투룸</SelectItem>
+                          <SelectItem value="상가공장창고펜션">상가/공장/창고/펜션</SelectItem>
                         </SelectContent>
                       </Select>
                     </FormItem>

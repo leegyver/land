@@ -12,22 +12,22 @@ const Footer = () => {
               10년 이상의 경험을 바탕으로 고객님께 최상의 부동산 서비스를 제공합니다.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-white hover:text-primary">
+              <button className="text-white hover:text-primary">
                 <Facebook size={20} />
-              </a>
-              <a href="#" className="text-white hover:text-primary">
+              </button>
+              <button className="text-white hover:text-primary">
                 <Instagram size={20} />
-              </a>
-              <a href="#" className="text-white hover:text-primary">
+              </button>
+              <button className="text-white hover:text-primary">
                 <Youtube size={20} />
-              </a>
-              <a href="#" className="text-white hover:text-primary">
+              </button>
+              <button className="text-white hover:text-primary">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                   <line x1="3" y1="8" x2="21" y2="8"></line>
                   <line x1="8" y1="3" x2="8" y2="21"></line>
                 </svg>
-              </a>
+              </button>
             </div>
           </div>
           

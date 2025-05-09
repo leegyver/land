@@ -55,6 +55,7 @@ const PropertySearch = () => {
     }
     
     setLocation(`/properties?${searchParams.toString()}`);
+    // Navigate to the properties page with search parameters
   };
 
   return (

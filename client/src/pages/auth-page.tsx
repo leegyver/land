@@ -55,6 +55,8 @@ export default function AuthPage() {
       username: "",
       password: "",
       confirmPassword: "",
+      email: "",
+      phone: "",
       role: "user",
     },
   });

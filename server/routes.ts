@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { insertInquirySchema, insertPropertySchema, insertNewsSchema } from "@shared/schema";
+import { memoryCache } from "./cache";
 import { setupAuth } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -14,7 +15,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Properties
   app.get("/api/properties", async (req, res) => {
     try {
+      // 캐시에서 먼저 확인
+      const cacheKey = "properties_all";
+      const cachedProperties = memoryCache.get(cacheKey);
+      
+      if (cachedProperties) {
+        return res.json(cachedProperties);
+      }
+      
+      // 캐시에 없으면 DB에서 조회
       const properties = await storage.getProperties();
+      
+      // 조회 결과를 캐시에 저장 (3분 동안)
+      memoryCache.set(cacheKey, properties, 3 * 60 * 1000);
+      
       res.json(properties);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch properties" });
@@ -24,7 +38,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/properties/featured", async (req, res) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const cacheKey = `properties_featured_${limit || 'default'}`;
+      const cachedProperties = memoryCache.get(cacheKey);
+      
+      if (cachedProperties) {
+        return res.json(cachedProperties);
+      }
+      
       const properties = await storage.getFeaturedProperties(limit);
+      
+      // 캐시 저장 (5분)
+      memoryCache.set(cacheKey, properties, 5 * 60 * 1000);
+      
       res.json(properties);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch featured properties" });
@@ -92,7 +117,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Agents
   app.get("/api/agents", async (req, res) => {
     try {
+      // 캐시에서 확인
+      const cacheKey = "agents_all";
+      const cachedAgents = memoryCache.get(cacheKey);
+      
+      if (cachedAgents) {
+        return res.json(cachedAgents);
+      }
+      
       const agents = await storage.getAgents();
+      
+      // 캐시 저장 (10분)
+      memoryCache.set(cacheKey, agents, 10 * 60 * 1000);
+      
       res.json(agents);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch agents" });
@@ -291,7 +328,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/news/latest", async (req, res) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 6;
+      
+      // 캐시에서 확인
+      const cacheKey = `news_latest_${limit}`;
+      const cachedNews = memoryCache.get(cacheKey);
+      
+      if (cachedNews) {
+        return res.json(cachedNews);
+      }
+      
       const news = await storage.getLatestNews(limit);
+      
+      // 캐시에 저장 (5분)
+      memoryCache.set(cacheKey, news, 5 * 60 * 1000);
+      
       res.json(news);
     } catch (error) {
       res.status(500).json({ message: "최신 뉴스를 불러오는데 실패했습니다" });

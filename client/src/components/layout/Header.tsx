@@ -1,11 +1,21 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Building } from "lucide-react";
+import { Building, LogIn, LogOut, User, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Header = () => {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
+  const { user, logoutMutation } = useAuth();
   
   const navItems = [
     { name: "홈", path: "/" },
@@ -14,6 +24,10 @@ const Header = () => {
     { name: "회사소개", path: "/about" },
     { name: "문의", path: "/contact" },
   ];
+  
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
 
   return (
     <header className="bg-white shadow-md fixed w-full z-50">

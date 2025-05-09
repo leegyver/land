@@ -217,13 +217,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Authentication required" });
       }
       
-      const validatedData = insertPropertySchema.parse(req.body);
-      const property = await storage.createProperty(validatedData);
-      res.status(201).json(property);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid property data", errors: error.errors });
+      // 디버깅 로그 추가
+      console.log('부동산 등록 요청 데이터:', JSON.stringify(req.body, null, 2));
+      
+      try {
+        const validatedData = insertPropertySchema.parse(req.body);
+        const property = await storage.createProperty(validatedData);
+        res.status(201).json(property);
+      } catch (e) {
+        if (e instanceof z.ZodError) {
+          console.error('유효성 검사 오류:', JSON.stringify(e.errors, null, 2));
+          return res.status(400).json({ message: "Invalid property data", errors: e.errors });
+        }
+        throw e;
       }
+    } catch (error) {
+      console.error('부동산 등록 오류:', error);
       res.status(500).json({ message: "Failed to create property" });
     }
   });

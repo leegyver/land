@@ -95,7 +95,7 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("properties");
   const [openPropertyDialog, setOpenPropertyDialog] = useState(false);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
-  const [isDeleting, setIsDeleting] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState<number | false>(false);
 
   // 부동산 목록 조회
   const {
@@ -218,7 +218,7 @@ export default function AdminPage() {
         title: "부동산 삭제 성공",
         description: "부동산이 삭제되었습니다.",
       });
-      setIsDeleting(null);
+      setIsDeleting(false);
     },
     onError: (error: Error) => {
       toast({
@@ -226,7 +226,7 @@ export default function AdminPage() {
         description: error.message,
         variant: "destructive",
       });
-      setIsDeleting(null);
+      setIsDeleting(false);
     },
   });
 

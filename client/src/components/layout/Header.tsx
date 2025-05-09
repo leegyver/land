@@ -53,6 +53,42 @@ const Header = () => {
             ))}
           </nav>
           
+          {/* Auth Buttons (Desktop) */}
+          <div className="hidden md:flex items-center space-x-2">
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2">
+                    <User size={18} />
+                    <span className="font-medium">{user.username}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>내 계정</DropdownMenuLabel>
+                  {user.role === "admin" && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setLocation("/admin")}>
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>관리자 패널</span>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>로그아웃</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button variant="default" onClick={() => setLocation("/auth")}>
+                <LogIn className="mr-2 h-4 w-4" />
+                로그인
+              </Button>
+            )}
+          </div>
+
           {/* Mobile Navigation */}
           <Sheet>
             <SheetTrigger asChild>
@@ -87,6 +123,49 @@ const Header = () => {
                     {item.name}
                   </Link>
                 ))}
+                
+                {/* Auth Items (Mobile) */}
+                <div className="pt-4 border-t">
+                  {user ? (
+                    <>
+                      <div className="flex items-center mb-4 text-primary font-medium">
+                        <User size={18} className="mr-2" />
+                        <span>{user.username}</span>
+                        {user.role === "admin" && (
+                          <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full">
+                            관리자
+                          </span>
+                        )}
+                      </div>
+                      
+                      {user.role === "admin" && (
+                        <Link 
+                          href="/admin" 
+                          className="flex items-center py-2 text-lg font-medium text-neutral-800 hover:text-primary"
+                        >
+                          <Settings className="mr-2 h-5 w-5" />
+                          관리자 패널
+                        </Link>
+                      )}
+                      
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center py-2 text-lg font-medium text-neutral-800 hover:text-primary"
+                      >
+                        <LogOut className="mr-2 h-5 w-5" />
+                        로그아웃
+                      </button>
+                    </>
+                  ) : (
+                    <Link
+                      href="/auth"
+                      className="flex items-center py-2 text-lg font-medium text-neutral-800 hover:text-primary"
+                    >
+                      <LogIn className="mr-2 h-5 w-5" />
+                      로그인 / 회원가입
+                    </Link>
+                  )}
+                </div>
               </div>
             </SheetContent>
           </Sheet>

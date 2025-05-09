@@ -124,8 +124,15 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
     <div className="container mx-auto px-4 py-12">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">{property.title}</h1>
+        <div className="flex flex-wrap items-center gap-2 mb-2">
+          {property.dealType && Array.isArray(property.dealType) && property.dealType.map((type, index) => (
+            <Badge key={index} className="bg-secondary">{type}</Badge>
+          ))}
+        </div>
         <p className="text-gray-medium flex items-center">
-          <MapPin className="w-4 h-4 mr-1" /> {property.address}
+          <MapPin className="w-4 h-4 mr-1" /> 
+          {/* 주소에서 지번 정보를 제외 - 대략적인 위치만 표시 */}
+          {property.district}, {property.city}
         </p>
       </div>
       
@@ -207,14 +214,14 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
               <div className="bg-gray-light p-2 rounded-lg overflow-hidden h-64">
                 <img 
                   src="https://images.unsplash.com/photo-1609587312208-cea54be969e7?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1200&h=600" 
-                  alt={`${property.address} 지도`} 
+                  alt={`${property.district} 지역 지도`} 
                   className="w-full h-full object-cover"
                 />
               </div>
               <div className="mt-4">
                 <h3 className="text-xl font-bold mb-2">위치 정보</h3>
                 <p className="text-gray-medium">
-                  {property.address}는 {property.district} 중심부에 위치하고 있으며, 주변에 대중교통, 학교, 상업시설 등이 잘 갖추어져 있습니다.
+                  {property.district}, {property.city}는 중심부에 위치하고 있으며, 주변에 대중교통, 학교, 상업시설 등이 잘 갖추어져 있습니다.
                 </p>
               </div>
             </TabsContent>

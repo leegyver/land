@@ -35,6 +35,16 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
         >
           {property.type}
         </Badge>
+        
+        {/* 거래 유형 표시: 매매/전세/월세 */}
+        {property.dealType && Array.isArray(property.dealType) && property.dealType.length > 0 && (
+          <Badge 
+            className="absolute top-3 right-3 z-10 bg-secondary"
+          >
+            {property.dealType[0]}
+          </Badge>
+        )}
+        
         <img 
           src={property.imageUrl} 
           alt={property.title} 

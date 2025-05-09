@@ -70,7 +70,7 @@ export default function NewsDetailPage() {
     <div className="container mx-auto px-4 py-20">
       <Helmet>
         <title>{news.title} | 부동산 뉴스 | 한국부동산</title>
-        <meta name="description" content={news.summary} />
+        <meta name="description" content={news.description} />
       </Helmet>
 
       <div className="mb-6">
@@ -91,7 +91,7 @@ export default function NewsDetailPage() {
               </div>
             </div>
             <CardTitle className="text-2xl md:text-3xl mb-2">{news.title}</CardTitle>
-            <p className="text-neutral-600 text-lg">{news.summary}</p>
+            <p className="text-neutral-600 text-lg">{news.description}</p>
           </CardHeader>
           <CardContent>
             <div className="prose prose-neutral max-w-none mb-6">
@@ -102,7 +102,7 @@ export default function NewsDetailPage() {
             
             <div className="mt-8 pt-4 border-t">
               <Button variant="outline" className="flex items-center" asChild>
-                <a href={news.url} target="_blank" rel="noopener noreferrer">
+                <a href={news.sourceUrl} target="_blank" rel="noopener noreferrer">
                   <span className="mr-2">원문 기사 보기</span>
                   <ExternalLink className="h-4 w-4" />
                 </a>

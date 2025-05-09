@@ -5,14 +5,21 @@ import WhyChooseUs from "@/components/home/WhyChooseUs";
 import Testimonials from "@/components/home/Testimonials";
 import ContactForm from "@/components/contact/ContactForm";
 import { useQuery } from "@tanstack/react-query";
-import { Agent } from "@shared/schema";
+import { Agent, News } from "@shared/schema";
 import { Link } from "wouter";
-import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Phone, Mail, Clock } from "lucide-react";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { MapPin, Phone, Mail, Clock, Calendar, ArrowRight, Newspaper } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { formatDistanceToNow } from 'date-fns';
+import { ko } from 'date-fns/locale';
 
 const HomePage = () => {
   const { data: agents } = useQuery<Agent[]>({
     queryKey: ["/api/agents"],
+  });
+  
+  const { data: latestNews } = useQuery<News[]>({
+    queryKey: ["/api/news/latest"],
   });
 
   return (
@@ -23,40 +30,74 @@ const HomePage = () => {
         <FeaturedProperties />
         <WhyChooseUs />
         
-        {/* Agent Section */}
-        <section id="agents" className="py-16">
+        {/* News Section */}
+        <section id="news" className="py-16 bg-gray-light">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold text-center mb-12">전문 중개사 소개</h2>
+            <div className="flex justify-between items-center mb-12">
+              <h2 className="text-3xl font-bold">최신 부동산 뉴스</h2>
+              <Link href="/news" className="text-primary hover:text-secondary font-medium flex items-center gap-1">
+                모든 뉴스 보기 <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {agents && agents.map((agent) => (
-                <Card key={agent.id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition text-center">
-                  <div className="h-64 overflow-hidden">
-                    <img 
-                      src={agent.imageUrl} 
-                      alt={agent.name} 
-                      className="w-full h-full object-cover object-center"
-                    />
-                  </div>
-                  <CardContent className="p-6">
-                    <Link href={`/agents/${agent.id}`}>
-                      <h3 className="text-xl font-bold mb-1 hover:text-primary transition-colors cursor-pointer">
-                        {agent.name}
-                      </h3>
-                    </Link>
-                    <p className="text-primary font-medium mb-3">{agent.title}</p>
-                    <p className="text-gray-medium mb-4">{agent.description}</p>
-                    <div className="flex justify-center space-x-3">
-                      <a href={`tel:${agent.phone}`} className="text-dark hover:text-primary">
-                        <Phone className="h-5 w-5" />
-                      </a>
-                      <a href={`mailto:${agent.email}`} className="text-dark hover:text-primary">
-                        <Mail className="h-5 w-5" />
-                      </a>
+            <div className="grid grid-cols-1 gap-6">
+              {latestNews && latestNews.slice(0, 5).map((news) => (
+                <Card key={news.id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition">
+                  <div className="flex flex-col md:flex-row">
+                    <div className="w-full md:w-1/4 h-48 md:h-auto">
+                      <img 
+                        src={news.imageUrl} 
+                        alt={news.title} 
+                        className="w-full h-full object-cover object-center"
+                      />
                     </div>
-                  </CardContent>
+                    <div className="w-full md:w-3/4 p-6">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="outline" className="bg-primary/10 text-primary">
+                          {news.category}
+                        </Badge>
+                        {news.isPinned && (
+                          <Badge variant="secondary" className="bg-secondary/20 text-secondary">
+                            주요뉴스
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <Link href={`/news/${news.id}`}>
+                        <h3 className="text-xl font-bold mb-2 hover:text-primary transition-colors">
+                          {news.title}
+                        </h3>
+                      </Link>
+                      
+                      <p className="text-gray-medium line-clamp-2 mb-4">
+                        {news.summary}
+                      </p>
+                      
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center text-sm text-gray-medium">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          {news.createdAt && formatDistanceToNow(new Date(news.createdAt), { addSuffix: true, locale: ko })}
+                        </div>
+                        
+                        <div className="flex items-center text-sm text-gray-medium">
+                          <Newspaper className="h-4 w-4 mr-1" />
+                          {news.source}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </Card>
               ))}
+              
+              {(!latestNews || latestNews.length === 0) && (
+                <div className="bg-white rounded-lg p-8 text-center shadow">
+                  <Newspaper className="h-12 w-12 mx-auto mb-4 text-gray-medium" />
+                  <h3 className="text-xl font-medium mb-2">아직 등록된 뉴스가 없습니다</h3>
+                  <p className="text-gray-medium">
+                    곧 강화도와 인천 지역의 최신 부동산 뉴스가 업데이트될 예정입니다.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </section>

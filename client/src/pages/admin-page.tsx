@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getQueryFn, apiRequest } from "@/lib/queryClient";
@@ -100,6 +100,7 @@ export default function AdminPage() {
   const [openPropertyDialog, setOpenPropertyDialog] = useState(false);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const [isDeleting, setIsDeleting] = useState<number | false>(false);
+  const [isDeletingUser, setIsDeletingUser] = useState<number | false>(false);
 
   // 부동산 목록 조회
   const {
@@ -231,6 +232,35 @@ export default function AdminPage() {
         variant: "destructive",
       });
       setIsDeleting(false);
+    },
+  });
+  
+  // 사용자 삭제 뮤테이션
+  const deleteUserMutation = useMutation({
+    mutationFn: async (id: number) => {
+      setIsDeletingUser(id);
+      const res = await apiRequest("DELETE", `/api/admin/users/${id}`);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "사용자 삭제에 실패했습니다");
+      }
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: "사용자 삭제 성공",
+        description: "사용자가 성공적으로 삭제되었습니다.",
+      });
+      setIsDeletingUser(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "사용자 삭제 실패",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsDeletingUser(false);
     },
   });
 
@@ -783,6 +813,9 @@ export default function AdminPage() {
                       <TableHead>ID</TableHead>
                       <TableHead>사용자명</TableHead>
                       <TableHead>역할</TableHead>
+                      <TableHead>이메일</TableHead>
+                      <TableHead>연락처</TableHead>
+                      <TableHead className="text-right">관리</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -800,6 +833,29 @@ export default function AdminPage() {
                           >
                             {user.role}
                           </div>
+                        </TableCell>
+                        <TableCell>{user.email || "-"}</TableCell>
+                        <TableCell>{user.phone || "-"}</TableCell>
+                        <TableCell className="text-right">
+                          {user.id !== (user as any).id && (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => {
+                                if (confirm(`정말로 사용자 "${user.username}"를 탈퇴시키겠습니까?`)) {
+                                  deleteUserMutation.mutate(user.id);
+                                }
+                              }}
+                              disabled={isDeletingUser === user.id}
+                            >
+                              {isDeletingUser === user.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              ) : (
+                                <Trash2 className="h-4 w-4 mr-2" />
+                              )}
+                              탈퇴
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}

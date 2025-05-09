@@ -108,3 +108,25 @@ export type InsertTestimonial = z.infer<typeof insertTestimonialSchema>;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+
+// News schema
+export const news = pgTable("news", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  content: text("content").notNull(),
+  source: text("source").notNull(),
+  sourceUrl: text("source_url").notNull(),
+  imageUrl: text("image_url"),
+  category: text("category").notNull(), // "인천 부동산", "강화군 부동산", "부동산 정책", "국토교통부"
+  isPinned: boolean("is_pinned").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertNewsSchema = createInsertSchema(news).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type News = typeof news.$inferSelect;
+export type InsertNews = z.infer<typeof insertNewsSchema>;

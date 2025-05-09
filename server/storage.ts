@@ -80,10 +80,12 @@ export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
   
   constructor() {
-    // 세션 저장소 설정 (PostgreSQL)
+    // 세션 저장소 설정 (PostgreSQL) - cookie_parse, serializer 옵션 추가
     this.sessionStore = new PostgresSessionStore({
       pool,
-      createTableIfMissing: true
+      createTableIfMissing: true,
+      tableName: 'session', // 테이블 이름 명시적 지정
+      schemaName: 'public', // 스키마 명시적 지정
     });
   }
   

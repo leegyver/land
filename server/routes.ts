@@ -221,7 +221,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('부동산 등록 요청 데이터:', JSON.stringify(req.body, null, 2));
       
       try {
-        const validatedData = insertPropertySchema.parse(req.body);
+        // 숫자형 필드 변환 처리
+        const processedData = {
+          ...req.body,
+          price: req.body.price ? parseFloat(req.body.price) : undefined,
+          size: req.body.size ? parseFloat(req.body.size) : undefined,
+          bedrooms: req.body.bedrooms ? parseInt(req.body.bedrooms) : undefined,
+          bathrooms: req.body.bathrooms ? parseInt(req.body.bathrooms) : undefined,
+          supplyArea: req.body.supplyArea ? parseFloat(req.body.supplyArea) : undefined,
+          privateArea: req.body.privateArea ? parseFloat(req.body.privateArea) : undefined,
+          floor: req.body.floor ? parseInt(req.body.floor) : undefined,
+          totalFloors: req.body.totalFloors ? parseInt(req.body.totalFloors) : undefined,
+          deposit: req.body.deposit ? parseFloat(req.body.deposit) : undefined,
+          monthlyRent: req.body.monthlyRent ? parseFloat(req.body.monthlyRent) : undefined,
+          maintenanceFee: req.body.maintenanceFee ? parseFloat(req.body.maintenanceFee) : undefined,
+        };
+        
+        console.log('변환된 데이터:', JSON.stringify(processedData, null, 2));
+        
+        const validatedData = insertPropertySchema.parse(processedData);
         const property = await storage.createProperty(validatedData);
         res.status(201).json(property);
       } catch (e) {
@@ -255,14 +273,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Property not found" });
       }
       
-      const validatedData = insertPropertySchema.partial().parse(req.body);
+      // 숫자형 필드 변환 처리
+      const processedData = {
+        ...req.body,
+        price: req.body.price ? parseFloat(req.body.price) : undefined,
+        size: req.body.size ? parseFloat(req.body.size) : undefined,
+        bedrooms: req.body.bedrooms ? parseInt(req.body.bedrooms) : undefined,
+        bathrooms: req.body.bathrooms ? parseInt(req.body.bathrooms) : undefined,
+        supplyArea: req.body.supplyArea ? parseFloat(req.body.supplyArea) : undefined,
+        privateArea: req.body.privateArea ? parseFloat(req.body.privateArea) : undefined,
+        floor: req.body.floor ? parseInt(req.body.floor) : undefined,
+        totalFloors: req.body.totalFloors ? parseInt(req.body.totalFloors) : undefined,
+        deposit: req.body.deposit ? parseFloat(req.body.deposit) : undefined,
+        monthlyRent: req.body.monthlyRent ? parseFloat(req.body.monthlyRent) : undefined,
+        maintenanceFee: req.body.maintenanceFee ? parseFloat(req.body.maintenanceFee) : undefined,
+      };
+      
+      const validatedData = insertPropertySchema.partial().parse(processedData);
       const updatedProperty = await storage.updateProperty(id, validatedData);
       
       res.json(updatedProperty);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error('부동산 수정 유효성 검사 오류:', JSON.stringify(error.errors, null, 2));
         return res.status(400).json({ message: "Invalid property data", errors: error.errors });
       }
+      console.error('부동산 수정 오류:', error);
       res.status(500).json({ message: "Failed to update property" });
     }
   });

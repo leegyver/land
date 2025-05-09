@@ -7,18 +7,57 @@ export const properties = pgTable("properties", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   description: text("description").notNull(),
-  type: text("type").notNull(), // apartment, house, villa, officetel, penthouse
-  price: numeric("price").notNull(),
-  address: text("address").notNull(),
-  city: text("city").notNull(),
-  district: text("district").notNull(),
-  size: numeric("size").notNull(), // in square meters
-  bedrooms: integer("bedrooms").notNull(),
-  bathrooms: integer("bathrooms").notNull(),
-  imageUrl: text("image_url").notNull(),
-  agentId: integer("agent_id").notNull(),
-  featured: boolean("featured").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
+  type: text("type").notNull(), // 토지, 주택, 아파트연립다세대, 원투룸, 상가공장창고펜션
+  
+  // 위치 정보
+  district: text("district").notNull(), // 읍면동 (ex: 강화읍 갑곳리, 강화읍 관청리 등)
+  address: text("address").notNull(), // 지번
+  buildingName: text("building_name"), // 건물명
+  unitNumber: text("unit_number"), // 동호수
+  
+  // 면적 정보
+  supplyArea: numeric("supply_area"), // 공급(평)
+  privateArea: numeric("private_area"), // 전용(평)
+  areaSize: text("area_size"), // 평형
+  size: numeric("size").notNull(), // 면적(㎡)
+  
+  // 건물 정보
+  floor: integer("floor"), // 층수
+  totalFloors: integer("total_floors"), // 총층
+  direction: text("direction"), // 방향
+  elevator: boolean("elevator"), // 승강기유무
+  parking: text("parking"), // 주차
+  heatingSystem: text("heating_system"), // 난방방식
+  approvalDate: text("approval_date"), // 사용승인
+  
+  // 금액 정보
+  dealType: text("deal_type").array(), // 거래종류 (매매, 전세, 월세, 완료, 보류중) - 다중선택
+  price: numeric("price").notNull(), // 매매가
+  deposit: numeric("deposit"), // 전세금/보증금
+  monthlyRent: numeric("monthly_rent"), // 월세
+  maintenanceFee: numeric("maintenance_fee"), // 관리비
+  
+  // 연락처 정보
+  ownerName: text("owner_name"), // a소유자
+  ownerPhone: text("owner_phone"), // 소유자 전화
+  tenantName: text("tenant_name"), // 임차인
+  tenantPhone: text("tenant_phone"), // 임차인 전화
+  clientName: text("client_name"), // 의뢰인
+  clientPhone: text("client_phone"), // 의뢰인 전화
+  
+  // 추가 정보
+  specialNote: text("special_note"), // 특이사항
+  coListing: boolean("co_listing").default(false), // 공동중개
+  propertyDescription: text("property_description"), // 매물설명
+  privateNote: text("private_note"), // 비공개메모
+  
+  bedrooms: integer("bedrooms").default(0), // 방 개수
+  bathrooms: integer("bathrooms").default(0), // 화장실 개수
+  imageUrl: text("image_url").notNull(), // 이미지 URL
+  city: text("city").notNull(), // 도시
+  agentId: integer("agent_id").notNull(), // 담당 중개사 ID
+  featured: boolean("featured").default(false), // 추천 매물 여부
+  createdAt: timestamp("created_at").defaultNow(), // 등록일
 });
 
 export const insertPropertySchema = createInsertSchema(properties).omit({

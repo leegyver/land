@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
-import { insertInquirySchema, insertPropertySchema } from "@shared/schema";
+import { insertInquirySchema, insertPropertySchema, insertNewsSchema } from "@shared/schema";
 import { setupAuth } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -272,6 +272,138 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(usersWithoutPasswords);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  // News API 엔드포인트
+
+  // 모든 뉴스 가져오기
+  app.get("/api/news", async (req, res) => {
+    try {
+      const news = await storage.getNews();
+      res.json(news);
+    } catch (error) {
+      res.status(500).json({ message: "뉴스를 불러오는데 실패했습니다" });
+    }
+  });
+
+  // 최신 뉴스 가져오기
+  app.get("/api/news/latest", async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 6;
+      const news = await storage.getLatestNews(limit);
+      res.json(news);
+    } catch (error) {
+      res.status(500).json({ message: "최신 뉴스를 불러오는데 실패했습니다" });
+    }
+  });
+
+  // 특정 뉴스 가져오기
+  app.get("/api/news/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "유효하지 않은 뉴스 ID입니다" });
+      }
+
+      const newsItem = await storage.getNewsById(id);
+      if (!newsItem) {
+        return res.status(404).json({ message: "뉴스를 찾을 수 없습니다" });
+      }
+
+      res.json(newsItem);
+    } catch (error) {
+      res.status(500).json({ message: "뉴스를 불러오는데 실패했습니다" });
+    }
+  });
+
+  // 카테고리별 뉴스 가져오기
+  app.get("/api/news/category/:category", async (req, res) => {
+    try {
+      const category = req.params.category;
+      const news = await storage.getNewsByCategory(category);
+      res.json(news);
+    } catch (error) {
+      res.status(500).json({ message: "카테고리별 뉴스를 불러오는데 실패했습니다" });
+    }
+  });
+
+  // 관리자: 뉴스 생성
+  app.post("/api/news", async (req, res) => {
+    try {
+      // 인증 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증이 필요합니다" });
+      }
+      
+      const validatedData = insertNewsSchema.parse(req.body);
+      const newsItem = await storage.createNews(validatedData);
+      res.status(201).json(newsItem);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "유효하지 않은 뉴스 데이터입니다", errors: error.errors });
+      }
+      res.status(500).json({ message: "뉴스 생성에 실패했습니다" });
+    }
+  });
+
+  // 관리자: 뉴스 수정
+  app.patch("/api/news/:id", async (req, res) => {
+    try {
+      // 인증 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증이 필요합니다" });
+      }
+      
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "유효하지 않은 뉴스 ID입니다" });
+      }
+      
+      const existingNews = await storage.getNewsById(id);
+      if (!existingNews) {
+        return res.status(404).json({ message: "뉴스를 찾을 수 없습니다" });
+      }
+      
+      const validatedData = insertNewsSchema.partial().parse(req.body);
+      const updatedNews = await storage.updateNews(id, validatedData);
+      
+      res.json(updatedNews);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "유효하지 않은 뉴스 데이터입니다", errors: error.errors });
+      }
+      res.status(500).json({ message: "뉴스 수정에 실패했습니다" });
+    }
+  });
+
+  // 관리자: 뉴스 삭제
+  app.delete("/api/news/:id", async (req, res) => {
+    try {
+      // 인증 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증이 필요합니다" });
+      }
+      
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "유효하지 않은 뉴스 ID입니다" });
+      }
+      
+      const exists = await storage.getNewsById(id);
+      if (!exists) {
+        return res.status(404).json({ message: "뉴스를 찾을 수 없습니다" });
+      }
+      
+      const result = await storage.deleteNews(id);
+      
+      if (result) {
+        res.json({ success: true });
+      } else {
+        res.status(500).json({ message: "뉴스 삭제에 실패했습니다" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "뉴스 삭제에 실패했습니다" });
     }
   });
 

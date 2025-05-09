@@ -418,8 +418,9 @@ export default function AdminPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="properties">부동산 관리</TabsTrigger>
+          <TabsTrigger value="news">뉴스 관리</TabsTrigger>
           <TabsTrigger value="users" disabled={currentUser?.role !== "admin"}>
             사용자 관리
           </TabsTrigger>
@@ -897,6 +898,83 @@ export default function AdminPage() {
                               탈퇴
                             </Button>
                           )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 뉴스 관리 탭 */}
+        <TabsContent value="news">
+          <Card>
+            <CardHeader>
+              <CardTitle>부동산 뉴스 관리</CardTitle>
+              <CardDescription>
+                강화도 및 인천 부동산 관련 뉴스 기사를 관리합니다.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingNews ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : newsError ? (
+                <div className="py-8 text-center">
+                  <p className="text-red-500">
+                    뉴스 목록을 불러오는 중 오류가 발생했습니다:{" "}
+                    {newsError.message}
+                  </p>
+                </div>
+              ) : (
+                <Table>
+                  <TableCaption>총 {news?.length || 0}개의 뉴스 기사</TableCaption>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>제목</TableHead>
+                      <TableHead>카테고리</TableHead>
+                      <TableHead>등록일</TableHead>
+                      <TableHead className="text-right">관리</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {news?.map((article) => (
+                      <TableRow key={article.id}>
+                        <TableCell className="font-medium">{article.id}</TableCell>
+                        <TableCell className="max-w-md truncate">
+                          <a 
+                            href={`/news/${article.id}`} 
+                            className="hover:underline text-primary"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {article.title}
+                          </a>
+                        </TableCell>
+                        <TableCell>{article.category}</TableCell>
+                        <TableCell>{article.createdAt && new Date(article.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              if (confirm(`정말로 "${article.title}" 뉴스를 삭제하시겠습니까?`)) {
+                                deleteNewsMutation.mutate(article.id);
+                              }
+                            }}
+                            disabled={isDeletingNews === article.id}
+                          >
+                            {isDeletingNews === article.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            ) : (
+                              <Trash2 className="h-4 w-4 mr-2" />
+                            )}
+                            삭제
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}

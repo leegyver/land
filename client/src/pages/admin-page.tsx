@@ -101,6 +101,7 @@ export default function AdminPage() {
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const [isDeleting, setIsDeleting] = useState<number | false>(false);
   const [isDeletingUser, setIsDeletingUser] = useState<number | false>(false);
+  const [isDeletingNews, setIsDeletingNews] = useState<number | false>(false);
 
   // 부동산 목록 조회
   const {

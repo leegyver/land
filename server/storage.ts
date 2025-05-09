@@ -107,7 +107,12 @@ export class MemStorage implements IStorage {
   async createProperty(property: InsertProperty): Promise<Property> {
     const id = this.propertyCurrentId++;
     const now = new Date();
-    const newProperty: Property = { ...property, id, createdAt: now };
+    const newProperty: Property = { 
+      ...property, 
+      id, 
+      createdAt: now,
+      featured: property.featured ?? null
+    };
     this.properties.set(id, newProperty);
     return newProperty;
   }
@@ -137,7 +142,11 @@ export class MemStorage implements IStorage {
   async createAgent(agent: InsertAgent): Promise<Agent> {
     const id = this.agentCurrentId++;
     const now = new Date();
-    const newAgent: Agent = { ...agent, id, createdAt: now };
+    const newAgent: Agent = { 
+      ...agent, 
+      id, 
+      createdAt: now 
+    };
     this.agents.set(id, newAgent);
     return newAgent;
   }
@@ -167,7 +176,12 @@ export class MemStorage implements IStorage {
   async createInquiry(inquiry: InsertInquiry): Promise<Inquiry> {
     const id = this.inquiryCurrentId++;
     const now = new Date();
-    const newInquiry: Inquiry = { ...inquiry, id, createdAt: now };
+    const newInquiry: Inquiry = { 
+      ...inquiry, 
+      id, 
+      createdAt: now,
+      propertyId: inquiry.propertyId ?? null
+    };
     this.inquiries.set(id, newInquiry);
     return newInquiry;
   }
@@ -184,7 +198,11 @@ export class MemStorage implements IStorage {
   async createTestimonial(testimonial: InsertTestimonial): Promise<Testimonial> {
     const id = this.testimonialCurrentId++;
     const now = new Date();
-    const newTestimonial: Testimonial = { ...testimonial, id, createdAt: now };
+    const newTestimonial: Testimonial = { 
+      ...testimonial, 
+      id, 
+      createdAt: now 
+    };
     this.testimonials.set(id, newTestimonial);
     return newTestimonial;
   }

@@ -28,6 +28,9 @@ async function comparePasswords(supplied: string, stored: string) {
   return timingSafeEqual(hashedBuf, suppliedBuf);
 }
 
+// 데이터베이스 초기화
+storage.initializeData().catch(console.error);
+
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "한국부동산비밀키",
@@ -36,7 +39,8 @@ export function setupAuth(app: Express) {
     cookie: {
       maxAge: 24 * 60 * 60 * 1000, // 24시간
       httpOnly: true,
-    }
+    },
+    store: storage.sessionStore // 세션 스토어 설정
   };
 
   app.set("trust proxy", 1);

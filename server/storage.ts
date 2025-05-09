@@ -35,10 +35,13 @@ export interface IStorage {
   getTestimonial(id: number): Promise<Testimonial | undefined>;
   createTestimonial(testimonial: InsertTestimonial): Promise<Testimonial>;
   
-  // User methods (keeping from original)
+  // User methods
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  getAllUsers(): Promise<User[]>;
+  updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
+  deleteUser(id: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -223,6 +226,23 @@ export class MemStorage implements IStorage {
     const user: User = { ...insertUser, id };
     this.users.set(id, user);
     return user;
+  }
+  
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
+  
+  async updateUser(id: number, userData: Partial<InsertUser>): Promise<User | undefined> {
+    const existingUser = this.users.get(id);
+    if (!existingUser) return undefined;
+    
+    const updatedUser = { ...existingUser, ...userData };
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
+  
+  async deleteUser(id: number): Promise<boolean> {
+    return this.users.delete(id);
   }
   
   // Initialize with sample data

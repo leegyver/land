@@ -383,11 +383,10 @@ export default function AdminPage() {
     );
   }
 
-  const propertyTypes = ["아파트", "주택", "빌라", "오피스텔", "펜트하우스"];
+  const propertyTypes = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
   const districts = [
-    "강남구", "서초구", "송파구", "강동구", "광진구", "성동구", "용산구", "마포구",
-    "서대문구", "은평구", "종로구", "중구", "동대문구", "성북구", "강북구", "도봉구",
-    "노원구", "중랑구", "양천구", "강서구", "구로구", "금천구", "영등포구", "동작구", "관악구"
+    "강화읍", "교동면", "길상면", "내가면", "불은면", "삼산면", "서도면", "선원면", 
+    "송해면", "양도면", "양사면", "하점면", "화도면", "강화외지역"
   ];
 
   return (
@@ -749,27 +748,7 @@ export default function AdminPage() {
                       />
                     </div>
 
-                    <div>
-                      <FormField
-                        control={propertyForm.control}
-                        name="agentId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>담당 중개사 ID</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                {...field}
-                                onChange={(e) => {
-                                  field.onChange(parseInt(e.target.value));
-                                }}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+
 
                     <div>
                       <FormField

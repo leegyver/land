@@ -471,7 +471,7 @@ export default function AdminPage() {
       parking: property.parking || undefined,
       heatingSystem: property.heatingSystem || undefined,
       approvalDate: property.approvalDate || undefined,
-      dealType: property.dealType || undefined,
+      dealType: Array.isArray(property.dealType) ? property.dealType : ["매매"],
       deposit: property.deposit ? property.deposit.toString() : undefined,
       monthlyRent: property.monthlyRent ? property.monthlyRent.toString() : undefined,
       maintenanceFee: property.maintenanceFee ? property.maintenanceFee.toString() : undefined,
@@ -979,12 +979,14 @@ export default function AdminPage() {
                                 <Button
                                   key={type}
                                   type="button"
-                                  variant={field.value.includes(type) ? "default" : "outline"}
+                                  variant={field.value && Array.isArray(field.value) && field.value.includes(type) ? "default" : "outline"}
                                   size="sm"
                                   onClick={() => {
-                                    const newValue = field.value.includes(type)
-                                      ? field.value.filter((t) => t !== type)
-                                      : [...field.value, type];
+                                    // 현재 값이 undefined이거나 배열이 아닌 경우 빈 배열로 초기화
+                                    const currentValue = field.value && Array.isArray(field.value) ? field.value : [];
+                                    const newValue = currentValue.includes(type)
+                                      ? currentValue.filter((t) => t !== type)
+                                      : [...currentValue, type];
                                     field.onChange(newValue);
                                   }}
                                 >

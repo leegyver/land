@@ -40,57 +40,56 @@ const HomePage = () => {
               </Link>
             </div>
             
-            <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               {latestNews && latestNews.slice(0, 5).map((news) => (
-                <Card key={news.id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition">
-                  <div className="flex flex-col md:flex-row">
-                    <div className="w-full md:w-1/4 h-48 md:h-auto">
-                      <img 
-                        src={news.imageUrl} 
-                        alt={news.title} 
-                        className="w-full h-full object-cover object-center"
-                      />
-                    </div>
-                    <div className="w-full md:w-3/4 p-6">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge variant="outline" className="bg-primary/10 text-primary">
-                          {news.category}
-                        </Badge>
-                        {news.isPinned && (
-                          <Badge variant="secondary" className="bg-secondary/20 text-secondary">
-                            주요뉴스
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      <Link href={`/news/${news.id}`}>
-                        <h3 className="text-xl font-bold mb-2 hover:text-primary transition-colors">
-                          {news.title}
-                        </h3>
-                      </Link>
-                      
-                      <p className="text-gray-medium line-clamp-2 mb-4">
-                        {news.summary}
-                      </p>
-                      
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center text-sm text-gray-medium">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          {news.createdAt && formatDistanceToNow(new Date(news.createdAt), { addSuffix: true, locale: ko })}
-                        </div>
-                        
-                        <div className="flex items-center text-sm text-gray-medium">
-                          <Newspaper className="h-4 w-4 mr-1" />
-                          {news.source}
-                        </div>
-                      </div>
-                    </div>
+                <Card key={news.id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition h-full flex flex-col">
+                  <div className="h-40 overflow-hidden">
+                    <img 
+                      src={news.imageUrl} 
+                      alt={news.title} 
+                      className="w-full h-full object-cover object-center"
+                    />
                   </div>
+                  <CardContent className="p-4 flex-grow">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="outline" className="bg-primary/10 text-primary text-xs">
+                        {news.category}
+                      </Badge>
+                      {news.isPinned && (
+                        <Badge variant="secondary" className="bg-secondary/20 text-secondary text-xs">
+                          주요
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    <Link href={`/news/${news.id}`}>
+                      <h3 className="text-base font-bold mb-2 line-clamp-2 hover:text-primary transition-colors">
+                        {news.title}
+                      </h3>
+                    </Link>
+                    
+                    <p className="text-sm text-gray-medium line-clamp-2 mb-2">
+                      {news.summary}
+                    </p>
+                  </CardContent>
+                  <CardFooter className="p-4 pt-0">
+                    <div className="flex justify-between items-center w-full">
+                      <div className="flex items-center text-xs text-gray-medium">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        {news.createdAt && formatDistanceToNow(new Date(news.createdAt), { addSuffix: true, locale: ko })}
+                      </div>
+                      
+                      <div className="flex items-center text-xs text-gray-medium">
+                        <Newspaper className="h-3 w-3 mr-1" />
+                        {news.source}
+                      </div>
+                    </div>
+                  </CardFooter>
                 </Card>
               ))}
               
               {(!latestNews || latestNews.length === 0) && (
-                <div className="bg-white rounded-lg p-8 text-center shadow">
+                <div className="col-span-5 bg-white rounded-lg p-8 text-center shadow">
                   <Newspaper className="h-12 w-12 mx-auto mb-4 text-gray-medium" />
                   <h3 className="text-xl font-medium mb-2">아직 등록된 뉴스가 없습니다</h3>
                   <p className="text-gray-medium">

@@ -112,36 +112,52 @@ export default function NewsPage() {
         {/* 최신 뉴스 (갤러리 형식) */}
         <TabsContent value="latest" className="mt-6">
           {isLoadingLatest ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-pulse">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6 animate-pulse">
               {[...Array(6)].map((_, index) => (
                 <div key={index} className="h-80 bg-gray-200 rounded-lg"></div>
               ))}
             </div>
           ) : latestNews && latestNews.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6">
               {latestNews.map((news) => (
                 <Card key={news.id} className="overflow-hidden h-full flex flex-col">
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start">
-                      <Badge className="mb-2">{news.category}</Badge>
-                      <div className="flex items-center text-sm text-neutral-500">
-                        <Calendar size={14} className="mr-1" />
+                  <div className="h-48 overflow-hidden relative">
+                    <img 
+                      src={news.imageUrl || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500'} 
+                      alt={news.title} 
+                      className="w-full h-full object-cover"
+                    />
+                    {news.isPinned && (
+                      <div className="absolute top-2 right-2">
+                        <Badge variant="secondary" className="bg-primary text-white">주요뉴스</Badge>
+                      </div>
+                    )}
+                  </div>
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-center mb-2">
+                      <Badge className="text-xs">{news.category}</Badge>
+                      <div className="flex items-center text-xs text-neutral-500">
+                        <Calendar size={12} className="mr-1" />
                         {formatDate(news.createdAt!)}
                       </div>
                     </div>
-                    <CardTitle className="text-xl line-clamp-2">{news.title}</CardTitle>
-                    <CardDescription className="line-clamp-3 mt-2">
-                      {news.description}
+                    <CardTitle className="text-lg line-clamp-2">
+                      <a href={`/news/${news.id}`} className="hover:text-primary transition-colors">
+                        {news.title}
+                      </a>
+                    </CardTitle>
+                    <CardDescription className="line-clamp-2 mt-1 text-sm">
+                      {news.summary}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="flex-grow">
-                    <p className="text-sm text-neutral-600 line-clamp-4">{news.content}</p>
-                  </CardContent>
-                  <CardFooter className="pt-2 border-t">
-                    <Button variant="ghost" className="ml-auto" size="sm" asChild>
-                      <a href={news.sourceUrl} target="_blank" rel="noopener noreferrer" className="flex items-center">
-                        <span className="mr-1">원문 보기</span>
-                        <ExternalLink size={14} />
+                  <CardFooter className="pt-2 mt-auto flex justify-between items-center text-xs text-neutral-500">
+                    <div className="flex items-center">
+                      <Newspaper size={12} className="mr-1" />
+                      {news.source}
+                    </div>
+                    <Button variant="ghost" size="sm" asChild className="h-8 px-2">
+                      <a href={`/news/${news.id}`} className="flex items-center">
+                        자세히 보기
                       </a>
                     </Button>
                   </CardFooter>

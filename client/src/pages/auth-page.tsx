@@ -216,6 +216,32 @@ export default function AuthPage() {
                       />
                       <FormField
                         control={registerForm.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>이메일</FormLabel>
+                            <FormControl>
+                              <Input placeholder="example@email.com" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={registerForm.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>연락처</FormLabel>
+                            <FormControl>
+                              <Input placeholder="010-1234-5678" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={registerForm.control}
                         name="role"
                         render={({ field }) => (
                           <FormItem className="hidden">

@@ -444,11 +444,47 @@ export default function AdminPage() {
   const handleEditProperty = (property: Property) => {
     setEditingProperty(property);
     
-    // 폼 값 설정
+    // 폼 값 설정 (null 값을 undefined로 변환하여 타입 호환성 문제 해결)
     propertyForm.reset({
-      ...property,
+      title: property.title,
+      description: property.description,
+      type: property.type,
       price: property.price.toString(),
+      address: property.address,
+      city: property.city,
+      district: property.district,
       size: property.size.toString(),
+      bedrooms: property.bedrooms,
+      bathrooms: property.bathrooms,
+      imageUrl: property.imageUrl,
+      agentId: property.agentId,
+      featured: property.featured === null ? undefined : property.featured,
+      buildingName: property.buildingName || undefined,
+      unitNumber: property.unitNumber || undefined,
+      supplyArea: property.supplyArea ? property.supplyArea.toString() : undefined,
+      privateArea: property.privateArea ? property.privateArea.toString() : undefined,
+      areaSize: property.areaSize || undefined,
+      floor: property.floor ? property.floor.toString() : undefined,
+      totalFloors: property.totalFloors ? property.totalFloors.toString() : undefined,
+      direction: property.direction || undefined,
+      elevator: property.elevator === null ? undefined : property.elevator,
+      parking: property.parking || undefined,
+      heatingSystem: property.heatingSystem || undefined,
+      approvalDate: property.approvalDate || undefined,
+      dealType: property.dealType || undefined,
+      deposit: property.deposit ? property.deposit.toString() : undefined,
+      monthlyRent: property.monthlyRent ? property.monthlyRent.toString() : undefined,
+      maintenanceFee: property.maintenanceFee ? property.maintenanceFee.toString() : undefined,
+      ownerName: property.ownerName || undefined,
+      ownerPhone: property.ownerPhone || undefined,
+      tenantName: property.tenantName || undefined,
+      tenantPhone: property.tenantPhone || undefined,
+      clientName: property.clientName || undefined,
+      clientPhone: property.clientPhone || undefined,
+      specialNote: property.specialNote || undefined,
+      coListing: property.coListing === null ? undefined : property.coListing,
+      propertyDescription: property.propertyDescription || undefined,
+      privateNote: property.privateNote || undefined,
     });
     
     setOpenPropertyDialog(true);
@@ -1072,7 +1108,7 @@ export default function AdminPage() {
                       <TableCell className="font-medium">{item.id}</TableCell>
                       <TableCell className="max-w-[300px] truncate">{item.title}</TableCell>
                       <TableCell>
-                        {new Date(item.createdAt).toLocaleDateString()}
+                        {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '-'}
                       </TableCell>
                       <TableCell>
                         {item.source || "네이버 뉴스"}
@@ -1142,7 +1178,8 @@ export default function AdminPage() {
                         <TableCell>{user.email}</TableCell>
                         <TableCell>{user.role}</TableCell>
                         <TableCell>
-                          {new Date(user.createdAt).toLocaleDateString()}
+                          {/* createdAt은 현재 User 타입에 없으므로 표시하지 않음 */}
+                          -
                         </TableCell>
                         <TableCell className="text-right">
                           <Button

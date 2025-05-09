@@ -65,6 +65,10 @@ const Header = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>내 계정</DropdownMenuLabel>
+                  <DropdownMenuItem onClick={() => setLocation("/profile")}>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>내 프로필</span>
+                  </DropdownMenuItem>
                   {user.role === "admin" && (
                     <>
                       <DropdownMenuSeparator />
@@ -137,6 +141,14 @@ const Header = () => {
                           </span>
                         )}
                       </div>
+                      
+                      <Link 
+                        href="/profile" 
+                        className="flex items-center py-2 text-lg font-medium text-neutral-800 hover:text-primary"
+                      >
+                        <User className="mr-2 h-5 w-5" />
+                        내 프로필
+                      </Link>
                       
                       {user.role === "admin" && (
                         <Link 

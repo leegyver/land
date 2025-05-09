@@ -16,8 +16,10 @@ type LoginData = {
   password: string;
 };
 
-// 회원가입 데이터 스키마 (비밀번호 확인 추가)
+// 회원가입 데이터 스키마 (비밀번호 확인, 이메일, 전화번호 추가)
 export const registerSchema = insertUserSchema.extend({
+  email: z.string().email("유효한 이메일 주소를 입력해주세요").optional(),
+  phone: z.string().optional(),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "비밀번호가 일치하지 않습니다",

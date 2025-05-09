@@ -1,17 +1,26 @@
-import { pgTable, text, serial, integer, boolean, numeric, timestamp, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, numeric, timestamp, varchar, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Property schema
+// Property schema - Matched to existing database structure
 export const properties = pgTable("properties", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   description: text("description").notNull(),
   type: text("type").notNull(), // 토지, 주택, 아파트연립다세대, 원투룸, 상가공장창고펜션
-  
-  // 위치 정보
+  price: numeric("price").notNull(), // 매매가
+  address: text("address").notNull(), // 주소
+  city: text("city").notNull(), // 도시
   district: text("district").notNull(), // 읍면동 (ex: 강화읍 갑곳리, 강화읍 관청리 등)
-  address: text("address").notNull(), // 지번
+  size: numeric("size").notNull(), // 면적(㎡)
+  bedrooms: integer("bedrooms").notNull(), // 방 개수
+  bathrooms: integer("bathrooms").notNull(), // 화장실 개수
+  imageUrl: text("image_url").notNull(), // 이미지 URL
+  agentId: integer("agent_id").notNull(), // 담당 중개사 ID
+  featured: boolean("featured").default(false), // 추천 매물 여부
+  createdAt: timestamp("created_at").defaultNow(), // 등록일
+  
+  // 위치 정보 - 아래 필드들은 추가 필드로서 나중에 migrate 시킬 예정
   buildingName: text("building_name"), // 건물명
   unitNumber: text("unit_number"), // 동호수
   
@@ -19,7 +28,6 @@ export const properties = pgTable("properties", {
   supplyArea: numeric("supply_area"), // 공급(평)
   privateArea: numeric("private_area"), // 전용(평)
   areaSize: text("area_size"), // 평형
-  size: numeric("size").notNull(), // 면적(㎡)
   
   // 건물 정보
   floor: integer("floor"), // 층수
@@ -32,7 +40,6 @@ export const properties = pgTable("properties", {
   
   // 금액 정보
   dealType: text("deal_type").array(), // 거래종류 (매매, 전세, 월세, 완료, 보류중) - 다중선택
-  price: numeric("price").notNull(), // 매매가
   deposit: numeric("deposit"), // 전세금/보증금
   monthlyRent: numeric("monthly_rent"), // 월세
   maintenanceFee: numeric("maintenance_fee"), // 관리비
@@ -50,14 +57,6 @@ export const properties = pgTable("properties", {
   coListing: boolean("co_listing").default(false), // 공동중개
   propertyDescription: text("property_description"), // 매물설명
   privateNote: text("private_note"), // 비공개메모
-  
-  bedrooms: integer("bedrooms").default(0), // 방 개수
-  bathrooms: integer("bathrooms").default(0), // 화장실 개수
-  imageUrl: text("image_url").notNull(), // 이미지 URL
-  city: text("city").notNull(), // 도시
-  agentId: integer("agent_id").notNull(), // 담당 중개사 ID
-  featured: boolean("featured").default(false), // 추천 매물 여부
-  createdAt: timestamp("created_at").defaultNow(), // 등록일
 });
 
 export const insertPropertySchema = createInsertSchema(properties).omit({
@@ -171,3 +170,10 @@ export const insertNewsSchema = createInsertSchema(news).omit({
 
 export type News = typeof news.$inferSelect;
 export type InsertNews = z.infer<typeof insertNewsSchema>;
+
+// Session schema (for connect-pg-simple)
+export const session = pgTable("session", {
+  sid: varchar("sid").primaryKey(),
+  sess: json("sess").notNull(),
+  expire: timestamp("expire").notNull(),
+});

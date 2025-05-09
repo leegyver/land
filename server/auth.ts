@@ -194,7 +194,46 @@ export function setupAuth(app: Express) {
     }
   });
 
-  // 관리자 권한으로 회원 삭제 API
+  // 비밀번호 변경 API
+  app.patch("/api/users/password", async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      }
+
+      const userId = req.user.id;
+      const { currentPassword, newPassword } = req.body;
+      
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: "현재 비밀번호와 새 비밀번호가 필요합니다." });
+      }
+      
+      // 현재 사용자 정보 가져오기
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
+      }
+      
+      // 현재 비밀번호 확인
+      const isPasswordCorrect = await comparePasswords(currentPassword, user.password);
+      if (!isPasswordCorrect) {
+        return res.status(400).json({ message: "현재 비밀번호가 올바르지 않습니다." });
+      }
+      
+      // 새 비밀번호 해싱 및 업데이트
+      const hashedPassword = await hashPassword(newPassword);
+      const updatedUser = await storage.updateUser(userId, { password: hashedPassword });
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: "비밀번호 변경에 실패했습니다." });
+      }
+      
+      res.json({ message: "비밀번호가 성공적으로 변경되었습니다." });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.delete("/api/admin/users/:id", isAdmin, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = parseInt(req.params.id);

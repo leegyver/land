@@ -84,6 +84,10 @@ const propertyFormSchema = insertPropertySchema.extend({
   bathrooms: z
     .number()
     .min(0, "욕실 수는 0 이상이어야 합니다"),
+  featured: z
+    .boolean()
+    .optional()
+    .default(false),
 });
 
 type PropertyFormValues = z.infer<typeof propertyFormSchema>;

@@ -66,6 +66,7 @@ import { Loader2, Home, Plus, Trash2, Edit, Check } from "lucide-react";
 
 // 부동산 등록 폼 스키마 확장 (유효성 검사 추가)
 const propertyFormSchema = insertPropertySchema.extend({
+  // 기본 정보
   price: z
     .string()
     .min(1, "가격은 필수 입력 항목입니다")
@@ -78,16 +79,51 @@ const propertyFormSchema = insertPropertySchema.extend({
     .refine((val) => !isNaN(parseFloat(val)), {
       message: "면적은 숫자 형식이어야 합니다",
     }),
-  bedrooms: z
-    .number()
-    .min(0, "침실 수는 0 이상이어야 합니다"),
-  bathrooms: z
-    .number()
-    .min(0, "욕실 수는 0 이상이어야 합니다"),
-  featured: z
-    .boolean()
-    .optional()
-    .default(false),
+  
+  // 위치 정보
+  district: z.string().min(1, "읍면동은 필수 입력 항목입니다"),
+  address: z.string().min(1, "지번은 필수 입력 항목입니다"),
+  buildingName: z.string().optional(),
+  unitNumber: z.string().optional(),
+  
+  // 면적 정보
+  supplyArea: z.string().optional(),
+  privateArea: z.string().optional(),
+  areaSize: z.string().optional(),
+  
+  // 건물 정보
+  floor: z.string().optional(),
+  totalFloors: z.string().optional(),
+  direction: z.string().optional(),
+  elevator: z.boolean().optional().default(false),
+  parking: z.string().optional(),
+  heatingSystem: z.string().optional(),
+  approvalDate: z.string().optional(),
+  
+  // 금액 정보
+  dealType: z.array(z.string()).default([]),
+  deposit: z.string().optional(),
+  monthlyRent: z.string().optional(),
+  maintenanceFee: z.string().optional(),
+  
+  // 연락처 정보
+  ownerName: z.string().optional(),
+  ownerPhone: z.string().optional(),
+  tenantName: z.string().optional(),
+  tenantPhone: z.string().optional(),
+  clientName: z.string().optional(),
+  clientPhone: z.string().optional(),
+  
+  // 추가 정보
+  specialNote: z.string().optional(),
+  coListing: z.boolean().optional().default(false),
+  propertyDescription: z.string().optional(),
+  privateNote: z.string().optional(),
+  
+  // 기존 필드들
+  bedrooms: z.number().min(0, "침실 수는 0 이상이어야 합니다"),
+  bathrooms: z.number().min(0, "욕실 수는 0 이상이어야 합니다"),
+  featured: z.boolean().optional().default(false),
 });
 
 type PropertyFormValues = z.infer<typeof propertyFormSchema>;
@@ -138,18 +174,59 @@ export default function AdminPage() {
   const propertyForm = useForm<PropertyFormValues>({
     resolver: zodResolver(propertyFormSchema),
     defaultValues: {
+      // 기본 정보
       title: "",
       description: "",
-      type: "아파트",
+      type: "토지",
       price: "",
+      city: "인천",
+      district: "강화읍 갑곳리", 
       address: "",
-      city: "서울",
-      district: "강남구",
       size: "",
-      bedrooms: 0,
-      bathrooms: 0,
       imageUrl: "",
       agentId: 1,
+      
+      // 위치 정보
+      buildingName: "",
+      unitNumber: "",
+      
+      // 면적 정보
+      supplyArea: "",
+      privateArea: "",
+      areaSize: "",
+      
+      // 건물 정보
+      floor: "",
+      totalFloors: "",
+      direction: "",
+      elevator: false,
+      parking: "",
+      heatingSystem: "",
+      approvalDate: "",
+      
+      // 금액 정보
+      dealType: ["매매"],
+      deposit: "",
+      monthlyRent: "",
+      maintenanceFee: "",
+      
+      // 연락처 정보
+      ownerName: "",
+      ownerPhone: "",
+      tenantName: "",
+      tenantPhone: "",
+      clientName: "",
+      clientPhone: "",
+      
+      // 추가 정보
+      specialNote: "",
+      coListing: false,
+      propertyDescription: "",
+      privateNote: "",
+      
+      // 기존 필드
+      bedrooms: 0,
+      bathrooms: 0,
       featured: false,
     },
   });
@@ -345,18 +422,59 @@ export default function AdminPage() {
   const handleAddProperty = () => {
     setEditingProperty(null);
     propertyForm.reset({
+      // 기본 정보
       title: "",
       description: "",
       type: "토지",
       price: "",
-      address: "",
       city: "인천",
-      district: "강화읍",
+      district: "강화읍 갑곳리", 
+      address: "",
       size: "",
-      bedrooms: 0,
-      bathrooms: 0,
       imageUrl: "",
       agentId: 1,
+      
+      // 위치 정보
+      buildingName: "",
+      unitNumber: "",
+      
+      // 면적 정보
+      supplyArea: "",
+      privateArea: "",
+      areaSize: "",
+      
+      // 건물 정보
+      floor: "",
+      totalFloors: "",
+      direction: "",
+      elevator: false,
+      parking: "",
+      heatingSystem: "",
+      approvalDate: "",
+      
+      // 금액 정보
+      dealType: ["매매"],
+      deposit: "",
+      monthlyRent: "",
+      maintenanceFee: "",
+      
+      // 연락처 정보
+      ownerName: "",
+      ownerPhone: "",
+      tenantName: "",
+      tenantPhone: "",
+      clientName: "",
+      clientPhone: "",
+      
+      // 추가 정보
+      specialNote: "",
+      coListing: false,
+      propertyDescription: "",
+      privateNote: "",
+      
+      // 기존 필드
+      bedrooms: 0,
+      bathrooms: 0,
       featured: false,
     });
     setOpenPropertyDialog(true);

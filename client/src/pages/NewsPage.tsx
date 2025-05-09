@@ -131,7 +131,7 @@ export default function NewsPage() {
                     </div>
                     <CardTitle className="text-xl line-clamp-2">{news.title}</CardTitle>
                     <CardDescription className="line-clamp-3 mt-2">
-                      {news.summary}
+                      {news.description}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="flex-grow">
@@ -139,7 +139,7 @@ export default function NewsPage() {
                   </CardContent>
                   <CardFooter className="pt-2 border-t">
                     <Button variant="ghost" className="ml-auto" size="sm" asChild>
-                      <a href={news.url} target="_blank" rel="noopener noreferrer" className="flex items-center">
+                      <a href={news.sourceUrl} target="_blank" rel="noopener noreferrer" className="flex items-center">
                         <span className="mr-1">원문 보기</span>
                         <ExternalLink size={14} />
                       </a>
@@ -183,7 +183,7 @@ export default function NewsPage() {
                         <td className="py-3 px-4">
                           <div>
                             <p className="font-medium line-clamp-1">{news.title}</p>
-                            <p className="text-sm text-neutral-500 line-clamp-1 mt-1">{news.summary}</p>
+                            <p className="text-sm text-neutral-500 line-clamp-1 mt-1">{news.description}</p>
                           </div>
                         </td>
                         <td className="py-3 px-4 text-center">
@@ -196,7 +196,7 @@ export default function NewsPage() {
                         </td>
                         <td className="py-3 px-4 text-center">
                           <a 
-                            href={news.url} 
+                            href={news.sourceUrl} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="inline-flex items-center text-primary hover:text-primary/80"
@@ -214,13 +214,29 @@ export default function NewsPage() {
               <Pagination className="mt-6">
                 <PaginationContent>
                   <PaginationItem>
-                    <PaginationPrevious onClick={goToPreviousPage} disabled={currentPage === 1} />
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={goToPreviousPage} 
+                      disabled={currentPage === 1}
+                      className="flex items-center gap-1"
+                    >
+                      이전
+                    </Button>
                   </PaginationItem>
                   
                   {renderPaginationLinks()}
                   
                   <PaginationItem>
-                    <PaginationNext onClick={goToNextPage} disabled={currentPage === totalPages} />
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={goToNextPage} 
+                      disabled={currentPage === totalPages}
+                      className="flex items-center gap-1"
+                    >
+                      다음
+                    </Button>
                   </PaginationItem>
                 </PaginationContent>
               </Pagination>

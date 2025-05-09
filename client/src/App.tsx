@@ -19,6 +19,8 @@ import ContactPage from "@/pages/ContactPage";
 import AuthPage from "@/pages/auth-page";
 import AdminPage from "@/pages/admin-page";
 import ProfilePage from "@/pages/profile-page";
+import NewsPage from "@/pages/NewsPage";
+import NewsDetailPage from "@/pages/NewsDetailPage";
 
 function Router() {
   return (
@@ -28,6 +30,8 @@ function Router() {
       <Route path="/properties/:id" component={PropertyDetailPage} />
       <Route path="/agents" component={AgentsPage} />
       <Route path="/agents/:id" component={AgentDetailPage} />
+      <Route path="/news" component={NewsPage} />
+      <Route path="/news/:id" component={NewsDetailPage} />
       <Route path="/about" component={AboutPage} />
       <Route path="/contact" component={ContactPage} />
       <Route path="/auth" component={AuthPage} />

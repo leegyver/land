@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Property, User, insertPropertySchema } from "@shared/schema";
+import { Property, User, News, insertPropertySchema } from "@shared/schema";
 
 import {
   Table,
@@ -122,6 +122,16 @@ export default function AdminPage() {
     queryKey: ["/api/admin/users"],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: currentUser?.role === "admin",
+  });
+  
+  // 뉴스 목록 조회
+  const {
+    data: news,
+    isLoading: isLoadingNews,
+    error: newsError,
+  } = useQuery<News[]>({
+    queryKey: ["/api/news"],
+    queryFn: getQueryFn({ on401: "throw" }),
   });
 
   // 부동산 등록/수정 폼
@@ -262,6 +272,35 @@ export default function AdminPage() {
         variant: "destructive",
       });
       setIsDeletingUser(false);
+    },
+  });
+
+  // 뉴스 삭제 뮤테이션
+  const deleteNewsMutation = useMutation({
+    mutationFn: async (id: number) => {
+      setIsDeletingNews(id);
+      const res = await apiRequest("DELETE", `/api/news/${id}`);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "뉴스 삭제에 실패했습니다");
+      }
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/news"] });
+      toast({
+        title: "뉴스 삭제 성공",
+        description: "뉴스가 성공적으로 삭제되었습니다.",
+      });
+      setIsDeletingNews(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "뉴스 삭제 실패",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsDeletingNews(false);
     },
   });
 

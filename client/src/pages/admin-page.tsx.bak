@@ -64,40 +64,6 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Loader2, Home, Plus, Trash2, Edit, Check } from "lucide-react";
 
-// 부동산 타입 및 읍면동 데이터
-const propertyTypes = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
-
-// 거래 종류 (다중 선택 가능)
-const dealTypes = ["매매", "전세", "월세", "완료", "보류중"];
-
-// 읍면 
-const districts = [
-  "강화읍", "교동면", "길상면", "내가면", "불은면", "삼산면", "서도면", "선원면", 
-  "송해면", "양도면", "양사면", "하점면", "화도면", "강화외지역"
-];
-
-// 읍면동 세부 카테고리
-interface DetailedDistrictsType {
-  [key: string]: string[];
-}
-
-const detailedDistricts: DetailedDistrictsType = {
-  "강화읍": ["강화읍 갑곳리", "강화읍 관청리", "강화읍 국화리", "강화읍 남산리", "강화읍 대산리", "강화읍 신문리", "강화읍 옥림리", "강화읍 용정리", "강화읍 월곳리"],
-  "교동면": ["교동면 고구리", "교동면 난정리", "교동면 대룡리", "교동면 동산리", "교동면 무학리", "교동면 봉소리", "교동면 삼선리", "교동면 상용리", "교동면 서한리", "교동면 양갑리", "교동면 읍내리", "교동면 인사리", "교동면 지석리"],
-  "길상면": ["길상면 길직리", "길상면 동검리", "길상면 선두리", "길상면 온수리", "길상면 장흥리", "길상면 초지리"],
-  "내가면": ["내가면 고천리", "내가면 구하리", "내가면 오상리", "내가면 외포리", "내가면 황청리"],
-  "불은면": ["불은면 고능리", "불은면 넙성리", "불은면 덕성리", "불은면 두운리", "불은면 삼동암리", "불은면 삼성리", "불은면 신현리", "불은면 오두리"],
-  "삼산면": ["삼산면 매음리", "삼산면 미법리", "삼산면 상리", "삼산면 서검리", "삼산면 석모리", "삼산면 석포리", "삼산면 하리"],
-  "서도면": ["서도면 말도리", "서도면 볼음도리", "서도면 아차도리", "서도면 주문도리"],
-  "선원면": ["선원면 금월리", "선원면 냉정리", "선원면 선행리", "선원면 신정리", "선원면 연리", "선원면 지산리", "선원면 창리"],
-  "송해면": ["송해면 당산리", "송해면 상도리", "송해면 솔정리", "송해면 숭뢰리", "송해면 신당리", "송해면 양오리", "송해면 하도리"],
-  "양도면": ["양도면 건평리", "양도면 길정리", "양도면 능내리", "양도면 도장리", "양도면 삼흥리", "양도면 인산리", "양도면 조산리", "양도면 하일리"],
-  "양사면": ["양사면 교산리", "양사면 덕하리", "양사면 북성리", "양사면 인화리", "양사면 철산리"],
-  "하점면": ["하점면 망월리", "하점면 부근리", "하점면 삼거리", "하점면 신봉리", "하점면 신삼리", "하점면 이강리", "하점면 장정리", "하점면 창후리"],
-  "화도면": ["화도면 내리", "화도면 덕포리", "화도면 동막리", "화도면 문산리", "화도면 사기리", "화도면 상방리", "화도면 여차리", "화도면 장화리", "화도면 흥왕리"],
-  "강화외지역": ["기타지역"]
-};
-
 // 부동산 등록 폼 스키마 확장 (유효성 검사 추가)
 const propertyFormSchema = insertPropertySchema.extend({
   // 기본 정보
@@ -161,6 +127,40 @@ const propertyFormSchema = insertPropertySchema.extend({
 });
 
 type PropertyFormValues = z.infer<typeof propertyFormSchema>;
+
+// 부동산 타입 및 읍면동 데이터
+const propertyTypes = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
+
+// 거래 종류 (다중 선택 가능)
+const dealTypes = ["매매", "전세", "월세", "완료", "보류중"];
+
+// 읍면 
+const districts = [
+  "강화읍", "교동면", "길상면", "내가면", "불은면", "삼산면", "서도면", "선원면", 
+  "송해면", "양도면", "양사면", "하점면", "화도면", "강화외지역"
+];
+
+// 읍면동 세부 카테고리
+interface DetailedDistrictsType {
+  [key: string]: string[];
+}
+
+const detailedDistricts: DetailedDistrictsType = {
+  "강화읍": ["강화읍 갑곳리", "강화읍 관청리", "강화읍 국화리", "강화읍 남산리", "강화읍 대산리", "강화읍 신문리", "강화읍 옥림리", "강화읍 용정리", "강화읍 월곳리"],
+  "교동면": ["교동면 고구리", "교동면 난정리", "교동면 대룡리", "교동면 동산리", "교동면 무학리", "교동면 봉소리", "교동면 삼선리", "교동면 상용리", "교동면 서한리", "교동면 양갑리", "교동면 읍내리", "교동면 인사리", "교동면 지석리"],
+  "길상면": ["길상면 길직리", "길상면 동검리", "길상면 선두리", "길상면 온수리", "길상면 장흥리", "길상면 초지리"],
+  "내가면": ["내가면 고천리", "내가면 구하리", "내가면 오상리", "내가면 외포리", "내가면 황청리"],
+  "불은면": ["불은면 고능리", "불은면 넙성리", "불은면 덕성리", "불은면 두운리", "불은면 삼동암리", "불은면 삼성리", "불은면 신현리", "불은면 오두리"],
+  "삼산면": ["삼산면 매음리", "삼산면 미법리", "삼산면 상리", "삼산면 서검리", "삼산면 석모리", "삼산면 석포리", "삼산면 하리"],
+  "서도면": ["서도면 말도리", "서도면 볼음도리", "서도면 아차도리", "서도면 주문도리"],
+  "선원면": ["선원면 금월리", "선원면 냉정리", "선원면 선행리", "선원면 신정리", "선원면 연리", "선원면 지산리", "선원면 창리"],
+  "송해면": ["송해면 당산리", "송해면 상도리", "송해면 솔정리", "송해면 숭뢰리", "송해면 신당리", "송해면 양오리", "송해면 하도리"],
+  "양도면": ["양도면 건평리", "양도면 길정리", "양도면 능내리", "양도면 도장리", "양도면 삼흥리", "양도면 인산리", "양도면 조산리", "양도면 하일리"],
+  "양사면": ["양사면 교산리", "양사면 덕하리", "양사면 북성리", "양사면 인화리", "양사면 철산리"],
+  "하점면": ["하점면 망월리", "하점면 부근리", "하점면 삼거리", "하점면 신봉리", "하점면 신삼리", "하점면 이강리", "하점면 장정리", "하점면 창후리"],
+  "화도면": ["화도면 내리", "화도면 덕포리", "화도면 동막리", "화도면 문산리", "화도면 사기리", "화도면 상방리", "화도면 여차리", "화도면 장화리", "화도면 흥왕리"],
+  "강화외지역": ["기타지역"]
+};
 
 export default function AdminPage() {
   const { user: currentUser } = useAuth();
@@ -551,6 +551,35 @@ export default function AdminPage() {
     );
   }
 
+  const propertyTypes = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
+  
+  // 거래 종류 (다중 선택 가능)
+  const dealTypes = ["매매", "전세", "월세", "완료", "보류중"];
+  
+  // 읍면 
+  const districts = [
+    "강화읍", "교동면", "길상면", "내가면", "불은면", "삼산면", "서도면", "선원면", 
+    "송해면", "양도면", "양사면", "하점면", "화도면", "강화외지역"
+  ];
+  
+  // 읍면동 세부 카테고리
+  const detailedDistricts = {
+    "강화읍": ["강화읍 갑곳리", "강화읍 관청리", "강화읍 국화리", "강화읍 남산리", "강화읍 대산리", "강화읍 신문리", "강화읍 옥림리", "강화읍 용정리", "강화읍 월곳리"],
+    "교동면": ["교동면 고구리", "교동면 난정리", "교동면 대룡리", "교동면 동산리", "교동면 무학리", "교동면 봉소리", "교동면 삼선리", "교동면 상용리", "교동면 서한리", "교동면 양갑리", "교동면 읍내리", "교동면 인사리", "교동면 지석리"],
+    "길상면": ["길상면 길직리", "길상면 동검리", "길상면 선두리", "길상면 온수리", "길상면 장흥리", "길상면 초지리"],
+    "내가면": ["내가면 고천리", "내가면 구하리", "내가면 오상리", "내가면 외포리", "내가면 황청리"],
+    "불은면": ["불은면 고능리", "불은면 넙성리", "불은면 덕성리", "불은면 두운리", "불은면 삼동암리", "불은면 삼성리", "불은면 신현리", "불은면 오두리"],
+    "삼산면": ["삼산면 매음리", "삼산면 미법리", "삼산면 상리", "삼산면 서검리", "삼산면 석모리", "삼산면 석포리", "삼산면 하리"],
+    "서도면": ["서도면 말도리", "서도면 볼음도리", "서도면 아차도리", "서도면 주문도리"],
+    "선원면": ["선원면 금월리", "선원면 냉정리", "선원면 선행리", "선원면 신정리", "선원면 연리", "선원면 지산리", "선원면 창리"],
+    "송해면": ["송해면 당산리", "송해면 상도리", "송해면 솔정리", "송해면 숭뢰리", "송해면 신당리", "송해면 양오리", "송해면 하도리"],
+    "양도면": ["양도면 건평리", "양도면 길정리", "양도면 능내리", "양도면 도장리", "양도면 삼흥리", "양도면 인산리", "양도면 조산리", "양도면 하일리"],
+    "양사면": ["양사면 교산리", "양사면 덕하리", "양사면 북성리", "양사면 인화리", "양사면 철산리"],
+    "하점면": ["하점면 망월리", "하점면 부근리", "하점면 삼거리", "하점면 신봉리", "하점면 신삼리", "하점면 이강리", "하점면 장정리", "하점면 창후리"],
+    "화도면": ["화도면 내리", "화도면 덕포리", "화도면 동막리", "화도면 문산리", "화도면 사기리", "화도면 상방리", "화도면 여차리", "화도면 장화리", "화도면 흥왕리"],
+    "강화외지역": ["기타지역"]
+  };
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -774,188 +803,8 @@ export default function AdminPage() {
                           <FormItem>
                             <FormLabel>면적 (㎡)</FormLabel>
                             <FormControl>
-                              <Input placeholder="면적 (㎡)" {...field} />
+                              <Input placeholder="면적" {...field} />
                             </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div>
-                      <FormItem>
-                        <FormLabel>읍면</FormLabel>
-                        <Select
-                          onValueChange={handleDistrictChange}
-                          defaultValue={selectedMainDistrict}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="지역 선택" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {districts.map((district) => (
-                              <SelectItem key={district} value={district}>
-                                {district}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    </div>
-
-                    <div>
-                      <FormField
-                        control={propertyForm.control}
-                        name="district"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>읍면동</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="상세 지역 선택" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {detailedDistrictOptions.map((district) => (
-                                  <SelectItem key={district} value={district}>
-                                    {district}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div>
-                      <FormField
-                        control={propertyForm.control}
-                        name="address"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>지번</FormLabel>
-                            <FormControl>
-                              <Input placeholder="지번 주소" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div>
-                      <FormField
-                        control={propertyForm.control}
-                        name="buildingName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>건물명</FormLabel>
-                            <FormControl>
-                              <Input placeholder="건물명 (선택사항)" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div>
-                      <FormField
-                        control={propertyForm.control}
-                        name="unitNumber"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>동호수</FormLabel>
-                            <FormControl>
-                              <Input placeholder="동호수 (선택사항)" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div>
-                      <FormField
-                        control={propertyForm.control}
-                        name="supplyArea"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>공급면적 (평)</FormLabel>
-                            <FormControl>
-                              <Input placeholder="공급면적 (선택사항)" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div>
-                      <FormField
-                        control={propertyForm.control}
-                        name="privateArea"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>전용면적 (평)</FormLabel>
-                            <FormControl>
-                              <Input placeholder="전용면적 (선택사항)" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div>
-                      <FormField
-                        control={propertyForm.control}
-                        name="imageUrl"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>이미지 URL</FormLabel>
-                            <FormControl>
-                              <Input placeholder="이미지 URL" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div>
-                      <FormField
-                        control={propertyForm.control}
-                        name="dealType"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>거래 종류</FormLabel>
-                            <div className="flex flex-wrap gap-2">
-                              {dealTypes.map((type) => (
-                                <Button
-                                  key={type}
-                                  type="button"
-                                  variant={field.value.includes(type) ? "default" : "outline"}
-                                  size="sm"
-                                  onClick={() => {
-                                    const newValue = field.value.includes(type)
-                                      ? field.value.filter((t) => t !== type)
-                                      : [...field.value, type];
-                                    field.onChange(newValue);
-                                  }}
-                                >
-                                  {type}
-                                </Button>
-                              ))}
-                            </div>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -972,7 +821,6 @@ export default function AdminPage() {
                             <FormControl>
                               <Input
                                 type="number"
-                                placeholder="침실 수"
                                 {...field}
                                 onChange={(e) => {
                                   field.onChange(parseInt(e.target.value));
@@ -995,7 +843,6 @@ export default function AdminPage() {
                             <FormControl>
                               <Input
                                 type="number"
-                                placeholder="욕실 수"
                                 {...field}
                                 onChange={(e) => {
                                   field.onChange(parseInt(e.target.value));
@@ -1011,21 +858,107 @@ export default function AdminPage() {
                     <div>
                       <FormField
                         control={propertyForm.control}
+                        name="city"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>도시</FormLabel>
+                            <FormControl>
+                              <Input placeholder="도시 (예: 서울)" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div>
+                      <FormField
+                        control={propertyForm.control}
+                        name="district"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>지역구</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="지역구 선택" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {districts.map((district) => (
+                                  <SelectItem key={district} value={district}>
+                                    {district}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <FormField
+                        control={propertyForm.control}
+                        name="address"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>주소</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="상세 주소 (예: 강남구 테헤란로 152)"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <FormField
+                        control={propertyForm.control}
+                        name="imageUrl"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>이미지 URL</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="이미지 URL (외부 이미지 링크)"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+
+
+                    <div>
+                      <FormField
+                        control={propertyForm.control}
                         name="featured"
                         render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4">
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                             <FormControl>
                               <input
                                 type="checkbox"
-                                className="w-4 h-4 mt-1"
-                                checked={field.value}
+                                checked={field.value || false}
                                 onChange={(e) => field.onChange(e.target.checked)}
+                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                               />
                             </FormControl>
                             <div className="space-y-1 leading-none">
                               <FormLabel>추천 매물</FormLabel>
                               <FormDescription>
-                                이 매물을 메인 화면에 추천 매물로 표시합니다.
+                                이 매물을 추천 매물로 표시합니다.
                               </FormDescription>
                             </div>
                           </FormItem>
@@ -1035,7 +968,24 @@ export default function AdminPage() {
                   </div>
 
                   <DialogFooter>
-                    <Button type="submit">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleCloseDialog}
+                    >
+                      취소
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={
+                        createPropertyMutation.isPending ||
+                        updatePropertyMutation.isPending
+                      }
+                    >
+                      {(createPropertyMutation.isPending ||
+                        updatePropertyMutation.isPending) && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
                       {editingProperty ? "수정" : "등록"}
                     </Button>
                   </DialogFooter>
@@ -1045,81 +995,26 @@ export default function AdminPage() {
           </Dialog>
         </TabsContent>
 
-        {/* 뉴스 관리 탭 */}
-        <TabsContent value="news">
-          <Card>
-            <CardHeader>
-              <CardTitle>뉴스 목록</CardTitle>
-              <CardDescription>
-                등록된 뉴스 목록을 관리합니다.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableCaption>총 {news?.length || 0}개의 뉴스</TableCaption>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>제목</TableHead>
-                    <TableHead>날짜</TableHead>
-                    <TableHead>출처</TableHead>
-                    <TableHead className="text-right">관리</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {news?.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.id}</TableCell>
-                      <TableCell className="max-w-[300px] truncate">{item.title}</TableCell>
-                      <TableCell>
-                        {new Date(item.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        {item.source || "네이버 뉴스"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          onClick={() => {
-                            if (confirm("정말로 이 뉴스를 삭제하시겠습니까?")) {
-                              deleteNewsMutation.mutate(item.id);
-                            }
-                          }}
-                          disabled={isDeletingNews === item.id}
-                        >
-                          {isDeletingNews === item.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* 사용자 관리 탭 (관리자만) */}
+        {/* 사용자 관리 탭 (관리자만 접근 가능) */}
         <TabsContent value="users">
           <Card>
             <CardHeader>
               <CardTitle>사용자 목록</CardTitle>
               <CardDescription>
-                등록된 사용자 목록을 관리합니다.
+                등록된 사용자 목록을 관리합니다. (관리자 전용)
               </CardDescription>
             </CardHeader>
             <CardContent>
               {isLoadingUsers ? (
-                <div className="flex items-center justify-center py-10">
+                <div className="flex justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : usersError ? (
-                <div className="text-center py-10">
-                  <p className="text-red-500 mb-4">오류가 발생했습니다: {usersError.message}</p>
+                <div className="py-8 text-center">
+                  <p className="text-red-500">
+                    사용자 목록을 불러오는 중 오류가 발생했습니다:{" "}
+                    {usersError.message}
+                  </p>
                 </div>
               ) : (
                 <Table>
@@ -1128,9 +1023,9 @@ export default function AdminPage() {
                     <TableRow>
                       <TableHead>ID</TableHead>
                       <TableHead>사용자명</TableHead>
+                      <TableHead>역할</TableHead>
                       <TableHead>이메일</TableHead>
-                      <TableHead>권한</TableHead>
-                      <TableHead>가입일</TableHead>
+                      <TableHead>연락처</TableHead>
                       <TableHead className="text-right">관리</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1139,40 +1034,116 @@ export default function AdminPage() {
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">{user.id}</TableCell>
                         <TableCell>{user.username}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>{user.role}</TableCell>
                         <TableCell>
-                          {new Date(user.createdAt).toLocaleDateString()}
+                          <div
+                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              user.role === "admin"
+                                ? "bg-purple-100 text-purple-800"
+                                : "bg-blue-100 text-blue-800"
+                            }`}
+                          >
+                            {user.role}
+                          </div>
                         </TableCell>
+                        <TableCell>{user.email || "-"}</TableCell>
+                        <TableCell>{user.phone || "-"}</TableCell>
+                        <TableCell className="text-right">
+                          {/* 현재 로그인한 관리자 자신이 아닌 경우에만 삭제 버튼 표시 */}
+                          {user.id !== currentUser?.id && (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => {
+                                if (confirm(`정말로 사용자 "${user.username}"를 탈퇴시키겠습니까?`)) {
+                                  deleteUserMutation.mutate(user.id);
+                                }
+                              }}
+                              disabled={isDeletingUser === user.id}
+                            >
+                              {isDeletingUser === user.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              ) : (
+                                <Trash2 className="h-4 w-4 mr-2" />
+                              )}
+                              탈퇴
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 뉴스 관리 탭 */}
+        <TabsContent value="news">
+          <Card>
+            <CardHeader>
+              <CardTitle>부동산 뉴스 관리</CardTitle>
+              <CardDescription>
+                강화도 및 인천 부동산 관련 뉴스 기사를 관리합니다.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingNews ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : newsError ? (
+                <div className="py-8 text-center">
+                  <p className="text-red-500">
+                    뉴스 목록을 불러오는 중 오류가 발생했습니다:{" "}
+                    {newsError.message}
+                  </p>
+                </div>
+              ) : (
+                <Table>
+                  <TableCaption>총 {news?.length || 0}개의 뉴스 기사</TableCaption>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>제목</TableHead>
+                      <TableHead>카테고리</TableHead>
+                      <TableHead>등록일</TableHead>
+                      <TableHead className="text-right">관리</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {news?.map((article) => (
+                      <TableRow key={article.id}>
+                        <TableCell className="font-medium">{article.id}</TableCell>
+                        <TableCell className="max-w-md truncate">
+                          <a 
+                            href={`/news/${article.id}`} 
+                            className="hover:underline text-primary"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {article.title}
+                          </a>
+                        </TableCell>
+                        <TableCell>{article.category}</TableCell>
+                        <TableCell>{article.createdAt && new Date(article.createdAt).toLocaleDateString()}</TableCell>
                         <TableCell className="text-right">
                           <Button
                             variant="destructive"
-                            size="icon"
+                            size="sm"
                             onClick={() => {
-                              if (user.role === "admin") {
-                                toast({
-                                  title: "관리자 계정을 삭제할 수 없습니다",
-                                  variant: "destructive",
-                                });
-                                return;
-                              }
-                              if (
-                                confirm(
-                                  "정말로 이 사용자를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다."
-                                )
-                              ) {
-                                deleteUserMutation.mutate(user.id);
+                              if (confirm(`정말로 "${article.title}" 뉴스를 삭제하시겠습니까?`)) {
+                                deleteNewsMutation.mutate(article.id);
                               }
                             }}
-                            disabled={
-                              isDeletingUser === user.id || user.role === "admin"
-                            }
+                            disabled={isDeletingNews === article.id}
                           >
-                            {isDeletingUser === user.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
+                            {isDeletingNews === article.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
                             ) : (
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4 mr-2" />
                             )}
+                            삭제
                           </Button>
                         </TableCell>
                       </TableRow>

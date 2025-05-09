@@ -113,10 +113,12 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export const news = pgTable("news", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
+  summary: text("summary").notNull(), // 뉴스 요약
   description: text("description").notNull(),
   content: text("content").notNull(),
   source: text("source").notNull(),
   sourceUrl: text("source_url").notNull(),
+  url: text("url").notNull(), // 원본 뉴스 URL
   imageUrl: text("image_url"),
   category: text("category").notNull(), // "인천 부동산", "강화군 부동산", "부동산 정책", "국토교통부"
   isPinned: boolean("is_pinned").default(false),

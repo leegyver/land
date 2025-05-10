@@ -353,12 +353,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // 지역 필터링 (district 값이 존재하고 "all"이 아닌 경우)
       if (district && district !== "all") {
+        console.log(`지역 필터링: ${district}`);
+        
         properties = properties.filter(p => {
-          // 대소문자 구분 없이 비교
-          // '지역명' 또는 '지역명 + 추가정보'와 같은 형태로 포함되어 있으면 매칭
+          // 매물의 district 필드가 없는 경우를 대비한 안전 처리
           const propertyDistrict = (p.district || "").toLowerCase();
+          // 검색 조건의 district를 소문자로 변환
           const searchDistrict = (district as string).toLowerCase();
-          return propertyDistrict.includes(searchDistrict);
+          
+          // 검색 조건 분석: 주어진 지역명이 매물 지역의 일부분이면 매칭
+          // 예: 검색어가 '강화읍'일 때, '강화읍 갑곳리'도 포함되도록
+          const isMatch = propertyDistrict.startsWith(searchDistrict) || 
+                          propertyDistrict.includes(` ${searchDistrict}`) ||
+                          // 강화외지역 특수 케이스 처리
+                          (searchDistrict === '강화외지역' && !propertyDistrict.includes('강화'));
+          
+          if (isMatch) {
+            console.log(`매칭 매물 발견: ${p.id}, ${p.title}, ${p.district}`);
+          }
+          
+          return isMatch;
         });
       }
       

@@ -21,10 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PropertyInquiryBoard from "@/components/property/PropertyInquiryBoard";
-
-import { RenderAfterNavermapsLoaded, NaverMap, Marker } from "react-naver-maps";
 
 interface PropertyDetailProps {
   propertyId: string;
@@ -49,6 +46,9 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
   
   // 부동산 등록시 첨부한 이미지들을 사용
   const defaultImage = "https://via.placeholder.com/800x500?text=매물+이미지+준비중";
+  
+  // 네이버 지도 API 키 설정
+  const NAVER_CLIENT_ID = import.meta.env.VITE_NAVER_CLIENT_ID || "";
   
   // imageUrls 배열이 있으면 사용하고, 없으면 기존 imageUrl을 배열로 변환
   // 이미지가 하나도 없는 경우 기본 이미지 사용
@@ -229,183 +229,177 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
             </CardContent>
           </Card>
           
-          <Tabs defaultValue="details" className="mt-8">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="details">매물 정보</TabsTrigger>
-              <TabsTrigger value="map">위치 정보</TabsTrigger>
-            </TabsList>
-            <TabsContent value="details" className="mt-4">
-              {/* 매물설명 필드 삭제 요청에 따라 제거됨 */}
-              
-              <h3 className="text-xl font-bold mb-4">주요 특징</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg flex flex-col items-center shadow-sm">
-                  <Maximize className="text-primary mb-2 h-6 w-6" />
-                  <span className="font-bold text-lg">{property.size}m²</span>
-                  <span className="text-sm text-gray-600">면적</span>
-                </div>
-                <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg flex flex-col items-center shadow-sm">
-                  <Bed className="text-primary mb-2 h-6 w-6" />
-                  <span className="font-bold text-lg">{property.bedrooms}개</span>
-                  <span className="text-sm text-gray-600">침실</span>
-                </div>
-                <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg flex flex-col items-center shadow-sm">
-                  <Bath className="text-primary mb-2 h-6 w-6" />
-                  <span className="font-bold text-lg">{property.bathrooms}개</span>
-                  <span className="text-sm text-gray-600">욕실</span>
-                </div>
-                <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg flex flex-col items-center shadow-sm">
-                  <Calendar className="text-primary mb-2 h-6 w-6" />
-                  <span className="font-bold text-lg">{property.direction || "남향"}</span>
-                  <span className="text-sm text-gray-600">방향</span>
-                </div>
+          <div className="mt-8">
+            {/* 매물설명 필드 삭제 요청에 따라 제거됨 */}
+            
+            <h3 className="text-xl font-bold mb-4">주요 특징</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg flex flex-col items-center shadow-sm">
+                <Maximize className="text-primary mb-2 h-6 w-6" />
+                <span className="font-bold text-lg">{property.size}m²</span>
+                <span className="text-sm text-gray-600">면적</span>
               </div>
-              
-              {/* 상세 부동산 정보 표 */}
-              <div className="mt-8 mb-6">
-                <h3 className="text-xl font-bold mb-4">상세 정보</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                  {/* 기본 정보 */}
-                  <div className="space-y-4">
-                    <div className="border-b pb-2">
-                      <h4 className="font-semibold text-lg mb-3">기본 정보</h4>
-                      <table className="w-full">
-                        <tbody>
-                          {property.buildingName && (
-                            <tr className="border-b border-gray-100">
-                              <td className="py-2 text-gray-600 w-1/3">건물명</td>
-                              <td className="py-2 font-medium">{property.buildingName}</td>
-                            </tr>
-                          )}
-                          {property.unitNumber && (
-                            <tr className="border-b border-gray-100">
-                              <td className="py-2 text-gray-600">동호수</td>
-                              <td className="py-2 font-medium">{property.unitNumber}</td>
-                            </tr>
-                          )}
-                          {/* 주소는 개인정보 보호를 위해 상세페이지에서 표시하지 않음 */}
-                          {property.approvalDate && (
-                            <tr className="border-b border-gray-100">
-                              <td className="py-2 text-gray-600">사용승인</td>
-                              <td className="py-2 font-medium">{property.approvalDate}</td>
-                            </tr>
-                          )}
+              <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg flex flex-col items-center shadow-sm">
+                <Bed className="text-primary mb-2 h-6 w-6" />
+                <span className="font-bold text-lg">{property.bedrooms}개</span>
+                <span className="text-sm text-gray-600">침실</span>
+              </div>
+              <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg flex flex-col items-center shadow-sm">
+                <Bath className="text-primary mb-2 h-6 w-6" />
+                <span className="font-bold text-lg">{property.bathrooms}개</span>
+                <span className="text-sm text-gray-600">욕실</span>
+              </div>
+              <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg flex flex-col items-center shadow-sm">
+                <Calendar className="text-primary mb-2 h-6 w-6" />
+                <span className="font-bold text-lg">{property.direction || "남향"}</span>
+                <span className="text-sm text-gray-600">방향</span>
+              </div>
+            </div>
+            
+            {/* 상세 부동산 정보 표 */}
+            <div className="mt-8 mb-6">
+              <h3 className="text-xl font-bold mb-4">상세 정보</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                {/* 기본 정보 */}
+                <div className="space-y-4">
+                  <div className="border-b pb-2">
+                    <h4 className="font-semibold text-lg mb-3">기본 정보</h4>
+                    <table className="w-full">
+                      <tbody>
+                        {property.buildingName && (
                           <tr className="border-b border-gray-100">
-                            <td className="py-2 text-gray-600">유형</td>
-                            <td className="py-2 font-medium">{property.type}</td>
+                            <td className="py-2 text-gray-600 w-1/3">건물명</td>
+                            <td className="py-2 font-medium">{property.buildingName}</td>
                           </tr>
+                        )}
+                        {property.unitNumber && (
                           <tr className="border-b border-gray-100">
-                            <td className="py-2 text-gray-600">공동중개</td>
-                            <td className="py-2 font-medium">{property.coListing ? "예" : "아니오"}</td>
+                            <td className="py-2 text-gray-600">동호수</td>
+                            <td className="py-2 font-medium">{property.unitNumber}</td>
                           </tr>
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* 면적 정보 */}
-                    <div className="border-b pb-2">
-                      <h4 className="font-semibold text-lg mb-3">면적 정보</h4>
-                      <table className="w-full">
-                        <tbody>
+                        )}
+                        {/* 주소는 개인정보 보호를 위해 상세페이지에서 표시하지 않음 */}
+                        {property.approvalDate && (
                           <tr className="border-b border-gray-100">
-                            <td className="py-2 text-gray-600 w-1/3">공급면적</td>
-                            <td className="py-2 font-medium">{property.supplyArea ? `${property.supplyArea}m²` : `${property.size}m²`}</td>
+                            <td className="py-2 text-gray-600">사용승인</td>
+                            <td className="py-2 font-medium">{property.approvalDate}</td>
                           </tr>
-                          {property.privateArea && (
-                            <tr className="border-b border-gray-100">
-                              <td className="py-2 text-gray-600">전용면적</td>
-                              <td className="py-2 font-medium">{property.privateArea}m²</td>
-                            </tr>
-                          )}
-                          {property.areaSize && (
-                            <tr className="border-b border-gray-100">
-                              <td className="py-2 text-gray-600">평형</td>
-                              <td className="py-2 font-medium">{property.areaSize}</td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
+                        )}
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2 text-gray-600">유형</td>
+                          <td className="py-2 font-medium">{property.type}</td>
+                        </tr>
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2 text-gray-600">공동중개</td>
+                          <td className="py-2 font-medium">{property.coListing ? "예" : "아니오"}</td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
 
-                  {/* 건물 정보 */}
-                  <div className="space-y-4">
-                    <div className="border-b pb-2">
-                      <h4 className="font-semibold text-lg mb-3">건물 정보</h4>
-                      <table className="w-full">
-                        <tbody>
-                          {property.floor && (
-                            <tr className="border-b border-gray-100">
-                              <td className="py-2 text-gray-600 w-1/3">해당 층</td>
-                              <td className="py-2 font-medium">{property.floor}층</td>
-                            </tr>
-                          )}
-                          {property.totalFloors && (
-                            <tr className="border-b border-gray-100">
-                              <td className="py-2 text-gray-600">총 층수</td>
-                              <td className="py-2 font-medium">{property.totalFloors}층</td>
-                            </tr>
-                          )}
+                  {/* 면적 정보 */}
+                  <div className="border-b pb-2">
+                    <h4 className="font-semibold text-lg mb-3">면적 정보</h4>
+                    <table className="w-full">
+                      <tbody>
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2 text-gray-600 w-1/3">공급면적</td>
+                          <td className="py-2 font-medium">{property.supplyArea ? `${property.supplyArea}m²` : `${property.size}m²`}</td>
+                        </tr>
+                        {property.privateArea && (
                           <tr className="border-b border-gray-100">
-                            <td className="py-2 text-gray-600">방 / 욕실</td>
-                            <td className="py-2 font-medium">방 {property.bedrooms}개 / 욕실 {property.bathrooms}개</td>
+                            <td className="py-2 text-gray-600">전용면적</td>
+                            <td className="py-2 font-medium">{property.privateArea}m²</td>
                           </tr>
-                          {property.direction && (
-                            <tr className="border-b border-gray-100">
-                              <td className="py-2 text-gray-600">방향</td>
-                              <td className="py-2 font-medium">{property.direction}</td>
-                            </tr>
-                          )}
+                        )}
+                        {property.areaSize && (
                           <tr className="border-b border-gray-100">
-                            <td className="py-2 text-gray-600">승강기</td>
-                            <td className="py-2 font-medium">{property.elevator ? "있음" : "없음"}</td>
+                            <td className="py-2 text-gray-600">평형</td>
+                            <td className="py-2 font-medium">{property.areaSize}</td>
                           </tr>
-                          {property.parking && (
-                            <tr className="border-b border-gray-100">
-                              <td className="py-2 text-gray-600">주차</td>
-                              <td className="py-2 font-medium">{property.parking}</td>
-                            </tr>
-                          )}
-                          {property.heatingSystem && (
-                            <tr className="border-b border-gray-100">
-                              <td className="py-2 text-gray-600">난방방식</td>
-                              <td className="py-2 font-medium">{property.heatingSystem}</td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
 
-                    {/* 금액 정보 */}
-                    <div className="border-b pb-2">
-                      <h4 className="font-semibold text-lg mb-3">금액 정보</h4>
-                      <table className="w-full">
-                        <tbody>
+                {/* 건물 정보 */}
+                <div className="space-y-4">
+                  <div className="border-b pb-2">
+                    <h4 className="font-semibold text-lg mb-3">건물 정보</h4>
+                    <table className="w-full">
+                      <tbody>
+                        {property.floor && (
                           <tr className="border-b border-gray-100">
-                            <td className="py-2 text-gray-600 w-1/3">매매가</td>
-                            <td className="py-2 font-medium">{formatPrice(property.price)}</td>
+                            <td className="py-2 text-gray-600 w-1/3">해당 층</td>
+                            <td className="py-2 font-medium">{property.floor}층</td>
                           </tr>
-                          {property.deposit && Number(property.deposit) > 0 && (
-                            <tr className="border-b border-gray-100">
-                              <td className="py-2 text-gray-600">보증금</td>
-                              <td className="py-2 font-medium">{formatPrice(property.deposit)}</td>
-                            </tr>
-                          )}
-                          {property.monthlyRent && Number(property.monthlyRent) > 0 && (
-                            <tr className="border-b border-gray-100">
-                              <td className="py-2 text-gray-600">월세</td>
-                              <td className="py-2 font-medium">{formatPrice(property.monthlyRent)}</td>
-                            </tr>
-                          )}
-                          {property.maintenanceFee && Number(property.maintenanceFee) > 0 && (
-                            <tr className="border-b border-gray-100">
-                              <td className="py-2 text-gray-600">관리비</td>
-                              <td className="py-2 font-medium">{formatPrice(property.maintenanceFee)}</td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
+                        )}
+                        {property.totalFloors && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2 text-gray-600">총 층수</td>
+                            <td className="py-2 font-medium">{property.totalFloors}층</td>
+                          </tr>
+                        )}
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2 text-gray-600">방 / 욕실</td>
+                          <td className="py-2 font-medium">방 {property.bedrooms}개 / 욕실 {property.bathrooms}개</td>
+                        </tr>
+                        {property.direction && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2 text-gray-600">방향</td>
+                            <td className="py-2 font-medium">{property.direction}</td>
+                          </tr>
+                        )}
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2 text-gray-600">승강기</td>
+                          <td className="py-2 font-medium">{property.elevator ? "있음" : "없음"}</td>
+                        </tr>
+                        {property.parking && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2 text-gray-600">주차</td>
+                            <td className="py-2 font-medium">{property.parking}</td>
+                          </tr>
+                        )}
+                        {property.heatingSystem && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2 text-gray-600">난방</td>
+                            <td className="py-2 font-medium">{property.heatingSystem}</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* 가격 정보 */}
+                  <div className="border-b pb-2">
+                    <h4 className="font-semibold text-lg mb-3">가격 정보</h4>
+                    <table className="w-full">
+                      <tbody>
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2 text-gray-600 w-1/3">매매가</td>
+                          <td className="py-2 font-medium">{formatPrice(property.price)}</td>
+                        </tr>
+                        {property.deposit && Number(property.deposit) > 0 && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2 text-gray-600">보증금</td>
+                            <td className="py-2 font-medium">{formatPrice(property.deposit)}</td>
+                          </tr>
+                        )}
+                        {property.monthlyRent && Number(property.monthlyRent) > 0 && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2 text-gray-600">월세</td>
+                            <td className="py-2 font-medium">{formatPrice(property.monthlyRent)}</td>
+                          </tr>
+                        )}
+                        {property.maintenanceFee && Number(property.maintenanceFee) > 0 && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2 text-gray-600">관리비</td>
+                            <td className="py-2 font-medium">{formatPrice(property.maintenanceFee)}</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
@@ -418,191 +412,88 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                 </div>
               )}
               
-              {/* 부동산 상세 설명 */}
-              {property.propertyDescription && (
-                <div className="mb-6">
-                  <h4 className="font-semibold text-lg mb-2">매물 상세 설명</h4>
-                  <p className="text-gray-700 whitespace-pre-line">{property.propertyDescription}</p>
-                </div>
-              )}
-            </TabsContent>
-            <TabsContent value="map">
-              <div className="bg-gray-light p-2 rounded-lg overflow-hidden h-64">
-                <RenderAfterNavermapsLoaded 
-                  ncpClientId={process.env.NAVER_CLIENT_ID || ""}
-                  error={<p>지도를 불러오는데 실패했습니다.</p>}
-                  loading={<p>지도를 불러오는 중...</p>}
-                >
-                  <NaverMap
-                    mapDivId={'maps-getting-started-uncontrolled'}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                    }}
-                    defaultCenter={{ lat: 37.7465, lng: 126.4829 }} // 강화군 중심 좌표
-                    defaultZoom={11}
-                  >
-                    <Marker 
-                      position={{ lat: 37.7465, lng: 126.4829 }}
-                      animation={2}
-                    />
-                  </NaverMap>
-                </RenderAfterNavermapsLoaded>
-              </div>
-              <div className="mt-4">
-                <h3 className="text-xl font-bold mb-2">위치 정보</h3>
-                <div className="space-y-4">
-                  {/* 주소는 개인정보 보호를 위해 지도 탭에서 표시하지 않음 */}
-                  <p className="text-gray-medium">
-                    <span className="font-semibold block">지역:</span> {property.district}
-                  </p>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
+              {/* 매물 상세 설명 필드 삭제 요청에 따라 제거됨 */}
+            </div>
+          </div>
         </div>
         
         <div>
-          <Card className="mb-6">
-            <CardContent className="pt-6">
-              <div className="flex justify-between items-start mb-4">
+          {/* 네이버 지도로 위치 정보 표시 */}
+          <div className="bg-gray-50 rounded-lg overflow-hidden h-64 mb-4">
+            <div style={{ width: '100%', height: '100%' }}>
+              <img 
+                src="https://navermaps.github.io/maps.js.ncp/docs/img/example-static-map.png" 
+                alt="위치 지도" 
+                className="w-full h-full object-cover"
+              />
+              {/* 네이버 지도 API를 이용하여 추후 실제 위치 구현 예정 */}
+            </div>
+          </div>
+          
+          <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 mb-4">
+            <h3 className="text-xl font-semibold mb-2">위치 정보</h3>
+            <p className="text-gray-700">
+              <MapPin className="inline-block w-4 h-4 mr-1 text-primary" />
+              {property.district}
+            </p>
+          </div>
+          
+          <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+            <h3 className="text-xl font-semibold mb-4">거래 정보</h3>
+            <div className="space-y-4">
+              <div>
+                <span className="text-gray-500 text-sm">매물 가격</span>
+                <div className="text-2xl font-bold text-primary mt-1">{formatPrice(property.price)}</div>
+              </div>
+              {property.dealType && Array.isArray(property.dealType) && property.dealType.includes("월세") && property.monthlyRent && (
                 <div>
-                  {/* 가격 표시 */}
-                  <h2 className="text-2xl font-bold text-primary mb-2">{formatPrice(property.price)}</h2>
-                  
-                  {/* 거래 유형 뱃지들 */}
-                  <div className="flex flex-wrap gap-1.5 mb-2">
-                    {property.dealType && Array.isArray(property.dealType) && property.dealType.map((type, index) => (
-                      <Badge 
-                        key={index}
-                        variant="outline"
-                        className={`text-xs font-medium px-2 py-0.5 
-                          ${type === "매매" ? "border-red-500 text-red-500" : 
-                            type === "전세" ? "border-amber-500 text-amber-500" : 
-                            type === "월세" ? "border-indigo-500 text-indigo-500" :
-                            type === "완료" ? "border-gray-500 text-gray-500" :
-                            type === "보류중" ? "border-pink-500 text-pink-500" : 
-                            "border-secondary text-secondary"
-                          }`}
-                      >
-                        {type}
-                      </Badge>
-                    ))}
-                  </div>
-                  
-                  {/* 부동산 유형 */}
-                  <Badge 
-                    variant="outline" 
-                    className={`text-xs font-medium mb-2 
-                      ${property.type === "아파트" || property.type === "아파트연립다세대" ? "border-blue-500 text-blue-500" : 
-                        property.type === "주택" ? "border-green-600 text-green-600" : 
-                        property.type === "오피스텔" || property.type === "원투룸" ? "border-purple-600 text-purple-600" : 
-                        property.type === "빌라" ? "border-orange-600 text-orange-600" : 
-                        property.type === "상가공장창고펜션" ? "border-yellow-600 text-yellow-600" :
-                        property.type === "토지" ? "border-emerald-600 text-emerald-600" : 
-                        "border-primary text-primary"
-                      }`}
-                  >
-                    {property.type}
-                  </Badge>
+                  <span className="text-gray-500 text-sm">월세</span>
+                  <div className="text-xl font-bold mt-1">{formatPrice(property.monthlyRent)}</div>
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="icon">
-                    <Heart className="w-4 h-4" />
-                  </Button>
-                  <Button variant="outline" size="icon">
-                    <Share2 className="w-4 h-4" />
-                  </Button>
+              )}
+              {property.maintenanceFee && (
+                <div>
+                  <span className="text-gray-500 text-sm">관리비</span>
+                  <div className="text-lg font-medium mt-1">{formatPrice(property.maintenanceFee)}</div>
                 </div>
-              </div>
+              )}
               
-              <div className="mt-6 border-t pt-4 border-gray-100">
-                <h3 className="font-medium text-base mb-3">매물 정보</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex items-center p-2 bg-gray-50 rounded-md">
-                    <Maximize className="text-primary w-4 h-4 mr-2" />
-                    <div>
-                      <div className="text-xs text-gray-500">면적</div>
-                      <div className="font-medium">{property.supplyArea ? `${property.supplyArea}m²` : `${property.size}m²`}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center p-2 bg-gray-50 rounded-md">
-                    <Bed className="text-primary w-4 h-4 mr-2" />
-                    <div>
-                      <div className="text-xs text-gray-500">침실</div>
-                      <div className="font-medium">{property.bedrooms}개</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center p-2 bg-gray-50 rounded-md">
-                    <Bath className="text-primary w-4 h-4 mr-2" />
-                    <div>
-                      <div className="text-xs text-gray-500">욕실</div>
-                      <div className="font-medium">{property.bathrooms}개</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center p-2 bg-gray-50 rounded-md">
-                    <MapPin className="text-primary w-4 h-4 mr-2" />
-                    <div>
-                      <div className="text-xs text-gray-500">지역</div>
-                      <div className="font-medium">{property.district}</div>
-                    </div>
-                  </div>
+              {property.deposit && (
+                <div>
+                  <span className="text-gray-500 text-sm">보증금</span>
+                  <div className="text-lg font-medium mt-1">{formatPrice(property.deposit)}</div>
+                </div>
+              )}
+              
+              <div className="pt-4 mt-4 border-t border-gray-200">
+                <Button className="w-full mb-2">
+                  <Phone className="w-4 h-4 mr-2" />
+                  문의하기
+                </Button>
+                <div className="flex space-x-2">
+                  <Button variant="outline" className="flex-1">
+                    <Share2 className="w-4 h-4 mr-2" />
+                    공유
+                  </Button>
+                  <Button variant="outline" className="flex-1">
+                    <Heart className="w-4 h-4 mr-2" />
+                    관심매물
+                  </Button>
                 </div>
                 
-                {/* 추가 정보 표시 - 더 많은 정보 담기 */}
-                {(property.floor || property.totalFloors || property.direction || property.elevator) && (
-                  <div className="mt-3 grid grid-cols-2 gap-3">
-                    {property.floor && (
-                      <div className="flex items-center p-2 bg-gray-50 rounded-md">
-                        <div>
-                          <div className="text-xs text-gray-500">층수</div>
-                          <div className="font-medium">{property.floor}층 / {property.totalFloors || "?"}층</div>
-                        </div>
-                      </div>
-                    )}
-                    {property.direction && (
-                      <div className="flex items-center p-2 bg-gray-50 rounded-md">
-                        <div>
-                          <div className="text-xs text-gray-500">방향</div>
-                          <div className="font-medium">{property.direction}</div>
-                        </div>
-                      </div>
-                    )}
-                    {property.elevator !== undefined && (
-                      <div className="flex items-center p-2 bg-gray-50 rounded-md">
-                        <div>
-                          <div className="text-xs text-gray-500">승강기</div>
-                          <div className="font-medium">{property.elevator ? "있음" : "없음"}</div>
-                        </div>
-                      </div>
-                    )}
-                    {property.heatingSystem && (
-                      <div className="flex items-center p-2 bg-gray-50 rounded-md">
-                        <div>
-                          <div className="text-xs text-gray-500">난방</div>
-                          <div className="font-medium">{property.heatingSystem}</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-                
-                {/* 카카오톡 문의하기 링크 */}
-                <a 
-                  href="https://pf.kakao.com/_xaxbxlxfs/chat" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="block w-full mt-5 hover:opacity-90 transition-opacity"
-                >
-                  <img 
-                    src={kakaoImage}
-                    alt="카카오톡 1:1 상담 시작하기"
-                    className="w-full rounded-md shadow-sm"
-                  />
-                </a>
+                {/* 카카오톡 공유 버튼 */}
+                <div className="mt-4">
+                  <Button 
+                    variant="outline" 
+                    className="w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-900 border-yellow-300"
+                  >
+                    <img src={kakaoImage} alt="카카오톡 로고" className="w-5 h-5 mr-2" />
+                    카카오톡으로 공유하기
+                  </Button>
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>

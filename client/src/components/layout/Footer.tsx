@@ -3,12 +3,12 @@ import { Building, Facebook, Instagram, Youtube } from "lucide-react";
 
 const Footer = () => {
   return (
-    <footer className="bg-dark text-white pt-12 pb-6">
+    <footer className="bg-gray-900 text-white pt-12 pb-6">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
           <div>
             <h3 className="text-xl font-bold mb-4">이가이버부동산</h3>
-            <p className="text-gray-medium mb-4">
+            <p className="text-gray-400 mb-4">
               인천광역시 강화군 강화읍 남문로51, 1호<br />
               전화: 032-934-3120 / 010-4787-3120<br />
               이메일: 9551304@naver.com<br />
@@ -37,39 +37,39 @@ const Footer = () => {
           <div>
             <h3 className="text-xl font-bold mb-4">매물 정보</h3>
             <ul className="space-y-2">
-              <li><Link href="/properties?type=아파트" className="text-gray-medium hover:text-white">아파트</Link></li>
-              <li><Link href="/properties?type=주택" className="text-gray-medium hover:text-white">주택</Link></li>
-              <li><Link href="/properties?type=빌라" className="text-gray-medium hover:text-white">빌라</Link></li>
-              <li><Link href="/properties?type=오피스텔" className="text-gray-medium hover:text-white">오피스텔</Link></li>
-              <li><Link href="/properties?type=상가" className="text-gray-medium hover:text-white">상가/사무실</Link></li>
+              <li><Link href="/properties?type=아파트" className="text-gray-400 hover:text-white">아파트</Link></li>
+              <li><Link href="/properties?type=주택" className="text-gray-400 hover:text-white">주택</Link></li>
+              <li><Link href="/properties?type=빌라" className="text-gray-400 hover:text-white">빌라</Link></li>
+              <li><Link href="/properties?type=오피스텔" className="text-gray-400 hover:text-white">오피스텔</Link></li>
+              <li><Link href="/properties?type=상가" className="text-gray-400 hover:text-white">상가/사무실</Link></li>
             </ul>
           </div>
           
           <div>
             <h3 className="text-xl font-bold mb-4">지역 정보</h3>
             <ul className="space-y-2">
-              <li><Link href="/properties?district=강남구" className="text-gray-medium hover:text-white">강남구</Link></li>
-              <li><Link href="/properties?district=서초구" className="text-gray-medium hover:text-white">서초구</Link></li>
-              <li><Link href="/properties?district=마포구" className="text-gray-medium hover:text-white">마포구</Link></li>
-              <li><Link href="/properties?district=용산구" className="text-gray-medium hover:text-white">용산구</Link></li>
-              <li><Link href="/properties?district=송파구" className="text-gray-medium hover:text-white">송파구</Link></li>
+              <li><Link href="/properties?district=강화읍" className="text-gray-400 hover:text-white">강화읍</Link></li>
+              <li><Link href="/properties?district=내가면" className="text-gray-400 hover:text-white">내가면</Link></li>
+              <li><Link href="/properties?district=선원면" className="text-gray-400 hover:text-white">선원면</Link></li>
+              <li><Link href="/properties?district=불은면" className="text-gray-400 hover:text-white">불은면</Link></li>
+              <li><Link href="/properties?district=길상면" className="text-gray-400 hover:text-white">길상면</Link></li>
             </ul>
           </div>
           
           <div>
             <h3 className="text-xl font-bold mb-4">고객센터</h3>
             <ul className="space-y-2">
-              <li><Link href="/faq" className="text-gray-medium hover:text-white">자주 묻는 질문</Link></li>
-              <li><Link href="/terms" className="text-gray-medium hover:text-white">이용약관</Link></li>
-              <li><Link href="/privacy" className="text-gray-medium hover:text-white">개인정보처리방침</Link></li>
-              <li><Link href="/notices" className="text-gray-medium hover:text-white">공지사항</Link></li>
-              <li><Link href="/contact" className="text-gray-medium hover:text-white">문의하기</Link></li>
+              <li><Link href="/faq" className="text-gray-400 hover:text-white">자주 묻는 질문</Link></li>
+              <li><Link href="/terms" className="text-gray-400 hover:text-white">이용약관</Link></li>
+              <li><Link href="/privacy" className="text-gray-400 hover:text-white">개인정보처리방침</Link></li>
+              <li><Link href="/notices" className="text-gray-400 hover:text-white">공지사항</Link></li>
+              <li><Link href="/contact" className="text-gray-400 hover:text-white">문의하기</Link></li>
             </ul>
           </div>
         </div>
         
         <div className="border-t border-gray-800 pt-6 mt-6">
-          <p className="text-gray-medium text-center">© {new Date().getFullYear()} 이가이버부동산. All rights reserved.</p>
+          <p className="text-gray-400 text-center">© {new Date().getFullYear()} 이가이버부동산. All rights reserved.</p>
         </div>
       </div>
     </footer>

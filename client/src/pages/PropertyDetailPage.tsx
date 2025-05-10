@@ -34,7 +34,13 @@ const PropertyDetailPage = () => {
             "한국부동산의 프리미엄 매물 상세 정보를 확인하세요. 아파트, 주택, 빌라, 오피스텔 등 다양한 매물 정보 제공."
           }
         />
-        {property && <meta property="og:image" content={property.imageUrl} />}
+        {property && <meta property="og:image" content={
+          Array.isArray(property.imageUrls) && property.imageUrls.length > 0 && property.featuredImageIndex !== undefined
+            ? property.imageUrls[property.featuredImageIndex]
+            : (property.imageUrls && property.imageUrls.length > 0 
+                ? property.imageUrls[0] 
+                : property.imageUrl)
+        } />}
       </Helmet>
       
       <PropertyDetail propertyId={id} />

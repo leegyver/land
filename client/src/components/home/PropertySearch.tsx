@@ -95,21 +95,38 @@ const PropertySearch = () => {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="all">전체</SelectItem>
-                        <SelectItem value="강화읍">강화읍</SelectItem>
-                        <SelectItem value="교동면">교동면</SelectItem>
-                        <SelectItem value="길상면">길상면</SelectItem>
-                        <SelectItem value="내가면">내가면</SelectItem>
-                        <SelectItem value="불은면">불은면</SelectItem>
-                        <SelectItem value="삼산면">삼산면</SelectItem>
-                        <SelectItem value="서도면">서도면</SelectItem>
-                        <SelectItem value="선원면">선원면</SelectItem>
-                        <SelectItem value="송해면">송해면</SelectItem>
-                        <SelectItem value="양도면">양도면</SelectItem>
-                        <SelectItem value="양사면">양사면</SelectItem>
-                        <SelectItem value="하점면">하점면</SelectItem>
-                        <SelectItem value="화도면">화도면</SelectItem>
-                        <SelectItem value="강화군">강화군</SelectItem>
-                        <SelectItem value="강화외지역">강화외지역</SelectItem>
+                        <SelectItem value="강화군외">강화군외</SelectItem>
+                        {/* 강화읍 옵션 */}
+                        <SelectItem value="강화읍 갑곳리">강화읍 갑곳리</SelectItem>
+                        <SelectItem value="강화읍 관청리">강화읍 관청리</SelectItem>
+                        <SelectItem value="강화읍 국화리">강화읍 국화리</SelectItem>
+                        <SelectItem value="강화읍 남산리">강화읍 남산리</SelectItem>
+                        <SelectItem value="강화읍 대산리">강화읍 대산리</SelectItem>
+                        <SelectItem value="강화읍 신문리">강화읍 신문리</SelectItem>
+                        <SelectItem value="강화읍 옥림리">강화읍 옥림리</SelectItem>
+                        <SelectItem value="강화읍 용정리">강화읍 용정리</SelectItem>
+                        <SelectItem value="강화읍 월곳리">강화읍 월곳리</SelectItem>
+                        
+                        {/* 교동면 옵션 */}
+                        <SelectItem value="교동면 고구리">교동면 고구리</SelectItem>
+                        <SelectItem value="교동면 난정리">교동면 난정리</SelectItem>
+                        <SelectItem value="교동면 대룡리">교동면 대룡리</SelectItem>
+                        <SelectItem value="교동면 동산리">교동면 동산리</SelectItem>
+                        <SelectItem value="교동면 무학리">교동면 무학리</SelectItem>
+                        <SelectItem value="교동면 봉소리">교동면 봉소리</SelectItem>
+                        <SelectItem value="교동면 상용리">교동면 상용리</SelectItem>
+                        <SelectItem value="교동면 서한리">교동면 서한리</SelectItem>
+                        
+                        {/* 화도면 옵션 */}
+                        <SelectItem value="화도면 내리">화도면 내리</SelectItem>
+                        <SelectItem value="화도면 덕포리">화도면 덕포리</SelectItem>
+                        <SelectItem value="화도면 동막리">화도면 동막리</SelectItem>
+                        <SelectItem value="화도면 문산리">화도면 문산리</SelectItem>
+                        <SelectItem value="화도면 사기리">화도면 사기리</SelectItem>
+                        <SelectItem value="화도면 상방리">화도면 상방리</SelectItem>
+                        <SelectItem value="화도면 여차리">화도면 여차리</SelectItem>
+                        <SelectItem value="화도면 장화리">화도면 장화리</SelectItem>
+                        <SelectItem value="화도면 흥왕리">화도면 흥왕리</SelectItem>
                       </SelectContent>
                     </Select>
                   </FormItem>

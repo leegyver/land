@@ -831,6 +831,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 관리자: 뉴스 수동 수집 실행
+  app.post("/api/news/fetch", async (req, res) => {
+    try {
+      // 인증 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "로그인이 필요합니다." });
+      }
+      
+      const user = req.user as Express.User;
+      if (user.role !== "admin") {
+        return res.status(403).json({ message: "관리자 권한이 필요합니다." });
+      }
+      
+      // 뉴스 수집 실행
+      console.log("뉴스 수동 수집 시작");
+      const result = await fetchAndSaveNews();
+      
+      // 성공적으로 수집한 경우 캐시 초기화
+      if (result && result.length >= 0) {
+        // 뉴스 관련 캐시 모두 삭제
+        memoryCache.deleteByPrefix('news_');
+        
+        console.log(`뉴스 수동 수집 완료: ${result.length}개 항목`);
+        return res.status(200).json({ 
+          success: true, 
+          message: `${result.length}개의 새로운 뉴스 항목이 수집되었습니다.`,
+          count: result.length 
+        });
+      } else {
+        console.log("뉴스 수동 수집 실패");
+        return res.status(500).json({ 
+          success: false,
+          message: "뉴스 수집 중 오류가 발생했습니다." 
+        });
+      }
+    } catch (error) {
+      console.error("뉴스 수동 수집 오류:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "뉴스 수집 중 오류가 발생했습니다.", 
+        error: error instanceof Error ? error.message : "알 수 없는 오류"
+      });
+    }
+  });
+
+  // 뉴스 스케줄러 초기화
+  const newsScheduler = setupNewsScheduler();
+
   const httpServer = createServer(app);
   return httpServer;
 }

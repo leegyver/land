@@ -20,6 +20,7 @@ declare global {
   interface Window {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Kakao?: any;
+    kakaoKey?: string;
   }
 }
 import { useAuth } from "@/hooks/use-auth";
@@ -64,8 +65,8 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
   // 카카오 SDK 초기화
   useEffect(() => {
     try {
-      // 환경 변수에서 KAKAO_API_KEY 가져오기
-      const KAKAO_API_KEY = import.meta.env.VITE_KAKAO_API_KEY || "";
+      // HTML에 직접 설정된 API 키 사용
+      const KAKAO_API_KEY = window.kakaoKey;
       
       if (!KAKAO_API_KEY) {
         console.error("카카오 API 키가 설정되지 않았습니다");
@@ -170,77 +171,50 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
     }
     
     try {
+      // 현재 표시된 이미지 정보 및 기타 디버깅 정보 추출
+      const currentImage = Array.isArray(images) && images.length > 0 ? images[currentImageIndex] : null;
+      
       console.log("카카오 공유 시도", { 
         kakaoLoaded: !!window.Kakao,
         kakaoInitialized: window.Kakao ? window.Kakao.isInitialized() : false,
         propertyTitle: property.title,
-        propertyImageUrl: property.imageUrl,
-        imageUrls: property.imageUrls
+        currentImageUrl: currentImage,
       });
       
       if (!window.Kakao) {
-        console.error("카카오 SDK가 로드되지 않았습니다");
-        toast({
-          title: "공유 기능을 사용할 수 없습니다",
-          description: "카카오톡 SDK 로드에 실패했습니다.",
-          variant: "destructive",
-        });
-        return;
+        throw new Error("카카오 SDK가 로드되지 않았습니다");
       }
       
       if (!window.Kakao.isInitialized()) {
-        console.error("카카오 SDK가 초기화되지 않았습니다");
-        toast({
-          title: "공유 기능을 사용할 수 없습니다",
-          description: "카카오톡 SDK 초기화에 실패했습니다.",
-          variant: "destructive",
-        });
-        return;
+        // SDK가 초기화되지 않았다면 다시 시도
+        const KAKAO_API_KEY = window.kakaoKey;
+        if (KAKAO_API_KEY) {
+          console.log("카카오 SDK 재초기화 시도");
+          window.Kakao.init(KAKAO_API_KEY);
+          console.log("카카오 SDK 재초기화 결과:", window.Kakao.isInitialized());
+          
+          if (!window.Kakao.isInitialized()) {
+            throw new Error("카카오 SDK 초기화에 실패했습니다");
+          }
+        } else {
+          throw new Error("카카오 API 키가 설정되지 않았습니다");
+        }
       }
       
-      const imageUrl = Array.isArray(property.imageUrls) && property.imageUrls.length > 0 
-        ? property.imageUrls[0] 
-        : (property.imageUrl || 'https://via.placeholder.com/800x500?text=매물+이미지+준비중');
+      // 대표 이미지 URL 선택 - 현재 보이는 이미지 우선
+      const imageUrl = currentImage || 
+        (Array.isArray(property.imageUrls) && property.imageUrls.length > 0 
+          ? property.imageUrls[0] 
+          : (property.imageUrl || 'https://via.placeholder.com/800x500?text=매물+이미지+준비중'));
       
       console.log("카카오 공유 이미지 URL:", imageUrl);
       
-      // 웹사이트 도메인으로 변경
+      // 현재 페이지 URL
       const currentUrl = window.location.href;
       console.log("현재 URL:", currentUrl);
       
-      // 카카오 API 존재 확인 및 선택
-      let kakaoSendMethod;
-      
-      if (window.Kakao.Share && typeof window.Kakao.Share.sendDefault === 'function') {
-        console.log("Kakao.Share API를 사용합니다 (신규 버전)");
-        kakaoSendMethod = window.Kakao.Share.sendDefault;
-      } else if (window.Kakao.Link && typeof window.Kakao.Link.sendDefault === 'function') {
-        console.log("Kakao.Link API를 사용합니다 (구버전)");
-        kakaoSendMethod = window.Kakao.Link.sendDefault;
-      } else {
-        console.warn("카카오 공유 API를 찾을 수 없어 클립보드에 텍스트를 복사합니다");
-        const shareText = `[한국부동산] ${property.title}\n${property.district} 위치 - ${property.type} - ${formatPrice(property.price)}\n${currentUrl}`;
-        
-        navigator.clipboard.writeText(shareText)
-          .then(() => {
-            toast({
-              title: "클립보드에 복사되었습니다",
-              description: "카카오톡에 붙여넣어 공유하세요",
-            });
-          })
-          .catch(err => {
-            console.error('클립보드 복사 실패:', err);
-            toast({
-              title: "복사 실패",
-              description: "공유 URL: " + currentUrl,
-              variant: "destructive",
-            });
-          });
-        return;
-      }
-      
-      // 카카오 공유하기
-      kakaoSendMethod({
+      // Share SDK 2.0+ 직접 사용
+      window.Kakao.Share.sendDefault({
         objectType: 'feed',
         content: {
           title: `[한국부동산] ${property.title}`,
@@ -260,6 +234,10 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
             },
           },
         ],
+        // 성공 콜백
+        serverCallbackArgs: {
+          property_id: propertyId
+        }
       });
       
       console.log("카카오 공유 요청 성공");
@@ -267,7 +245,14 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
     } catch (error) {
       console.error("카카오 공유 중 오류 발생:", error);
       
-      // 오류 발생 시 클립보드 복사로 대체
+      // 사용자에게 오류 내용 알림
+      toast({
+        title: "카카오 공유 실패",
+        description: "클립보드에 정보를 복사합니다",
+        variant: "destructive",
+      });
+      
+      // 오류 발생 시 항상 클립보드 복사로 대체
       try {
         const shareText = `[한국부동산] ${property.title}\n${property.district} 위치 - ${property.type} - ${formatPrice(property.price)}\n${window.location.href}`;
         

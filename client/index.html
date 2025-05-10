@@ -4,7 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <!-- 카카오 SDK 로드 -->
-    <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.5.0/kakao.min.js" integrity="sha384-kYPsUbBPlktXsY6/oNHSUDZoTX6+YI51f63jCPEIPFP09ttByAdxd2mEjKuhdqn4" crossorigin="anonymous"></script>
+    <script src="https://developers.kakao.com/sdk/js/kakao.js"></script>
+    <script>
+      window.Kakao = window.Kakao || {};
+      // 사용할 앱의 JavaScript 키를 설정
+      window.kakaoKey = "2f6ff1b2e516329499e3e785899159e9";
+    </script>
   </head>
   <body>
     <div id="root"></div>

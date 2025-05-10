@@ -28,8 +28,9 @@ import { Property, insertPropertySchema } from "@shared/schema";
 // 부동산 유형 목록
 const propertyTypes = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
 
-// 통합된 지역 목록 (읍면동)
+// 통합된 지역 목록 (읍면동리)
 const allLocations = [
+  "강화군외",
   "강화읍 갑곳리",
   "강화읍 관청리",
   "강화읍 국화리",

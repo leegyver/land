@@ -17,7 +17,6 @@ import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
 import AuthPage from "@/pages/auth-page";
 import AdminPage from "@/pages/AdminDashboard";
-import AdminOldPage from "@/pages/admin-page";
 import ProfilePage from "@/pages/profile-page";
 import NewsPage from "@/pages/NewsPage";
 import NewsDetailPage from "@/pages/NewsDetailPage";
@@ -39,7 +38,6 @@ function AppRouter() {
       <Route path="/auth" component={AuthPage} />
       <SimpleProtectedRoute path="/profile" component={ProfilePage} />
       <SimpleProtectedRoute path="/admin" component={AdminPage} admin={true} />
-      <SimpleProtectedRoute path="/admin-old" component={AdminOldPage} admin={true} />
       <SimpleProtectedRoute path="/admin/properties/new" component={PropertyForm} admin={true} />
       <SimpleProtectedRoute path="/admin/properties/edit/:id" component={PropertyForm} admin={true} />
       <Route component={NotFound} />

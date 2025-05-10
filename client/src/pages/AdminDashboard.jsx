@@ -191,13 +191,6 @@ function AdminDashboard() {
                   <Plus className="h-4 w-4 mr-2" />
                   새 부동산 등록
                 </a>
-                <a 
-                  href="/admin-old"
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md inline-flex items-center"
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  고급 관리 페이지
-                </a>
               </div>
             </div>
             

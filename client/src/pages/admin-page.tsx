@@ -1,12 +1,13 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getQueryFn, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { Property, User, News, insertPropertySchema } from "@shared/schema";
+import { PropertyFormDialog } from "@/components/admin/PropertyFormDialog";
+import * as z from "zod";
+
+type PropertyFormValues = z.infer<typeof insertPropertySchema>;
 
 import {
   Table,
@@ -21,7 +22,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -29,23 +29,10 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -64,11 +51,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Loader2, Home, Plus, Trash2, Edit, Check } from "lucide-react";
 
-// 부동산 타입 및 읍면동 데이터
-const propertyTypes = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
 
-// 거래 종류 (다중 선택 가능)
-const dealTypes = ["매매", "전세", "월세", "완료", "보류중"];
 
 // 읍면 
 const districts = [
@@ -98,77 +81,7 @@ const detailedDistricts: DetailedDistrictsType = {
   "강화외지역": ["기타지역"]
 };
 
-// 부동산 등록 폼 스키마 확장 (유효성 검사 추가)
-const propertyFormSchema = insertPropertySchema.extend({
-  // 기본 정보
-  price: z
-    .union([
-      z.string().min(1, "가격은 필수 입력 항목입니다").refine((val) => !isNaN(Number(val)), {
-        message: "가격은 숫자 형식이어야 합니다",
-      }),
-      z.number().min(1, "가격은 필수 입력 항목입니다")
-    ]),
-  size: z
-    .union([
-      z.string().min(1, "면적은 필수 입력 항목입니다").refine((val) => !isNaN(Number(val)), {
-        message: "면적은 숫자 형식이어야 합니다",
-      }),
-      z.number().min(1, "면적은 필수 입력 항목입니다")
-    ]),
-  
-  // 위치 정보
-  district: z.string().min(1, "읍면동은 필수 입력 항목입니다"),
-  address: z.string().min(1, "지번은 필수 입력 항목입니다"),
-  buildingName: z.string().optional(),
-  unitNumber: z.string().optional(),
-  
-  // 면적 정보
-  supplyArea: z.union([z.string().optional(), z.number().optional()]),
-  privateArea: z.union([z.string().optional(), z.number().optional()]),
-  areaSize: z.string().optional(),
-  
-  // 건물 정보
-  floor: z.union([z.string().optional(), z.number().optional()]),
-  totalFloors: z.union([z.string().optional(), z.number().optional()]),
-  direction: z.string().optional(),
-  elevator: z.boolean().optional().default(false),
-  parking: z.string().optional(),
-  heatingSystem: z.string().optional(),
-  approvalDate: z.string().optional(),
-  
-  // 금액 정보
-  dealType: z.array(z.string()).default([]),
-  deposit: z.union([z.string().optional(), z.number().optional()]),
-  monthlyRent: z.union([z.string().optional(), z.number().optional()]),
-  maintenanceFee: z.union([z.string().optional(), z.number().optional()]),
-  
-  // 연락처 정보
-  ownerName: z.string().optional(),
-  ownerPhone: z.string().optional(),
-  tenantName: z.string().optional(),
-  tenantPhone: z.string().optional(),
-  clientName: z.string().optional(),
-  clientPhone: z.string().optional(),
-  
-  // 추가 정보
-  specialNote: z.string().optional(),
-  coListing: z.boolean().optional().default(false),
-  propertyDescription: z.string().optional(),
-  privateNote: z.string().optional(),
-  
-  // 기존 필드들
-  bedrooms: z.union([
-    z.string().optional().transform(val => val ? Number(val) : 0), 
-    z.number().min(0, "침실 수는 0 이상이어야 합니다")
-  ]),
-  bathrooms: z.union([
-    z.string().optional().transform(val => val ? Number(val) : 0), 
-    z.number().min(0, "욕실 수는 0 이상이어야 합니다")
-  ]),
-  featured: z.boolean().optional().default(false),
-});
 
-type PropertyFormValues = z.infer<typeof propertyFormSchema>;
 
 export default function AdminPage() {
   const { user: currentUser } = useAuth();
@@ -183,80 +96,7 @@ export default function AdminPage() {
   const [selectedMainDistrict, setSelectedMainDistrict] = useState("강화읍");
   const [detailedDistrictOptions, setDetailedDistrictOptions] = useState<string[]>(detailedDistricts["강화읍"]);
   
-  // 부동산 등록/수정 폼
-  const propertyForm = useForm<PropertyFormValues>({
-    resolver: zodResolver(propertyFormSchema),
-    defaultValues: {
-      // 기본 정보
-      title: "",
-      description: "",
-      type: "토지",
-      price: "",
-      city: "인천",
-      district: "강화읍 갑곳리", 
-      address: "",
-      size: "",
-      imageUrl: "",
-      agentId: 1,
-      
-      // 위치 정보
-      buildingName: "",
-      unitNumber: "",
-      
-      // 면적 정보
-      supplyArea: "",
-      privateArea: "",
-      areaSize: "",
-      
-      // 건물 정보
-      floor: "",
-      totalFloors: "",
-      direction: "",
-      elevator: false,
-      parking: "",
-      heatingSystem: "",
-      approvalDate: "",
-      
-      // 금액 정보
-      dealType: ["매매"],
-      deposit: "",
-      monthlyRent: "",
-      maintenanceFee: "",
-      
-      // 연락처 정보
-      ownerName: "",
-      ownerPhone: "",
-      tenantName: "",
-      tenantPhone: "",
-      clientName: "",
-      clientPhone: "",
-      
-      // 추가 정보
-      specialNote: "",
-      coListing: false,
-      propertyDescription: "",
-      privateNote: "",
-      
-      // 기존 필드
-      bedrooms: 0,
-      bathrooms: 0,
-      featured: false,
-    },
-  });
 
-  // 선택된 읍면에 따라 세부 지역 옵션 업데이트
-  useEffect(() => {
-    if (selectedMainDistrict && detailedDistricts[selectedMainDistrict]) {
-      setDetailedDistrictOptions(detailedDistricts[selectedMainDistrict]);
-      // 첫 번째 세부 지역을 기본값으로 설정
-      propertyForm.setValue("district", detailedDistricts[selectedMainDistrict][0]);
-    }
-  }, [selectedMainDistrict, propertyForm]);
-  
-  // 읍면 변경 핸들러
-  const handleDistrictChange = (value: string) => {
-    setSelectedMainDistrict(value);
-  };
 
   // 부동산 목록 조회
   const {
@@ -306,7 +146,6 @@ export default function AdminPage() {
         description: "새로운 부동산이 등록되었습니다.",
       });
       setOpenPropertyDialog(false);
-      propertyForm.reset();
     },
     onError: (error: Error) => {
       toast({
@@ -341,7 +180,6 @@ export default function AdminPage() {
       });
       setOpenPropertyDialog(false);
       setEditingProperty(null);
-      propertyForm.reset();
     },
     onError: (error: Error) => {
       toast({
@@ -439,70 +277,6 @@ export default function AdminPage() {
     },
   });
 
-  // 부동산 폼 제출 핸들러
-  const onPropertySubmit = (data: PropertyFormValues) => {
-    if (editingProperty) {
-      updatePropertyMutation.mutate({ id: editingProperty.id, data });
-    } else {
-      createPropertyMutation.mutate(data);
-    }
-  };
-
-  // 부동산 수정 열기
-  const handleEditProperty = (property: Property) => {
-    // 현재 선택된 부동산 저장
-    setEditingProperty(property);
-    
-    // 먼저 폼 초기화
-    propertyForm.reset();
-    
-    // 폼 값 설정 (null 값을 undefined로 변환하여 타입 호환성 문제 해결)
-    propertyForm.reset({
-      title: property.title,
-      description: property.description,
-      type: property.type,
-      price: property.price.toString(),
-      address: property.address,
-      city: property.city,
-      district: property.district,
-      size: property.size.toString(),
-      bedrooms: property.bedrooms,
-      bathrooms: property.bathrooms,
-      imageUrl: property.imageUrl,
-      agentId: property.agentId,
-      featured: property.featured === null ? undefined : property.featured,
-      buildingName: property.buildingName || undefined,
-      unitNumber: property.unitNumber || undefined,
-      supplyArea: property.supplyArea ? property.supplyArea.toString() : undefined,
-      privateArea: property.privateArea ? property.privateArea.toString() : undefined,
-      areaSize: property.areaSize || undefined,
-      floor: property.floor ? property.floor.toString() : undefined,
-      totalFloors: property.totalFloors ? property.totalFloors.toString() : undefined,
-      direction: property.direction || undefined,
-      elevator: property.elevator === null ? undefined : property.elevator,
-      parking: property.parking || undefined,
-      heatingSystem: property.heatingSystem || undefined,
-      approvalDate: property.approvalDate || undefined,
-      dealType: Array.isArray(property.dealType) ? property.dealType : ["매매"],
-      deposit: property.deposit ? property.deposit.toString() : undefined,
-      monthlyRent: property.monthlyRent ? property.monthlyRent.toString() : undefined,
-      maintenanceFee: property.maintenanceFee ? property.maintenanceFee.toString() : undefined,
-      ownerName: property.ownerName || undefined,
-      ownerPhone: property.ownerPhone || undefined,
-      tenantName: property.tenantName || undefined,
-      tenantPhone: property.tenantPhone || undefined,
-      clientName: property.clientName || undefined,
-      clientPhone: property.clientPhone || undefined,
-      specialNote: property.specialNote || undefined,
-      coListing: property.coListing === null ? undefined : property.coListing,
-      propertyDescription: property.propertyDescription || undefined,
-      privateNote: property.privateNote || undefined,
-    });
-    
-    // 다이얼로그 열기
-    setOpenPropertyDialog(true);
-  };
-
   // 부동산 삭제 핸들러
   const handleDeleteProperty = (id: number) => {
     if (confirm("정말로 이 부동산을 삭제하시겠습니까?")) {
@@ -514,68 +288,19 @@ export default function AdminPage() {
   const handleCloseDialog = () => {
     setOpenPropertyDialog(false);
     setEditingProperty(null);
-    propertyForm.reset();
+  };
+
+  // 부동산 수정 열기
+  const handleEditProperty = (property: Property) => {
+    // 현재 선택된 부동산 저장
+    setEditingProperty(property);
+    // 다이얼로그 열기
+    setOpenPropertyDialog(true);
   };
 
   // 새 부동산 추가 핸들러
   const handleAddProperty = () => {
     setEditingProperty(null);
-    propertyForm.reset({
-      // 기본 정보
-      title: "",
-      description: "",
-      type: "토지",
-      price: "",
-      city: "인천",
-      district: "강화읍 갑곳리", 
-      address: "",
-      size: "",
-      imageUrl: "",
-      agentId: 1,
-      
-      // 위치 정보
-      buildingName: "",
-      unitNumber: "",
-      
-      // 면적 정보
-      supplyArea: "",
-      privateArea: "",
-      areaSize: "",
-      
-      // 건물 정보
-      floor: "",
-      totalFloors: "",
-      direction: "",
-      elevator: false,
-      parking: "",
-      heatingSystem: "",
-      approvalDate: "",
-      
-      // 금액 정보
-      dealType: ["매매"],
-      deposit: "",
-      monthlyRent: "",
-      maintenanceFee: "",
-      
-      // 연락처 정보
-      ownerName: "",
-      ownerPhone: "",
-      tenantName: "",
-      tenantPhone: "",
-      clientName: "",
-      clientPhone: "",
-      
-      // 추가 정보
-      specialNote: "",
-      coListing: false,
-      propertyDescription: "",
-      privateNote: "",
-      
-      // 기존 필드
-      bedrooms: 0,
-      bathrooms: 0,
-      featured: false,
-    });
     setOpenPropertyDialog(true);
   };
 
@@ -715,396 +440,12 @@ export default function AdminPage() {
             </CardContent>
           </Card>
 
-          {/* 부동산 등록/수정 다이얼로그 */}
-          {/* 폼 다이얼로그 위치 */}
-          <Dialog 
-            open={openPropertyDialog} 
-            onOpenChange={(open) => {
-              setOpenPropertyDialog(open); 
-              if (!open) {
-                // 다이얼로그가 닫힐 때 폼 초기화
-                propertyForm.reset(); 
-                setEditingProperty(null);
-              }
-            }}
-          >
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>{editingProperty ? "부동산 수정" : "새 부동산 등록"}</DialogTitle>
-                <DialogDescription>
-                  {editingProperty
-                    ? "부동산 정보를 수정하세요"
-                    : "새로운 부동산 매물을 등록하세요"}
-                </DialogDescription>
-              </DialogHeader>
-
-              <Form {...propertyForm}>
-                <form
-                  onSubmit={propertyForm.handleSubmit(onPropertySubmit)}
-                  className="space-y-6"
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <FormField
-                        control={propertyForm.control}
-                        name="title"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>제목</FormLabel>
-                            <FormControl>
-                              <Input placeholder="부동산 제목" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div>
-                      <FormField
-                        control={propertyForm.control}
-                        name="type"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>유형</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="부동산 유형 선택" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {propertyTypes.map((type) => (
-                                  <SelectItem key={type} value={type}>
-                                    {type}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <FormField
-                        control={propertyForm.control}
-                        name="description"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>설명</FormLabel>
-                            <FormControl>
-                              <Textarea
-                                placeholder="부동산에 대한 상세 설명"
-                                rows={4}
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div>
-                      <FormField
-                        control={propertyForm.control}
-                        name="price"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>가격</FormLabel>
-                            <FormControl>
-                              <Input placeholder="가격 (원)" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div>
-                      <FormField
-                        control={propertyForm.control}
-                        name="size"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>면적 (㎡)</FormLabel>
-                            <FormControl>
-                              <Input placeholder="면적 (㎡)" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div>
-                      <FormItem>
-                        <FormLabel>읍면</FormLabel>
-                        <Select
-                          onValueChange={handleDistrictChange}
-                          defaultValue={selectedMainDistrict}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="지역 선택" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {districts.map((district) => (
-                              <SelectItem key={district} value={district}>
-                                {district}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    </div>
-
-                    <div>
-                      <FormField
-                        control={propertyForm.control}
-                        name="district"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>읍면동</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="상세 지역 선택" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {detailedDistrictOptions.map((district) => (
-                                  <SelectItem key={district} value={district}>
-                                    {district}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div>
-                      <FormField
-                        control={propertyForm.control}
-                        name="address"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>지번</FormLabel>
-                            <FormControl>
-                              <Input placeholder="지번 주소" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div>
-                      <FormField
-                        control={propertyForm.control}
-                        name="buildingName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>건물명</FormLabel>
-                            <FormControl>
-                              <Input placeholder="건물명 (선택사항)" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div>
-                      <FormField
-                        control={propertyForm.control}
-                        name="unitNumber"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>동호수</FormLabel>
-                            <FormControl>
-                              <Input placeholder="동호수 (선택사항)" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div>
-                      <FormField
-                        control={propertyForm.control}
-                        name="supplyArea"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>공급면적 (평)</FormLabel>
-                            <FormControl>
-                              <Input placeholder="공급면적 (선택사항)" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div>
-                      <FormField
-                        control={propertyForm.control}
-                        name="privateArea"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>전용면적 (평)</FormLabel>
-                            <FormControl>
-                              <Input placeholder="전용면적 (선택사항)" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div>
-                      <FormField
-                        control={propertyForm.control}
-                        name="imageUrl"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>이미지 URL</FormLabel>
-                            <FormControl>
-                              <Input placeholder="이미지 URL" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div>
-                      <FormField
-                        control={propertyForm.control}
-                        name="dealType"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>거래 종류</FormLabel>
-                            <div className="flex flex-wrap gap-2">
-                              {dealTypes.map((type) => (
-                                <Button
-                                  key={type}
-                                  type="button"
-                                  variant={field.value && Array.isArray(field.value) && field.value.includes(type) ? "default" : "outline"}
-                                  size="sm"
-                                  onClick={() => {
-                                    // 현재 값이 undefined이거나 배열이 아닌 경우 빈 배열로 초기화
-                                    const currentValue = field.value && Array.isArray(field.value) ? field.value : [];
-                                    const newValue = currentValue.includes(type)
-                                      ? currentValue.filter((t) => t !== type)
-                                      : [...currentValue, type];
-                                    field.onChange(newValue);
-                                  }}
-                                >
-                                  {type}
-                                </Button>
-                              ))}
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div>
-                      <FormField
-                        control={propertyForm.control}
-                        name="bedrooms"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>침실 수</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                placeholder="침실 수"
-                                {...field}
-                                onChange={(e) => {
-                                  field.onChange(parseInt(e.target.value));
-                                }}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div>
-                      <FormField
-                        control={propertyForm.control}
-                        name="bathrooms"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>욕실 수</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                placeholder="욕실 수"
-                                {...field}
-                                onChange={(e) => {
-                                  field.onChange(parseInt(e.target.value));
-                                }}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div>
-                      <FormField
-                        control={propertyForm.control}
-                        name="featured"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 p-4">
-                            <FormControl>
-                              <input
-                                type="checkbox"
-                                className="w-4 h-4 mt-1"
-                                checked={field.value}
-                                onChange={(e) => field.onChange(e.target.checked)}
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel>추천 매물</FormLabel>
-                              <FormDescription>
-                                이 매물을 메인 화면에 추천 매물로 표시합니다.
-                              </FormDescription>
-                            </div>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
-
-                  <DialogFooter>
-                    <Button type="submit">
-                      {editingProperty ? "수정" : "등록"}
-                    </Button>
-                  </DialogFooter>
-                </form>
-                </Form>
-            </DialogContent>
-          </Dialog>
+          {/* 속성 폼 다이얼로그 */}
+          <PropertyFormDialog 
+            isOpen={openPropertyDialog} 
+            onClose={handleCloseDialog} 
+            property={editingProperty} 
+          />
         </TabsContent>
 
         {/* 뉴스 관리 탭 */}

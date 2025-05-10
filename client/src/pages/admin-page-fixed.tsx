@@ -567,15 +567,17 @@ export default function AdminPageFixed() {
             </CardContent>
           </Card>
 
-          {/* 속성 폼 - Dialog 없이 단순 인라인 폼으로 구현 */}
-          {openPropertyDialog && (
-            <div className="mt-6">
-              <InlinePropertyForm 
-                onClose={handleCloseDialog}
-                property={editingProperty} 
-              />
-            </div>
-          )}
+          {/* 속성 폼 - Dialog 형식으로 구현 */}
+          <PropertyFormDialog
+            open={openPropertyDialog}
+            onOpenChange={(open) => {
+              if (!open) {
+                handleCloseDialog();
+              }
+            }}
+            property={editingProperty}
+            onSubmitSuccess={handleCloseDialog}
+          />
         </TabsContent>
 
         {/* 뉴스 관리 탭 */}

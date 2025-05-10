@@ -292,10 +292,37 @@ export function PropertyFormDialog({ renderDialog, onSubmitSuccess, property }: 
 
   // 폼 제출 처리
   const onSubmit = (data: PropertyFormValues) => {
+    console.log("폼 제출 데이터:", data);
+    
+    // 데이터 타입 변환
+    const formattedData = {
+      ...data,
+      // 숫자 필드 변환
+      price: data.price ? parseFloat(data.price.toString()) : null,
+      size: data.size ? parseFloat(data.size.toString()) : null,
+      supplyArea: data.supplyArea ? parseFloat(data.supplyArea.toString()) : null,
+      privateArea: data.privateArea ? parseFloat(data.privateArea.toString()) : null,
+      floor: data.floor ? parseInt(data.floor.toString()) : null,
+      totalFloors: data.totalFloors ? parseInt(data.totalFloors.toString()) : null,
+      deposit: data.deposit ? parseFloat(data.deposit.toString()) : null,
+      monthlyRent: data.monthlyRent ? parseFloat(data.monthlyRent.toString()) : null,
+      maintenanceFee: data.maintenanceFee ? parseFloat(data.maintenanceFee.toString()) : null,
+      
+      // 불리언 필드 변환
+      featured: data.featured === null ? false : Boolean(data.featured),
+      elevator: data.elevator === null ? false : Boolean(data.elevator),
+      coListing: data.coListing === null ? false : Boolean(data.coListing),
+    };
+    
     if (property) {
-      updatePropertyMutation.mutate({ id: property.id, data });
+      // 기존 속성 수정
+      updatePropertyMutation.mutate({
+        id: property.id,
+        data: formattedData,
+      });
     } else {
-      createPropertyMutation.mutate(data);
+      // 새 속성 생성
+      createPropertyMutation.mutate(formattedData);
     }
   };
 

@@ -194,7 +194,7 @@ function PropertyForm() {
     // 추가 정보
     specialNote: "",
     coListing: false,
-    propertyDescription: "",
+    // propertyDescription 필드 삭제
     privateNote: "",
     featuredImageIndex: 0, // 대표 이미지 인덱스 추가
   });
@@ -1147,16 +1147,7 @@ function PropertyForm() {
                     <Label htmlFor="coListing">공동중개</Label>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="propertyDescription">매물 설명</Label>
-                    <Textarea
-                      id="propertyDescription"
-                      name="propertyDescription"
-                      value={formData.propertyDescription || ""}
-                      onChange={handleChange}
-                      rows={4}
-                    />
-                  </div>
+                  {/* 매물설명 필드 삭제 요청에 따라 제거됨 */}
                   
                   <div className="space-y-2">
                     <Label htmlFor="privateNote">비공개 메모</Label>

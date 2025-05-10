@@ -142,6 +142,33 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
     }
   };
   
+  // 공유 기능 핸들러
+  const handleShareClick = () => {
+    if (!property) return;
+    
+    try {
+      const title = `[한국부동산] ${property.title}`;
+      const text = `${property.district} 위치 - ${property.type} - ${formatPrice(property.price)}`;
+      const shareText = `${title}\n${text}\n${window.location.href}`;
+      
+      // 클립보드에 복사
+      navigator.clipboard.writeText(shareText)
+        .then(() => {
+          toast({
+            title: "클립보드에 복사되었습니다",
+            description: "친구에게 공유하세요",
+          });
+        })
+        .catch(err => {
+          console.error('클립보드 복사 실패:', err);
+          alert('클립보드 복사에 실패했습니다. URL: ' + window.location.href);
+        });
+    } catch (error) {
+      console.error("공유 중 오류 발생:", error);
+      alert('공유 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    }
+  };
+  
   // Property 데이터를 확장된 타입으로 캐스팅
   const property = propertyData as Property | undefined;
   
@@ -631,33 +658,11 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                     {favoriteData?.isFavorite ? '관심매물 등록됨' : '관심매물'}
                   </Button>
                   
-                  {/* 카카오톡 공유 버튼 */}
+                  {/* 공유 버튼 */}
                   <Button 
                     variant="outline" 
                     className="w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-900 border-yellow-300 relative pl-10"
-                    onClick={() => {
-                      try {
-                        // 공유할 URL (현재 페이지 URL)
-                        const shareUrl = encodeURIComponent(window.location.href);
-                        
-                        // 카카오 공유하기 웹 페이지로 리디렉션
-                        // 이 방식은 SDK 인증 문제를 우회합니다
-                        const kakaoShareUrl = `https://sharer.kakao.com/talk/friends/picker/link?app_key=2f6ff1b2e516329499e3e785899159e9&meta=${encodeURIComponent(
-                          JSON.stringify({
-                            title: `[한국부동산] ${property.title}`,
-                            description: `${property.district} 위치 - ${property.type} - ${formatPrice(property.price)}`,
-                            image_url: 'https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_btn_medium.png'
-                          })
-                        )}&webUrl=${shareUrl}`;
-                        
-                        // 새 창에서 열기
-                        window.open(kakaoShareUrl, '_blank');
-                        
-                      } catch (error) {
-                        console.error("카카오톡 공유 중 오류 발생:", error);
-                        alert('카카오톡 공유 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-                      }
-                    }}
+                    onClick={() => handleShareClick()}
                   >
                     <div className="absolute left-2 top-1/2 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center">
                       <svg width="22" height="20" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
@@ -665,7 +670,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                         <path fill="#381F1F" d="M70.318 146.234c-3.993 0-7.241-3.248-7.241-7.241V113.95c0-3.993 3.248-7.241 7.241-7.241c3.993 0 7.241 3.248 7.241 7.241v25.043c0 3.993-3.248 7.241-7.241 7.241zm33.507 0c-3.993 0-7.241-3.248-7.241-7.241V113.95c0-3.993 3.248-7.241 7.241-7.241c3.993 0 7.241 3.248 7.241 7.241v25.043c0 3.993-3.248 7.241-7.241 7.241zm33.507 0c-3.993 0-7.241-3.248-7.241-7.241V113.95c0-3.992 3.248-7.241 7.241-7.241c3.993 0 7.241 3.249 7.241 7.241v25.043c0 3.993-3.248 7.241-7.241 7.241zm33.508 0c-3.993 0-7.241-3.248-7.241-7.241V113.95c0-3.992 3.248-7.241 7.241-7.241c3.993 0 7.241 3.249 7.241 7.241v25.043c0 3.993-3.248 7.241-7.241 7.241z"/>
                       </svg>
                     </div>
-                    카카오톡으로 공유하기
+                    친구에게 공유하기
                   </Button>
                 </div>
               </div>

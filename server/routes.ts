@@ -15,19 +15,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Properties
   app.get("/api/properties", async (req, res) => {
     try {
-      // 캐시에서 먼저 확인
-      const cacheKey = "properties_all";
-      const cachedProperties = memoryCache.get(cacheKey);
+      // 캐시 확인 여부를 쿼리 파라미터로 제어
+      const skipCache = req.query.skipCache === 'true';
       
-      if (cachedProperties) {
-        return res.json(cachedProperties);
+      if (!skipCache) {
+        // 캐시에서 먼저 확인
+        const cacheKey = "properties_all";
+        const cachedProperties = memoryCache.get(cacheKey);
+        
+        if (cachedProperties) {
+          return res.json(cachedProperties);
+        }
       }
       
-      // 캐시에 없으면 DB에서 조회
+      // 캐시에 없거나 캐시 스킵 요청이면 DB에서 조회
       const properties = await storage.getProperties();
       
-      // 조회 결과를 캐시에 저장 (3분 동안)
-      memoryCache.set(cacheKey, properties, 3 * 60 * 1000);
+      // 캐시 스킵이 아닐 경우에만 캐시 저장
+      if (!skipCache) {
+        // 조회 결과를 캐시에 저장 (1분 동안 - 짧게 유지)
+        memoryCache.set("properties_all", properties, 1 * 60 * 1000);
+      }
       
       res.json(properties);
     } catch (error) {
@@ -323,6 +331,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await storage.deleteProperty(id);
       
       if (result) {
+        // 부동산 캐시 모두 삭제
+        memoryCache.deleteByPrefix("properties_");
         res.json({ success: true });
       } else {
         res.status(500).json({ message: "Failed to delete property" });

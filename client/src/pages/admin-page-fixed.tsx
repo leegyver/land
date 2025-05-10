@@ -130,7 +130,7 @@ export default function AdminPageFixed() {
     error: newsError,
     refetch: newsRefetch // 명시적 새로고침을 위한 refetch 함수
   } = useQuery<News[]>({
-    queryKey: ["/api/news?skipCache=true"],
+    queryKey: ["/api/news?skipCache=true"], 
     queryFn: getQueryFn({ on401: "throw" }),
   });
 
@@ -321,7 +321,7 @@ export default function AdminPageFixed() {
   
   // 다중 뉴스 삭제 뮤테이션
   const bulkDeleteNewsMutation = useMutation({
-    mutationFn: async (ids: number[]) => {
+    mutationFn: async (ids: string[]) => {
       console.log("클라이언트에서 삭제 요청할 ID 목록 (타입):", 
         ids.map(id => ({ id, type: typeof id })));
       
@@ -595,6 +595,8 @@ export default function AdminPageFixed() {
                       variant="destructive"
                       onClick={() => {
                         if (confirm(`선택한 ${selectedNewsIds.length}개의 뉴스를 삭제하시겠습니까?`)) {
+                          // 클라이언트 측에서 문자열 ID를 숫자로 변환하지 않고 그대로 전달
+                          // 서버 측에서 적절하게 숫자로 변환하도록 처리됨
                           bulkDeleteNewsMutation.mutate(selectedNewsIds);
                         }
                       }}

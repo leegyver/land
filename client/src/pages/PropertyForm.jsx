@@ -43,6 +43,16 @@ function PropertyForm() {
   const dealTypeOptions = ["매매", "전세", "월세", "완료", "보류중"];
   const propertyTypeOptions = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
   
+  // 지역 정보 정의
+  const cityOptions = ["인천광역시"];
+  const districtOptions = {
+    "인천광역시": ["강화군", "계양구", "남동구", "동구", "미추홀구", "부평구", "서구", "연수구", "옹진군", "중구"]
+  };
+  
+  const ganghwaSubdistrictOptions = [
+    "강화읍", "교동면", "길상면", "내가면", "불은면", "삼산면", "서도면", "선원면", "송해면", "양도면", "화도면", "양사면"
+  ];
+  
   // 폼 상태 설정
   const [formData, setFormData] = useState({
     title: "",
@@ -384,23 +394,40 @@ function PropertyForm() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="city">도시 *</Label>
-                      <Input
-                        id="city"
-                        name="city"
+                      <Select
                         value={formData.city}
-                        onChange={handleChange}
-                        required
-                      />
+                        onValueChange={(value) => handleSelectChange("city", value)}
+                      >
+                        <SelectTrigger id="city">
+                          <SelectValue placeholder="도시를 선택하세요" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {cityOptions.map((city) => (
+                            <SelectItem key={city} value={city}>
+                              {city}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="district">지역 *</Label>
-                      <Input
-                        id="district"
-                        name="district"
+                      <Select
                         value={formData.district}
-                        onChange={handleChange}
-                        required
-                      />
+                        onValueChange={(value) => handleSelectChange("district", value)}
+                        disabled={!formData.city}
+                      >
+                        <SelectTrigger id="district">
+                          <SelectValue placeholder="지역을 선택하세요" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {formData.city && districtOptions[formData.city]?.map((district) => (
+                            <SelectItem key={district} value={district}>
+                              {district}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   

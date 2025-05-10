@@ -193,5 +193,21 @@ export const insertPropertyInquirySchema = createInsertSchema(propertyInquiries)
 export type PropertyInquiry = typeof propertyInquiries.$inferSelect;
 export type InsertPropertyInquiry = z.infer<typeof insertPropertyInquirySchema>;
 
+// 관심 매물 (Favorites) 스키마
+export const favorites = pgTable("favorites", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  propertyId: integer("property_id").notNull().references(() => properties.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertFavoriteSchema = createInsertSchema(favorites).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type Favorite = typeof favorites.$inferSelect;
+export type InsertFavorite = z.infer<typeof insertFavoriteSchema>;
+
 // Session schema (for connect-pg-simple)
 // Removed schema mapping from Drizzle to avoid conflicts with connect-pg-simple's own schema

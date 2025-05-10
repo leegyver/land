@@ -103,8 +103,9 @@ export default function AdminPage() {
     data: properties,
     isLoading: isLoadingProperties,
     error: propertiesError,
+    refetch: refetchProperties,
   } = useQuery<Property[]>({
-    queryKey: ["/api/properties"],
+    queryKey: ["/api/properties?skipCache=true"],
     queryFn: getQueryFn({ on401: "throw" }),
   });
 
@@ -202,7 +203,15 @@ export default function AdminPage() {
       return await res.json();
     },
     onSuccess: () => {
+      // 먼저 모든 캐시 무효화
       queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/properties?skipCache=true"] });
+      
+      // 그리고 즉시 최신 데이터 가져오기
+      setTimeout(() => {
+        refetchProperties();
+      }, 100); // 약간의 지연 시간으로 서버 측에서 캐시가 업데이트될 시간을 줌
+      
       toast({
         title: "부동산 삭제 성공",
         description: "부동산이 삭제되었습니다.",

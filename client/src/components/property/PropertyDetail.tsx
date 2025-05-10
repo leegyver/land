@@ -799,30 +799,13 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                   <p className="text-sm text-gray-500 mb-4">
                     정확한 위치는 문의 시 안내해 드립니다.
                   </p>
-                  <Button size="sm" onClick={() => {
-                    const fullAddress = [
-                      property.district,
-                      property.address
-                    ].filter(Boolean).join(' ');
-                    window.open(`https://map.kakao.com/link/search/${encodeURIComponent(fullAddress)}`, '_blank');
-                  }}>
-                    카카오 지도에서 보기
-                  </Button>
+                  <p className="text-xs text-gray-400">
+                    본 지도는 매물의 대략적인 위치만 표시합니다.
+                  </p>
                 </div>
               </div>
               
-              {/* 외부 지도에서 보기 버튼 */}
-              <div className="absolute bottom-4 right-4 z-10">
-                <Button size="sm" variant="secondary" onClick={() => {
-                  const fullAddress = [
-                    property.district,
-                    property.address
-                  ].filter(Boolean).join(' ');
-                  window.open(`https://map.kakao.com/link/search/${encodeURIComponent(fullAddress)}`, '_blank');
-                }}>
-                  카카오 지도에서 보기
-                </Button>
-              </div>
+
             </div>
           </div>
           

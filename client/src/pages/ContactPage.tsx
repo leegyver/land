@@ -6,14 +6,14 @@ const ContactPage = () => {
   return (
     <div className="pt-16"> {/* Offset for fixed header */}
       <Helmet>
-        <title>문의하기 | 한국부동산</title>
+        <title>문의하기 | 이가이버부동산</title>
         <meta 
           name="description" 
-          content="한국부동산에 문의하세요. 부동산 매매, 임대, 투자에 관한 모든 궁금증을 전문가가 상담해 드립니다."
+          content="이가이버부동산에 문의하세요. 부동산 매매, 임대, 투자에 관한 모든 궁금증을 전문가가 상담해 드립니다."
         />
-        <meta property="og:title" content="문의하기 | 한국부동산" />
+        <meta property="og:title" content="문의하기 | 이가이버부동산" />
         <meta property="og:type" content="website" />
-        <meta property="og:description" content="한국부동산에 문의하세요. 부동산 매매, 임대, 투자에 관한 모든 궁금증을 전문가가 상담해 드립니다." />
+        <meta property="og:description" content="이가이버부동산에 문의하세요. 부동산 매매, 임대, 투자에 관한 모든 궁금증을 전문가가 상담해 드립니다." />
       </Helmet>
 
       <div className="bg-primary/10 py-12">
@@ -42,7 +42,7 @@ const ContactPage = () => {
                     <MapPin className="text-primary text-xl mt-1 w-8" />
                     <div>
                       <h4 className="font-bold">주소</h4>
-                      <p className="text-gray-medium">서울특별시 강남구 테헤란로 123 한국빌딩 5층</p>
+                      <p className="text-gray-medium">인천광역시 강화군 강화읍 남문로51, 1호</p>
                     </div>
                   </div>
                   
@@ -50,7 +50,7 @@ const ContactPage = () => {
                     <Phone className="text-primary text-xl mt-1 w-8" />
                     <div>
                       <h4 className="font-bold">전화</h4>
-                      <p className="text-gray-medium">02-123-4567</p>
+                      <p className="text-gray-medium">032-934-3120 / 010-4787-3120</p>
                     </div>
                   </div>
                   
@@ -58,7 +58,7 @@ const ContactPage = () => {
                     <Mail className="text-primary text-xl mt-1 w-8" />
                     <div>
                       <h4 className="font-bold">이메일</h4>
-                      <p className="text-gray-medium">info@한국부동산.kr</p>
+                      <p className="text-gray-medium">9551304@naver.com</p>
                     </div>
                   </div>
                   
@@ -66,8 +66,8 @@ const ContactPage = () => {
                     <Clock className="text-primary text-xl mt-1 w-8" />
                     <div>
                       <h4 className="font-bold">영업시간</h4>
-                      <p className="text-gray-medium">월-금: 9:00 - 18:00</p>
-                      <p className="text-gray-medium">토: 9:00 - 15:00 (일요일 휴무)</p>
+                      <p className="text-gray-medium">년중무휴</p>
+                      <p className="text-gray-medium">외근이 많으니 방문시 사전연락 부탁드립니다</p>
                     </div>
                   </div>
                 </div>

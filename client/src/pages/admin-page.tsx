@@ -95,35 +95,6 @@ export default function AdminPage() {
   const [isDeletingNews, setIsDeletingNews] = useState<number | false>(false);
   const [selectedMainDistrict, setSelectedMainDistrict] = useState("강화읍");
   const [detailedDistrictOptions, setDetailedDistrictOptions] = useState<string[]>(detailedDistricts["강화읍"]);
-  
-  // 뉴스 수동 수집 뮤테이션 
-  const fetchNewsMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/news/fetch");
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "뉴스 수집에 실패했습니다");
-      }
-      return await res.json();
-    },
-    onSuccess: (data) => {
-      // 뉴스 캐시 갱신
-      queryClient.invalidateQueries({ queryKey: ["/api/news"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/news/latest"] });
-      
-      toast({
-        title: "뉴스 수집 성공",
-        description: `${data.count}개의 새로운 뉴스가 수집되었습니다.`,
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "뉴스 수집 실패",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
 
 
   // 부동산 목록 조회
@@ -285,6 +256,35 @@ export default function AdminPage() {
     },
   });
 
+  // 뉴스 수동 수집 뮤테이션 
+  const fetchNewsMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/news/fetch");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "뉴스 수집에 실패했습니다");
+      }
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      // 뉴스 캐시 갱신
+      queryClient.invalidateQueries({ queryKey: ["/api/news"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/news/latest"] });
+      
+      toast({
+        title: "뉴스 수집 성공",
+        description: `${data.count}개의 새로운 뉴스가 수집되었습니다.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "뉴스 수집 실패",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
   // 뉴스 삭제 뮤테이션
   const deleteNewsMutation = useMutation({
     mutationFn: async (id: number) => {

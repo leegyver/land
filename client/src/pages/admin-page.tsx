@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getQueryFn, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Property, User, News, insertPropertySchema } from "@shared/schema";
-import { PropertyFormCustomModal } from "@/components/admin/PropertyFormCustomModal";
+import { SimplePropertyForm } from "@/components/admin/SimplePropertyForm";
 import * as z from "zod";
 
 type PropertyFormValues = z.infer<typeof insertPropertySchema>;
@@ -440,12 +440,15 @@ export default function AdminPage() {
             </CardContent>
           </Card>
 
-          {/* 속성 폼 커스텀 모달 */}
-          <PropertyFormCustomModal 
-            isOpen={openPropertyDialog}
-            onClose={handleCloseDialog}
-            property={editingProperty} 
-          />
+          {/* 속성 폼 - Dialog 없이 단순 인라인 폼으로 구현 */}
+          {openPropertyDialog && (
+            <div className="mt-6">
+              <SimplePropertyForm 
+                onClose={handleCloseDialog}
+                property={editingProperty} 
+              />
+            </div>
+          )}
         </TabsContent>
 
         {/* 뉴스 관리 탭 */}

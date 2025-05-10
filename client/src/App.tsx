@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { AuthProvider } from "@/hooks/use-auth";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import NotFound from "@/pages/not-found";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -22,8 +21,9 @@ import AdminOldPage from "@/pages/admin-page";
 import ProfilePage from "@/pages/profile-page";
 import NewsPage from "@/pages/NewsPage";
 import NewsDetailPage from "@/pages/NewsDetailPage";
+import { SimpleProtectedRoute } from "@/components/auth/SimpleProtectedRoute";
 
-function Router() {
+function AppRouter() {
   return (
     <Switch>
       <Route path="/" component={HomePage} />
@@ -36,9 +36,9 @@ function Router() {
       <Route path="/about" component={AboutPage} />
       <Route path="/contact" component={ContactPage} />
       <Route path="/auth" component={AuthPage} />
-      <ProtectedRoute path="/profile" component={ProfilePage} />
-      <ProtectedRoute path="/admin" component={AdminPage} admin={true} />
-      <ProtectedRoute path="/admin-old" component={AdminOldPage} admin={true} />
+      <SimpleProtectedRoute path="/profile" component={ProfilePage} />
+      <SimpleProtectedRoute path="/admin" component={AdminPage} admin={true} />
+      <SimpleProtectedRoute path="/admin-old" component={AdminOldPage} admin={true} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -53,7 +53,7 @@ function App() {
             <div className="flex flex-col min-h-screen">
               <Header />
               <main className="flex-grow">
-                <Router />
+                <AppRouter />
               </main>
               <Footer />
             </div>

@@ -295,6 +295,10 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                             <td className="py-2 text-gray-600">유형</td>
                             <td className="py-2 font-medium">{property.type}</td>
                           </tr>
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2 text-gray-600">공동중개</td>
+                            <td className="py-2 font-medium">{property.coListing ? "예" : "아니오"}</td>
+                          </tr>
                         </tbody>
                       </table>
                     </div>

@@ -311,7 +311,6 @@ export function SimplePropertyForm({ onClose, property }: SimplePropertyFormProp
       district: "강화읍 갑곳리", 
       address: "",
       size: "",
-      imageUrl: "",
       agentId: 1,
       
       // 위치 정보

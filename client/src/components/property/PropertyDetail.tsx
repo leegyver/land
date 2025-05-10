@@ -64,11 +64,13 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
   // 카카오 SDK 초기화
   useEffect(() => {
     try {
-      const kakaoApiKey = import.meta.env.VITE_KAKAO_API_KEY;
+      // 직접 API 키 할당
+      const KAKAO_API_KEY = "2f6ff1b2e516329499e3e785899159e9";
       console.log("카카오 SDK 초기화 시작");
       
       if (window.Kakao && !window.Kakao.isInitialized()) {
-        window.Kakao.init(kakaoApiKey);
+        console.log("Kakao SDK 로드됨, 초기화 시도 중...");
+        window.Kakao.init(KAKAO_API_KEY);
         console.log("카카오 SDK 초기화 완료:", window.Kakao.isInitialized());
       } else if (!window.Kakao) {
         console.warn("카카오 SDK가 로드되지 않았습니다.");

@@ -297,8 +297,6 @@ interface SimplePropertyFormProps {
 export function SimplePropertyForm({ onClose, property }: SimplePropertyFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedMainDistrict, setSelectedMainDistrict] = useState("강화읍");
-  const [detailedDistrictOptions, setDetailedDistrictOptions] = useState<string[]>(detailedDistricts["강화읍"]);
   
   // 부동산 등록/수정 폼
   const form = useForm<PropertyFormValues>({
@@ -361,19 +359,7 @@ export function SimplePropertyForm({ onClose, property }: SimplePropertyFormProp
     },
   });
 
-  // 선택된 읍면에 따라 세부 지역 옵션 업데이트
-  useEffect(() => {
-    if (selectedMainDistrict && detailedDistricts[selectedMainDistrict]) {
-      setDetailedDistrictOptions(detailedDistricts[selectedMainDistrict]);
-      // 첫 번째 세부 지역을 기본값으로 설정
-      form.setValue("district", detailedDistricts[selectedMainDistrict][0]);
-    }
-  }, [selectedMainDistrict, form]);
-  
-  // 읍면 변경 핸들러
-  const handleDistrictChange = (value: string) => {
-    setSelectedMainDistrict(value);
-  };
+  // 지역 선택 로직이 단일 드롭다운으로 통합되었습니다.
 
   // 부동산 생성 뮤테이션
   const createPropertyMutation = useMutation({
@@ -449,13 +435,6 @@ export function SimplePropertyForm({ onClose, property }: SimplePropertyFormProp
   // 속성이 변경될 때마다 폼 업데이트
   useEffect(() => {
     if (property) {
-      // 기존 로직 유지를 위한 메인 지역 추출
-      const mainDistrict = districts.find(d => 
-        property.district.startsWith(d)
-      ) || "강화읍";
-      
-      setSelectedMainDistrict(mainDistrict);
-      
       // 폼 값 설정
       form.reset({
         title: property.title,

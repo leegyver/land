@@ -11,6 +11,7 @@ import { PropertyInquiry } from "@shared/schema";
 type PropertyInquiryWithAuthor = PropertyInquiry & {
   authorUsername?: string;
 };
+
 import { 
   Form,
   FormControl,
@@ -52,6 +53,7 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("view");
   const [replyToId, setReplyToId] = useState<number | null>(null);
+  const [selectedInquiryId, setSelectedInquiryId] = useState<number | null>(null);
   
   // 문의글 목록 조회
   const { 
@@ -62,6 +64,11 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
     queryKey: [`/api/properties/${propertyId}/inquiries`],
     enabled: !!propertyId && !!user,
   });
+  
+  // 선택된 문의글 찾기
+  const selectedInquiry = selectedInquiryId && inquiries
+    ? inquiries.find(inquiry => inquiry.id === selectedInquiryId)
+    : null;
   
   // 문의글 작성을 위한 폼
   const inquiryForm = useForm<InquiryFormValues>({
@@ -149,6 +156,9 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
       toast({
         title: "삭제되었습니다",
       });
+      if (selectedInquiryId) {
+        setSelectedInquiryId(null);
+      }
       queryClient.invalidateQueries({ queryKey: [`/api/properties/${propertyId}/inquiries`] });
     },
     onError: (error) => {
@@ -175,6 +185,15 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
   const handleReply = (inquiryId: number) => {
     setReplyToId(inquiryId);
     replyForm.reset();
+  };
+  
+  // 문의글 선택 핸들러
+  const handleInquirySelect = (inquiryId: number) => {
+    if (selectedInquiryId === inquiryId) {
+      setSelectedInquiryId(null);
+    } else {
+      setSelectedInquiryId(inquiryId);
+    }
   };
   
   // 문의글 삭제 핸들러
@@ -215,92 +234,138 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
             </div>
           ) : inquiries && inquiries.length > 0 ? (
             <div className="space-y-4">
-              {inquiries.map(inquiry => (
-                <div key={inquiry.id} className={`border rounded-lg p-4 ${inquiry.isReply ? 'ml-8 bg-muted/20' : ''}`}>
-                  <div className="flex justify-between items-center mb-2">
-                    <h4 className="font-bold">{inquiry.title}</h4>
-                    {inquiry.isReply && <MessageCircle size={16} className="text-primary" />}
-                  </div>
-                  
-                  <p className="text-sm text-gray-600 mb-4">{inquiry.content}</p>
-                  
-                  <div className="flex justify-between text-xs text-gray-500 mt-2">
-                    <span>작성자: {inquiry.authorUsername || "알 수 없음"}</span>
-                    <span>{inquiry.createdAt ? formatDistanceToNow(new Date(inquiry.createdAt), { addSuffix: true, locale: ko }) : ""}</span>
-                  </div>
-                  
-                  {canManageInquiry(inquiry) && (
-                    <div className="flex justify-end gap-2 mt-4">
-                      {!inquiry.isReply && user?.role === "admin" && (
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleReply(inquiry.id)}
-                        >
-                          답변
-                        </Button>
-                      )}
-                      <Button 
-                        variant="destructive" 
-                        size="sm"
-                        onClick={() => handleDelete(inquiry.id)}
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-muted/40">
+                    <tr>
+                      <th className="text-left p-3 font-medium">제목</th>
+                      <th className="text-left p-3 font-medium w-24">작성자</th>
+                      <th className="text-left p-3 font-medium w-28">작성일</th>
+                      <th className="text-left p-3 font-medium w-20">관리</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {inquiries.map(inquiry => (
+                      <tr 
+                        key={inquiry.id} 
+                        className={`border-t hover:bg-muted/20 cursor-pointer ${selectedInquiryId === inquiry.id ? 'bg-muted/30' : ''} ${inquiry.isReply ? 'bg-muted/10' : ''}`}
+                        onClick={() => handleInquirySelect(inquiry.id)}
                       >
-                        삭제
-                      </Button>
-                    </div>
-                  )}
+                        <td className="p-3">
+                          <div className="flex items-center">
+                            {inquiry.isReply && <span className="text-primary mr-2 text-sm">[답변]</span>}
+                            {inquiry.title}
+                          </div>
+                        </td>
+                        <td className="p-3 text-sm">{inquiry.authorUsername || "알 수 없음"}</td>
+                        <td className="p-3 text-sm">
+                          {inquiry.createdAt ? formatDistanceToNow(new Date(inquiry.createdAt), { addSuffix: true, locale: ko }) : ""}
+                        </td>
+                        <td className="p-3">
+                          <div className="flex space-x-1">
+                            {!inquiry.isReply && user?.role === "admin" && (
+                              <Button 
+                                variant="outline" 
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleReply(inquiry.id);
+                                }}
+                              >
+                                <MessageCircle size={14} />
+                              </Button>
+                            )}
+                            {canManageInquiry(inquiry) && (
+                              <Button 
+                                variant="destructive" 
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(inquiry.id);
+                                }}
+                              >
+                                <span className="text-xs">✕</span>
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {selectedInquiryId && selectedInquiry && (
+                <div className="mt-4 border rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-bold text-lg">{selectedInquiry.title}</h3>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setSelectedInquiryId(null)}
+                    >
+                      닫기
+                    </Button>
+                  </div>
+                  <p className="mb-4 whitespace-pre-wrap">{selectedInquiry.content}</p>
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>작성자: {selectedInquiry.authorUsername || "알 수 없음"}</span>
+                    <span>{selectedInquiry.createdAt ? formatDistanceToNow(new Date(selectedInquiry.createdAt), { addSuffix: true, locale: ko }) : ""}</span>
+                  </div>
                 </div>
-              ))}
+              )}
+              
+              {replyToId && user?.role === "admin" && (
+                <Card className="mt-6">
+                  <CardContent className="pt-6">
+                    <h3 className="text-lg font-bold mb-4">답변 작성</h3>
+                    <Form {...replyForm}>
+                      <form onSubmit={replyForm.handleSubmit(onReplySubmit)} className="space-y-4">
+                        <FormField
+                          control={replyForm.control}
+                          name="content"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>답변 내용</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="답변 내용을 작성해주세요"
+                                  rows={5}
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            type="button" 
+                            variant="outline"
+                            onClick={() => setReplyToId(null)}
+                          >
+                            취소
+                          </Button>
+                          <Button 
+                            type="submit"
+                            disabled={replyMutation.isPending}
+                          >
+                            {replyMutation.isPending ? "제출 중..." : "답변 등록"}
+                          </Button>
+                        </div>
+                      </form>
+                    </Form>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           ) : (
             <div className="text-center py-10">
               <p className="text-gray-500">아직 문의글이 없습니다.</p>
             </div>
-          )}
-          
-          {replyToId && user?.role === "admin" && (
-            <Card className="mt-6">
-              <CardContent className="pt-6">
-                <h3 className="text-lg font-bold mb-4">답변 작성</h3>
-                <Form {...replyForm}>
-                  <form onSubmit={replyForm.handleSubmit(onReplySubmit)} className="space-y-4">
-                    <FormField
-                      control={replyForm.control}
-                      name="content"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>답변 내용</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="답변 내용을 작성해주세요"
-                              rows={5}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <div className="flex justify-end gap-2">
-                      <Button 
-                        type="button" 
-                        variant="outline"
-                        onClick={() => setReplyToId(null)}
-                      >
-                        취소
-                      </Button>
-                      <Button 
-                        type="submit"
-                        disabled={replyMutation.isPending}
-                      >
-                        {replyMutation.isPending ? "제출 중..." : "답변 등록"}
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
           )}
         </TabsContent>
         

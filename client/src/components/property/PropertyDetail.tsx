@@ -14,6 +14,14 @@ import {
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
+
+// Kakao SDK 타입 선언
+declare global {
+  interface Window {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Kakao?: any;
+  }
+}
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -605,10 +613,10 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                   />
                 </div>
                 
-                <div className="flex space-x-2">
+                <div className="flex flex-col space-y-2">
                   <Button 
                     variant={favoriteData?.isFavorite ? "secondary" : "outline"} 
-                    className="flex-1 relative"
+                    className="w-full relative"
                     onClick={toggleFavorite}
                     disabled={addFavoriteMutation.isPending || removeFavoriteMutation.isPending}
                   >
@@ -621,8 +629,51 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                   {/* 카카오톡 공유 버튼 */}
                   <Button 
                     variant="outline" 
-                    className="flex-1 bg-yellow-50 hover:bg-yellow-100 text-yellow-900 border-yellow-300"
+                    className="w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-900 border-yellow-300"
+                    onClick={() => {
+                      if (window.Kakao && window.Kakao.Share) {
+                        // 이미지 URL 획득
+                        const imageUrl = images && images.length > 0 ? 
+                          images[currentImageIndex] : defaultImage;
+                        
+                        // 공유할 URL (현재 페이지 URL)
+                        const shareUrl = window.location.href;
+                        
+                        // 공유할 제목과 설명
+                        const title = `[한국부동산] ${property.title}`;
+                        let description = `${property.district} 위치 - ${property.type}`;
+                        if (property.price) {
+                          description += ` - ${formatPrice(property.price)}`;
+                        }
+                        
+                        window.Kakao.Share.sendDefault({
+                          objectType: 'feed',
+                          content: {
+                            title: title,
+                            description: description,
+                            imageUrl: imageUrl,
+                            link: {
+                              mobileWebUrl: shareUrl,
+                              webUrl: shareUrl,
+                            },
+                          },
+                          buttons: [
+                            {
+                              title: '매물 보기',
+                              link: {
+                                mobileWebUrl: shareUrl,
+                                webUrl: shareUrl,
+                              },
+                            },
+                          ],
+                        });
+                      } else {
+                        // 카카오 SDK가 없는 경우 알림
+                        alert('카카오톡 공유 기능을 사용할 수 없습니다. 페이지를 새로고침하거나 잠시 후 다시 시도해주세요.');
+                      }
+                    }}
                   >
+                    <Share2 className="w-4 h-4 mr-2" />
                     카카오톡으로 공유하기
                   </Button>
                 </div>

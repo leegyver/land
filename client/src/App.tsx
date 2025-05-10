@@ -17,7 +17,7 @@ import AgentDetailPage from "@/pages/AgentDetailPage";
 import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
 import AuthPage from "@/pages/auth-page";
-import AdminPage from "@/pages/admin-page-fixed";
+import AdminPage from "@/pages/admin-simple";
 import ProfilePage from "@/pages/profile-page";
 import NewsPage from "@/pages/NewsPage";
 import NewsDetailPage from "@/pages/NewsDetailPage";

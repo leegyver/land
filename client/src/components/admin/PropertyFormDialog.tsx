@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
@@ -656,28 +656,7 @@ export function PropertyFormDialog({ renderDialog, onSubmitSuccess, property }: 
               />
             </div>
 
-            <div>
-              <FormItem>
-                <FormLabel>읍면</FormLabel>
-                <Select
-                  onValueChange={handleDistrictChange}
-                  defaultValue={selectedMainDistrict}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="지역 선택" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {districts.map((district) => (
-                      <SelectItem key={district} value={district}>
-                        {district}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormItem>
-            </div>
+
 
             <div>
               <FormField
@@ -685,20 +664,20 @@ export function PropertyFormDialog({ renderDialog, onSubmitSuccess, property }: 
                 name="district"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>읍면동</FormLabel>
+                    <FormLabel>지역</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="상세 지역 선택" />
+                          <SelectValue placeholder="지역 선택" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {detailedDistrictOptions.map((district) => (
-                          <SelectItem key={district} value={district}>
-                            {district}
+                        {allLocations.map((location) => (
+                          <SelectItem key={location} value={location}>
+                            {location}
                           </SelectItem>
                         ))}
                       </SelectContent>

@@ -221,23 +221,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('부동산 등록 요청 데이터:', JSON.stringify(req.body, null, 2));
       
       try {
-        // 숫자형 필드 변환 처리
+        // 타입을 변환하지 않고 원래 타입 그대로 유지
+        // bedrooms와 bathrooms가 누락되는 문제 해결
         const processedData = {
           ...req.body,
-          price: req.body.price ? parseFloat(req.body.price) : undefined,
-          size: req.body.size ? parseFloat(req.body.size) : undefined,
-          bedrooms: req.body.bedrooms ? parseInt(req.body.bedrooms) : undefined,
-          bathrooms: req.body.bathrooms ? parseInt(req.body.bathrooms) : undefined,
-          supplyArea: req.body.supplyArea ? parseFloat(req.body.supplyArea) : undefined,
-          privateArea: req.body.privateArea ? parseFloat(req.body.privateArea) : undefined,
-          floor: req.body.floor ? parseInt(req.body.floor) : undefined,
-          totalFloors: req.body.totalFloors ? parseInt(req.body.totalFloors) : undefined,
-          deposit: req.body.deposit ? parseFloat(req.body.deposit) : undefined,
-          monthlyRent: req.body.monthlyRent ? parseFloat(req.body.monthlyRent) : undefined,
-          maintenanceFee: req.body.maintenanceFee ? parseFloat(req.body.maintenanceFee) : undefined,
+          bedrooms: req.body.bedrooms !== undefined ? req.body.bedrooms : 0,
+          bathrooms: req.body.bathrooms !== undefined ? req.body.bathrooms : 0
         };
         
-        console.log('변환된 데이터:', JSON.stringify(processedData, null, 2));
+        console.log('처리된 데이터:', JSON.stringify(processedData, null, 2));
         
         const validatedData = insertPropertySchema.parse(processedData);
         const property = await storage.createProperty(validatedData);
@@ -273,20 +265,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Property not found" });
       }
       
-      // 숫자형 필드 변환 처리
+      // 타입을 변환하지 않고 원래 타입 그대로 유지
       const processedData = {
         ...req.body,
-        price: req.body.price ? parseFloat(req.body.price) : undefined,
-        size: req.body.size ? parseFloat(req.body.size) : undefined,
-        bedrooms: req.body.bedrooms ? parseInt(req.body.bedrooms) : undefined,
-        bathrooms: req.body.bathrooms ? parseInt(req.body.bathrooms) : undefined,
-        supplyArea: req.body.supplyArea ? parseFloat(req.body.supplyArea) : undefined,
-        privateArea: req.body.privateArea ? parseFloat(req.body.privateArea) : undefined,
-        floor: req.body.floor ? parseInt(req.body.floor) : undefined,
-        totalFloors: req.body.totalFloors ? parseInt(req.body.totalFloors) : undefined,
-        deposit: req.body.deposit ? parseFloat(req.body.deposit) : undefined,
-        monthlyRent: req.body.monthlyRent ? parseFloat(req.body.monthlyRent) : undefined,
-        maintenanceFee: req.body.maintenanceFee ? parseFloat(req.body.maintenanceFee) : undefined,
+        bedrooms: req.body.bedrooms !== undefined ? req.body.bedrooms : existingProperty.bedrooms,
+        bathrooms: req.body.bathrooms !== undefined ? req.body.bathrooms : existingProperty.bathrooms
       };
       
       const validatedData = insertPropertySchema.partial().parse(processedData);

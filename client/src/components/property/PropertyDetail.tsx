@@ -718,22 +718,20 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                 <MapPin className="w-8 h-8 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-2">매물 위치</h3>
-              <p className="text-gray-700 mb-2">{property.district} {property.buildingName}</p>
+              <p className="text-gray-700 mb-2">{property.district} {property.address}</p>
               <p className="text-sm text-gray-500">
-                {property.latitude && property.longitude ? 
-                  `위도: ${property.latitude}, 경도: ${property.longitude}` : 
-                  '정확한 위치는 연락 시 안내해 드립니다.'}
+                정확한 위치는 연락 시 안내해 드립니다.
               </p>
               <div className="mt-4">
                 <Button size="sm" variant="outline" onClick={() => {
-                  // 주소 조합: 지역필드 + 주소필드
+                  // 주소 조합: 지역필드 + 주소필드 (건물명 제외)
                   const fullAddress = [
                     property.district,
-                    property.address,
-                    property.buildingName
+                    property.address
                   ].filter(Boolean).join(' ');
                   
-                  window.open(`https://map.naver.com/v5/search/${encodeURIComponent(fullAddress)}`, '_blank');
+                  // 네이버 지도 v5는 검색으로, 실제 지도가 바로 표시되는 URL 형식 사용
+                  window.open(`https://map.naver.com/p/search/${encodeURIComponent(fullAddress)}`, '_blank');
                 }}>
                   네이버 지도에서 보기
                 </Button>

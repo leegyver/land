@@ -302,7 +302,8 @@ interface PropertyFormDialogProps {
 export function PropertyFormDialog({ renderDialog, onSubmitSuccess, property }: PropertyFormDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  // 지역 선택 로직이 단일 드롭다운으로 통합되었습니다.
+  const [selectedMainDistrict, setSelectedMainDistrict] = useState("강화읍");
+  const [detailedDistrictOptions, setDetailedDistrictOptions] = useState<string[]>(detailedDistricts["강화읍"]);
   
   // 부동산 등록/수정 폼
   const form = useForm<PropertyFormValues>({
@@ -453,6 +454,12 @@ export function PropertyFormDialog({ renderDialog, onSubmitSuccess, property }: 
   // 속성이 변경될 때마다 폼 업데이트
   useEffect(() => {
     if (property) {
+      const mainDistrict = districts.find(d => 
+        property.district.startsWith(d)
+      ) || "강화읍";
+      
+      setSelectedMainDistrict(mainDistrict);
+      
       // 폼 값 설정
       form.reset({
         title: property.title,

@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -157,12 +158,13 @@ const propertyFormSchema = insertPropertySchema.extend({
 type PropertyFormValues = z.infer<typeof propertyFormSchema>;
 
 interface PropertyFormDialogProps {
-  renderDialog: (content: React.ReactNode) => React.ReactNode;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onSubmitSuccess: () => void;
   property?: Property | null;
 }
 
-export function PropertyFormDialog({ renderDialog, onSubmitSuccess, property }: PropertyFormDialogProps) {
+export function PropertyFormDialog({ open, onOpenChange, onSubmitSuccess, property }: PropertyFormDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   // 지역 선택 로직이 단일 드롭다운으로 통합되었습니다.
@@ -763,6 +765,10 @@ export function PropertyFormDialog({ renderDialog, onSubmitSuccess, property }: 
     </DialogContent>
   );
 
-  // renderDialog prop을 사용하여 다이얼로그 컨텐츠 렌더링
-  return renderDialog(dialogContent);
+  // Dialog 컴포넌트로 감싸서 반환
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {dialogContent}
+    </Dialog>
+  );
 }

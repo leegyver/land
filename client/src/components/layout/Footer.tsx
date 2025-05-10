@@ -14,8 +14,7 @@ const Footer = () => {
               주소: 인천광역시 강화군 강화읍 남문로51, 1호<br />
               등록번호: 28710-2021-00012<br />
               연락처: 032.934.3120 / 010.4787.3120<br />
-              이메일: 9551304@naver.com<br />
-              영업시간: 년중무휴-외근이 많으니 방문시 사전연락 부탁드립니다
+              이메일: 9551304@naver.com
             </p>
             <div className="flex space-x-6 mt-4">
               <a href="https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">

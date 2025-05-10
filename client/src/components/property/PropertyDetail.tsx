@@ -64,8 +64,14 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
   // 카카오 SDK 초기화
   useEffect(() => {
     try {
-      const KAKAO_API_KEY = "2f6ff1b2e516329499e3e785899159e9";
+      // 환경 변수에서 KAKAO_API_KEY 가져오기
+      const KAKAO_API_KEY = import.meta.env.VITE_KAKAO_API_KEY || "";
       
+      if (!KAKAO_API_KEY) {
+        console.error("카카오 API 키가 설정되지 않았습니다");
+        return;
+      }
+
       if (window.Kakao && !window.Kakao.isInitialized()) {
         console.log("카카오 SDK 초기화 시도");
         window.Kakao.init(KAKAO_API_KEY);
@@ -158,9 +164,20 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
   
   // 카카오톡 공유 기능 핸들러
   const handleShareClick = () => {
-    if (!property) return;
+    if (!property) {
+      console.error("매물 정보가 없습니다");
+      return;
+    }
     
     try {
+      console.log("카카오 공유 시도", { 
+        kakaoLoaded: !!window.Kakao,
+        kakaoInitialized: window.Kakao ? window.Kakao.isInitialized() : false,
+        propertyTitle: property.title,
+        propertyImageUrl: property.imageUrl,
+        imageUrls: property.imageUrls
+      });
+      
       if (!window.Kakao) {
         console.error("카카오 SDK가 로드되지 않았습니다");
         toast({
@@ -181,26 +198,65 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
         return;
       }
       
+      const imageUrl = Array.isArray(property.imageUrls) && property.imageUrls.length > 0 
+        ? property.imageUrls[0] 
+        : (property.imageUrl || 'https://via.placeholder.com/800x500?text=매물+이미지+준비중');
+      
+      console.log("카카오 공유 이미지 URL:", imageUrl);
+      
+      // 웹사이트 도메인으로 변경
+      const currentUrl = window.location.href;
+      console.log("현재 URL:", currentUrl);
+      
+      // 카카오 API 존재 확인 및 선택
+      let kakaoSendMethod;
+      
+      if (window.Kakao.Share && typeof window.Kakao.Share.sendDefault === 'function') {
+        console.log("Kakao.Share API를 사용합니다 (신규 버전)");
+        kakaoSendMethod = window.Kakao.Share.sendDefault;
+      } else if (window.Kakao.Link && typeof window.Kakao.Link.sendDefault === 'function') {
+        console.log("Kakao.Link API를 사용합니다 (구버전)");
+        kakaoSendMethod = window.Kakao.Link.sendDefault;
+      } else {
+        console.warn("카카오 공유 API를 찾을 수 없어 클립보드에 텍스트를 복사합니다");
+        const shareText = `[한국부동산] ${property.title}\n${property.district} 위치 - ${property.type} - ${formatPrice(property.price)}\n${currentUrl}`;
+        
+        navigator.clipboard.writeText(shareText)
+          .then(() => {
+            toast({
+              title: "클립보드에 복사되었습니다",
+              description: "카카오톡에 붙여넣어 공유하세요",
+            });
+          })
+          .catch(err => {
+            console.error('클립보드 복사 실패:', err);
+            toast({
+              title: "복사 실패",
+              description: "공유 URL: " + currentUrl,
+              variant: "destructive",
+            });
+          });
+        return;
+      }
+      
       // 카카오 공유하기
-      window.Kakao.Share.sendDefault({
+      kakaoSendMethod({
         objectType: 'feed',
         content: {
           title: `[한국부동산] ${property.title}`,
           description: `${property.district} 위치 - ${property.type} - ${formatPrice(property.price)}`,
-          imageUrl: Array.isArray(property.imageUrls) && property.imageUrls.length > 0 
-            ? property.imageUrls[0] 
-            : (property.imageUrl || 'https://via.placeholder.com/800x500?text=매물+이미지+준비중'),
+          imageUrl: imageUrl,
           link: {
-            webUrl: window.location.href,
-            mobileWebUrl: window.location.href,
+            webUrl: currentUrl,
+            mobileWebUrl: currentUrl,
           },
         },
         buttons: [
           {
             title: '매물 확인하기',
             link: {
-              webUrl: window.location.href,
-              mobileWebUrl: window.location.href,
+              webUrl: currentUrl,
+              mobileWebUrl: currentUrl,
             },
           },
         ],
@@ -210,11 +266,26 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
       
     } catch (error) {
       console.error("카카오 공유 중 오류 발생:", error);
-      toast({
-        title: "공유 중 오류가 발생했습니다",
-        description: "잠시 후 다시 시도해주세요.",
-        variant: "destructive",
-      });
+      
+      // 오류 발생 시 클립보드 복사로 대체
+      try {
+        const shareText = `[한국부동산] ${property.title}\n${property.district} 위치 - ${property.type} - ${formatPrice(property.price)}\n${window.location.href}`;
+        
+        navigator.clipboard.writeText(shareText)
+          .then(() => {
+            toast({
+              title: "클립보드에 복사되었습니다",
+              description: "카카오톡에 붙여넣어 공유하세요",
+            });
+          });
+      } catch (clipboardError) {
+        console.error("클립보드 복사도 실패:", clipboardError);
+        toast({
+          title: "공유 중 오류가 발생했습니다",
+          description: "공유 URL: " + window.location.href,
+          variant: "destructive",
+        });
+      }
     }
   };
   

@@ -681,6 +681,14 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                 </div>
               </div>
               
+              {/* 매물 설명 섹션 */}
+              {property.description && (
+                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h4 className="font-semibold text-lg mb-2">매물 설명</h4>
+                  <p className="text-gray-700 whitespace-pre-line">{property.description}</p>
+                </div>
+              )}
+              
               {/* 특이사항 섹션 */}
               {property.specialNote && (
                 <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -695,7 +703,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                 <PropertyInquiryBoard propertyId={Number(propertyId)} />
               </div>
               
-              {/* 매물 상세 설명 필드 삭제 요청에 따라 제거됨 */}
+              {/* 매물 상세 설명 필드 복원 - 특이사항 위에 배치 */}
             </div>
           </div>
         </div>

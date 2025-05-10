@@ -277,8 +277,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
   // 부동산 등록시 첨부한 이미지들을 사용
   const defaultImage = "https://via.placeholder.com/800x500?text=매물+이미지+준비중";
   
-  // 네이버 지도 API 키 설정
-  const NAVER_CLIENT_ID = import.meta.env.VITE_NAVER_CLIENT_ID || "";
+  // 네이버 지도 관련 코드 제거
   
   // imageUrls 배열이 있으면 사용하고, 없으면 기존 imageUrl을 배열로 변환
   // 이미지가 하나도 없는 경우 기본 이미지 사용
@@ -711,25 +710,31 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
             </p>
           </div>
           
-          {/* 네이버 지도로 위치 정보 표시 - 제일 하단으로 이동 */}
+          {/* 위치 정보 표시 - 정적 지도로 대체 */}
           <div className="bg-gray-50 rounded-lg overflow-hidden h-64 mb-4">
-            {/* 실제 매물 위치 네이버 지도 표시 */}
-            <div style={{ width: '100%', height: '100%' }}>
-              <NaverMapContainer 
-                id="map" 
-                style={{ width: '100%', height: '100%' }}
-              >
-                <NaverMap 
-                  defaultCenter={getPropertyLocation()} 
-                  defaultZoom={15}
-                >
-                  <Marker 
-                    position={getPropertyLocation()} 
-                    animation={2}
-                    onClick={() => alert(`${property.title}\n${property.district}`)} 
-                  />
-                </NaverMap>
-              </NaverMapContainer>
+            {/* 지도 대신 구조화된 위치 정보 표시 */}
+            <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                <MapPin className="w-8 h-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">매물 위치</h3>
+              <p className="text-gray-700 mb-2">{property.district} {property.buildingName}</p>
+              <p className="text-sm text-gray-500">
+                {property.latitude && property.longitude ? 
+                  `위도: ${property.latitude}, 경도: ${property.longitude}` : 
+                  '정확한 위치는 연락 시 안내해 드립니다.'}
+              </p>
+              <div className="mt-4">
+                <Button size="sm" variant="outline" onClick={() => {
+                  if (property.latitude && property.longitude) {
+                    window.open(`https://map.naver.com/v5/search/${property.district}`, '_blank');
+                  } else {
+                    window.open(`https://map.naver.com/v5/search/${property.district}`, '_blank');
+                  }
+                }}>
+                  네이버 지도에서 보기
+                </Button>
+              </div>
             </div>
           </div>
           

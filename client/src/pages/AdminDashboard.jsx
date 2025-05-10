@@ -230,17 +230,79 @@ function AdminDashboard() {
                       properties.map((property) => (
                         <TableRow key={property.id}>
                           <TableCell>{property.id}</TableCell>
-                          <TableCell className="font-medium">
-                            <a 
-                              href={`/properties/${property.id}`}
-                              className="text-blue-600 hover:underline"
-                            >
-                              {property.title}
-                            </a>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              {property.imageUrls && property.imageUrls.length > 0 ? (
+                                <div className="relative h-10 w-16 overflow-hidden rounded">
+                                  <img 
+                                    src={property.imageUrls[0]} 
+                                    alt={property.title} 
+                                    className="h-full w-full object-cover"
+                                  />
+                                  {property.imageUrls.length > 1 && (
+                                    <span className="absolute bottom-0 right-0 bg-black/50 text-white text-xs px-1">
+                                      +{property.imageUrls.length - 1}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : property.imageUrl ? (
+                                <div className="relative h-10 w-16 overflow-hidden rounded">
+                                  <img 
+                                    src={property.imageUrl} 
+                                    alt={property.title} 
+                                    className="h-full w-full object-cover"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="h-10 w-16 bg-gray-200 flex items-center justify-center rounded">
+                                  <Edit className="h-5 w-5 text-gray-500" />
+                                </div>
+                              )}
+                              <div>
+                                <a 
+                                  href={`/properties/${property.id}`}
+                                  className="text-blue-600 hover:underline font-medium"
+                                >
+                                  {property.title}
+                                </a>
+                              </div>
+                            </div>
                           </TableCell>
                           <TableCell>{property.type}</TableCell>
-                          <TableCell>{property.city} {property.district}</TableCell>
-                          <TableCell>{property.price}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span>{property.city}</span>
+                              <span className="text-xs text-gray-500">{property.district}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {new Intl.NumberFormat('ko-KR', {
+                              style: 'currency',
+                              currency: 'KRW',
+                              maximumFractionDigits: 0
+                            }).format(property.price)}
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              {property.dealType && property.dealType.length > 0 ? (
+                                <span className={`px-2 py-1 rounded-full text-xs ${
+                                  property.dealType.includes("매매") 
+                                    ? 'bg-blue-100 text-blue-800' 
+                                    : property.dealType.includes("전세")
+                                    ? 'bg-green-100 text-green-800'
+                                    : property.dealType.includes("월세")
+                                    ? 'bg-orange-100 text-orange-800'
+                                    : 'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {property.dealType[0]}
+                                </span>
+                              ) : (
+                                <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
+                                  미지정
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
                           <TableCell>
                             <div className="flex space-x-2">
                               <a 

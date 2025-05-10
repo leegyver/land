@@ -689,6 +689,76 @@ export class DatabaseStorage implements IStorage {
       }
     }
   }
+  
+  // Property Inquiry methods
+  async getPropertyInquiries(propertyId: number): Promise<PropertyInquiry[]> {
+    try {
+      const inquiries = await db
+        .select()
+        .from(propertyInquiries)
+        .where(eq(propertyInquiries.propertyId, propertyId))
+        .orderBy(desc(propertyInquiries.createdAt));
+      return inquiries;
+    } catch (error) {
+      console.error("Error getting property inquiries:", error);
+      return [];
+    }
+  }
+
+  async getPropertyInquiry(id: number): Promise<PropertyInquiry | undefined> {
+    try {
+      const [inquiry] = await db
+        .select()
+        .from(propertyInquiries)
+        .where(eq(propertyInquiries.id, id));
+      return inquiry;
+    } catch (error) {
+      console.error("Error getting property inquiry:", error);
+      return undefined;
+    }
+  }
+
+  async createPropertyInquiry(inquiry: InsertPropertyInquiry): Promise<PropertyInquiry> {
+    try {
+      const [createdInquiry] = await db
+        .insert(propertyInquiries)
+        .values(inquiry)
+        .returning();
+      return createdInquiry;
+    } catch (error) {
+      console.error("Error creating property inquiry:", error);
+      throw new Error("Failed to create property inquiry");
+    }
+  }
+
+  async updatePropertyInquiry(
+    id: number,
+    inquiry: Partial<InsertPropertyInquiry>
+  ): Promise<PropertyInquiry | undefined> {
+    try {
+      const [updatedInquiry] = await db
+        .update(propertyInquiries)
+        .set(inquiry)
+        .where(eq(propertyInquiries.id, id))
+        .returning();
+      return updatedInquiry;
+    } catch (error) {
+      console.error("Error updating property inquiry:", error);
+      return undefined;
+    }
+  }
+
+  async deletePropertyInquiry(id: number): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(propertyInquiries)
+        .where(eq(propertyInquiries.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error deleting property inquiry:", error);
+      return false;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

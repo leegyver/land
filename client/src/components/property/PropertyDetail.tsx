@@ -14,13 +14,13 @@ import {
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
-import { Property, Agent } from "@shared/schema";
+import { Property } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import ContactForm from "@/components/contact/ContactForm";
+import PropertyInquiryBoard from "@/components/property/PropertyInquiryBoard";
 
 interface PropertyDetailProps {
   propertyId: string;
@@ -41,11 +41,6 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
   
   const { data: property, isLoading: propertyLoading, error: propertyError } = useQuery<Property>({
     queryKey: [`/api/properties/${propertyId}`],
-  });
-  
-  const { data: agent, isLoading: agentLoading } = useQuery<Agent>({
-    queryKey: [`/api/agents/${property?.agentId}`],
-    enabled: !!property?.agentId,
   });
   
   // Mock multiple images since we only have one per property in our schema

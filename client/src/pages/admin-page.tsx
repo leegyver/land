@@ -450,7 +450,11 @@ export default function AdminPage() {
 
   // 부동산 수정 열기
   const handleEditProperty = (property: Property) => {
+    // 현재 선택된 부동산 저장
     setEditingProperty(property);
+    
+    // 먼저 폼 초기화
+    propertyForm.reset();
     
     // 폼 값 설정 (null 값을 undefined로 변환하여 타입 호환성 문제 해결)
     propertyForm.reset({
@@ -495,6 +499,7 @@ export default function AdminPage() {
       privateNote: property.privateNote || undefined,
     });
     
+    // 다이얼로그 열기
     setOpenPropertyDialog(true);
   };
 
@@ -711,7 +716,18 @@ export default function AdminPage() {
           </Card>
 
           {/* 부동산 등록/수정 다이얼로그 */}
-          <Dialog open={openPropertyDialog} onOpenChange={setOpenPropertyDialog}>
+          {/* 폼 다이얼로그 위치 */}
+          <Dialog 
+            open={openPropertyDialog} 
+            onOpenChange={(open) => {
+              setOpenPropertyDialog(open); 
+              if (!open) {
+                // 다이얼로그가 닫힐 때 폼 초기화
+                propertyForm.reset(); 
+                setEditingProperty(null);
+              }
+            }}
+          >
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingProperty ? "부동산 수정" : "새 부동산 등록"}</DialogTitle>
@@ -722,12 +738,11 @@ export default function AdminPage() {
                 </DialogDescription>
               </DialogHeader>
 
-              {openPropertyDialog && (
-                <Form {...propertyForm}>
-                  <form
-                    onSubmit={propertyForm.handleSubmit(onPropertySubmit)}
-                    className="space-y-6"
-                  >
+              <Form {...propertyForm}>
+                <form
+                  onSubmit={propertyForm.handleSubmit(onPropertySubmit)}
+                  className="space-y-6"
+                >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <FormField
@@ -1088,7 +1103,6 @@ export default function AdminPage() {
                   </DialogFooter>
                 </form>
                 </Form>
-              )}
             </DialogContent>
           </Dialog>
         </TabsContent>

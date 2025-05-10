@@ -91,38 +91,69 @@ export class DatabaseStorage implements IStorage {
   
   // Property methods
   async getProperties(): Promise<Property[]> {
-    return await db.select().from(properties).orderBy(desc(properties.createdAt));
+    const results = await db.select().from(properties).orderBy(desc(properties.createdAt));
+    
+    // 호환성을 위해 각 속성에 imageUrls 필드를 추가합니다
+    return results.map(property => ({
+      ...property,
+      imageUrls: property.imageUrls || [] // imageUrls가 null이면 빈 배열로 초기화
+    }));
   }
   
   async getProperty(id: number): Promise<Property | undefined> {
     const result = await db.select().from(properties).where(eq(properties.id, id));
-    return result[0];
+    
+    if (!result[0]) return undefined;
+    
+    // 호환성을 위해 imageUrls 필드를 추가합니다
+    return {
+      ...result[0],
+      imageUrls: result[0].imageUrls || [] // imageUrls가 null이면 빈 배열로 초기화
+    };
   }
   
   async getFeaturedProperties(limit: number = 6): Promise<Property[]> {
-    return await db.select()
+    const results = await db.select()
       .from(properties)
       .where(eq(properties.featured, true))
       .orderBy(desc(properties.createdAt))
       .limit(limit);
+      
+    // 호환성을 위해 각 속성에 imageUrls 필드를 추가합니다
+    return results.map(property => ({
+      ...property,
+      imageUrls: property.imageUrls || [] // imageUrls가 null이면 빈 배열로 초기화
+    }));
   }
   
   async getPropertiesByType(type: string): Promise<Property[]> {
-    return await db.select()
+    const results = await db.select()
       .from(properties)
       .where(eq(properties.type, type))
       .orderBy(desc(properties.createdAt));
+      
+    // 호환성을 위해 각 속성에 imageUrls 필드를 추가합니다  
+    return results.map(property => ({
+      ...property,
+      imageUrls: property.imageUrls || []
+    }));
   }
   
   async getPropertiesByDistrict(district: string): Promise<Property[]> {
-    return await db.select()
+    const results = await db.select()
       .from(properties)
       .where(eq(properties.district, district))
       .orderBy(desc(properties.createdAt));
+      
+    // 호환성을 위해 각 속성에 imageUrls 필드를 추가합니다
+    return results.map(property => ({
+      ...property,
+      imageUrls: property.imageUrls || []
+    }));
   }
   
   async getPropertiesByPriceRange(min: number, max: number): Promise<Property[]> {
-    return await db.select()
+    const results = await db.select()
       .from(properties)
       .where(
         and(
@@ -131,17 +162,31 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .orderBy(desc(properties.createdAt));
+      
+    // 호환성을 위해 각 속성에 imageUrls 필드를 추가합니다
+    return results.map(property => ({
+      ...property,
+      imageUrls: property.imageUrls || []
+    }));
   }
   
   async createProperty(property: InsertProperty): Promise<Property> {
+    // imageUrls 필드가 없거나 유효하지 않으면 빈 배열로 설정
+    const propertyWithDefaultValues = {
+      ...property,
+      imageUrls: property.imageUrls || [],
+      createdAt: new Date()
+    };
+    
     const result = await db.insert(properties)
-      .values({
-        ...property,
-        createdAt: new Date()
-      })
+      .values(propertyWithDefaultValues)
       .returning();
     
-    return result[0];
+    // 호환성을 위해 imageUrls 필드가 있는지 확인
+    return {
+      ...result[0],
+      imageUrls: result[0].imageUrls || []
+    };
   }
   
   async updateProperty(id: number, property: Partial<InsertProperty>): Promise<Property | undefined> {

@@ -845,19 +845,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const { ids } = req.body;
+      console.log("다중 뉴스 삭제 요청:", ids);
       
       if (!Array.isArray(ids) || ids.length === 0) {
+        console.log("유효하지 않은 ID 목록:", ids);
         return res.status(400).json({ message: "삭제할 뉴스 ID 목록이 필요합니다." });
       }
       
       // 모든 뉴스 삭제 시도
+      console.log("삭제 시도할 ID 목록:", ids.map(id => Number(id)));
       const results = await Promise.allSettled(
         ids.map(id => storage.deleteNews(Number(id)))
       );
       
+      // 결과 상태 로깅
+      results.forEach((result, index) => {
+        const id = ids[index];
+        if (result.status === 'fulfilled') {
+          console.log(`ID ${id} 삭제 결과:`, result.value);
+        } else {
+          console.log(`ID ${id} 삭제 실패:`, result.reason);
+        }
+      });
+      
       // 성공/실패 횟수 카운트
       const successCount = results.filter(result => result.status === 'fulfilled' && result.value).length;
       const failCount = ids.length - successCount;
+      
+      console.log(`결과: ${successCount}개 성공, ${failCount}개 실패`);
       
       // 캐시 삭제
       memoryCache.deleteByPrefix("news_");

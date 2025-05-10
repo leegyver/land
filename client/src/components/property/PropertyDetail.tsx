@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { 
   Maximize, 
@@ -21,13 +21,14 @@ declare global {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Kakao?: any;
     kakaoKey?: string;
+    naver?: any;
+    NAVER_CLIENT_ID?: string;
   }
 }
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-// 지도 관련 라이브러리 대신 정적 이미지로 변경
-// 카카오톡 이미지 가져오기
+// 네이버 지도 API 사용
 import kakaoImage from "../../assets/kakao.jpg";
 import { Property as PropertyType } from "@shared/schema";
 
@@ -277,7 +278,9 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
   // 부동산 등록시 첨부한 이미지들을 사용
   const defaultImage = "https://via.placeholder.com/800x500?text=매물+이미지+준비중";
   
-  // 네이버 지도 관련 코드 제거
+  // 네이버 지도 API를 위한 ref 및 설정
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstance = useRef<any>(null);
   
   // imageUrls 배열이 있으면 사용하고, 없으면 기존 imageUrl을 배열로 변환
   // 이미지가 하나도 없는 경우 기본 이미지 사용
@@ -710,27 +713,27 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
             </p>
           </div>
           
-          {/* 위치 정보 표시 - 정적 지도로 대체 */}
+          {/* 위치 정보 표시 - 네이버 지도 직접 표시 */}
           <div className="bg-gray-50 rounded-lg overflow-hidden h-64 mb-4">
-            {/* 지도 대신 구조화된 위치 정보 표시 */}
-            <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                <MapPin className="w-8 h-8 text-primary" />
+            <div className="relative w-full h-full">
+              {/* 네이버 지도가 표시될 요소 */}
+              <div ref={mapRef} className="w-full h-full" id="map"></div>
+              
+              {/* 지도 타이틀 오버레이 */}
+              <div className="absolute top-4 left-0 right-0 z-10 flex flex-col items-center">
+                <div className="bg-white/90 rounded-md px-4 py-2 shadow-sm">
+                  <h3 className="text-lg font-semibold">매물 위치</h3>
+                  <p className="text-sm text-gray-600">{property.district} {property.address}</p>
+                </div>
               </div>
-              <h3 className="text-xl font-semibold mb-2">매물 위치</h3>
-              <p className="text-gray-700 mb-2">{property.district} {property.address}</p>
-              <p className="text-sm text-gray-500">
-                정확한 위치는 연락 시 안내해 드립니다.
-              </p>
-              <div className="mt-4">
-                <Button size="sm" variant="outline" onClick={() => {
-                  // 주소 조합: 지역필드 + 주소필드 (건물명 제외)
+              
+              {/* 외부 지도에서 보기 버튼 */}
+              <div className="absolute bottom-4 right-4 z-10">
+                <Button size="sm" variant="secondary" onClick={() => {
                   const fullAddress = [
                     property.district,
                     property.address
                   ].filter(Boolean).join(' ');
-                  
-                  // 네이버 지도 v5는 검색으로, 실제 지도가 바로 표시되는 URL 형식 사용
                   window.open(`https://map.naver.com/p/search/${encodeURIComponent(fullAddress)}`, '_blank');
                 }}>
                   네이버 지도에서 보기

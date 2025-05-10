@@ -606,9 +606,16 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                 </div>
                 
                 <div className="flex space-x-2">
-                  <Button variant="outline" className="flex-1">
-                    <Heart className="w-4 h-4 mr-2" />
-                    관심매물
+                  <Button 
+                    variant={favoriteData?.isFavorite ? "secondary" : "outline"} 
+                    className="flex-1 relative"
+                    onClick={toggleFavorite}
+                    disabled={addFavoriteMutation.isPending || removeFavoriteMutation.isPending}
+                  >
+                    <Heart 
+                      className={`w-4 h-4 mr-2 ${favoriteData?.isFavorite ? 'text-red-500 fill-red-500' : ''}`} 
+                    />
+                    {favoriteData?.isFavorite ? '관심매물 등록됨' : '관심매물'}
                   </Button>
                   
                   {/* 카카오톡 공유 버튼 */}

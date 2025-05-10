@@ -7,9 +7,12 @@ const Footer = () => {
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
           <div>
-            <h3 className="text-xl font-bold mb-4">한국부동산</h3>
+            <h3 className="text-xl font-bold mb-4">이가이버부동산</h3>
             <p className="text-gray-medium mb-4">
-              10년 이상의 경험을 바탕으로 고객님께 최상의 부동산 서비스를 제공합니다.
+              인천광역시 강화군 강화읍 남문로51, 1호<br />
+              전화: 032-934-3120 / 010-4787-3120<br />
+              이메일: 9551304@naver.com<br />
+              영업시간: 년중무휴-외근이 많으니 방문시 사전연락 부탁드립니다
             </p>
             <div className="flex space-x-4">
               <button className="text-white hover:text-primary">
@@ -66,7 +69,7 @@ const Footer = () => {
         </div>
         
         <div className="border-t border-gray-800 pt-6 mt-6">
-          <p className="text-gray-medium text-center">© {new Date().getFullYear()} 한국부동산. All rights reserved.</p>
+          <p className="text-gray-medium text-center">© {new Date().getFullYear()} 이가이버부동산. All rights reserved.</p>
         </div>
       </div>
     </footer>

@@ -137,24 +137,26 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           {/* Main image gallery */}
-          <div className="relative h-[400px] overflow-hidden rounded-lg mb-4">
+          <div className="relative h-[400px] overflow-hidden rounded-lg mb-4 bg-gray-100 flex items-center justify-center">
             {images.length > 1 && (
               <button 
                 onClick={prevImage}
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-2 z-10"
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-2 z-10 shadow-sm"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
             )}
-            <img 
-              src={images[currentImageIndex]} 
-              alt={property.title} 
-              className="w-full h-full object-cover"
-            />
+            <div className="h-full flex items-center justify-center">
+              <img 
+                src={images[currentImageIndex]} 
+                alt={property.title} 
+                className="max-w-full max-h-full object-contain"
+              />
+            </div>
             {images.length > 1 && (
               <button 
                 onClick={nextImage}
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-2 z-10"
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-2 z-10 shadow-sm"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
@@ -166,13 +168,13 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
               {images.map((image, index) => (
                 <button
                   key={index}
-                  className={`h-20 overflow-hidden rounded-md ${currentImageIndex === index ? 'ring-2 ring-primary' : ''}`}
+                  className={`h-20 overflow-hidden rounded-md bg-gray-100 flex items-center justify-center ${currentImageIndex === index ? 'ring-2 ring-primary' : 'ring-1 ring-gray-200'}`}
                   onClick={() => setCurrentImageIndex(index)}
                 >
                   <img 
                     src={image} 
                     alt={`${property.title} 이미지 ${index + 1}`} 
-                    className="w-full h-full object-cover"
+                    className="max-w-full max-h-full object-contain"
                   />
                 </button>
               ))}

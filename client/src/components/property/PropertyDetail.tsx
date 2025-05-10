@@ -170,6 +170,14 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
             ))}
           </div>
           
+          {/* 문의 게시판을 매물 설명 위쪽으로 이동 */}
+          <Card className="mt-8 mb-8">
+            <CardContent className="pt-6">
+              <h3 className="text-xl font-bold mb-4">이 매물 문의게시판</h3>
+              <PropertyInquiryBoard propertyId={Number(propertyId)} />
+            </CardContent>
+          </Card>
+          
           <Tabs defaultValue="details" className="mt-8">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="details">매물 정보</TabsTrigger>
@@ -259,15 +267,6 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                   <span className="font-medium">{property.district}</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-          
-
-          
-          <Card className="mt-6">
-            <CardContent className="pt-6">
-              <h3 className="text-xl font-bold mb-4">이 매물 문의게시판</h3>
-              <PropertyInquiryBoard propertyId={Number(propertyId)} />
             </CardContent>
           </Card>
         </div>

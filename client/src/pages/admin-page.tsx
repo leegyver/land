@@ -464,10 +464,30 @@ export default function AdminPage() {
         <TabsContent value="news">
           <Card>
             <CardHeader>
-              <CardTitle>뉴스 목록</CardTitle>
-              <CardDescription>
-                등록된 뉴스 목록을 관리합니다.
-              </CardDescription>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>뉴스 목록</CardTitle>
+                  <CardDescription>
+                    등록된 뉴스 목록을 관리합니다.
+                  </CardDescription>
+                </div>
+                <Button 
+                  onClick={() => fetchNewsMutation.mutate()}
+                  disabled={fetchNewsMutation.isPending}
+                >
+                  {fetchNewsMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      수집 중...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      뉴스 수동 수집
+                    </>
+                  )}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>

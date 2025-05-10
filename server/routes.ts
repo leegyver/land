@@ -2,7 +2,12 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
-import { insertInquirySchema, insertPropertySchema, insertNewsSchema } from "@shared/schema";
+import { 
+  insertInquirySchema, 
+  insertPropertySchema, 
+  insertNewsSchema, 
+  insertPropertyInquirySchema 
+} from "@shared/schema";
 import { memoryCache } from "./cache";
 import { setupAuth } from "./auth";
 
@@ -181,6 +186,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid inquiry data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to create inquiry" });
+    }
+  });
+  
+  // Property Inquiry Board API
+  app.get("/api/properties/:propertyId/inquiries", async (req, res) => {
+    try {
+      // 인증 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      }
+      
+      const propertyId = parseInt(req.params.propertyId);
+      const property = await storage.getProperty(propertyId);
+      
+      if (!property) {
+        return res.status(404).json({ message: "해당 매물을 찾을 수 없습니다." });
+      }
+      
+      // 접근 권한 확인 (관리자인 경우만 허용 - 실제로는 매물 소유자도 확인할 수 있어야 하지만 현재 구현에서는 관리자만 가능)
+      const user = req.user as Express.User;
+      const isAdmin = user.role === "admin";
+      
+      if (!isAdmin) {
+        return res.status(403).json({ message: "해당 매물의 문의글에 접근할 권한이 없습니다." });
+      }
+      
+      const inquiries = await storage.getPropertyInquiries(propertyId);
+      res.json(inquiries);
+    } catch (error) {
+      console.error("Error getting property inquiries:", error);
+      res.status(500).json({ message: "문의글 목록을 가져오는 중 오류가 발생했습니다." });
+    }
+  });
+  
+  app.post("/api/properties/:propertyId/inquiries", async (req, res) => {
+    try {
+      // 인증 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      }
+      
+      const propertyId = parseInt(req.params.propertyId);
+      const property = await storage.getProperty(propertyId);
+      
+      if (!property) {
+        return res.status(404).json({ message: "해당 매물을 찾을 수 없습니다." });
+      }
+      
+      const user = req.user as Express.User;
+      
+      // 답변을 작성하는 경우 권한 확인 (관리자만 가능)
+      if (req.body.isReply) {
+        const isAdmin = user.role === "admin";
+        
+        if (!isAdmin) {
+          return res.status(403).json({ message: "답변을 작성할 권한이 없습니다." });
+        }
+      }
+      
+      const inquiryData = {
+        ...req.body,
+        propertyId,
+        userId: user.id,
+      };
+      
+      const validatedData = insertPropertyInquirySchema.parse(inquiryData);
+      const inquiry = await storage.createPropertyInquiry(validatedData);
+      res.status(201).json(inquiry);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "잘못된 문의글 데이터입니다.", errors: error.errors });
+      }
+      console.error("Error creating property inquiry:", error);
+      res.status(500).json({ message: "문의글 작성 중 오류가 발생했습니다." });
+    }
+  });
+  
+  app.delete("/api/properties/:propertyId/inquiries/:inquiryId", async (req, res) => {
+    try {
+      // 인증 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      }
+      
+      const inquiryId = parseInt(req.params.inquiryId);
+      const inquiry = await storage.getPropertyInquiry(inquiryId);
+      
+      if (!inquiry) {
+        return res.status(404).json({ message: "해당 문의글을 찾을 수 없습니다." });
+      }
+      
+      // 접근 권한 확인 (작성자 또는 관리자만 삭제 가능)
+      const user = req.user as Express.User;
+      const isAdmin = user.role === "admin";
+      const isAuthor = inquiry.userId === user.id;
+      
+      if (!isAdmin && !isAuthor) {
+        return res.status(403).json({ message: "해당 문의글을 삭제할 권한이 없습니다." });
+      }
+      
+      const success = await storage.deletePropertyInquiry(inquiryId);
+      if (success) {
+        res.status(200).json({ message: "문의글이 삭제되었습니다." });
+      } else {
+        res.status(500).json({ message: "문의글 삭제 중 오류가 발생했습니다." });
+      }
+    } catch (error) {
+      console.error("Error deleting property inquiry:", error);
+      res.status(500).json({ message: "문의글 삭제 중 오류가 발생했습니다." });
     }
   });
   

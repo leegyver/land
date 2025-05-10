@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { 
@@ -14,6 +14,9 @@ import {
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 // 더 이상 사용하지 않음
 // import { RenderAfterNavermapsLoaded, NaverMap, Marker } from "react-naver-maps";
 // 카카오톡 이미지 가져오기
@@ -47,10 +50,84 @@ const formatPrice = (price: string | number) => {
 
 const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const { user } = useAuth();
+  const { toast } = useToast();
   
   const { data: propertyData, isLoading: propertyLoading, error: propertyError } = useQuery<PropertyType>({
     queryKey: [`/api/properties/${propertyId}`],
   });
+  
+  // 관심매물 상태 조회
+  const { data: favoriteData, isLoading: favoriteLoading } = useQuery<{ isFavorite: boolean }>({
+    queryKey: [`/api/properties/${propertyId}/is-favorite`],
+    enabled: !!propertyId,
+  });
+  
+  // 관심매물 추가 mutation
+  const addFavoriteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/favorites", { propertyId: Number(propertyId) });
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "관심매물 등록",
+        description: "관심매물로 등록되었습니다.",
+      });
+      // 관심매물 상태 업데이트
+      queryClient.invalidateQueries({ queryKey: [`/api/properties/${propertyId}/is-favorite`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/favorites'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "관심매물 등록 실패",
+        description: "관심매물 등록 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // 관심매물 삭제 mutation
+  const removeFavoriteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("DELETE", `/api/favorites/${propertyId}`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "관심매물 삭제",
+        description: "관심매물에서 삭제되었습니다.",
+      });
+      // 관심매물 상태 업데이트
+      queryClient.invalidateQueries({ queryKey: [`/api/properties/${propertyId}/is-favorite`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/favorites'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "관심매물 삭제 실패",
+        description: "관심매물 삭제 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // 관심매물 토글 함수
+  const toggleFavorite = () => {
+    if (!user) {
+      toast({
+        title: "로그인 필요",
+        description: "관심매물 기능은 로그인이 필요합니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (favoriteData?.isFavorite) {
+      removeFavoriteMutation.mutate();
+    } else {
+      addFavoriteMutation.mutate();
+    }
+  };
   
   // Property 데이터를 확장된 타입으로 캐스팅
   const property = propertyData as Property | undefined;

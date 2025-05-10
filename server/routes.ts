@@ -534,6 +534,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 관심매물 APIs
+  // 사용자의 관심매물 목록 조회
+  app.get("/api/favorites", async (req, res) => {
+    try {
+      // 인증 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      }
+      
+      const user = req.user as Express.User;
+      const favoriteProperties = await storage.getFavoriteProperties(user.id);
+      
+      res.json(favoriteProperties);
+    } catch (error) {
+      console.error("Error fetching favorite properties:", error);
+      res.status(500).json({ message: "관심매물 목록을 가져오는 중 오류가 발생했습니다." });
+    }
+  });
+  
+  // 매물이 관심매물에 등록되어 있는지 확인
+  app.get("/api/properties/:propertyId/is-favorite", async (req, res) => {
+    try {
+      // 인증되지 않은 사용자는 false 반환
+      if (!req.isAuthenticated()) {
+        return res.json({ isFavorite: false });
+      }
+      
+      const propertyId = parseInt(req.params.propertyId);
+      const user = req.user as Express.User;
+      
+      const isFavorite = await storage.isFavorite(user.id, propertyId);
+      res.json({ isFavorite });
+    } catch (error) {
+      console.error("Error checking if property is favorite:", error);
+      res.status(500).json({ message: "관심매물 확인 중 오류가 발생했습니다." });
+    }
+  });
+  
+  // 관심매물 추가
+  app.post("/api/favorites", async (req, res) => {
+    try {
+      // 인증 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      }
+      
+      const user = req.user as Express.User;
+      const propertyId = parseInt(req.body.propertyId);
+      
+      if (isNaN(propertyId)) {
+        return res.status(400).json({ message: "유효하지 않은 매물 ID입니다." });
+      }
+      
+      // 매물이 존재하는지 확인
+      const property = await storage.getProperty(propertyId);
+      if (!property) {
+        return res.status(404).json({ message: "해당 매물을 찾을 수 없습니다." });
+      }
+      
+      const favoriteData = {
+        userId: user.id,
+        propertyId: propertyId
+      };
+      
+      try {
+        const favorite = await storage.addFavorite(favoriteData);
+        res.status(201).json({ message: "관심매물로 등록되었습니다.", favorite });
+      } catch (err) {
+        // 이미 관심매물로 등록되어 있는 경우
+        if (err instanceof Error && err.message.includes("이미 관심 매물로 등록")) {
+          return res.status(409).json({ message: "이미 관심매물로 등록되어 있습니다." });
+        }
+        throw err;
+      }
+    } catch (error) {
+      console.error("Error adding favorite:", error);
+      res.status(500).json({ message: "관심매물 등록 중 오류가 발생했습니다." });
+    }
+  });
+  
+  // 관심매물 삭제
+  app.delete("/api/favorites/:propertyId", async (req, res) => {
+    try {
+      // 인증 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      }
+      
+      const user = req.user as Express.User;
+      const propertyId = parseInt(req.params.propertyId);
+      
+      if (isNaN(propertyId)) {
+        return res.status(400).json({ message: "유효하지 않은 매물 ID입니다." });
+      }
+      
+      const success = await storage.removeFavorite(user.id, propertyId);
+      
+      if (success) {
+        res.json({ message: "관심매물에서 삭제되었습니다." });
+      } else {
+        res.status(404).json({ message: "해당 관심매물을 찾을 수 없습니다." });
+      }
+    } catch (error) {
+      console.error("Error removing favorite:", error);
+      res.status(500).json({ message: "관심매물 삭제 중 오류가 발생했습니다." });
+    }
+  });
+
   // News API 엔드포인트
 
   // 모든 뉴스 가져오기

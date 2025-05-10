@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation, useParams } from "wouter";
+import { useParams } from "wouter";
 import { Loader2, ArrowLeft, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +32,6 @@ import {
 function PropertyForm() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
   const params = useParams();
   const isEditMode = !!params.id;
   
@@ -145,7 +144,7 @@ function PropertyForm() {
               description: "부동산 정보를 불러올 수 없습니다",
               variant: "destructive",
             });
-            setLocation("/admin");
+            window.location.href = "/admin";
           }
         } catch (error) {
           console.error("부동산 정보 로드 오류:", error);
@@ -154,7 +153,7 @@ function PropertyForm() {
             description: "부동산 정보를 불러오는 중 오류가 발생했습니다",
             variant: "destructive",
           });
-          setLocation("/admin");
+          window.location.href = "/admin";
         } finally {
           setLoading(false);
         }
@@ -162,7 +161,7 @@ function PropertyForm() {
       
       fetchProperty();
     }
-  }, [isEditMode, params.id, toast, setLocation]);
+  }, [isEditMode, params.id, toast]);
   
   // 입력 필드 변경 핸들러
   const handleChange = (e) => {
@@ -238,7 +237,7 @@ function PropertyForm() {
             ? "부동산 정보가 수정되었습니다" 
             : "부동산 정보가 등록되었습니다",
         });
-        setLocation("/admin");
+        window.location.href = "/admin";
       } else {
         const errorData = await response.json();
         throw new Error(errorData.message || "요청 처리 실패");

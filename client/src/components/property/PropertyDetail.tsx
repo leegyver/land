@@ -678,14 +678,28 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                           console.log("공유할 제목:", title);
                           console.log("공유할 설명:", description);
                           
+                          // 데이터 URL인지 확인 (base64 이미지)
+                          const isDataUrl = (url: string) => {
+                            return url.startsWith('data:');
+                          };
+                          
                           // 절대 URL 확인
                           const isAbsoluteUrl = (url: string) => {
                             return /^(?:https?:)?\/\//i.test(url);
                           };
                           
-                          // 이미지 URL이 상대경로인 경우 절대경로로 변환
-                          const absoluteImageUrl = isAbsoluteUrl(imageUrl) ? 
-                            imageUrl : `${window.location.origin}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+                          // 이미지 처리
+                          let absoluteImageUrl;
+                          if (isDataUrl(imageUrl)) {
+                            // 데이터 URL인 경우 대체 이미지 사용
+                            absoluteImageUrl = 'https://via.placeholder.com/800x600?text=Real+Estate+Property';
+                          } else if (isAbsoluteUrl(imageUrl)) {
+                            // 이미 절대 URL인 경우
+                            absoluteImageUrl = imageUrl;
+                          } else {
+                            // 상대 URL을 절대 URL로 변환
+                            absoluteImageUrl = `${window.location.origin}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+                          }
                           
                           console.log("절대 이미지 URL:", absoluteImageUrl);
                           

@@ -339,7 +339,7 @@ export default function AdminPageFixed() {
         
         // 요청 전송
         const res = await apiRequest("POST", "/api/news/bulk-delete", { 
-          ids: numericIds  // 숫자 ID 배열로 전송
+          ids: ids  // 문자열 ID 배열로 전송
         });
         console.log("서버 응답 상태:", res.status);
         
@@ -597,9 +597,9 @@ export default function AdminPageFixed() {
                       variant="destructive"
                       onClick={() => {
                         if (confirm(`선택한 ${selectedNewsIds.length}개의 뉴스를 삭제하시겠습니까?`)) {
-                          // 클라이언트 측에서 문자열 ID를 숫자로 변환하지 않고 그대로 전달
-                          // 서버 측에서 적절하게 숫자로 변환하도록 처리됨
-                          bulkDeleteNewsMutation.mutate(selectedNewsIds);
+                          // 문자열로 변환하여 전달
+                          const stringIds = selectedNewsIds.map(id => id.toString());
+                          bulkDeleteNewsMutation.mutate(stringIds);
                         }
                       }}
                       disabled={isBulkDeletingNews}

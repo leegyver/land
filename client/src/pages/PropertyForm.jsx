@@ -496,35 +496,89 @@ function PropertyForm() {
                                   const file = e.target.files[0];
                                   if (!file) return;
                                   
-                                  const reader = new FileReader();
-                                  reader.onload = (event) => {
-                                    if (event.target) {
-                                      const newImage = {
-                                        id: Date.now(), // 임시 ID
-                                        url: event.target.result,
-                                        file: file
+                                  setIsUploading(true);
+                                  
+                                  // 이미지 압축 함수
+                                  const compressImage = (file) => {
+                                    return new Promise((resolve) => {
+                                      const reader = new FileReader();
+                                      reader.onload = (event) => {
+                                        const img = new Image();
+                                        img.src = event.target.result;
+                                        img.onload = () => {
+                                          // 이미지 리사이징을 위한 캔버스 생성
+                                          const canvas = document.createElement('canvas');
+                                          // 최대 너비/높이 설정 (800px로 제한)
+                                          const MAX_SIZE = 800;
+                                          let width = img.width;
+                                          let height = img.height;
+                                          
+                                          // 이미지 크기 조정
+                                          if (width > height) {
+                                            if (width > MAX_SIZE) {
+                                              height *= MAX_SIZE / width;
+                                              width = MAX_SIZE;
+                                            }
+                                          } else {
+                                            if (height > MAX_SIZE) {
+                                              width *= MAX_SIZE / height;
+                                              height = MAX_SIZE;
+                                            }
+                                          }
+                                          
+                                          canvas.width = width;
+                                          canvas.height = height;
+                                          
+                                          // 캔버스에 이미지 그리기
+                                          const ctx = canvas.getContext('2d');
+                                          ctx.drawImage(img, 0, 0, width, height);
+                                          
+                                          // 이미지 포맷 및 품질 설정 (0.7 = 70% 품질)
+                                          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                                          resolve(compressedDataUrl);
+                                        };
                                       };
-                                      
-                                      // 기존 이미지에 추가
-                                      const updatedImages = [...uploadedImages, newImage];
-                                      setUploadedImages(updatedImages);
-                                      
-                                      // formData의 imageUrls 업데이트
+                                      reader.readAsDataURL(file);
+                                    });
+                                  };
+                                  
+                                  // 이미지 압축 실행
+                                  compressImage(file).then(compressedDataUrl => {
+                                    const newImage = {
+                                      id: Date.now(), // 임시 ID
+                                      url: compressedDataUrl,
+                                      file: file
+                                    };
+                                    
+                                    // 기존 이미지에 추가
+                                    const updatedImages = [...uploadedImages, newImage];
+                                    setUploadedImages(updatedImages);
+                                    
+                                    // formData의 imageUrls 업데이트
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      imageUrls: updatedImages.map(img => img.url)
+                                    }));
+                                    
+                                    // 첫 번째 이미지는 대표 이미지로 설정
+                                    if (updatedImages.length === 1) {
                                       setFormData(prev => ({
                                         ...prev,
-                                        imageUrls: updatedImages.map(img => img.url)
+                                        imageUrl: compressedDataUrl
                                       }));
-                                      
-                                      // 첫 번째 이미지는 대표 이미지로 설정
-                                      if (updatedImages.length === 1) {
-                                        setFormData(prev => ({
-                                          ...prev,
-                                          imageUrl: updatedImages[0].url
-                                        }));
-                                      }
                                     }
-                                  };
-                                  reader.readAsDataURL(file);
+                                    
+                                    // 업로드 완료 상태로 변경
+                                    setIsUploading(false);
+                                  }).catch(error => {
+                                    console.error("이미지 압축 중 오류:", error);
+                                    setIsUploading(false);
+                                    toast({
+                                      title: "이미지 처리 실패",
+                                      description: "이미지 업로드 중 오류가 발생했습니다.",
+                                      variant: "destructive"
+                                    });
+                                  });
                                   
                                   // input 초기화
                                   e.target.value = '';

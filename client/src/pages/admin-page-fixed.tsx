@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getQueryFn, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Property, User, News, insertPropertySchema } from "@shared/schema";
-import { InlinePropertyForm } from "@/components/admin/InlinePropertyForm";
+import { PropertyFormDialog } from "@/components/admin/PropertyFormDialog";
 import * as z from "zod";
 
 type PropertyFormValues = z.infer<typeof insertPropertySchema>;

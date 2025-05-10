@@ -486,7 +486,6 @@ export function SimplePropertyForm({ onClose, property }: SimplePropertyFormProp
         district: "강화읍 갑곳리", 
         address: "",
         size: "",
-        imageUrl: "",
         agentId: 1,
         
         // 위치 정보
@@ -758,21 +757,7 @@ export function SimplePropertyForm({ onClose, property }: SimplePropertyFormProp
               />
             </div>
 
-            <div>
-              <FormField
-                control={form.control}
-                name="imageUrl"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>이미지 URL</FormLabel>
-                    <FormControl>
-                      <Input placeholder="이미지 URL" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+
 
             <div>
               <FormField

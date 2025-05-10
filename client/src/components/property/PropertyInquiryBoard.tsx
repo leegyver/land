@@ -6,6 +6,11 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PropertyInquiry } from "@shared/schema";
+
+// PropertyInquiry에 authorUsername 필드를 추가한 확장 타입
+type PropertyInquiryWithAuthor = PropertyInquiry & {
+  authorUsername?: string;
+};
 import { 
   Form,
   FormControl,
@@ -53,7 +58,7 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
     data: inquiries, 
     isLoading: inquiriesLoading,
     refetch: refetchInquiries
-  } = useQuery<PropertyInquiry[]>({
+  } = useQuery<PropertyInquiryWithAuthor[]>({
     queryKey: [`/api/properties/${propertyId}/inquiries`],
     enabled: !!propertyId && !!user,
   });
@@ -220,7 +225,7 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
                   <p className="text-sm text-gray-600 mb-4">{inquiry.content}</p>
                   
                   <div className="flex justify-between text-xs text-gray-500 mt-2">
-                    <span>작성자: {user?.username || "사용자"}</span>
+                    <span>작성자: {inquiry.authorUsername || "알 수 없음"}</span>
                     <span>{inquiry.createdAt ? formatDistanceToNow(new Date(inquiry.createdAt), { addSuffix: true, locale: ko }) : ""}</span>
                   </div>
                   

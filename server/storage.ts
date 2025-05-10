@@ -5,7 +5,8 @@ import {
   testimonials, type Testimonial, type InsertTestimonial,
   users, type User, type InsertUser,
   news, type News, type InsertNews,
-  propertyInquiries, type PropertyInquiry, type InsertPropertyInquiry
+  propertyInquiries, type PropertyInquiry, type InsertPropertyInquiry,
+  favorites, type Favorite, type InsertFavorite
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, desc, and, gte, lte, like } from "drizzle-orm";
@@ -79,6 +80,13 @@ export interface IStorage {
   createPropertyInquiry(inquiry: InsertPropertyInquiry): Promise<PropertyInquiry>;
   updatePropertyInquiry(id: number, inquiry: Partial<InsertPropertyInquiry>): Promise<PropertyInquiry | undefined>;
   deletePropertyInquiry(id: number): Promise<boolean>;
+  
+  // Favorites methods
+  getUserFavorites(userId: number): Promise<Favorite[]>;
+  getFavoriteProperties(userId: number): Promise<Property[]>;
+  isFavorite(userId: number, propertyId: number): Promise<boolean>;
+  addFavorite(favorite: InsertFavorite): Promise<Favorite>;
+  removeFavorite(userId: number, propertyId: number): Promise<boolean>;
   
   // Init Data
   initializeData(): Promise<void>;

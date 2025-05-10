@@ -199,6 +199,7 @@ function PropertyForm() {
   // 이미지 업로드 관련 상태
   const [uploadedImages, setUploadedImages] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [featuredImageIndex, setFeaturedImageIndex] = useState(0); // 대표 이미지 인덱스 관리
   
 
   
@@ -213,9 +214,10 @@ function PropertyForm() {
           if (response.ok) {
             const data = await response.json();
             console.log("불러온 부동산 데이터:", data);
-            // 데이터 설정
+            // 단일 이미지 필드 제거 및 데이터 설정
+            const { imageUrl, ...restData } = data;
             setFormData({
-              ...data,
+              ...restData,
               dealType: data.dealType || ["매매"],
               imageUrls: data.imageUrls || [],
               elevator: Boolean(data.elevator),
@@ -223,23 +225,30 @@ function PropertyForm() {
               featured: Boolean(data.featured),
             });
             
-            // 이미지가 있으면 이미지 미리보기에 추가
+            // 이미지 처리: 배열 먼저 확인하고, 없으면 단일 이미지 확인
+            let imageList = [];
+            
             if (data.imageUrls && Array.isArray(data.imageUrls) && data.imageUrls.length > 0) {
-              const images = data.imageUrls.map((url, index) => ({
+              // 이미지 배열 사용
+              imageList = [...data.imageUrls];
+            } 
+            else if (imageUrl) {
+              // 단일 이미지가 있으면 배열에 추가
+              imageList = [imageUrl];
+            }
+            
+            // 이미지 객체 배열로 변환
+            if (imageList.length > 0) {
+              const images = imageList.map((url, index) => ({
                 id: Date.now() + index,
                 url: url
               }));
               setUploadedImages(images);
-            }
-            // 단일 이미지가 있고 배열이 비어있으면 배열에도 추가
-            else if (data.imageUrl && (!data.imageUrls || data.imageUrls.length === 0)) {
-              setUploadedImages([{
-                id: Date.now(),
-                url: data.imageUrl
-              }]);
+              
+              // 폼 데이터의 imageUrls도 업데이트
               setFormData(prev => ({
                 ...prev,
-                imageUrls: [data.imageUrl]
+                imageUrls: imageList
               }));
             }
           } else {
@@ -685,25 +694,36 @@ function PropertyForm() {
                                       // formData 업데이트
                                       setFormData(prev => ({
                                         ...prev,
-                                        imageUrls: updatedImages.map(img => img.url),
-                                        // 첫 번째 이미지를 대표 이미지로 설정 (없으면 기본값)
-                                        imageUrl: updatedImages.length > 0 
-                                          ? updatedImages[0].url 
-                                          : "https://images.unsplash.com/photo-1580587771525-78b9dba3b914"
+                                        imageUrls: updatedImages.map(img => img.url)
                                       }));
+                                      
+                                      // 대표 이미지 인덱스 조정
+                                      if (featuredImageIndex >= updatedImages.length && updatedImages.length > 0) {
+                                        setFeaturedImageIndex(0);
+                                      }
                                     }}
                                   >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                     </svg>
                                   </button>
-                                  {index === 0 && (
-                                    <span className="absolute top-0 left-0 bg-green-500 text-white text-xs px-1 py-0.5 rounded-tr-md rounded-bl-md">
-                                      대표
-                                    </span>
-                                  )}
+                                  {/* 대표 이미지 선택 버튼 */}
+                                  <button
+                                    type="button"
+                                    className={`absolute bottom-1 right-1 p-1 text-white rounded-full ${index === featuredImageIndex ? 'bg-green-500' : 'bg-gray-500'}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setFeaturedImageIndex(index);
+                                    }}
+                                    title={index === featuredImageIndex ? "현재 대표 이미지입니다" : "대표 이미지로 설정"}
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                    </svg>
+                                  </button>
                                 </div>
-                                {index === 0 && (
+                                {/* 대표 이미지 표시 라벨 */}
+                                {index === featuredImageIndex && (
                                   <span className="absolute top-0 left-0 bg-green-500 text-white text-xs px-1 py-0.5 rounded-tr-md rounded-bl-md">
                                     대표
                                   </span>
@@ -715,16 +735,7 @@ function PropertyForm() {
                       </div>
                     </div>
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="imageUrl">대표 이미지 URL (선택사항)</Label>
-                      <Input
-                        id="imageUrl"
-                        name="imageUrl"
-                        value={formData.imageUrl}
-                        onChange={handleChange}
-                        placeholder="이미지를 업로드하거나 URL을 입력하세요"
-                      />
-                    </div>
+                    {/* 대표 이미지 URL 입력 필드는 제거됨 */}
                   </div>
                   
 

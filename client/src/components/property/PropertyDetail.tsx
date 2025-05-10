@@ -518,14 +518,15 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
               )}
               
               <div className="pt-4 mt-4 border-t border-gray-200">
-                {/* 카카오톡 문의 버튼 */}
-                <Button 
-                  onClick={() => window.open("http://pf.kakao.com/_xaxbxlxfs/chat", "_blank")}
-                  className="w-full mb-2 bg-[#FEE500] hover:bg-[#FEE500]/90 text-black"
-                >
-                  <img src={kakaoImage} alt="카카오톡 채널" className="w-5 h-5 mr-2" />
-                  카카오톡으로 문의하기
-                </Button>
+                {/* 카카오톡 문의 이미지 */}
+                <div className="w-full mb-2 cursor-pointer">
+                  <img 
+                    src={kakaoImage} 
+                    alt="카카오톡으로 문의하기" 
+                    className="w-full h-auto rounded-lg border border-[#FEE500] hover:opacity-90 transition-opacity"
+                    onClick={() => window.open("http://pf.kakao.com/_xaxbxlxfs/chat", "_blank")}
+                  />
+                </div>
                 
                 <div className="flex space-x-2">
                   <Button variant="outline" className="flex-1">

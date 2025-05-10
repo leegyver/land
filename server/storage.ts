@@ -421,32 +421,13 @@ export class DatabaseStorage implements IStorage {
   
   async deleteNews(id: number): Promise<boolean> {
     try {
-      // ID가 정수인지 확인 (문자열 ID 처리를 위한 안전장치)
-      const numericId = Number(id);
-      
-      if (isNaN(numericId)) {
-        console.error(`Invalid news ID (not a number): ${id}`);
-        return false;
-      }
-      
-      console.log(`Storage: 뉴스 삭제 시도 ID=${numericId} (원본 타입: ${typeof id})`);
-      
-      // 삭제 전에 ID가 실제로 존재하는지 확인
-      const newsItem = await this.getNewsById(numericId);
-      if (!newsItem) {
-        console.log(`Storage: ID=${numericId}인 뉴스가 존재하지 않음`);
-        return false;
-      }
-      
       const result = await db.delete(news)
-        .where(eq(news.id, numericId))
+        .where(eq(news.id, id))
         .returning();
       
-      const success = result.length > 0;
-      console.log(`Storage: 뉴스 ID=${numericId} 삭제 결과:`, success ? "성공" : "실패");
-      return success;
+      return result.length > 0;
     } catch (error) {
-      console.error(`Storage: ID=${id} 뉴스 삭제 중 오류:`, error);
+      console.error("Error deleting news:", error);
       return false;
     }
   }

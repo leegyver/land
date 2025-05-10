@@ -122,13 +122,39 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
     <div className="container mx-auto px-4 py-12">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">{property.title}</h1>
-        <div className="flex flex-wrap items-center gap-2 mb-2">
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          {/* 부동산 유형 뱃지 */}
+          <Badge 
+            className={`text-sm font-medium ${
+              property.type === "아파트" || property.type === "아파트연립다세대" ? "bg-blue-500" : 
+              property.type === "주택" ? "bg-green-600" : 
+              property.type === "오피스텔" || property.type === "원투룸" ? "bg-purple-600" : 
+              property.type === "빌라" ? "bg-orange-600" : 
+              property.type === "상가공장창고펜션" ? "bg-yellow-600" :
+              property.type === "토지" ? "bg-emerald-600" : "bg-primary"
+            }`}
+          >
+            {property.type}
+          </Badge>
+          
+          {/* 거래 유형 뱃지들 */}
           {property.dealType && Array.isArray(property.dealType) && property.dealType.map((type, index) => (
-            <Badge key={index} className="bg-secondary">{type}</Badge>
+            <Badge 
+              key={index}
+              className={`text-sm font-medium ${
+                type === "매매" ? "bg-red-600" : 
+                type === "전세" ? "bg-amber-600" : 
+                type === "월세" ? "bg-indigo-600" :
+                type === "완료" ? "bg-gray-600" :
+                type === "보류중" ? "bg-pink-600" : "bg-secondary"
+              }`}
+            >
+              {type}
+            </Badge>
           ))}
         </div>
-        <p className="text-gray-medium flex items-center">
-          <MapPin className="w-4 h-4 mr-1" /> 
+        <p className="text-gray-medium flex items-center text-base">
+          <MapPin className="w-5 h-5 mr-1.5 text-primary" /> 
           {/* 주소에서 지번 정보를 제외 - 대략적인 위치만 표시 */}
           {property.district}, {property.city}
         </p>
@@ -202,25 +228,25 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
               
               <h3 className="text-xl font-bold mb-4">주요 특징</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-gray-light p-4 rounded-lg flex flex-col items-center">
-                  <Maximize className="text-primary mb-2" />
-                  <span className="font-bold">{property.size}m²</span>
-                  <span className="text-sm text-gray-medium">면적</span>
+                <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg flex flex-col items-center shadow-sm">
+                  <Maximize className="text-primary mb-2 h-6 w-6" />
+                  <span className="font-bold text-lg">{property.size}m²</span>
+                  <span className="text-sm text-gray-600">면적</span>
                 </div>
-                <div className="bg-gray-light p-4 rounded-lg flex flex-col items-center">
-                  <Bed className="text-primary mb-2" />
-                  <span className="font-bold">{property.bedrooms}개</span>
-                  <span className="text-sm text-gray-medium">침실</span>
+                <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg flex flex-col items-center shadow-sm">
+                  <Bed className="text-primary mb-2 h-6 w-6" />
+                  <span className="font-bold text-lg">{property.bedrooms}개</span>
+                  <span className="text-sm text-gray-600">침실</span>
                 </div>
-                <div className="bg-gray-light p-4 rounded-lg flex flex-col items-center">
-                  <Bath className="text-primary mb-2" />
-                  <span className="font-bold">{property.bathrooms}개</span>
-                  <span className="text-sm text-gray-medium">욕실</span>
+                <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg flex flex-col items-center shadow-sm">
+                  <Bath className="text-primary mb-2 h-6 w-6" />
+                  <span className="font-bold text-lg">{property.bathrooms}개</span>
+                  <span className="text-sm text-gray-600">욕실</span>
                 </div>
-                <div className="bg-gray-light p-4 rounded-lg flex flex-col items-center">
-                  <Calendar className="text-primary mb-2" />
-                  <span className="font-bold">즉시 입주</span>
-                  <span className="text-sm text-gray-medium">입주가능일</span>
+                <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg flex flex-col items-center shadow-sm">
+                  <Calendar className="text-primary mb-2 h-6 w-6" />
+                  <span className="font-bold text-lg">즉시 입주</span>
+                  <span className="text-sm text-gray-600">입주가능일</span>
                 </div>
               </div>
             </TabsContent>
@@ -247,8 +273,44 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
             <CardContent className="pt-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <Badge className="mb-2" variant="outline">{property.type}</Badge>
-                  <h2 className="text-2xl font-bold text-primary">{formatPrice(property.price)}</h2>
+                  {/* 가격 표시 */}
+                  <h2 className="text-2xl font-bold text-primary mb-2">{formatPrice(property.price)}</h2>
+                  
+                  {/* 거래 유형 뱃지들 */}
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {property.dealType && Array.isArray(property.dealType) && property.dealType.map((type, index) => (
+                      <Badge 
+                        key={index}
+                        variant="outline"
+                        className={`text-xs font-medium px-2 py-0.5 
+                          ${type === "매매" ? "border-red-500 text-red-500" : 
+                            type === "전세" ? "border-amber-500 text-amber-500" : 
+                            type === "월세" ? "border-indigo-500 text-indigo-500" :
+                            type === "완료" ? "border-gray-500 text-gray-500" :
+                            type === "보류중" ? "border-pink-500 text-pink-500" : 
+                            "border-secondary text-secondary"
+                          }`}
+                      >
+                        {type}
+                      </Badge>
+                    ))}
+                  </div>
+                  
+                  {/* 부동산 유형 */}
+                  <Badge 
+                    variant="outline" 
+                    className={`text-xs font-medium mb-2 
+                      ${property.type === "아파트" || property.type === "아파트연립다세대" ? "border-blue-500 text-blue-500" : 
+                        property.type === "주택" ? "border-green-600 text-green-600" : 
+                        property.type === "오피스텔" || property.type === "원투룸" ? "border-purple-600 text-purple-600" : 
+                        property.type === "빌라" ? "border-orange-600 text-orange-600" : 
+                        property.type === "상가공장창고펜션" ? "border-yellow-600 text-yellow-600" :
+                        property.type === "토지" ? "border-emerald-600 text-emerald-600" : 
+                        "border-primary text-primary"
+                      }`}
+                  >
+                    {property.type}
+                  </Badge>
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="icon">
@@ -260,23 +322,43 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                 </div>
               </div>
               
-              <div className="space-y-4 mt-6">
-                <div className="flex flex-col">
-                  <span className="text-sm text-gray-medium">면적</span>
-                  <span className="font-medium">{property.size}m²</span>
+              <div className="mt-6 border-t pt-4 border-gray-100">
+                <h3 className="font-medium text-base mb-3">매물 정보</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-center p-2 bg-gray-50 rounded-md">
+                    <Maximize className="text-primary w-4 h-4 mr-2" />
+                    <div>
+                      <div className="text-xs text-gray-500">면적</div>
+                      <div className="font-medium">{property.size}m²</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center p-2 bg-gray-50 rounded-md">
+                    <Bed className="text-primary w-4 h-4 mr-2" />
+                    <div>
+                      <div className="text-xs text-gray-500">침실</div>
+                      <div className="font-medium">{property.bedrooms}개</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center p-2 bg-gray-50 rounded-md">
+                    <Bath className="text-primary w-4 h-4 mr-2" />
+                    <div>
+                      <div className="text-xs text-gray-500">욕실</div>
+                      <div className="font-medium">{property.bathrooms}개</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center p-2 bg-gray-50 rounded-md">
+                    <MapPin className="text-primary w-4 h-4 mr-2" />
+                    <div>
+                      <div className="text-xs text-gray-500">지역</div>
+                      <div className="font-medium">{property.district}</div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-sm text-gray-medium">침실</span>
-                  <span className="font-medium">{property.bedrooms}개</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-sm text-gray-medium">욕실</span>
-                  <span className="font-medium">{property.bathrooms}개</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-sm text-gray-medium">지역</span>
-                  <span className="font-medium">{property.district}</span>
-                </div>
+                
+                {/* 문의하기 버튼 */}
+                <Button className="w-full mt-5" size="lg">
+                  <Phone className="w-4 h-4 mr-2" /> 문의하기
+                </Button>
               </div>
             </CardContent>
           </Card>

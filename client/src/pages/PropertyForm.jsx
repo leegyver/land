@@ -154,7 +154,6 @@ function PropertyForm() {
     size: "",
     bedrooms: 1,
     bathrooms: 1,
-    imageUrl: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914",
     imageUrls: [], // 다중 이미지 저장용 배열
     featured: false,
     

@@ -51,8 +51,6 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Loader2, Home, Plus, Trash2, Edit, Check } from "lucide-react";
 
-
-
 // 읍면 
 const districts = [
   "강화읍", "교동면", "길상면", "내가면", "불은면", "삼산면", "서도면", "선원면", 
@@ -82,7 +80,6 @@ const detailedDistricts: DetailedDistrictsType = {
 };
 
 
-
 export default function AdminPage() {
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
@@ -95,7 +92,6 @@ export default function AdminPage() {
   const [isDeletingNews, setIsDeletingNews] = useState<number | false>(false);
   const [selectedMainDistrict, setSelectedMainDistrict] = useState("강화읍");
   const [detailedDistrictOptions, setDetailedDistrictOptions] = useState<string[]>(detailedDistricts["강화읍"]);
-
 
   // 부동산 목록 조회
   const {
@@ -127,6 +123,35 @@ export default function AdminPage() {
   } = useQuery<News[]>({
     queryKey: ["/api/news"],
     queryFn: getQueryFn({ on401: "throw" }),
+  });
+
+  // 뉴스 수동 수집 뮤테이션 
+  const fetchNewsMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/news/fetch");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "뉴스 수집에 실패했습니다");
+      }
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      // 뉴스 캐시 갱신
+      queryClient.invalidateQueries({ queryKey: ["/api/news"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/news/latest"] });
+      
+      toast({
+        title: "뉴스 수집 성공",
+        description: `${data.count}개의 새로운 뉴스가 수집되었습니다.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "뉴스 수집 실패",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   // 부동산 생성 뮤테이션
@@ -253,35 +278,6 @@ export default function AdminPage() {
         variant: "destructive",
       });
       setIsDeletingUser(false);
-    },
-  });
-
-  // 뉴스 수동 수집 뮤테이션 
-  const fetchNewsMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/news/fetch");
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "뉴스 수집에 실패했습니다");
-      }
-      return await res.json();
-    },
-    onSuccess: (data) => {
-      // 뉴스 캐시 갱신
-      queryClient.invalidateQueries({ queryKey: ["/api/news"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/news/latest"] });
-      
-      toast({
-        title: "뉴스 수집 성공",
-        description: `${data.count}개의 새로운 뉴스가 수집되었습니다.`,
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "뉴스 수집 실패",
-        description: error.message,
-        variant: "destructive",
-      });
     },
   });
   

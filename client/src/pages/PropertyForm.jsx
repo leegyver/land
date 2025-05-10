@@ -150,6 +150,7 @@ function PropertyForm() {
     type: "주택",
     price: "",
     address: "",
+    city: "인천", // city 필드에 기본값 지정
     district: "기타지역", // 기본값 설정
     size: "",
     bedrooms: 1,

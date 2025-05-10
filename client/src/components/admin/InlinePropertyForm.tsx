@@ -52,6 +52,9 @@ const propertyFormSchema = insertPropertySchema.extend({
   monthlyRent: z.union([z.string(), z.number()]).optional().nullable(),
   maintenanceFee: z.union([z.string(), z.number()]).optional().nullable(),
   imageUrl: z.string().optional(),
+  elevator: z.boolean().optional().nullable(),
+  featured: z.boolean().optional().nullable(),
+  coListing: z.boolean().optional().nullable(),
 });
 
 type PropertyFormValues = z.infer<typeof propertyFormSchema>;

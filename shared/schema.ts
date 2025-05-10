@@ -10,8 +10,8 @@ export const properties = pgTable("properties", {
   type: text("type").notNull(), // 토지, 주택, 아파트연립다세대, 원투룸, 상가공장창고펜션
   price: numeric("price").notNull(), // 매매가
   address: text("address").notNull(), // 주소
-  city: text("city").notNull(), // 도시
-  district: text("district").notNull(), // 읍면동 (ex: 강화읍 갑곳리, 강화읍 관청리 등)
+  city: text("city"), // 도시 (더 이상 사용하지 않음)
+  district: text("district").notNull(), // 읍면동리 (ex: 강화읍 갑곳리, 강화읍 관청리, 강화군외 등)
   size: numeric("size").notNull(), // 면적(㎡)
   bedrooms: integer("bedrooms").notNull(), // 방 개수
   bathrooms: integer("bathrooms").notNull(), // 화장실 개수

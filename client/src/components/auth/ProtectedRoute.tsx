@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
-import { Redirect, Route, useLocation } from "wouter";
+import { Redirect, Route } from "wouter";
+import { useEffect, useState } from "react";
 
 interface ProtectedRouteProps {
   path: string;
@@ -14,11 +15,23 @@ export function ProtectedRoute({
   admin = false 
 }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
-  const [, setLocation] = useLocation();
-
+  const [shouldRedirect, setShouldRedirect] = useState<string | null>(null);
+  
+  // 사용자 인증 상태에 따라 리다이렉션 경로 결정
+  useEffect(() => {
+    if (!isLoading) {
+      if (!user) {
+        setShouldRedirect("/auth");
+      } else if (admin && user.role !== "admin") {
+        setShouldRedirect("/");
+      }
+    }
+  }, [user, isLoading, admin]);
+  
   return (
     <Route path={path}>
       {() => {
+        // 로딩 중일 때
         if (isLoading) {
           return (
             <div className="flex items-center justify-center min-h-screen">
@@ -26,20 +39,13 @@ export function ProtectedRoute({
             </div>
           );
         }
-
-        if (!user) {
-          return <Redirect to="/auth" />;
+        
+        // 리다이렉션 필요 시
+        if (shouldRedirect) {
+          return <Redirect to={shouldRedirect} />;
         }
-
-        if (admin && user.role !== "admin") {
-          setLocation("/");
-          return (
-            <div className="flex items-center justify-center min-h-screen">
-              <p className="text-xl text-red-500">관리자 권한이 필요합니다.</p>
-            </div>
-          );
-        }
-
+        
+        // 모든 조건 충족 시 컴포넌트 렌더링
         return <Component />;
       }}
     </Route>

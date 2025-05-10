@@ -5,7 +5,7 @@ const Footer = () => {
   return (
     <footer className="bg-gray-900 text-white pt-12 pb-6">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
           <div>
             <h3 className="text-xl font-bold mb-4">이가이버부동산</h3>
             <p className="text-gray-400 mb-4">
@@ -32,28 +32,6 @@ const Footer = () => {
                 </svg>
               </button>
             </div>
-          </div>
-          
-          <div>
-            <h3 className="text-xl font-bold mb-4">매물 정보</h3>
-            <ul className="space-y-2">
-              <li><Link href="/properties?type=아파트" className="text-gray-400 hover:text-white">아파트</Link></li>
-              <li><Link href="/properties?type=주택" className="text-gray-400 hover:text-white">주택</Link></li>
-              <li><Link href="/properties?type=빌라" className="text-gray-400 hover:text-white">빌라</Link></li>
-              <li><Link href="/properties?type=오피스텔" className="text-gray-400 hover:text-white">오피스텔</Link></li>
-              <li><Link href="/properties?type=상가" className="text-gray-400 hover:text-white">상가/사무실</Link></li>
-            </ul>
-          </div>
-          
-          <div>
-            <h3 className="text-xl font-bold mb-4">지역 정보</h3>
-            <ul className="space-y-2">
-              <li><Link href="/properties?district=강화읍" className="text-gray-400 hover:text-white">강화읍</Link></li>
-              <li><Link href="/properties?district=내가면" className="text-gray-400 hover:text-white">내가면</Link></li>
-              <li><Link href="/properties?district=선원면" className="text-gray-400 hover:text-white">선원면</Link></li>
-              <li><Link href="/properties?district=불은면" className="text-gray-400 hover:text-white">불은면</Link></li>
-              <li><Link href="/properties?district=길상면" className="text-gray-400 hover:text-white">길상면</Link></li>
-            </ul>
           </div>
           
           <div>

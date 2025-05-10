@@ -17,7 +17,8 @@ import AgentDetailPage from "@/pages/AgentDetailPage";
 import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
 import AuthPage from "@/pages/auth-page";
-import AdminPage from "@/pages/admin-simple";
+import AdminPage from "@/pages/admin-vanilla";
+import AdminOldPage from "@/pages/admin-page";
 import ProfilePage from "@/pages/profile-page";
 import NewsPage from "@/pages/NewsPage";
 import NewsDetailPage from "@/pages/NewsDetailPage";
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       <ProtectedRoute path="/profile" component={ProfilePage} />
       <ProtectedRoute path="/admin" component={AdminPage} admin={true} />
+      <ProtectedRoute path="/admin-old" component={AdminOldPage} admin={true} />
       <Route component={NotFound} />
     </Switch>
   );

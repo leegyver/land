@@ -168,7 +168,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
         <p className="text-gray-medium flex items-center text-base">
           <MapPin className="w-5 h-5 mr-1.5 text-primary" /> 
           {/* 주소에서 지번 정보를 제외 - 대략적인 위치만 표시 */}
-          {property.district}, {property.city}
+          {property.district}
         </p>
       </div>
       
@@ -284,10 +284,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                               <td className="py-2 font-medium">{property.unitNumber}</td>
                             </tr>
                           )}
-                          <tr className="border-b border-gray-100">
-                            <td className="py-2 text-gray-600">주소</td>
-                            <td className="py-2 font-medium">{property.address}</td>
-                          </tr>
+                          {/* 주소는 개인정보 보호를 위해 상세페이지에서 표시하지 않음 */}
                           {property.approvalDate && (
                             <tr className="border-b border-gray-100">
                               <td className="py-2 text-gray-600">사용승인</td>
@@ -438,11 +435,9 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
               <div className="mt-4">
                 <h3 className="text-xl font-bold mb-2">위치 정보</h3>
                 <div className="space-y-4">
-                  <p className="text-gray-medium whitespace-pre-line">
-                    <span className="font-semibold block">주소:</span> {property.address}
-                  </p>
+                  {/* 주소는 개인정보 보호를 위해 지도 탭에서 표시하지 않음 */}
                   <p className="text-gray-medium">
-                    <span className="font-semibold block">지역:</span> {property.district}, {property.city}
+                    <span className="font-semibold block">지역:</span> {property.district}
                   </p>
                 </div>
               </div>

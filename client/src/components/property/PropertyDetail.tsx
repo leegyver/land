@@ -61,6 +61,25 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   
+  // 카카오 SDK 초기화
+  useEffect(() => {
+    try {
+      const kakaoApiKey = import.meta.env.VITE_KAKAO_API_KEY;
+      console.log("카카오 SDK 초기화 시작");
+      
+      if (window.Kakao && !window.Kakao.isInitialized()) {
+        window.Kakao.init(kakaoApiKey);
+        console.log("카카오 SDK 초기화 완료:", window.Kakao.isInitialized());
+      } else if (!window.Kakao) {
+        console.warn("카카오 SDK가 로드되지 않았습니다.");
+      } else {
+        console.log("카카오 SDK가 이미 초기화되어 있습니다.");
+      }
+    } catch (e) {
+      console.error("카카오 SDK 초기화 중 오류 발생:", e);
+    }
+  }, []);
+  
   const { data: propertyData, isLoading: propertyLoading, error: propertyError } = useQuery<PropertyType>({
     queryKey: [`/api/properties/${propertyId}`],
   });
@@ -631,45 +650,75 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                     variant="outline" 
                     className="w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-900 border-yellow-300"
                     onClick={() => {
-                      if (window.Kakao && window.Kakao.Share) {
-                        // 이미지 URL 획득
-                        const imageUrl = images && images.length > 0 ? 
-                          images[currentImageIndex] : defaultImage;
+                      try {
+                        console.log("카카오톡 공유 버튼 클릭");
+                        console.log("Kakao SDK 로드됨:", !!window.Kakao);
+                        console.log("Kakao Share 로드됨:", !!(window.Kakao && window.Kakao.Share));
                         
-                        // 공유할 URL (현재 페이지 URL)
-                        const shareUrl = window.location.href;
-                        
-                        // 공유할 제목과 설명
-                        const title = `[한국부동산] ${property.title}`;
-                        let description = `${property.district} 위치 - ${property.type}`;
-                        if (property.price) {
-                          description += ` - ${formatPrice(property.price)}`;
-                        }
-                        
-                        window.Kakao.Share.sendDefault({
-                          objectType: 'feed',
-                          content: {
-                            title: title,
-                            description: description,
-                            imageUrl: imageUrl,
-                            link: {
-                              mobileWebUrl: shareUrl,
-                              webUrl: shareUrl,
-                            },
-                          },
-                          buttons: [
-                            {
-                              title: '매물 보기',
+                        if (window.Kakao && window.Kakao.Share) {
+                          // 이미지 URL 획득
+                          const imageUrl = images && images.length > 0 ? 
+                            images[currentImageIndex] : defaultImage;
+                          
+                          console.log("공유할 이미지 URL:", imageUrl);
+                          
+                          // 공유할 URL (현재 페이지 URL)
+                          const shareUrl = window.location.href;
+                          console.log("공유할 URL:", shareUrl);
+                          
+                          // 공유할 제목과 설명
+                          const title = `[한국부동산] ${property.title}`;
+                          let description = `${property.district} 위치 - ${property.type}`;
+                          if (property.price) {
+                            description += ` - ${formatPrice(property.price)}`;
+                          }
+                          
+                          console.log("공유할 제목:", title);
+                          console.log("공유할 설명:", description);
+                          
+                          // 절대 URL 확인
+                          const isAbsoluteUrl = (url: string) => {
+                            return /^(?:https?:)?\/\//i.test(url);
+                          };
+                          
+                          // 이미지 URL이 상대경로인 경우 절대경로로 변환
+                          const absoluteImageUrl = isAbsoluteUrl(imageUrl) ? 
+                            imageUrl : `${window.location.origin}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+                          
+                          console.log("절대 이미지 URL:", absoluteImageUrl);
+                          
+                          // 카카오톡 공유하기 실행
+                          window.Kakao.Share.sendDefault({
+                            objectType: 'feed',
+                            content: {
+                              title: title,
+                              description: description,
+                              imageUrl: absoluteImageUrl,
                               link: {
                                 mobileWebUrl: shareUrl,
                                 webUrl: shareUrl,
                               },
                             },
-                          ],
-                        });
-                      } else {
-                        // 카카오 SDK가 없는 경우 알림
-                        alert('카카오톡 공유 기능을 사용할 수 없습니다. 페이지를 새로고침하거나 잠시 후 다시 시도해주세요.');
+                            buttons: [
+                              {
+                                title: '매물 보기',
+                                link: {
+                                  mobileWebUrl: shareUrl,
+                                  webUrl: shareUrl,
+                                },
+                              },
+                            ],
+                          });
+                          
+                          console.log("카카오톡 공유 성공");
+                        } else {
+                          // 카카오 SDK가 없는 경우 알림
+                          console.error("카카오 SDK가 로드되지 않았습니다.");
+                          alert('카카오톡 공유 기능을 사용할 수 없습니다. 페이지를 새로고침하거나 잠시 후 다시 시도해주세요.');
+                        }
+                      } catch (error) {
+                        console.error("카카오톡 공유 중 오류 발생:", error);
+                        alert('카카오톡 공유 중 오류가 발생했습니다: ' + (error instanceof Error ? error.message : String(error)));
                       }
                     }}
                   >

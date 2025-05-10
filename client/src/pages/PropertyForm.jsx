@@ -456,75 +456,27 @@ function PropertyForm() {
                       value={formData.address}
                       onChange={handleChange}
                       required
-                      placeholder={
-                        formData.district === "강화군" && formData.subdistrict 
-                          ? `${formData.city} ${formData.district} ${formData.subdistrict}` 
-                          : formData.district 
-                            ? `${formData.city} ${formData.district}` 
-                            : "상세 주소를 입력하세요"
-                      }
+                      placeholder="상세 주소를 입력하세요"
                     />
                   </div>
                   
-                  <div className={`grid ${formData.district === "강화군" ? "grid-cols-3" : "grid-cols-2"} gap-4`}>
-                    <div className="space-y-2">
-                      <Label htmlFor="city">도시 *</Label>
-                      <Select
-                        value={formData.city}
-                        onValueChange={(value) => handleSelectChange("city", value)}
-                      >
-                        <SelectTrigger id="city">
-                          <SelectValue placeholder="도시를 선택하세요" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {cityOptions.map((city) => (
-                            <SelectItem key={city} value={city}>
-                              {city}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="district">지역 *</Label>
-                      <Select
-                        value={formData.district}
-                        onValueChange={(value) => handleSelectChange("district", value)}
-                        disabled={!formData.city}
-                      >
-                        <SelectTrigger id="district">
-                          <SelectValue placeholder="지역을 선택하세요" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {formData.city && districtOptions[formData.city]?.map((district) => (
-                            <SelectItem key={district} value={district}>
-                              {district}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    {formData.district === "강화군" && (
-                      <div className="space-y-2">
-                        <Label htmlFor="subdistrict">읍면동 *</Label>
-                        <Select
-                          value={formData.subdistrict}
-                          onValueChange={(value) => handleSelectChange("subdistrict", value)}
-                        >
-                          <SelectTrigger id="subdistrict">
-                            <SelectValue placeholder="읍면동을 선택하세요" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {ganghwaSubdistrictOptions.map((subdistrict) => (
-                              <SelectItem key={subdistrict} value={subdistrict}>
-                                {subdistrict}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
+                  <div className="space-y-2">
+                    <Label htmlFor="district">지역 *</Label>
+                    <Select
+                      value={formData.district}
+                      onValueChange={(value) => handleSelectChange("district", value)}
+                    >
+                      <SelectTrigger id="district">
+                        <SelectValue placeholder="지역을 선택하세요" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[300px]">
+                        {allLocations.map((location) => (
+                          <SelectItem key={location} value={location}>
+                            {location}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   
                   <div className="space-y-2">

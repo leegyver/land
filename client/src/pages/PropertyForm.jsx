@@ -155,6 +155,7 @@ function PropertyForm() {
     bedrooms: 1,
     bathrooms: 1,
     imageUrls: [], // 다중 이미지 저장용 배열
+    agentId: 4, // 기본 에이전트 ID 설정 (정현우 중개사)
     featured: false,
     
     // 위치 정보
@@ -168,7 +169,7 @@ function PropertyForm() {
     
     // 건물 정보
     floor: "",
-    totalFloors: "",
+    totalFloors: 0, // 숫자로 초기화
     direction: "",
     elevator: false,
     parking: "",
@@ -194,6 +195,7 @@ function PropertyForm() {
     coListing: false,
     propertyDescription: "",
     privateNote: "",
+    featuredImageIndex: 0, // 대표 이미지 인덱스 추가
   });
   
   // 이미지 업로드 관련 상태
@@ -334,12 +336,19 @@ function PropertyForm() {
     try {
       setSaving(true);
       
-      // 대표 이미지 설정 (imageUrls 배열에서 선택된 인덱스에 해당하는 이미지)
+      // 서버에 맞게 데이터 타입 변환하기
       const submissionData = {
-        ...formData
+        ...formData,
+        // 숫자 필드들 명시적으로 숫자 타입으로 변환
+        agentId: Number(formData.agentId),
+        totalFloors: Number(formData.totalFloors || 0),
+        size: Number(formData.size || 0),
+        bedrooms: Number(formData.bedrooms),
+        bathrooms: Number(formData.bathrooms),
+        featuredImageIndex: featuredImageIndex
       };
       
-      // 이미지가 있을 경우 대표 이미지 설정
+      // 이미지가 있을 경우 대표 이미지 설정 (이전 버전 호환용)
       if (formData.imageUrls && formData.imageUrls.length > 0 && featuredImageIndex >= 0) {
         submissionData.imageUrl = formData.imageUrls[featuredImageIndex] || formData.imageUrls[0];
       }
@@ -880,7 +889,7 @@ function PropertyForm() {
                       <Input
                         id="totalFloors"
                         name="totalFloors"
-                        type="text"
+                        type="number"
                         value={formData.totalFloors || ""}
                         onChange={handleChange}
                       />

@@ -229,12 +229,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('부동산 등록 요청 데이터:', JSON.stringify(req.body, null, 2));
       
       try {
+        // 다중 이미지 URLs 배열을 처리
+        // imageUrls가 있으면 그대로 사용하고, 없으면 기본값인 빈 배열을 사용
         // 타입을 변환하지 않고 원래 타입 그대로 유지
         // bedrooms, bathrooms와 숫자 타입 필드의 빈 문자열을 변환
         const processedData = {
           ...req.body,
           bedrooms: req.body.bedrooms !== undefined ? req.body.bedrooms : 0,
           bathrooms: req.body.bathrooms !== undefined ? req.body.bathrooms : 0,
+          // 이미지 URL 필드 처리
+          imageUrls: Array.isArray(req.body.imageUrls) ? req.body.imageUrls : [],
           // 숫자 필드에 대한 빈 값 처리
           supplyArea: req.body.supplyArea === "" ? null : req.body.supplyArea,
           privateArea: req.body.privateArea === "" ? null : req.body.privateArea,

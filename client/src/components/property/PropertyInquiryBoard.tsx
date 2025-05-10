@@ -231,7 +231,7 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
                   
                   {canManageInquiry(inquiry) && (
                     <div className="flex justify-end gap-2 mt-4">
-                      {!inquiry.isReply && (
+                      {!inquiry.isReply && user?.role === "admin" && (
                         <Button 
                           variant="outline" 
                           size="sm"
@@ -258,7 +258,7 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
             </div>
           )}
           
-          {replyToId && (
+          {replyToId && user?.role === "admin" && (
             <Card className="mt-6">
               <CardContent className="pt-6">
                 <h3 className="text-lg font-bold mb-4">답변 작성</h3>

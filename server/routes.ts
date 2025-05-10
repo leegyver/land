@@ -263,7 +263,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const isAdmin = user.role === "admin";
         
         if (!isAdmin) {
-          return res.status(403).json({ message: "답변을 작성할 권한이 없습니다." });
+          return res.status(403).json({ message: "답변은 관리자만 작성할 수 있습니다." });
+        }
+        
+        // 부모 문의글 확인
+        const parentId = req.body.parentId;
+        if (!parentId) {
+          return res.status(400).json({ message: "답변에는 부모 문의글 ID가 필요합니다." });
+        }
+        
+        // 부모 문의글 조회하여 존재하는지 확인
+        const parentInquiry = await storage.getPropertyInquiry(parentId);
+        if (!parentInquiry) {
+          return res.status(404).json({ message: "원본 문의글을 찾을 수 없습니다." });
+        }
+        
+        // 부모 문의글이 답변글이 아닌지 확인 (답변에 답변을 달 수 없음)
+        if (parentInquiry.isReply) {
+          return res.status(400).json({ message: "답변에는 추가 답변을 달 수 없습니다." });
         }
       }
       

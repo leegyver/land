@@ -399,6 +399,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // 이미지 URL 필드 처리
           imageUrls: Array.isArray(req.body.imageUrls) ? req.body.imageUrls : [],
           // 숫자 필드에 대한 빈 값 처리
+          size: req.body.size !== undefined ? String(req.body.size) : "0", // size를 문자열로 변환
           supplyArea: req.body.supplyArea === "" ? null : req.body.supplyArea,
           privateArea: req.body.privateArea === "" ? null : req.body.privateArea,
           floor: req.body.floor === "" ? null : req.body.floor, 
@@ -450,6 +451,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bedrooms: req.body.bedrooms !== undefined ? req.body.bedrooms : existingProperty.bedrooms,
         bathrooms: req.body.bathrooms !== undefined ? req.body.bathrooms : existingProperty.bathrooms,
         // 숫자 필드에 대한 빈 값 처리
+        size: req.body.size !== undefined ? String(req.body.size) : undefined, // size를 문자열로 변환
         supplyArea: req.body.supplyArea === "" ? null : req.body.supplyArea,
         privateArea: req.body.privateArea === "" ? null : req.body.privateArea,
         floor: req.body.floor === "" ? null : req.body.floor, 

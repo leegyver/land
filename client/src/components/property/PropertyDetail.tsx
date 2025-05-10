@@ -470,7 +470,15 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
         </div>
         
         <div>
-          {/* 네이버 지도로 위치 정보 표시 */}
+          <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 mb-4">
+            <h3 className="text-xl font-semibold mb-2">위치 정보</h3>
+            <p className="text-gray-700">
+              <MapPin className="inline-block w-4 h-4 mr-1 text-primary" />
+              {property.district}
+            </p>
+          </div>
+          
+          {/* 네이버 지도로 위치 정보 표시 - 제일 하단으로 이동 */}
           <div className="bg-gray-50 rounded-lg overflow-hidden h-64 mb-4">
             {/* 실제 매물 위치 네이버 지도 표시 */}
             <div style={{ width: '100%', height: '100%' }}>
@@ -480,14 +488,6 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                 className="w-full h-full object-cover"
               />
             </div>
-          </div>
-          
-          <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 mb-4">
-            <h3 className="text-xl font-semibold mb-2">위치 정보</h3>
-            <p className="text-gray-700">
-              <MapPin className="inline-block w-4 h-4 mr-1 text-primary" />
-              {property.district}
-            </p>
           </div>
           
           <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">

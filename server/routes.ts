@@ -222,11 +222,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       try {
         // 타입을 변환하지 않고 원래 타입 그대로 유지
-        // bedrooms와 bathrooms가 누락되는 문제 해결
+        // bedrooms, bathrooms와 숫자 타입 필드의 빈 문자열을 변환
         const processedData = {
           ...req.body,
           bedrooms: req.body.bedrooms !== undefined ? req.body.bedrooms : 0,
-          bathrooms: req.body.bathrooms !== undefined ? req.body.bathrooms : 0
+          bathrooms: req.body.bathrooms !== undefined ? req.body.bathrooms : 0,
+          // 숫자 필드에 대한 빈 값 처리
+          supplyArea: req.body.supplyArea === "" ? null : req.body.supplyArea,
+          privateArea: req.body.privateArea === "" ? null : req.body.privateArea,
+          floor: req.body.floor === "" ? null : req.body.floor, 
+          totalFloors: req.body.totalFloors === "" ? null : req.body.totalFloors,
+          deposit: req.body.deposit === "" ? null : req.body.deposit,
+          monthlyRent: req.body.monthlyRent === "" ? null : req.body.monthlyRent,
+          maintenanceFee: req.body.maintenanceFee === "" ? null : req.body.maintenanceFee
         };
         
         console.log('처리된 데이터:', JSON.stringify(processedData, null, 2));
@@ -269,7 +277,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const processedData = {
         ...req.body,
         bedrooms: req.body.bedrooms !== undefined ? req.body.bedrooms : existingProperty.bedrooms,
-        bathrooms: req.body.bathrooms !== undefined ? req.body.bathrooms : existingProperty.bathrooms
+        bathrooms: req.body.bathrooms !== undefined ? req.body.bathrooms : existingProperty.bathrooms,
+        // 숫자 필드에 대한 빈 값 처리
+        supplyArea: req.body.supplyArea === "" ? null : req.body.supplyArea,
+        privateArea: req.body.privateArea === "" ? null : req.body.privateArea,
+        floor: req.body.floor === "" ? null : req.body.floor, 
+        totalFloors: req.body.totalFloors === "" ? null : req.body.totalFloors,
+        deposit: req.body.deposit === "" ? null : req.body.deposit,
+        monthlyRent: req.body.monthlyRent === "" ? null : req.body.monthlyRent,
+        maintenanceFee: req.body.maintenanceFee === "" ? null : req.body.maintenanceFee
       };
       
       const validatedData = insertPropertySchema.partial().parse(processedData);

@@ -380,11 +380,9 @@ export function PropertyFormDialog({ isOpen, onClose, property }: PropertyFormDi
     }
   }, [property, form]);
 
-  // 대화 상자가 열려있을 때만 렌더링
-  if (!isOpen) return null;
-
+  // 항상 Dialog 컴포넌트를 렌더링하되, open 속성으로 표시 여부 제어
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{property ? "부동산 수정" : "새 부동산 등록"}</DialogTitle>

@@ -46,7 +46,7 @@ function PropertyForm() {
   // 지역 정보 정의
   const cityOptions = ["인천광역시"];
   const districtOptions = {
-    "인천광역시": ["강화군", "계양구", "남동구", "동구", "미추홀구", "부평구", "서구", "연수구", "옹진군", "중구"]
+    "인천광역시": ["강화군", "강화군 외"]
   };
   
   const ganghwaSubdistrictOptions = [

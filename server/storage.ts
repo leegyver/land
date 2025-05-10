@@ -691,14 +691,25 @@ export class DatabaseStorage implements IStorage {
   }
   
   // Property Inquiry methods
-  async getPropertyInquiries(propertyId: number): Promise<PropertyInquiry[]> {
+  async getPropertyInquiries(propertyId: number): Promise<(PropertyInquiry & { authorUsername?: string })[]> {
     try {
       const inquiries = await db
-        .select()
+        .select({
+          id: propertyInquiries.id,
+          propertyId: propertyInquiries.propertyId,
+          userId: propertyInquiries.userId,
+          title: propertyInquiries.title,
+          content: propertyInquiries.content,
+          isReply: propertyInquiries.isReply,
+          parentId: propertyInquiries.parentId,
+          createdAt: propertyInquiries.createdAt,
+          authorUsername: users.username
+        })
         .from(propertyInquiries)
+        .leftJoin(users, eq(propertyInquiries.userId, users.id))
         .where(eq(propertyInquiries.propertyId, propertyId))
         .orderBy(desc(propertyInquiries.createdAt));
-      return inquiries;
+      return inquiries as (PropertyInquiry & { authorUsername?: string })[];
     } catch (error) {
       console.error("Error getting property inquiries:", error);
       return [];

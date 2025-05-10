@@ -127,9 +127,11 @@ function PropertyForm() {
       const fetchProperty = async () => {
         try {
           setLoading(true);
+          console.log("부동산 ID:", params.id);
           const response = await fetch(`/api/properties/${params.id}`);
           if (response.ok) {
             const data = await response.json();
+            console.log("불러온 부동산 데이터:", data);
             setFormData({
               ...data,
               dealType: data.dealType || ["매매"],
@@ -139,7 +141,7 @@ function PropertyForm() {
             });
           } else {
             toast({
-              title: "오류",
+              title: "오류", 
               description: "부동산 정보를 불러올 수 없습니다",
               variant: "destructive",
             });
@@ -267,7 +269,7 @@ function PropertyForm() {
         <Button 
           variant="outline" 
           size="sm" 
-          onClick={() => setLocation("/admin")}
+          onClick={() => window.location.href = "/admin"}
           className="mr-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />

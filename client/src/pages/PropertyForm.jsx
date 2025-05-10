@@ -325,8 +325,18 @@ function PropertyForm() {
     try {
       setSaving(true);
       
+      // 대표 이미지 설정 (imageUrls 배열에서 선택된 인덱스에 해당하는 이미지)
+      const submissionData = {
+        ...formData
+      };
+      
+      // 이미지가 있을 경우 대표 이미지 설정
+      if (formData.imageUrls && formData.imageUrls.length > 0 && featuredImageIndex >= 0) {
+        submissionData.imageUrl = formData.imageUrls[featuredImageIndex] || formData.imageUrls[0];
+      }
+      
       // 디버깅용 로그
-      console.log("부동산 수정 요청 데이터:", formData);
+      console.log("부동산 수정 요청 데이터:", submissionData);
       
       const url = isEditMode 
         ? `/api/properties/${params.id}` 
@@ -339,7 +349,7 @@ function PropertyForm() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(submissionData),
       });
       
       if (response.ok) {
@@ -637,19 +647,16 @@ function PropertyForm() {
                                     const updatedImages = [...uploadedImages, newImage];
                                     setUploadedImages(updatedImages);
                                     
+                                    // 첫 번째 이미지일 경우 대표 이미지로 설정
+                                    if (uploadedImages.length === 0) {
+                                      setFeaturedImageIndex(0);
+                                    }
+                                    
                                     // formData의 imageUrls 업데이트
                                     setFormData(prev => ({
                                       ...prev,
                                       imageUrls: updatedImages.map(img => img.url)
                                     }));
-                                    
-                                    // 첫 번째 이미지는 대표 이미지로 설정
-                                    if (updatedImages.length === 1) {
-                                      setFormData(prev => ({
-                                        ...prev,
-                                        imageUrl: compressedDataUrl
-                                      }));
-                                    }
                                     
                                     // 업로드 완료 상태로 변경
                                     setIsUploading(false);

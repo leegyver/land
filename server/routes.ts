@@ -830,6 +830,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "뉴스 삭제에 실패했습니다" });
     }
   });
+  
+  // 관리자: 다중 뉴스 삭제 API
+  app.post("/api/news/bulk-delete", async (req, res) => {
+    try {
+      // 인증 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "로그인이 필요합니다." });
+      }
+      
+      const user = req.user as Express.User;
+      if (user.role !== "admin") {
+        return res.status(403).json({ message: "관리자 권한이 필요합니다." });
+      }
+      
+      const { ids } = req.body;
+      
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "삭제할 뉴스 ID 목록이 필요합니다." });
+      }
+      
+      // 모든 뉴스 삭제 시도
+      const results = await Promise.allSettled(
+        ids.map(id => storage.deleteNews(Number(id)))
+      );
+      
+      // 성공/실패 횟수 카운트
+      const successCount = results.filter(result => result.status === 'fulfilled' && result.value).length;
+      const failCount = ids.length - successCount;
+      
+      // 캐시 삭제
+      memoryCache.deleteByPrefix("news_");
+      
+      // 결과 반환
+      res.json({ 
+        success: true, 
+        message: `${successCount}개의 뉴스가 삭제되었습니다${failCount > 0 ? `, ${failCount}개 삭제 실패` : ''}`,
+        successCount,
+        failCount
+      });
+    } catch (error) {
+      console.error('다중 뉴스 삭제 오류:', error);
+      res.status(500).json({ message: "뉴스 삭제에 실패했습니다" });
+    }
+  });
 
   // 관리자: 뉴스 수동 수집 실행
   app.post("/api/news/fetch", async (req, res) => {

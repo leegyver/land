@@ -333,9 +333,21 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
           position: new window.naver.maps.LatLng(location.lat, location.lng),
           title: property.title
         });
+        
+        // 지도 로드 성공 - 폴백 UI 숨기기
+        document.getElementById("mapFallback")?.classList.add("hidden");
       } catch (error) {
         console.error("네이버 지도 초기화 실패:", error);
+        // 지도 로드 실패 - 폴백 UI 표시
+        document.getElementById("mapFallback")?.classList.remove("hidden");
       }
+    } else {
+      // 네이버 지도 API가 로드되지 않음 - 폴백 UI 표시
+      setTimeout(() => {
+        if (!mapInstance.current) {
+          document.getElementById("mapFallback")?.classList.remove("hidden");
+        }
+      }, 1000); // 1초 후 확인
     }
   }, [property]);
   
@@ -752,41 +764,52 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
             </p>
           </div>
           
-          {/* 위치 정보 표시 - 고급 레이아웃 */}
+          {/* 위치 정보 표시 - 네이버 지도 전체화면 표시 */}
           <div className="bg-gray-50 rounded-lg overflow-hidden h-64 mb-4">
-            <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center relative">
-              {/* 지도 컨테이너 - 실패했을 때 보이지 않음 */}
-              <div ref={mapRef} className="absolute inset-0 w-full h-full" id="map"></div>
+            <div className="w-full h-full relative">
+              {/* 네이버 지도 컨테이너 */}
+              <div ref={mapRef} className="w-full h-full" id="map"></div>
               
-              {/* 대체 UI - 지도가 로드되지 않을 때만 표시됨 */}
-              <div className="relative z-10 bg-white/90 p-6 rounded-lg shadow-md max-w-md">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4 mx-auto">
-                  <MapPin className="w-8 h-8 text-primary" />
+              {/* 지도 타이틀 오버레이 */}
+              <div className="absolute top-4 left-0 right-0 z-10 flex flex-col items-center">
+                <div className="bg-white/90 rounded-md px-4 py-2 shadow-sm">
+                  <h3 className="text-lg font-semibold">매물 위치</h3>
                 </div>
-                <h3 className="text-xl font-semibold mb-2">매물 위치</h3>
-                <p className="text-gray-700 mb-4 border-b pb-4">{property.district} {property.address}</p>
-                
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-500">지역</h4>
-                    <p className="text-sm font-medium">{property.district}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-500">상세 주소</h4>
-                    <p className="text-sm font-medium">{property.address}</p>
-                  </div>
-                </div>
-                
-                <Button className="w-full" onClick={() => {
+              </div>
+              
+              {/* 외부 지도에서 보기 버튼 */}
+              <div className="absolute bottom-4 right-4 z-10">
+                <Button size="sm" variant="secondary" onClick={() => {
                   const fullAddress = [
                     property.district,
                     property.address
                   ].filter(Boolean).join(' ');
                   window.open(`https://map.naver.com/p/search/${encodeURIComponent(fullAddress)}`, '_blank');
                 }}>
-                  <MapPin className="w-4 h-4 mr-2" />
                   네이버 지도에서 보기
                 </Button>
+              </div>
+              
+              {/* 지도 로딩 실패 시 대체 UI - 평소에는 숨김 처리 */}
+              <div className="absolute inset-0 bg-white/95 flex items-center justify-center hidden" id="mapFallback">
+                <div className="text-center p-6">
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4 mx-auto">
+                    <MapPin className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">매물 위치</h3>
+                  <p className="text-sm text-gray-500 mb-4">
+                    정확한 위치는 문의 시 안내해 드립니다.
+                  </p>
+                  <Button size="sm" onClick={() => {
+                    const fullAddress = [
+                      property.district,
+                      property.address
+                    ].filter(Boolean).join(' ');
+                    window.open(`https://map.naver.com/p/search/${encodeURIComponent(fullAddress)}`, '_blank');
+                  }}>
+                    네이버 지도에서 보기
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

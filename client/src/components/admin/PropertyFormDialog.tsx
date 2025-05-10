@@ -627,21 +627,7 @@ export function PropertyFormDialog({ renderDialog, onSubmitSuccess, property }: 
               />
             </div>
 
-            <div>
-              <FormField
-                control={form.control}
-                name="imageUrl"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>이미지 URL</FormLabel>
-                    <FormControl>
-                      <Input placeholder="이미지 URL" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+
 
             <div>
               <FormField

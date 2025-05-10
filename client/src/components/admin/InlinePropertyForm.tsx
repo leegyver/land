@@ -241,7 +241,6 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
     district: "강화읍 갑곳리",
     address: "",
     size: "",
-    imageUrl: "",
     agentId: 1,
     bedrooms: 0,
     bathrooms: 0,
@@ -315,7 +314,6 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
         size: property.size ? property.size.toString() : "",
         bedrooms: property.bedrooms || 0,
         bathrooms: property.bathrooms || 0,
-        imageUrl: property.imageUrl || "",
         agentId: property.agentId || 1,
         featured: !!property.featured,
         buildingName: property.buildingName || "",
@@ -582,19 +580,6 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="imageUrl"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>이미지 URL</FormLabel>
-                    <FormControl>
-                      <Input placeholder="이미지 URL" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               <FormField
                 control={form.control}

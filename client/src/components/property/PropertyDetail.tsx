@@ -201,11 +201,9 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
         }
       }
       
-      // 대표 이미지 URL 선택 - 현재 보이는 이미지 우선
-      const imageUrl = currentImage || 
-        (Array.isArray(property.imageUrls) && property.imageUrls.length > 0 
-          ? property.imageUrls[0] 
-          : (property.imageUrl || 'https://via.placeholder.com/800x500?text=매물+이미지+준비중'));
+      // 대표 이미지 대신 고정 이미지 URL 사용 (base64 데이터 URL은 카카오에서 제대로 처리되지 않음)
+      // 실제 배포 시에는 서버에 이미지를 올려두고 해당 URL을 사용하는 것이 좋음
+      const imageUrl = 'https://www.ganghwa.go.kr/images/kr/sub/sub0305_img01.jpg';
       
       console.log("카카오 공유 이미지 URL:", imageUrl);
       

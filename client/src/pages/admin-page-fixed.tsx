@@ -35,7 +35,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Loader2, Home, Plus, Trash2, Edit, Check } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Home, Plus, Trash2, Edit, Check, MoreHorizontal } from "lucide-react";
 
 // 읍면 
 const districts = [
@@ -75,6 +76,30 @@ export default function AdminPageFixed() {
   const [isDeleting, setIsDeleting] = useState<number | false>(false);
   const [isDeletingUser, setIsDeletingUser] = useState<number | false>(false);
   const [isDeletingNews, setIsDeletingNews] = useState<number | false>(false);
+  const [selectedNewsIds, setSelectedNewsIds] = useState<number[]>([]);
+  const [isBulkDeletingNews, setIsBulkDeletingNews] = useState(false);
+  
+  // 뉴스 선택 토글 함수
+  const toggleNewsSelection = (id: number) => {
+    setSelectedNewsIds(prev => 
+      prev.includes(id) 
+        ? prev.filter(newsId => newsId !== id) 
+        : [...prev, id]
+    );
+  };
+  
+  // 모든 뉴스 선택/해제 토글
+  const toggleAllNewsSelection = (newsItems: News[] | undefined) => {
+    if (!newsItems) return;
+    
+    if (selectedNewsIds.length === newsItems.length) {
+      // 모두 선택된 상태면 전체 해제
+      setSelectedNewsIds([]);
+    } else {
+      // 그렇지 않으면 전체 선택
+      setSelectedNewsIds(newsItems.map(item => item.id));
+    }
+  };
 
   // 부동산 목록 조회
   const {
@@ -292,6 +317,36 @@ export default function AdminPageFixed() {
       setIsDeletingNews(false);
     },
   });
+  
+  // 다중 뉴스 삭제 뮤테이션
+  const bulkDeleteNewsMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      setIsBulkDeletingNews(true);
+      const res = await apiRequest("POST", "/api/news/bulk-delete", { ids });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "뉴스 일괄 삭제에 실패했습니다");
+      }
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/news"] });
+      toast({
+        title: "뉴스 일괄 삭제 성공",
+        description: data.message || "선택한 뉴스가 성공적으로 삭제되었습니다.",
+      });
+      setIsBulkDeletingNews(false);
+      setSelectedNewsIds([]); // 선택 목록 초기화
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "뉴스 일괄 삭제 실패",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsBulkDeletingNews(false);
+    },
+  });
 
   // 부동산 삭제 핸들러
   const handleDeleteProperty = (id: number) => {
@@ -478,22 +533,48 @@ export default function AdminPageFixed() {
                     등록된 뉴스 목록을 관리합니다.
                   </CardDescription>
                 </div>
-                <Button 
-                  onClick={() => fetchNewsMutation.mutate()}
-                  disabled={fetchNewsMutation.isPending}
-                >
-                  {fetchNewsMutation.isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      수집 중...
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="h-4 w-4 mr-2" />
-                      뉴스 수동 수집
-                    </>
+                <div className="flex items-center gap-2">
+                  {selectedNewsIds.length > 0 && (
+                    <Button 
+                      variant="destructive"
+                      onClick={() => {
+                        if (confirm(`선택한 ${selectedNewsIds.length}개의 뉴스를 삭제하시겠습니까?`)) {
+                          bulkDeleteNewsMutation.mutate(selectedNewsIds);
+                        }
+                      }}
+                      disabled={isBulkDeletingNews}
+                      className="flex items-center gap-1"
+                    >
+                      {isBulkDeletingNews ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          삭제 중...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          선택 삭제 ({selectedNewsIds.length})
+                        </>
+                      )}
+                    </Button>
                   )}
-                </Button>
+                  <Button 
+                    onClick={() => fetchNewsMutation.mutate()}
+                    disabled={fetchNewsMutation.isPending}
+                  >
+                    {fetchNewsMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        수집 중...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4 mr-2" />
+                        뉴스 수동 수집
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -501,6 +582,13 @@ export default function AdminPageFixed() {
                 <TableCaption>총 {news?.length || 0}개의 뉴스</TableCaption>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox 
+                        checked={news && news.length > 0 && selectedNewsIds.length === news.length}
+                        onCheckedChange={() => toggleAllNewsSelection(news)}
+                        aria-label="모든 뉴스 선택"
+                      />
+                    </TableHead>
                     <TableHead>ID</TableHead>
                     <TableHead>제목</TableHead>
                     <TableHead>날짜</TableHead>
@@ -510,9 +598,23 @@ export default function AdminPageFixed() {
                 </TableHeader>
                 <TableBody>
                   {news?.map((item) => (
-                    <TableRow key={item.id}>
+                    <TableRow 
+                      key={item.id}
+                      className={selectedNewsIds.includes(item.id) ? "bg-muted/50" : ""}
+                    >
+                      <TableCell>
+                        <Checkbox 
+                          checked={selectedNewsIds.includes(item.id)}
+                          onCheckedChange={() => toggleNewsSelection(item.id)}
+                          aria-label={`뉴스 ${item.id} 선택`}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{item.id}</TableCell>
-                      <TableCell className="max-w-[300px] truncate">{item.title}</TableCell>
+                      <TableCell className="max-w-[300px] truncate">
+                        <div className="cursor-pointer hover:underline" onClick={() => toggleNewsSelection(item.id)}>
+                          {item.title}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '-'}
                       </TableCell>
@@ -539,6 +641,13 @@ export default function AdminPageFixed() {
                       </TableCell>
                     </TableRow>
                   ))}
+                  {news?.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        등록된 뉴스가 없습니다
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>

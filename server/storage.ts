@@ -4,7 +4,8 @@ import {
   inquiries, type Inquiry, type InsertInquiry,
   testimonials, type Testimonial, type InsertTestimonial,
   users, type User, type InsertUser,
-  news, type News, type InsertNews
+  news, type News, type InsertNews,
+  propertyInquiries, type PropertyInquiry, type InsertPropertyInquiry
 } from "@shared/schema";
 import { db, pool } from "./db";
 import { eq, desc, and, gte, lte, like } from "drizzle-orm";
@@ -71,6 +72,13 @@ export interface IStorage {
   createNews(news: InsertNews): Promise<News>;
   updateNews(id: number, news: Partial<InsertNews>): Promise<News | undefined>;
   deleteNews(id: number): Promise<boolean>;
+  
+  // Property Inquiry methods
+  getPropertyInquiries(propertyId: number): Promise<PropertyInquiry[]>;
+  getPropertyInquiry(id: number): Promise<PropertyInquiry | undefined>;
+  createPropertyInquiry(inquiry: InsertPropertyInquiry): Promise<PropertyInquiry>;
+  updatePropertyInquiry(id: number, inquiry: Partial<InsertPropertyInquiry>): Promise<PropertyInquiry | undefined>;
+  deletePropertyInquiry(id: number): Promise<boolean>;
   
   // Init Data
   initializeData(): Promise<void>;

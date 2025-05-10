@@ -262,51 +262,12 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
             </CardContent>
           </Card>
           
-          {agentLoading ? (
-            <Card>
-              <CardContent className="pt-6">
-                <Skeleton className="w-full h-36" />
-              </CardContent>
-            </Card>
-          ) : agent ? (
-            <Card>
-              <CardContent className="pt-6">
-                <h3 className="text-xl font-bold mb-4">담당 중개사</h3>
-                <div className="flex items-center mb-4">
-                  <div className="w-16 h-16 mr-4 rounded-full overflow-hidden">
-                    <img 
-                      src={agent.imageUrl} 
-                      alt={agent.name} 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div>
-                    <h4 className="font-bold">{agent.name}</h4>
-                    <p className="text-primary text-sm">{agent.title}</p>
-                    <p className="text-gray-medium text-sm">{agent.specialization} 전문</p>
-                  </div>
-                </div>
-                
-                <div className="flex flex-col gap-2 mb-4">
-                  <Button variant="outline" className="w-full justify-start">
-                    <Phone className="w-4 h-4 mr-2" /> {agent.phone}
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    <Mail className="w-4 h-4 mr-2" /> {agent.email}
-                  </Button>
-                </div>
-                
-                <Button className="w-full bg-primary hover:bg-secondary">
-                  문의하기
-                </Button>
-              </CardContent>
-            </Card>
-          ) : null}
+
           
           <Card className="mt-6">
             <CardContent className="pt-6">
-              <h3 className="text-xl font-bold mb-4">이 매물 상담 신청</h3>
-              <ContactForm propertyId={Number(propertyId)} />
+              <h3 className="text-xl font-bold mb-4">이 매물 문의게시판</h3>
+              <PropertyInquiryBoard propertyId={Number(propertyId)} />
             </CardContent>
           </Card>
         </div>

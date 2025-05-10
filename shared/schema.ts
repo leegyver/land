@@ -172,5 +172,25 @@ export const insertNewsSchema = createInsertSchema(news).omit({
 export type News = typeof news.$inferSelect;
 export type InsertNews = z.infer<typeof insertNewsSchema>;
 
+// Property inquiry board schema
+export const propertyInquiries = pgTable("property_inquiries", {
+  id: serial("id").primaryKey(),
+  propertyId: integer("property_id").notNull().references(() => properties.id, { onDelete: "cascade" }),
+  userId: integer("user_id").notNull().references(() => users.id),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  isReply: boolean("is_reply").default(false).notNull(),
+  parentId: integer("parent_id").references(() => propertyInquiries.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertPropertyInquirySchema = createInsertSchema(propertyInquiries).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type PropertyInquiry = typeof propertyInquiries.$inferSelect;
+export type InsertPropertyInquiry = z.infer<typeof insertPropertyInquirySchema>;
+
 // Session schema (for connect-pg-simple)
 // Removed schema mapping from Drizzle to avoid conflicts with connect-pg-simple's own schema

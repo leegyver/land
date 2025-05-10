@@ -722,11 +722,12 @@ export default function AdminPage() {
                 </DialogDescription>
               </DialogHeader>
 
-              <Form {...propertyForm}>
-                <form
-                  onSubmit={propertyForm.handleSubmit(onPropertySubmit)}
-                  className="space-y-6"
-                >
+              {openPropertyDialog && (
+                <Form {...propertyForm}>
+                  <form
+                    onSubmit={propertyForm.handleSubmit(onPropertySubmit)}
+                    className="space-y-6"
+                  >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <FormField
@@ -1086,7 +1087,8 @@ export default function AdminPage() {
                     </Button>
                   </DialogFooter>
                 </form>
-              </Form>
+                </Form>
+              )}
             </DialogContent>
           </Dialog>
         </TabsContent>

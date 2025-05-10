@@ -500,8 +500,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
           {/* 문의 게시판을 매물 설명 위쪽으로 이동 */}
           <Card className="mt-8 mb-8">
             <CardContent className="pt-6">
-              <h3 className="text-xl font-bold mb-4">이 매물 문의게시판</h3>
-              <PropertyInquiryBoard propertyId={Number(propertyId)} />
+              {/* 매물 문의게시판은 매물 특이사항 아래로 이동됨 */}
             </CardContent>
           </Card>
           
@@ -689,6 +688,12 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                   <p className="text-gray-700 whitespace-pre-line">{property.specialNote}</p>
                 </div>
               )}
+              
+              {/* 매물 문의게시판 - 매물 특이사항 아래로 이동 */}
+              <div className="mt-6">
+                <h3 className="text-xl font-bold mb-4">이 매물 문의게시판</h3>
+                <PropertyInquiryBoard propertyId={Number(propertyId)} />
+              </div>
               
               {/* 매물 상세 설명 필드 삭제 요청에 따라 제거됨 */}
             </div>

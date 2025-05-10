@@ -347,32 +347,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/search", async (req, res) => {
     try {
       const { district, type, minPrice, maxPrice } = req.query;
+      console.log("검색 파라미터:", { district, type, minPrice, maxPrice });
       
       let properties = await storage.getProperties();
       
+      // 지역 필터링 (district 값이 존재하고 "all"이 아닌 경우)
       if (district && district !== "all") {
-        properties = properties.filter(p => p.district === district);
+        properties = properties.filter(p => {
+          // 대소문자 구분 없이 비교
+          // '지역명' 또는 '지역명 + 추가정보'와 같은 형태로 포함되어 있으면 매칭
+          const propertyDistrict = (p.district || "").toLowerCase();
+          const searchDistrict = (district as string).toLowerCase();
+          return propertyDistrict.includes(searchDistrict);
+        });
       }
       
+      // 유형 필터링 (type 값이 존재하고 "all"이 아닌 경우)
       if (type && type !== "all") {
-        properties = properties.filter(p => p.type === type);
+        properties = properties.filter(p => {
+          // 대소문자 구분 없이 비교
+          const propertyType = (p.type || "").toLowerCase();
+          const searchType = (type as string).toLowerCase();
+          return propertyType.includes(searchType);
+        });
       }
       
+      // 가격 범위 필터링 (minPrice와 maxPrice 둘 다 존재하는 경우)
       if (minPrice && maxPrice) {
         const min = parseInt(minPrice as string);
         const max = parseInt(maxPrice as string);
         
         if (!isNaN(min) && !isNaN(max)) {
           properties = properties.filter(p => {
-            const price = Number(p.price);
+            const price = p.price !== undefined ? Number(p.price) : 0;
             return price >= min && price <= max;
           });
         }
       }
       
+      console.log(`검색 결과: ${properties.length}개 매물`);
       res.json(properties);
     } catch (error) {
-      res.status(500).json({ message: "Failed to search properties" });
+      console.error("매물 검색 오류:", error);
+      res.status(500).json({ message: "매물 검색 중 오류가 발생했습니다." });
     }
   });
   

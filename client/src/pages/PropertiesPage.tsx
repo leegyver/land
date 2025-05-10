@@ -64,20 +64,25 @@ const PropertiesPage = () => {
   const { data: properties, isLoading, error } = useQuery<Property[]>({
     queryKey: ["/api/search", filterParams],
     queryFn: async () => {
-      const url = new URL("/api/search", window.location.origin);
+      // 검색 파라미터 구성
+      const searchParams = new URLSearchParams();
       
-      if (filterParams.district !== "all") {
-        url.searchParams.append("district", filterParams.district);
+      if (filterParams.district && filterParams.district !== "all") {
+        searchParams.append("district", filterParams.district);
       }
       
-      if (filterParams.type !== "all") {
-        url.searchParams.append("type", filterParams.type);
+      if (filterParams.type && filterParams.type !== "all") {
+        searchParams.append("type", filterParams.type);
       }
       
       if (filterParams.minPrice && filterParams.maxPrice) {
-        url.searchParams.append("minPrice", filterParams.minPrice);
-        url.searchParams.append("maxPrice", filterParams.maxPrice);
+        searchParams.append("minPrice", filterParams.minPrice);
+        searchParams.append("maxPrice", filterParams.maxPrice);
       }
+      
+      // URL 생성 및 요청
+      const url = `/api/search?${searchParams.toString()}`;
+      console.log("검색 요청 URL:", url);
       
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch properties");

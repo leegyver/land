@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { 
   Maximize, 
@@ -57,8 +57,9 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
   ) : [defaultImage];
   
   // 이미지 로딩 후 대표 이미지를 먼저 표시
-  React.useEffect(() => {
-    if (property && property.featuredImageIndex !== undefined && 
+  useEffect(() => {
+    if (property && 
+        typeof property.featuredImageIndex === 'number' && 
         Array.isArray(property.imageUrls) && 
         property.imageUrls[property.featuredImageIndex]) {
       setCurrentImageIndex(property.featuredImageIndex);

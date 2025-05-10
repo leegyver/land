@@ -402,7 +402,6 @@ export function PropertyFormModal({ open, onOpenChange, property }: PropertyForm
         size: property.size.toString(),
         bedrooms: property.bedrooms,
         bathrooms: property.bathrooms,
-        imageUrl: property.imageUrl,
         agentId: property.agentId,
         featured: property.featured === null ? undefined : property.featured,
         buildingName: property.buildingName || undefined,
@@ -738,21 +737,7 @@ export function PropertyFormModal({ open, onOpenChange, property }: PropertyForm
                 />
               </div>
 
-              <div>
-                <FormField
-                  control={form.control}
-                  name="imageUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>이미지 URL</FormLabel>
-                      <FormControl>
-                        <Input placeholder="이미지 URL" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+
 
               <div>
                 <FormField

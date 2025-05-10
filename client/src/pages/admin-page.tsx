@@ -440,11 +440,18 @@ export default function AdminPage() {
             </CardContent>
           </Card>
 
-          {/* 속성 폼 다이얼로그 */}
+          {/* 속성 폼 다이얼로그 - renderDialog prop을 사용하여 부모와 분리 */}
           <PropertyFormDialog 
-            isOpen={openPropertyDialog} 
-            onClose={handleCloseDialog} 
+            onSubmitSuccess={handleCloseDialog}
             property={editingProperty} 
+            renderDialog={(content) => (
+              <Dialog 
+                open={openPropertyDialog}
+                onOpenChange={(open) => !open && handleCloseDialog()}
+              >
+                {content}
+              </Dialog>
+            )} 
           />
         </TabsContent>
 

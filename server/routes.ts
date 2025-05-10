@@ -846,33 +846,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const { ids } = req.body;
       console.log("다중 뉴스 삭제 요청:", ids);
+      console.log("요청 바디 전체:", req.body);
       
       if (!Array.isArray(ids) || ids.length === 0) {
         console.log("유효하지 않은 ID 목록:", ids);
         return res.status(400).json({ message: "삭제할 뉴스 ID 목록이 필요합니다." });
       }
       
+      // 현재 존재하는 뉴스 ID 확인
+      const allNews = await storage.getNews();
+      console.log("현재 존재하는 모든 뉴스 ID:", allNews.map(n => n.id));
+      
       // 모든 뉴스 삭제 시도
       console.log("삭제 시도할 ID 목록:", ids.map(id => Number(id)));
-      const results = await Promise.allSettled(
-        ids.map(id => storage.deleteNews(Number(id)))
-      );
       
-      // 결과 상태 로깅
-      results.forEach((result, index) => {
-        const id = ids[index];
-        if (result.status === 'fulfilled') {
-          console.log(`ID ${id} 삭제 결과:`, result.value);
-        } else {
-          console.log(`ID ${id} 삭제 실패:`, result.reason);
+      // 각각의 ID마다 개별적으로 삭제 시도하고 로그 남기기
+      const deleteResults = [];
+      for (const id of ids) {
+        try {
+          console.log(`ID ${id} 삭제 시도 중...`);
+          const newsItem = await storage.getNewsById(Number(id));
+          console.log(`ID ${id} 항목 존재 여부:`, !!newsItem);
+          
+          const success = await storage.deleteNews(Number(id));
+          console.log(`ID ${id} 삭제 결과:`, success);
+          deleteResults.push({ id, success });
+        } catch (error) {
+          console.error(`ID ${id} 삭제 중 오류:`, error);
+          deleteResults.push({ id, success: false, error: String(error) });
         }
-      });
+      }
+      
+      // 삭제 후 남아있는 뉴스 확인
+      const remainingNews = await storage.getNews();
+      console.log("삭제 후 남아있는 뉴스 ID:", remainingNews.map(n => n.id));
       
       // 성공/실패 횟수 카운트
-      const successCount = results.filter(result => result.status === 'fulfilled' && result.value).length;
+      const successCount = deleteResults.filter(r => r.success).length;
       const failCount = ids.length - successCount;
       
       console.log(`결과: ${successCount}개 성공, ${failCount}개 실패`);
+      console.log("삭제 결과 세부 정보:", deleteResults);
       
       // 캐시 삭제
       memoryCache.deleteByPrefix("news_");

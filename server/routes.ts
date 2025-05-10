@@ -896,7 +896,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true, 
         message: `${successCount}개의 뉴스가 삭제되었습니다${failCount > 0 ? `, ${failCount}개 삭제 실패` : ''}`,
         successCount,
-        failCount
+        failCount,
+        details: {
+          deleteResults,
+          originalIds: ids,
+          remainingNewsIds: remainingNews.map(n => n.id)
+        }
       });
     } catch (error) {
       console.error('다중 뉴스 삭제 오류:', error);

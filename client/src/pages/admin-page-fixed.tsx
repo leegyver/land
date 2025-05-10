@@ -123,13 +123,14 @@ export default function AdminPageFixed() {
     enabled: currentUser?.role === "admin",
   });
   
-  // 뉴스 목록 조회
+  // 뉴스 목록 조회 (skipCache=true로 항상 최신 데이터 가져오기)
   const {
     data: news,
     isLoading: isLoadingNews,
     error: newsError,
+    refetch: newsRefetch // 명시적 새로고침을 위한 refetch 함수
   } = useQuery<News[]>({
-    queryKey: ["/api/news"],
+    queryKey: ["/api/news?skipCache=true"],
     queryFn: getQueryFn({ on401: "throw" }),
   });
 
@@ -334,7 +335,7 @@ export default function AdminPageFixed() {
         // 일괄 삭제 요청 전 뉴스 목록 확인
         const newsRes = await fetch("/api/news");
         const newsList = await newsRes.json();
-        console.log("삭제 전 뉴스 목록:", newsList.map(n => ({ id: n.id, title: n.title })));
+        console.log("삭제 전 뉴스 목록:", newsList.map((n: any) => ({ id: n.id, title: n.title })));
         
         // 요청 전송
         const res = await apiRequest("POST", "/api/news/bulk-delete", { 
@@ -354,7 +355,7 @@ export default function AdminPageFixed() {
         // 삭제 후 뉴스 목록 다시 확인 
         const afterNewsRes = await fetch("/api/news");
         const afterNewsList = await afterNewsRes.json();
-        console.log("삭제 후 뉴스 목록:", afterNewsList.map(n => ({ id: n.id, title: n.title })));
+        console.log("삭제 후 뉴스 목록:", afterNewsList.map((n: any) => ({ id: n.id, title: n.title })));
         
         return responseData;
       } catch (error) {
@@ -363,11 +364,33 @@ export default function AdminPageFixed() {
       }
     },
     onSuccess: (data) => {
+      console.log("일괄 삭제 성공 응답:", data);
+      
+      // 캐시를 무효화하여 목록 새로고침 (skipCache 파라미터 추가)
       queryClient.invalidateQueries({ queryKey: ["/api/news"] });
-      toast({
-        title: "뉴스 일괄 삭제 성공",
-        description: data.message || "선택한 뉴스가 성공적으로 삭제되었습니다.",
-      });
+      queryClient.invalidateQueries({ queryKey: ["/api/news?skipCache=true"] });
+      
+      // 성공 메시지 표시
+      if (data.successCount > 0) {
+        toast({
+          title: "뉴스 일괄 삭제 성공",
+          description: data.message || "선택한 뉴스가 성공적으로 삭제되었습니다.",
+        });
+      } else {
+        toast({
+          title: "뉴스 삭제 결과",
+          description: "삭제된 뉴스가 없습니다. 이미 삭제되었거나 존재하지 않는 항목입니다.",
+          variant: "destructive", // warning이 없으므로 destructive 사용
+        });
+      }
+      
+      // 삭제 후 강제 새로고침 (불필요할 수 있지만 시도해 보자)
+      setTimeout(() => {
+        if (newsRefetch) {
+          newsRefetch();
+        }
+      }, 500);
+      
       setIsBulkDeletingNews(false);
       setSelectedNewsIds([]); // 선택 목록 초기화
     },

@@ -209,6 +209,7 @@ const detailedDistricts: { [key: string]: string[] } = {
 const propertyFormSchema = insertPropertySchema.extend({
   price: z.string().optional(),
   size: z.string().optional(),
+  imageUrl: z.string().optional(),
   supplyArea: z.string().optional(),
   privateArea: z.string().optional(),
   floor: z.string().optional(),
@@ -246,6 +247,7 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
     bathrooms: 0,
     featured: false,
     dealType: ["매매"],
+    imageUrl: "",
     
     // 추가 필드들 (빈 문자열로 초기화)
     buildingName: "",

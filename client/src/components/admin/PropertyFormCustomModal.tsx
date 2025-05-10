@@ -207,6 +207,7 @@ const detailedDistricts: { [key: string]: string[] } = {
 const propertyFormSchema = insertPropertySchema.extend({
   price: z.union([z.string(), z.number()]).optional(),
   size: z.union([z.string(), z.number()]).optional(),
+  imageUrl: z.string().optional(),
   supplyArea: z.union([z.string(), z.number()]).optional().nullable(),
   privateArea: z.union([z.string(), z.number()]).optional().nullable(),
   floor: z.union([z.string(), z.number()]).optional().nullable(),

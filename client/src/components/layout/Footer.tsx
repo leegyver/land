@@ -19,13 +19,13 @@ const Footer = () => {
             </p>
             <div className="flex space-x-6 mt-4">
               <a href="https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
-                <img src="@/assets/youtube.png" alt="YouTube" width="36" height="36" />
+                <img src="/youtube.png" alt="YouTube" width="36" height="36" />
               </a>
               <a href="https://www.instagram.com/leegyvertv/" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
-                <img src="@/assets/instagram.png" alt="Instagram" width="36" height="36" />
+                <img src="/instagram.png" alt="Instagram" width="36" height="36" />
               </a>
               <a href="https://blog.naver.com/9551304" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
-                <img src="@/assets/naver-blog.png" alt="Naver Blog" width="36" height="36" />
+                <img src="/naver-blog.png" alt="Naver Blog" width="36" height="36" />
               </a>
             </div>
           </div>

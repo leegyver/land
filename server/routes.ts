@@ -211,28 +211,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 해당 매물에 대한 문의글 목록 가져오기
       const inquiries = await storage.getPropertyInquiries(propertyId);
       
-      // 문의글 필터링 (다음 조건에 따라 내용 확인 가능)
-      // 1. 관리자인 경우: 모든 문의글 볼 수 있음
-      // 2. 일반 사용자인 경우:
-      //   - 본인이 작성한 문의글은 모두 볼 수 있음
-      //   - 답변글은 자신이 작성한 문의글의 답변만 볼 수 있음
-      
-      const filteredInquiries = inquiries.filter(inquiry => {
-        // 관리자는 모든 글 볼 수 있음
-        if (isAdmin) return true;
+      // 문의글 처리 (모든 사용자에게 제목은 표시하되, 내용은 권한에 따라 필터링)
+      // 모든 문의글을 기본적으로 제공하되, 열람 권한이 없는 경우 내용을 숨김
+      const filteredInquiries = inquiries.map(inquiry => {
+        // 1. 관리자인 경우: 모든 문의글 전체 내용 볼 수 있음
+        if (isAdmin) return inquiry;
         
-        // 자신이 작성한 글은 볼 수 있음
-        if (inquiry.userId === user.id) return true;
+        // 2. 자신이 작성한 글은 전체 내용 볼 수 있음
+        if (inquiry.userId === user.id) return inquiry;
         
-        // 답변글인 경우 자신이 작성한 문의글의 답변만 볼 수 있음
+        // 3. 답변글인 경우 자신이 작성한 문의글의 답변만 내용을 볼 수 있음
         if (inquiry.isReply && inquiry.parentId) {
           // 원글 작성자 찾기
           const parentInquiry = inquiries.find(i => i.id === inquiry.parentId);
-          return parentInquiry?.userId === user.id;
+          if (parentInquiry?.userId === user.id) return inquiry;
+          
+          // 원글 작성자가 아닌 경우 내용을 숨김
+          return {
+            ...inquiry,
+            content: "권한이 없습니다. 이 답변은 문의 작성자와 관리자만 볼 수 있습니다." // 내용 숨김
+          };
         }
         
-        // 그 외의 경우는 접근 불가
-        return false;
+        // 4. 일반 문의글은 제목과 작성자 정보만 볼 수 있음 (내용 숨김)
+        return {
+          ...inquiry,
+          content: "권한이 없습니다. 이 문의글은 작성자와 관리자만 볼 수 있습니다." // 내용 숨김
+        };
       });
         
       res.json(filteredInquiries);

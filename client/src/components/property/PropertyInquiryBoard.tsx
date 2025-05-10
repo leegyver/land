@@ -62,7 +62,7 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
     refetch: refetchInquiries
   } = useQuery<PropertyInquiryWithAuthor[]>({
     queryKey: [`/api/properties/${propertyId}/inquiries`],
-    enabled: !!propertyId && !!user,
+    enabled: !!propertyId,
   });
   
   // 선택된 문의글 찾기
@@ -208,23 +208,21 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
     return user?.id === inquiry.userId || user?.role === "admin";
   };
   
-  if (!user) {
-    return (
-      <div className="p-4 text-center">
-        <p className="mb-4">문의 게시판을 보시려면 로그인이 필요합니다.</p>
-        <Button asChild>
-          <a href="/auth">로그인하기</a>
-        </Button>
-      </div>
-    );
-  }
+  // 로그인하지 않은 사용자에게는 제한된 뷰를 제공, 문의 작성 제한
+  const isLoggedIn = !!user;
   
   return (
     <div>
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="view">문의 목록</TabsTrigger>
-          <TabsTrigger value="write">문의 작성</TabsTrigger>
+          {isLoggedIn ? (
+            <TabsTrigger value="write">문의 작성</TabsTrigger>
+          ) : (
+            <TabsTrigger value="login" onClick={() => window.location.href = "/auth"}>
+              로그인 필요
+            </TabsTrigger>
+          )}
         </TabsList>
         
         <TabsContent value="view" className="py-4">

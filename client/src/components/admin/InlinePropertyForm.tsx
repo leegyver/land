@@ -26,35 +26,197 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Property, insertPropertySchema } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, X } from "lucide-react";
+import { X } from "lucide-react";
 
 // 부동산 유형 목록
 const propertyTypes = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
 
 // 읍면 리스트
 const districts = [
-  "강화읍", "교동면", "길상면", "내가면", "불은면", "삼산면", "서도면", "선원면", 
-  "송해면", "양도면", "양사면", "하점면", "화도면"
+  "강화읍",
+  "교동면",
+  "길상면",
+  "내가면",
+  "삼산면",
+  "서도면",
+  "선원면",
+  "송해면",
+  "양도면",
+  "양사면",
+  "하점면",
+  "화도면",
 ];
 
 // 거래 종류
 const dealTypes = ["매매", "전세", "월세", "완료", "보류중"];
 
+// 세부 지역 정보
+const detailedDistricts: { [key: string]: string[] } = {
+  강화읍: [
+    "강화읍 갑곳리",
+    "강화읍 관청리",
+    "강화읍 국화리",
+    "강화읍 남산리",
+    "강화읍 내리",
+    "강화읍 대산리",
+    "강화읍 망월리",
+    "강화읍 명륜리",
+    "강화읍 묘안리",
+    "강화읍 박달리",
+    "강화읍 방향리",
+    "강화읍 북산리",
+    "강화읍 불은면",
+    "강화읍 신문리",
+    "강화읍 신정리",
+    "강화읍 옥림리",
+    "강화읍 용정리",
+    "강화읍 월곶리",
+    "강화읍 인산리",
+    "강화읍 중앙로",
+    "강화읍 청송리",
+    "강화읍 최촌리",
+    "강화읍 홍릉리",
+  ],
+  교동면: [
+    "교동면 고구리",
+    "교동면 대룡리",
+    "교동면 무학리",
+    "교동면 방리",
+    "교동면 봉소리",
+    "교동면 삼선리",
+    "교동면 상용리",
+    "교동면 서한리",
+    "교동면 소룡리",
+    "교동면 읍내리",
+    "교동면 정운리",
+    "교동면 지석리",
+    "교동면 철산리",
+    "교동면 하일리",
+    "교동면 화개리",
+  ],
+  길상면: [
+    "길상면 길직리",
+    "길상면 동검리",
+    "길상면 마리",
+    "길상면 망월리",
+    "길상면 온수리",
+    "길상면 선두리",
+    "길상면 초지리",
+  ],
+  내가면: [
+    "내가면 고천리",
+    "내가면 나리",
+    "내가면 내동리",
+    "내가면 대곶리",
+    "내가면 망하리",
+    "내가면 박석리",
+    "내가면 양오리",
+    "내가면 오상리",
+    "내가면 외포리",
+    "내가면 장터리",
+    "내가면 지석리",
+    "내가면 창후리",
+  ],
+  삼산면: [
+    "삼산면 매음리",
+    "삼산면 물가리",
+    "삼산면 석모리",
+    "삼산면 서검리",
+    "삼산면 석모리",
+    "삼산면 약암리",
+    "삼산면 윤상리",
+    "삼산면 하리",
+  ],
+  서도면: [
+    "서도면 말도리",
+    "서도면 볼음도리",
+    "서도면 수리",
+    "서도면 아차도리",
+    "서도면 주문도리",
+  ],
+  선원면: [
+    "선원면 금월리",
+    "선원면 동막리",
+    "선원면 선원리",
+    "선원면 신당리",
+    "선원면 연리",
+    "선원면 원당리",
+    "선원면 창리",
+    "선원면 포내리",
+    "선원면 해산리",
+  ],
+  송해면: [
+    "송해면 가숭리",
+    "송해면 당산리",
+    "송해면 대산리",
+    "송해면 양오리",
+    "송해면 하도리",
+    "송해면 장정리",
+    "송해면 신당리",
+    "송해면 천산리",
+    "송해면 숭뢰리",
+  ],
+  양도면: [
+    "양도면 감정리",
+    "양도면 건평리",
+    "양도면 도장리",
+    "양도면 삼흥리",
+    "양도면 인산리",
+    "양도면 조산리",
+    "양도면 인일리",
+    "양도면 하일리",
+  ],
+  양사면: [
+    "양사면 교산리",
+    "양사면 덕하리",
+    "양사면 덕하리",
+    "양사면 북성리",
+    "양사면 상도리",
+    "양사면 송학리",
+    "양사면 신당리",
+    "양사면 인화리",
+    "양사면 철산리",
+  ],
+  하점면: [
+    "하점면 망원리",
+    "하점면 봉천리",
+    "하점면 신봉리",
+    "하점면 신삼리",
+    "하점면 양오리",
+    "하점면 이강리",
+    "하점면 장정리",
+    "하점면 창후리",
+    "하점면 참리",
+    "하점면 충도리",
+  ],
+  화도면: [
+    "화도면 갑곶리",
+    "화도면 건평리",
+    "화도면 내리",
+    "화도면 덕포리",
+    "화도면 문산리",
+    "화도면 사기리",
+    "화도면 상방리",
+    "화도면 서산리",
+    "화도면 장화리",
+    "화도면 주문리",
+    "화도면 천삼리",
+    "화도면 흥왕리",
+  ],
+};
+
 // 속성 입력 값 스키마
 const propertyFormSchema = insertPropertySchema.extend({
-  price: z.union([z.string(), z.number()]).optional(),
-  size: z.union([z.string(), z.number()]).optional(),
-  supplyArea: z.union([z.string(), z.number()]).optional().nullable(),
-  privateArea: z.union([z.string(), z.number()]).optional().nullable(),
-  floor: z.union([z.string(), z.number()]).optional().nullable(),
-  totalFloors: z.union([z.string(), z.number()]).optional().nullable(),
-  deposit: z.union([z.string(), z.number()]).optional().nullable(),
-  monthlyRent: z.union([z.string(), z.number()]).optional().nullable(),
-  maintenanceFee: z.union([z.string(), z.number()]).optional().nullable(),
+  price: z.string().optional(),
+  size: z.string().optional(),
   imageUrl: z.string().optional(),
-  elevator: z.boolean().optional().nullable(),
-  featured: z.boolean().optional().nullable(),
-  coListing: z.boolean().optional().nullable(),
+  supplyArea: z.string().optional(),
+  privateArea: z.string().optional(),
+  floor: z.string().optional(),
+  totalFloors: z.string().optional(),
+  deposit: z.string().optional(),
+  monthlyRent: z.string().optional(),
+  maintenanceFee: z.string().optional(),
 });
 
 type PropertyFormValues = z.infer<typeof propertyFormSchema>;
@@ -67,14 +229,17 @@ interface InlinePropertyFormProps {
 export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedMainDistrict, setSelectedMainDistrict] = useState<string>(districts[0]);
+  const [detailedDistrictOptions, setDetailedDistrictOptions] = useState<string[]>(
+    detailedDistricts[districts[0]]
+  );
 
   const defaultFormValues: PropertyFormValues = {
     title: "",
     description: "",
     type: "토지",
     price: "",
-    district: "강화읍",
+    district: "강화읍 갑곳리",
     address: "",
     size: "",
     agentId: 1,
@@ -82,23 +247,24 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
     bathrooms: 0,
     featured: false,
     dealType: ["매매"],
-    imageUrl: "", 
-    imageUrls: [], // 다중 이미지 지원
+    imageUrl: "",
+    
+    // 추가 필드들 (빈 문자열로 초기화)
     buildingName: "",
     unitNumber: "",
-    supplyArea: null,
-    privateArea: null,
+    supplyArea: "",
+    privateArea: "",
     areaSize: "",
-    floor: null,
-    totalFloors: null,
+    floor: "",
+    totalFloors: "",
     direction: "",
-    elevator: null,
+    elevator: false,
     parking: "",
     heatingSystem: "",
     approvalDate: "",
-    deposit: null,
-    monthlyRent: null,
-    maintenanceFee: null,
+    deposit: "",
+    monthlyRent: "",
+    maintenanceFee: "",
     ownerName: "",
     ownerPhone: "",
     tenantName: "",
@@ -106,7 +272,7 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
     clientName: "",
     clientPhone: "",
     specialNote: "",
-    coListing: null,
+    coListing: false,
     propertyDescription: "",
     privateNote: "",
   };
@@ -117,97 +283,131 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
     defaultValues: defaultFormValues,
   });
 
+  // 선택된 읍면에 따라 세부 지역 옵션 업데이트
+  useEffect(() => {
+    if (selectedMainDistrict && detailedDistricts[selectedMainDistrict]) {
+      setDetailedDistrictOptions(detailedDistricts[selectedMainDistrict]);
+      
+      // 첫 번째 세부 지역을 기본값으로 설정
+      if (detailedDistricts[selectedMainDistrict].length > 0) {
+        form.setValue("district", detailedDistricts[selectedMainDistrict][0]);
+      }
+    }
+  }, [selectedMainDistrict, form]);
+
   // 속성이 변경될 때 폼 업데이트
   useEffect(() => {
     if (property) {
-      form.reset({
-        ...defaultFormValues,
-        ...property,
+      // 현재 읍면 찾기
+      const mainDistrict = districts.find(d => 
+        property.district.startsWith(d)
+      ) || districts[0];
+      
+      setSelectedMainDistrict(mainDistrict);
+      
+      // 폼 초기화
+      const formValues: Partial<PropertyFormValues> = {
+        title: property.title || "",
+        description: property.description || "",
+        type: property.type || "토지",
         price: property.price ? property.price.toString() : "",
+        address: property.address || "",
+        district: property.district || "강화읍 갑곳리",
         size: property.size ? property.size.toString() : "",
+        bedrooms: property.bedrooms || 0,
+        bathrooms: property.bathrooms || 0,
+        agentId: property.agentId || 1,
+        featured: !!property.featured,
+        buildingName: property.buildingName || "",
+        unitNumber: property.unitNumber || "",
+        supplyArea: property.supplyArea ? property.supplyArea.toString() : "",
+        privateArea: property.privateArea ? property.privateArea.toString() : "",
+        areaSize: property.areaSize || "",
+        floor: property.floor ? property.floor.toString() : "",
+        totalFloors: property.totalFloors ? property.totalFloors.toString() : "",
+        direction: property.direction || "",
+        elevator: !!property.elevator,
+        parking: property.parking || "",
+        heatingSystem: property.heatingSystem || "",
+        approvalDate: property.approvalDate || "",
         dealType: Array.isArray(property.dealType) && property.dealType.length > 0 
           ? property.dealType 
           : ["매매"],
-        featured: property.featured === null ? null : Boolean(property.featured),
-        elevator: property.elevator === null ? null : Boolean(property.elevator),
-        coListing: property.coListing === null ? null : Boolean(property.coListing),
-        supplyArea: property.supplyArea ? property.supplyArea.toString() : null,
-        privateArea: property.privateArea ? property.privateArea.toString() : null,
-        floor: property.floor ? property.floor.toString() : null,
-        totalFloors: property.totalFloors ? property.totalFloors.toString() : null,
-        deposit: property.deposit ? property.deposit.toString() : null,
-        monthlyRent: property.monthlyRent ? property.monthlyRent.toString() : null,
-        maintenanceFee: property.maintenanceFee ? property.maintenanceFee.toString() : null,
-      });
+        deposit: property.deposit ? property.deposit.toString() : "",
+        monthlyRent: property.monthlyRent ? property.monthlyRent.toString() : "",
+        maintenanceFee: property.maintenanceFee ? property.maintenanceFee.toString() : "",
+        ownerName: property.ownerName || "",
+        ownerPhone: property.ownerPhone || "",
+        tenantName: property.tenantName || "",
+        tenantPhone: property.tenantPhone || "",
+        clientName: property.clientName || "",
+        clientPhone: property.clientPhone || "",
+        specialNote: property.specialNote || "",
+        coListing: !!property.coListing,
+        propertyDescription: property.propertyDescription || "",
+        privateNote: property.privateNote || "",
+      };
+      
+      form.reset(formValues);
     } else {
       form.reset(defaultFormValues);
     }
   }, [property, form]);
 
-  // 폼 제출 핸들러
-  const onSubmit = async (data: PropertyFormValues) => {
-    setIsSubmitting(true);
-    try {
-      // 데이터 타입 변환
-      const formattedData = {
-        ...data,
-        // 숫자 필드 변환
-        price: data.price ? parseFloat(data.price.toString()) : null,
-        size: data.size ? parseFloat(data.size.toString()) : null,
-        supplyArea: data.supplyArea ? parseFloat(data.supplyArea.toString()) : null,
-        privateArea: data.privateArea ? parseFloat(data.privateArea.toString()) : null,
-        floor: data.floor ? parseInt(data.floor.toString()) : null,
-        totalFloors: data.totalFloors ? parseInt(data.totalFloors.toString()) : null,
-        deposit: data.deposit ? parseFloat(data.deposit.toString()) : null,
-        monthlyRent: data.monthlyRent ? parseFloat(data.monthlyRent.toString()) : null,
-        maintenanceFee: data.maintenanceFee ? parseFloat(data.maintenanceFee.toString()) : null,
-        
-        // 불리언 필드 변환
-        featured: data.featured === null ? false : Boolean(data.featured),
-        elevator: data.elevator === null ? false : Boolean(data.elevator),
-        coListing: data.coListing === null ? false : Boolean(data.coListing),
-      };
-
-      if (property) {
-        // 부동산 수정
-        const res = await apiRequest("PATCH", `/api/properties/${property.id}`, formattedData);
-        if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.message || "부동산 수정에 실패했습니다");
-        }
-        
-        // 성공 처리
-        queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
-        toast({
-          title: "부동산 수정 성공",
-          description: "부동산 정보가 수정되었습니다.",
-        });
-      } else {
-        // 새 부동산 생성
-        const res = await apiRequest("POST", "/api/properties", formattedData);
-        if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.message || "부동산 등록에 실패했습니다");
-        }
-        
-        // 성공 처리
-        queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
-        toast({
-          title: "부동산 등록 성공",
-          description: "새로운 부동산이 등록되었습니다.",
-        });
-      }
-      
-      onClose();
-    } catch (error) {
-      // 오류 처리
+  // 부동산 생성 뮤테이션
+  const createPropertyMutation = useMutation({
+    mutationFn: async (data: PropertyFormValues) => {
+      console.log('부동산 등록 요청 데이터:', data);
+      const res = await apiRequest("POST", "/api/properties", data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
       toast({
-        title: property ? "부동산 수정 실패" : "부동산 등록 실패",
-        description: error instanceof Error ? error.message : "오류가 발생했습니다",
+        title: "부동산 등록 성공",
+        description: "새로운 부동산이 등록되었습니다.",
+      });
+      onClose();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "부동산 등록 실패",
+        description: error.message,
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
+    },
+  });
+
+  // 부동산 수정 뮤테이션
+  const updatePropertyMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: PropertyFormValues }) => {
+      console.log('부동산 수정 요청 데이터:', data);
+      const res = await apiRequest("PATCH", `/api/properties/${id}`, data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
+      toast({
+        title: "부동산 수정 성공",
+        description: "부동산 정보가 수정되었습니다.",
+      });
+      onClose();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "부동산 수정 실패",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // 폼 제출 핸들러
+  const onSubmit = (data: PropertyFormValues) => {
+    if (property) {
+      updatePropertyMutation.mutate({ id: property.id, data });
+    } else {
+      createPropertyMutation.mutate(data);
     }
   };
 
@@ -320,23 +520,43 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
                 )}
               />
 
+              {/* 읍면동 선택 */}
+              <div>
+                <FormLabel>읍면</FormLabel>
+                <Select
+                  value={selectedMainDistrict}
+                  onValueChange={(value) => setSelectedMainDistrict(value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="지역 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {districts.map((district) => (
+                      <SelectItem key={district} value={district}>
+                        {district}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <FormField
                 control={form.control}
                 name="district"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>지역</FormLabel>
+                    <FormLabel>읍면동</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="지역 선택" />
+                          <SelectValue placeholder="상세 지역 선택" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {districts.map((district) => (
+                        {detailedDistrictOptions.map((district) => (
                           <SelectItem key={district} value={district}>
                             {district}
                           </SelectItem>
@@ -353,10 +573,44 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
                 name="address"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>주소</FormLabel>
+                    <FormLabel>지번</FormLabel>
                     <FormControl>
-                      <Input placeholder="상세 주소" {...field} />
+                      <Input placeholder="지번 주소" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+
+              <FormField
+                control={form.control}
+                name="dealType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>거래 종류</FormLabel>
+                    <div className="flex flex-wrap gap-2">
+                      {dealTypes.map((type) => (
+                        <Button
+                          key={type}
+                          type="button"
+                          variant={
+                            field.value && field.value.includes(type)
+                              ? "default"
+                              : "outline"
+                          }
+                          onClick={() => {
+                            const currentValue = field.value || [];
+                            const newValue = currentValue.includes(type)
+                              ? currentValue.filter((t) => t !== type)
+                              : [...currentValue, type];
+                            field.onChange(newValue.length ? newValue : ["매매"]);
+                          }}
+                        >
+                          {type}
+                        </Button>
+                      ))}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -366,41 +620,28 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
                 control={form.control}
                 name="featured"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 py-4">
                     <FormControl>
                       <Checkbox
-                        checked={field.value === true}
-                        onCheckedChange={(checked) => {
-                          field.onChange(checked);
-                        }}
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
                       />
                     </FormControl>
                     <div className="space-y-1 leading-none">
-                      <FormLabel>추천 매물</FormLabel>
-                      <p className="text-sm text-muted-foreground">
-                        이 매물을 추천 매물로 표시합니다.
-                      </p>
+                      <FormLabel>추천 매물로 표시</FormLabel>
                     </div>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
 
-            <div className="flex justify-end space-x-2">
+            <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={onClose}>
                 취소
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    처리 중...
-                  </>
-                ) : property ? (
-                  "수정하기"
-                ) : (
-                  "등록하기"
-                )}
+              <Button type="submit" disabled={createPropertyMutation.isPending || updatePropertyMutation.isPending}>
+                {(createPropertyMutation.isPending || updatePropertyMutation.isPending) ? "처리 중..." : property ? "수정" : "등록"}
               </Button>
             </div>
           </form>

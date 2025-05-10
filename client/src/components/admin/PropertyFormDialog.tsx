@@ -365,19 +365,7 @@ export function PropertyFormDialog({ renderDialog, onSubmitSuccess, property }: 
     },
   });
 
-  // 선택된 읍면에 따라 세부 지역 옵션 업데이트
-  useEffect(() => {
-    if (selectedMainDistrict && detailedDistricts[selectedMainDistrict]) {
-      setDetailedDistrictOptions(detailedDistricts[selectedMainDistrict]);
-      // 첫 번째 세부 지역을 기본값으로 설정
-      form.setValue("district", detailedDistricts[selectedMainDistrict][0]);
-    }
-  }, [selectedMainDistrict, form]);
-  
-  // 읍면 변경 핸들러
-  const handleDistrictChange = (value: string) => {
-    setSelectedMainDistrict(value);
-  };
+  // 지역 선택이 단일 드롭다운으로 통합되었습니다.
 
   // 부동산 생성 뮤테이션
   const createPropertyMutation = useMutation({

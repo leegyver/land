@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getQueryFn, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Property, User, News, insertPropertySchema } from "@shared/schema";
-import { SimplePropertyForm } from "@/components/admin/SimplePropertyForm";
+import { InlinePropertyForm } from "@/components/admin/InlinePropertyForm";
 import * as z from "zod";
 
 type PropertyFormValues = z.infer<typeof insertPropertySchema>;
@@ -443,7 +443,7 @@ export default function AdminPage() {
           {/* 속성 폼 - Dialog 없이 단순 인라인 폼으로 구현 */}
           {openPropertyDialog && (
             <div className="mt-6">
-              <SimplePropertyForm 
+              <InlinePropertyForm 
                 onClose={handleCloseDialog}
                 property={editingProperty} 
               />

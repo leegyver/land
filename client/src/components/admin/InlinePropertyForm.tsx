@@ -42,8 +42,15 @@ const dealTypes = ["매매", "전세", "월세", "완료", "보류중"];
 
 // 속성 입력 값 스키마
 const propertyFormSchema = insertPropertySchema.extend({
-  price: z.string().optional(),
-  size: z.string().optional(),
+  price: z.union([z.string(), z.number()]).optional(),
+  size: z.union([z.string(), z.number()]).optional(),
+  supplyArea: z.union([z.string(), z.number()]).optional().nullable(),
+  privateArea: z.union([z.string(), z.number()]).optional().nullable(),
+  floor: z.union([z.string(), z.number()]).optional().nullable(),
+  totalFloors: z.union([z.string(), z.number()]).optional().nullable(),
+  deposit: z.union([z.string(), z.number()]).optional().nullable(),
+  monthlyRent: z.union([z.string(), z.number()]).optional().nullable(),
+  maintenanceFee: z.union([z.string(), z.number()]).optional().nullable(),
   imageUrl: z.string().optional(),
 });
 
@@ -76,19 +83,19 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
     imageUrls: [], // 다중 이미지 지원
     buildingName: "",
     unitNumber: "",
-    supplyArea: "",
-    privateArea: "",
+    supplyArea: null,
+    privateArea: null,
     areaSize: "",
-    floor: "",
-    totalFloors: "",
+    floor: null,
+    totalFloors: null,
     direction: "",
     elevator: false,
     parking: "",
     heatingSystem: "",
     approvalDate: "",
-    deposit: "",
-    monthlyRent: "",
-    maintenanceFee: "",
+    deposit: null,
+    monthlyRent: null,
+    maintenanceFee: null,
     ownerName: "",
     ownerPhone: "",
     tenantName: "",
@@ -337,8 +344,10 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
                   <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                     <FormControl>
                       <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
+                        checked={field.value === true}
+                        onCheckedChange={(checked) => {
+                          field.onChange(checked === true);
+                        }}
                       />
                     </FormControl>
                     <div className="space-y-1 leading-none">

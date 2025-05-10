@@ -14,9 +14,17 @@ import {
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
+// 더 이상 사용하지 않음
+// import { RenderAfterNavermapsLoaded, NaverMap, Marker } from "react-naver-maps";
 // 카카오톡 이미지 가져오기
 import kakaoImage from "../../assets/kakao.jpg";
-import { Property } from "@shared/schema";
+import { Property as PropertyType } from "@shared/schema";
+
+// Property 타입 확장 (latitude, longitude 추가)
+type Property = PropertyType & {
+  latitude?: string | number;
+  longitude?: string | number;
+};
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,9 +48,12 @@ const formatPrice = (price: string | number) => {
 const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
-  const { data: property, isLoading: propertyLoading, error: propertyError } = useQuery<Property>({
+  const { data: propertyData, isLoading: propertyLoading, error: propertyError } = useQuery<PropertyType>({
     queryKey: [`/api/properties/${propertyId}`],
   });
+  
+  // Property 데이터를 확장된 타입으로 캐스팅
+  const property = propertyData as Property | undefined;
   
   // 부동산 등록시 첨부한 이미지들을 사용
   const defaultImage = "https://via.placeholder.com/800x500?text=매물+이미지+준비중";
@@ -67,6 +78,51 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
       setCurrentImageIndex(property.featuredImageIndex);
     }
   }, [property]);
+  
+  // 강화군 기본 좌표 (위도/경도)
+  const defaultLocation = { lat: 37.7466, lng: 126.4881 };
+  
+  // 매물 위치 좌표 계산 함수
+  const getPropertyLocation = () => {
+    if (!property) return defaultLocation;
+    
+    // 실제 위/경도 정보가 있는 경우 (향후 데이터베이스에 추가될 수 있음)
+    if (property.latitude !== undefined && property.longitude !== undefined) {
+      const lat = Number(property.latitude);
+      const lng = Number(property.longitude);
+      
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return { lat, lng };
+      }
+    }
+    
+    // 지역에 따른 대략적인 위치 (강화군 내 주요 지역)
+    const districtLocations: {[key: string]: {lat: number, lng: number}} = {
+      '강화읍': { lat: 37.7466, lng: 126.4881 },
+      '선원면': { lat: 37.7132, lng: 126.4777 },
+      '불은면': { lat: 37.7049, lng: 126.5357 },
+      '길상면': { lat: 37.6390, lng: 126.5306 },
+      '화도면': { lat: 37.6254, lng: 126.4273 },
+      '양도면': { lat: 37.6629, lng: 126.4003 },
+      '내가면': { lat: 37.7098, lng: 126.3767 },
+      '하점면': { lat: 37.7627, lng: 126.4274 },
+      '양사면': { lat: 37.7825, lng: 126.3799 },
+      '송해면': { lat: 37.7639, lng: 126.4615 },
+      '교동면': { lat: 37.8103, lng: 126.2724 },
+      '삼산면': { lat: 37.7290, lng: 126.3368 },
+      '서도면': { lat: 37.7504, lng: 126.2108 }
+    };
+    
+    // 매물의 district에 포함된 지역명을 찾아서 좌표 반환
+    for (const [district, location] of Object.entries(districtLocations)) {
+      if (property.district && property.district.includes(district)) {
+        return location;
+      }
+    }
+    
+    // 일치하는 지역이 없으면 강화읍 좌표 반환
+    return defaultLocation;
+  };
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length);
@@ -420,13 +476,13 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
         <div>
           {/* 네이버 지도로 위치 정보 표시 */}
           <div className="bg-gray-50 rounded-lg overflow-hidden h-64 mb-4">
+            {/* 실제 매물 위치 네이버 지도 표시 */}
             <div style={{ width: '100%', height: '100%' }}>
               <img 
-                src="https://navermaps.github.io/maps.js.ncp/docs/img/example-static-map.png" 
+                src={`https://naveropenapi.apigw.ntruss.com/map-static/v2/raster-cors?w=400&h=300&center=${getPropertyLocation().lng},${getPropertyLocation().lat}&level=14&X-NCP-APIGW-API-KEY=${NAVER_CLIENT_ID}`}
                 alt="위치 지도" 
                 className="w-full h-full object-cover"
               />
-              {/* 네이버 지도 API를 이용하여 추후 실제 위치 구현 예정 */}
             </div>
           </div>
           

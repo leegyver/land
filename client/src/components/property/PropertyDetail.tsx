@@ -61,9 +61,23 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   
-  // 컴포넌트 마운트 시 필요한 초기화 작업
+  // 카카오 SDK 초기화
   useEffect(() => {
-    // 향후 추가 초기화 작업이 필요할 경우 이곳에 작성
+    try {
+      const KAKAO_API_KEY = "2f6ff1b2e516329499e3e785899159e9";
+      
+      if (window.Kakao && !window.Kakao.isInitialized()) {
+        console.log("카카오 SDK 초기화 시도");
+        window.Kakao.init(KAKAO_API_KEY);
+        console.log("카카오 SDK 초기화 성공:", window.Kakao.isInitialized());
+      } else if (!window.Kakao) {
+        console.error("카카오 SDK가 로드되지 않았습니다");
+      } else {
+        console.log("카카오 SDK가 이미 초기화되어 있습니다");
+      }
+    } catch (error) {
+      console.error("카카오 SDK 초기화 오류:", error);
+    }
   }, []);
   
   const { data: propertyData, isLoading: propertyLoading, error: propertyError } = useQuery<PropertyType>({
@@ -142,30 +156,65 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
     }
   };
   
-  // 공유 기능 핸들러
+  // 카카오톡 공유 기능 핸들러
   const handleShareClick = () => {
     if (!property) return;
     
     try {
-      const title = `[한국부동산] ${property.title}`;
-      const text = `${property.district} 위치 - ${property.type} - ${formatPrice(property.price)}`;
-      const shareText = `${title}\n${text}\n${window.location.href}`;
-      
-      // 클립보드에 복사
-      navigator.clipboard.writeText(shareText)
-        .then(() => {
-          toast({
-            title: "클립보드에 복사되었습니다",
-            description: "친구에게 공유하세요",
-          });
-        })
-        .catch(err => {
-          console.error('클립보드 복사 실패:', err);
-          alert('클립보드 복사에 실패했습니다. URL: ' + window.location.href);
+      if (!window.Kakao) {
+        console.error("카카오 SDK가 로드되지 않았습니다");
+        toast({
+          title: "공유 기능을 사용할 수 없습니다",
+          description: "카카오톡 SDK 로드에 실패했습니다.",
+          variant: "destructive",
         });
+        return;
+      }
+      
+      if (!window.Kakao.isInitialized()) {
+        console.error("카카오 SDK가 초기화되지 않았습니다");
+        toast({
+          title: "공유 기능을 사용할 수 없습니다",
+          description: "카카오톡 SDK 초기화에 실패했습니다.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // 카카오 공유하기
+      window.Kakao.Share.sendDefault({
+        objectType: 'feed',
+        content: {
+          title: `[한국부동산] ${property.title}`,
+          description: `${property.district} 위치 - ${property.type} - ${formatPrice(property.price)}`,
+          imageUrl: Array.isArray(property.imageUrls) && property.imageUrls.length > 0 
+            ? property.imageUrls[0] 
+            : (property.imageUrl || 'https://via.placeholder.com/800x500?text=매물+이미지+준비중'),
+          link: {
+            webUrl: window.location.href,
+            mobileWebUrl: window.location.href,
+          },
+        },
+        buttons: [
+          {
+            title: '매물 확인하기',
+            link: {
+              webUrl: window.location.href,
+              mobileWebUrl: window.location.href,
+            },
+          },
+        ],
+      });
+      
+      console.log("카카오 공유 요청 성공");
+      
     } catch (error) {
-      console.error("공유 중 오류 발생:", error);
-      alert('공유 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      console.error("카카오 공유 중 오류 발생:", error);
+      toast({
+        title: "공유 중 오류가 발생했습니다",
+        description: "잠시 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
     }
   };
   

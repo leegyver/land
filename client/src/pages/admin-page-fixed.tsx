@@ -4,20 +4,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getQueryFn, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Property, User, News, insertPropertySchema } from "@shared/schema";
+import { InlinePropertyForm } from "@/components/admin/InlinePropertyForm";
 import * as z from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 
-// 기본 UI 컴포넌트
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+type PropertyFormValues = z.infer<typeof insertPropertySchema>;
+
 import {
   Table,
   TableBody,
@@ -28,23 +19,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -53,49 +35,20 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Loader2, Home, Plus, Trash2, Edit, Check, X } from "lucide-react";
+import { Loader2, Home, Plus, Trash2, Edit, Check } from "lucide-react";
 
-// 폼 스키마
-const propertyFormSchema = insertPropertySchema.extend({
-  price: z.string().optional(),
-  size: z.string().optional(),
-  supplyArea: z.string().optional(),
-  privateArea: z.string().optional(),
-  floor: z.string().optional(),
-  totalFloors: z.string().optional(),
-  deposit: z.string().optional(),
-  monthlyRent: z.string().optional(),
-  maintenanceFee: z.string().optional(),
-});
-
-type PropertyFormValues = z.infer<typeof propertyFormSchema>;
-
-// 부동산 유형 목록
-const propertyTypes = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
-
-// 읍면 리스트
+// 읍면 
 const districts = [
-  "강화읍",
-  "교동면",
-  "길상면",
-  "내가면",
-  "불은면",
-  "삼산면",
-  "서도면",
-  "선원면",
-  "송해면",
-  "양도면",
-  "양사면",
-  "하점면",
-  "화도면",
-  "강화외지역"
+  "강화읍", "교동면", "길상면", "내가면", "불은면", "삼산면", "서도면", "선원면", 
+  "송해면", "양도면", "양사면", "하점면", "화도면", "강화외지역"
 ];
 
-// 거래 종류
-const dealTypes = ["매매", "전세", "월세", "완료", "보류중"];
+// 읍면동 세부 카테고리
+interface DetailedDistrictsType {
+  [key: string]: string[];
+}
 
-// 세부 지역 정보
-const detailedDistricts: { [key: string]: string[] } = {
+const detailedDistricts: DetailedDistrictsType = {
   "강화읍": ["강화읍 갑곳리", "강화읍 관청리", "강화읍 국화리", "강화읍 남산리", "강화읍 대산리", "강화읍 신문리", "강화읍 옥림리", "강화읍 용정리", "강화읍 월곳리"],
   "교동면": ["교동면 고구리", "교동면 난정리", "교동면 대룡리", "교동면 동산리", "교동면 무학리", "교동면 봉소리", "교동면 삼선리", "교동면 상용리", "교동면 서한리", "교동면 양갑리", "교동면 읍내리", "교동면 인사리", "교동면 지석리"],
   "길상면": ["길상면 길직리", "길상면 동검리", "길상면 선두리", "길상면 온수리", "길상면 장흥리", "길상면 초지리"],
@@ -117,89 +70,21 @@ export default function AdminPageFixed() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("properties");
-  const [showPropertyForm, setShowPropertyForm] = useState(false);
+  const [openPropertyDialog, setOpenPropertyDialog] = useState(false);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const [isDeleting, setIsDeleting] = useState<number | false>(false);
   const [isDeletingUser, setIsDeletingUser] = useState<number | false>(false);
   const [isDeletingNews, setIsDeletingNews] = useState<number | false>(false);
-  const [selectedMainDistrict, setSelectedMainDistrict] = useState("강화읍");
-  const [detailedDistrictOptions, setDetailedDistrictOptions] = useState<string[]>(
-    detailedDistricts["강화읍"]
-  );
-  
-  // 클라이언트 측 데이터 관리
-  const [localProperties, setLocalProperties] = useState<Property[]>([]);
-  const [propertiesLoaded, setPropertiesLoaded] = useState(false);
-  const [localUsers, setLocalUsers] = useState<User[]>([]);
-  const [usersLoaded, setUsersLoaded] = useState(false);
-  const [localNews, setLocalNews] = useState<News[]>([]);
-  const [newsLoaded, setNewsLoaded] = useState(false);
-
-  // 기본 폼 값
-  const defaultFormValues: PropertyFormValues = {
-    title: "",
-    description: "",
-    type: "토지",
-    price: "",
-    city: "인천",
-    district: detailedDistricts[selectedMainDistrict][0],
-    address: "",
-    size: "",
-    imageUrl: "",
-    agentId: 1,
-    bedrooms: 0,
-    bathrooms: 0,
-    featured: false,
-    dealType: ["매매"],
-    
-    // 추가 필드들 (빈 문자열로 초기화)
-    buildingName: "",
-    unitNumber: "",
-    supplyArea: "",
-    privateArea: "",
-    areaSize: "",
-    floor: "",
-    totalFloors: "",
-    direction: "",
-    elevator: false,
-    parking: "",
-    heatingSystem: "",
-    approvalDate: "",
-    deposit: "",
-    monthlyRent: "",
-    maintenanceFee: "",
-    ownerName: "",
-    ownerPhone: "",
-    tenantName: "",
-    tenantPhone: "",
-    clientName: "",
-    clientPhone: "",
-    specialNote: "",
-    coListing: false,
-    propertyDescription: "",
-    privateNote: "",
-  };
-
-  // 부동산 등록/수정 폼
-  const form = useForm<PropertyFormValues>({
-    resolver: zodResolver(propertyFormSchema),
-    defaultValues: defaultFormValues,
-  });
 
   // 부동산 목록 조회
   const {
     data: properties,
     isLoading: isLoadingProperties,
     error: propertiesError,
+    refetch: refetchProperties,
   } = useQuery<Property[]>({
-    queryKey: ["/api/properties"],
+    queryKey: ["/api/properties?skipCache=true"],
     queryFn: getQueryFn({ on401: "throw" }),
-    onSuccess: (data) => {
-      if (!propertiesLoaded) {
-        setLocalProperties(data);
-        setPropertiesLoaded(true);
-      }
-    }
   });
 
   // 사용자 목록 조회 (관리자만)
@@ -211,12 +96,6 @@ export default function AdminPageFixed() {
     queryKey: ["/api/admin/users"],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: currentUser?.role === "admin",
-    onSuccess: (data) => {
-      if (!usersLoaded) {
-        setLocalUsers(data);
-        setUsersLoaded(true);
-      }
-    }
   });
   
   // 뉴스 목록 조회
@@ -227,37 +106,54 @@ export default function AdminPageFixed() {
   } = useQuery<News[]>({
     queryKey: ["/api/news"],
     queryFn: getQueryFn({ on401: "throw" }),
-    onSuccess: (data) => {
-      if (!newsLoaded) {
-        setLocalNews(data);
-        setNewsLoaded(true);
+  });
+
+  // 뉴스 수동 수집 뮤테이션
+  const fetchNewsMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/news/fetch");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "뉴스 수집에 실패했습니다");
       }
-    }
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      // 뉴스 캐시 갱신
+      queryClient.invalidateQueries({ queryKey: ["/api/news"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/news/latest"] });
+      
+      toast({
+        title: "뉴스 수집 성공",
+        description: `${data.count}개의 새로운 뉴스가 수집되었습니다.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "뉴스 수집 실패",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   // 부동산 생성 뮤테이션
   const createPropertyMutation = useMutation({
     mutationFn: async (data: PropertyFormValues) => {
-      console.log('부동산 등록 요청 데이터:', data);
       const res = await apiRequest("POST", "/api/properties", data);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "부동산 등록에 실패했습니다");
+      }
       return await res.json();
     },
-    onSuccess: (newProperty) => {
-      // 클라이언트 측 상태 업데이트
-      setLocalProperties(prev => [...prev, newProperty]);
-      
-      // 서버 데이터 동기화 (백그라운드)
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
-      }, 100);
-      
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
       toast({
         title: "부동산 등록 성공",
         description: "새로운 부동산이 등록되었습니다.",
       });
-      setShowPropertyForm(false);
-      setEditingProperty(null);
-      form.reset(defaultFormValues);
+      setOpenPropertyDialog(false);
     },
     onError: (error: Error) => {
       toast({
@@ -270,29 +166,28 @@ export default function AdminPageFixed() {
 
   // 부동산 수정 뮤테이션
   const updatePropertyMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: PropertyFormValues }) => {
-      console.log('부동산 수정 요청 데이터:', data);
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: PropertyFormValues;
+    }) => {
       const res = await apiRequest("PATCH", `/api/properties/${id}`, data);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "부동산 수정에 실패했습니다");
+      }
       return await res.json();
     },
-    onSuccess: (updatedProperty) => {
-      // 클라이언트 측 상태 업데이트
-      setLocalProperties(prev => 
-        prev.map(item => item.id === updatedProperty.id ? updatedProperty : item)
-      );
-      
-      // 서버 데이터 동기화 (백그라운드)
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
-      }, 100);
-      
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
       toast({
         title: "부동산 수정 성공",
         description: "부동산 정보가 수정되었습니다.",
       });
-      setShowPropertyForm(false);
+      setOpenPropertyDialog(false);
       setEditingProperty(null);
-      form.reset(defaultFormValues);
     },
     onError: (error: Error) => {
       toast({
@@ -308,16 +203,21 @@ export default function AdminPageFixed() {
     mutationFn: async (id: number) => {
       setIsDeleting(id);
       const res = await apiRequest("DELETE", `/api/properties/${id}`);
-      return { id, result: await res.json() };
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "부동산 삭제에 실패했습니다");
+      }
+      return await res.json();
     },
-    onSuccess: ({ id, result }) => {
-      // 클라이언트 측 상태 업데이트
-      setLocalProperties(prev => prev.filter(item => item.id !== id));
+    onSuccess: () => {
+      // 먼저 모든 캐시 무효화
+      queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/properties?skipCache=true"] });
       
-      // 서버 데이터 동기화 (백그라운드)
+      // 그리고 즉시 최신 데이터 가져오기
       setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
-      }, 100);
+        refetchProperties();
+      }, 100); // 약간의 지연 시간으로 서버 측에서 캐시가 업데이트될 시간을 줌
       
       toast({
         title: "부동산 삭제 성공",
@@ -340,17 +240,14 @@ export default function AdminPageFixed() {
     mutationFn: async (id: number) => {
       setIsDeletingUser(id);
       const res = await apiRequest("DELETE", `/api/admin/users/${id}`);
-      return { id, result: await res.json() };
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "사용자 삭제에 실패했습니다");
+      }
+      return await res.json();
     },
-    onSuccess: ({ id, result }) => {
-      // 클라이언트 측 상태 업데이트
-      setLocalUsers(prev => prev.filter(item => item.id !== id));
-      
-      // 서버 데이터 동기화 (백그라운드)
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      }, 100);
-      
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       toast({
         title: "사용자 삭제 성공",
         description: "사용자가 성공적으로 삭제되었습니다.",
@@ -366,23 +263,20 @@ export default function AdminPageFixed() {
       setIsDeletingUser(false);
     },
   });
-
+  
   // 뉴스 삭제 뮤테이션
   const deleteNewsMutation = useMutation({
     mutationFn: async (id: number) => {
       setIsDeletingNews(id);
       const res = await apiRequest("DELETE", `/api/news/${id}`);
-      return { id, result: await res.json() };
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "뉴스 삭제에 실패했습니다");
+      }
+      return await res.json();
     },
-    onSuccess: ({ id, result }) => {
-      // 클라이언트 측 상태 업데이트
-      setLocalNews(prev => prev.filter(item => item.id !== id));
-      
-      // 서버 데이터 동기화 (백그라운드)
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["/api/news"] });
-      }, 100);
-      
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/news"] });
       toast({
         title: "뉴스 삭제 성공",
         description: "뉴스가 성공적으로 삭제되었습니다.",
@@ -401,109 +295,33 @@ export default function AdminPageFixed() {
 
   // 부동산 삭제 핸들러
   const handleDeleteProperty = (id: number) => {
-    if (window.confirm("정말로 이 부동산을 삭제하시겠습니까?")) {
+    if (confirm("정말로 이 부동산을 삭제하시겠습니까?")) {
       deletePropertyMutation.mutate(id);
     }
   };
 
-  // 폼 닫기 핸들러
-  const handleCloseForm = () => {
-    setShowPropertyForm(false);
+  // 다이얼로그 닫기 핸들러
+  const handleCloseDialog = () => {
+    setOpenPropertyDialog(false);
     setEditingProperty(null);
-    form.reset(defaultFormValues);
   };
 
   // 부동산 수정 열기
   const handleEditProperty = (property: Property) => {
     // 현재 선택된 부동산 저장
     setEditingProperty(property);
-    
-    // 현재 읍면 찾기
-    const mainDistrict = districts.find(d => 
-      property.district.startsWith(d)
-    ) || "강화읍";
-    
-    setSelectedMainDistrict(mainDistrict);
-    setDetailedDistrictOptions(detailedDistricts[mainDistrict]);
-    
-    // 폼 초기화
-    form.reset({
-      title: property.title || "",
-      description: property.description || "",
-      type: property.type || "토지",
-      price: property.price ? property.price.toString() : "",
-      address: property.address || "",
-      city: property.city || "인천",
-      district: property.district || detailedDistricts[mainDistrict][0],
-      size: property.size ? property.size.toString() : "",
-      bedrooms: property.bedrooms || 0,
-      bathrooms: property.bathrooms || 0,
-      imageUrl: property.imageUrl || "",
-      agentId: property.agentId || 1,
-      featured: !!property.featured,
-      buildingName: property.buildingName || "",
-      unitNumber: property.unitNumber || "",
-      supplyArea: property.supplyArea ? property.supplyArea.toString() : "",
-      privateArea: property.privateArea ? property.privateArea.toString() : "",
-      areaSize: property.areaSize || "",
-      floor: property.floor ? property.floor.toString() : "",
-      totalFloors: property.totalFloors ? property.totalFloors.toString() : "",
-      direction: property.direction || "",
-      elevator: !!property.elevator,
-      parking: property.parking || "",
-      heatingSystem: property.heatingSystem || "",
-      approvalDate: property.approvalDate || "",
-      dealType: Array.isArray(property.dealType) && property.dealType.length > 0 
-        ? property.dealType 
-        : ["매매"],
-      deposit: property.deposit ? property.deposit.toString() : "",
-      monthlyRent: property.monthlyRent ? property.monthlyRent.toString() : "",
-      maintenanceFee: property.maintenanceFee ? property.maintenanceFee.toString() : "",
-      ownerName: property.ownerName || "",
-      ownerPhone: property.ownerPhone || "",
-      tenantName: property.tenantName || "",
-      tenantPhone: property.tenantPhone || "",
-      clientName: property.clientName || "",
-      clientPhone: property.clientPhone || "",
-      specialNote: property.specialNote || "",
-      coListing: !!property.coListing,
-      propertyDescription: property.propertyDescription || "",
-      privateNote: property.privateNote || "",
-    });
-    
-    // 폼 표시
-    setShowPropertyForm(true);
+    // 다이얼로그 열기
+    setOpenPropertyDialog(true);
   };
 
   // 새 부동산 추가 핸들러
   const handleAddProperty = () => {
     setEditingProperty(null);
-    form.reset(defaultFormValues);
-    setShowPropertyForm(true);
-  };
-
-  // 읍면 변경 핸들러
-  const handleDistrictChange = (value: string) => {
-    setSelectedMainDistrict(value);
-    setDetailedDistrictOptions(detailedDistricts[value]);
-    
-    // 첫 번째 세부 지역을 기본값으로 설정
-    if (detailedDistricts[value].length > 0) {
-      form.setValue("district", detailedDistricts[value][0]);
-    }
-  };
-  
-  // 폼 제출 핸들러
-  const onSubmit = (data: PropertyFormValues) => {
-    if (editingProperty) {
-      updatePropertyMutation.mutate({ id: editingProperty.id, data });
-    } else {
-      createPropertyMutation.mutate(data);
-    }
+    setOpenPropertyDialog(true);
   };
 
   // 로딩 상태 표시
-  if (isLoadingProperties && !propertiesLoaded) {
+  if (isLoadingProperties) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -522,11 +340,6 @@ export default function AdminPageFixed() {
       </div>
     );
   }
-
-  // 표시할 데이터 결정
-  const displayProperties = propertiesLoaded ? localProperties : (properties || []);
-  const displayUsers = usersLoaded ? localUsers : (users || []);
-  const displayNews = newsLoaded ? localNews : (news || []);
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -575,7 +388,7 @@ export default function AdminPageFixed() {
                     등록된 부동산 매물 목록을 관리합니다.
                   </CardDescription>
                 </div>
-                <Button onClick={handleAddProperty} type="button">
+                <Button onClick={handleAddProperty}>
                   <Plus className="h-4 w-4 mr-2" />
                   부동산 등록
                 </Button>
@@ -583,7 +396,7 @@ export default function AdminPageFixed() {
             </CardHeader>
             <CardContent>
               <Table>
-                <TableCaption>총 {displayProperties?.length || 0}개의 부동산 매물</TableCaption>
+                <TableCaption>총 {properties?.length || 0}개의 부동산 매물</TableCaption>
                 <TableHeader>
                   <TableRow>
                     <TableHead>ID</TableHead>
@@ -597,7 +410,7 @@ export default function AdminPageFixed() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {displayProperties.map((property) => (
+                  {properties?.map((property) => (
                     <TableRow key={property.id}>
                       <TableCell className="font-medium">{property.id}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{property.title}</TableCell>
@@ -619,7 +432,6 @@ export default function AdminPageFixed() {
                             variant="outline"
                             size="icon"
                             onClick={() => handleEditProperty(property)}
-                            type="button"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -628,7 +440,6 @@ export default function AdminPageFixed() {
                             size="icon"
                             onClick={() => handleDeleteProperty(property.id)}
                             disabled={isDeleting === property.id}
-                            type="button"
                           >
                             {isDeleting === property.id ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
@@ -645,258 +456,14 @@ export default function AdminPageFixed() {
             </CardContent>
           </Card>
 
-          {/* 속성 폼 */}
-          {showPropertyForm && (
-            <Card className="mt-6">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle>{editingProperty ? "부동산 수정" : "새 부동산 등록"}</CardTitle>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={handleCloseForm} 
-                  className="rounded-full h-8 w-8 p-0"
-                  type="button"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* 기본 정보 */}
-                      <FormField
-                        control={form.control}
-                        name="title"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>제목</FormLabel>
-                            <FormControl>
-                              <Input placeholder="부동산 제목" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="type"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>유형</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
-                              value={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="부동산 유형 선택" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {propertyTypes.map((type) => (
-                                  <SelectItem key={type} value={type}>
-                                    {type}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <div className="md:col-span-2">
-                        <FormField
-                          control={form.control}
-                          name="description"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>설명</FormLabel>
-                              <FormControl>
-                                <Textarea
-                                  placeholder="부동산에 대한 간략한 설명"
-                                  rows={3}
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
-                      <FormField
-                        control={form.control}
-                        name="price"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>가격</FormLabel>
-                            <FormControl>
-                              <Input placeholder="가격 (원)" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="size"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>면적 (㎡)</FormLabel>
-                            <FormControl>
-                              <Input placeholder="면적 (㎡)" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      {/* 읍면동 선택 */}
-                      <div>
-                        <FormLabel>읍면</FormLabel>
-                        <Select
-                          value={selectedMainDistrict}
-                          onValueChange={handleDistrictChange}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="지역 선택" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {districts.map((district) => (
-                              <SelectItem key={district} value={district}>
-                                {district}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <FormField
-                        control={form.control}
-                        name="district"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>읍면동</FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              value={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="상세 지역 선택" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {detailedDistrictOptions.map((district) => (
-                                  <SelectItem key={district} value={district}>
-                                    {district}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="address"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>지번</FormLabel>
-                            <FormControl>
-                              <Input placeholder="지번 주소" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="imageUrl"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>이미지 URL</FormLabel>
-                            <FormControl>
-                              <Input placeholder="이미지 URL" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="dealType"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>거래 종류</FormLabel>
-                            <div className="flex flex-wrap gap-2">
-                              {dealTypes.map((type) => (
-                                <Button
-                                  key={type}
-                                  type="button"
-                                  variant={
-                                    field.value && field.value.includes(type)
-                                      ? "default"
-                                      : "outline"
-                                  }
-                                  onClick={() => {
-                                    const currentValue = field.value || [];
-                                    const newValue = currentValue.includes(type)
-                                      ? currentValue.filter((t) => t !== type)
-                                      : [...currentValue, type];
-                                    field.onChange(newValue.length ? newValue : ["매매"]);
-                                  }}
-                                >
-                                  {type}
-                                </Button>
-                              ))}
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="featured"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 py-4">
-                            <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel>추천 매물로 표시</FormLabel>
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div className="flex justify-end gap-2">
-                      <Button type="button" variant="outline" onClick={handleCloseForm}>
-                        취소
-                      </Button>
-                      <Button type="submit" disabled={createPropertyMutation.isPending || updatePropertyMutation.isPending}>
-                        {(createPropertyMutation.isPending || updatePropertyMutation.isPending) ? "처리 중..." : editingProperty ? "수정" : "등록"}
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
+          {/* 속성 폼 - Dialog 없이 단순 인라인 폼으로 구현 */}
+          {openPropertyDialog && (
+            <div className="mt-6">
+              <InlinePropertyForm 
+                onClose={handleCloseDialog}
+                property={editingProperty} 
+              />
+            </div>
           )}
         </TabsContent>
 
@@ -904,14 +471,34 @@ export default function AdminPageFixed() {
         <TabsContent value="news">
           <Card>
             <CardHeader>
-              <CardTitle>뉴스 목록</CardTitle>
-              <CardDescription>
-                등록된 뉴스 목록을 관리합니다.
-              </CardDescription>
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle>뉴스 목록</CardTitle>
+                  <CardDescription>
+                    등록된 뉴스 목록을 관리합니다.
+                  </CardDescription>
+                </div>
+                <Button 
+                  onClick={() => fetchNewsMutation.mutate()}
+                  disabled={fetchNewsMutation.isPending}
+                >
+                  {fetchNewsMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      수집 중...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      뉴스 수동 수집
+                    </>
+                  )}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
-                <TableCaption>총 {displayNews?.length || 0}개의 뉴스</TableCaption>
+                <TableCaption>총 {news?.length || 0}개의 뉴스</TableCaption>
                 <TableHeader>
                   <TableRow>
                     <TableHead>ID</TableHead>
@@ -922,7 +509,7 @@ export default function AdminPageFixed() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {displayNews.map((item) => (
+                  {news?.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">{item.id}</TableCell>
                       <TableCell className="max-w-[300px] truncate">{item.title}</TableCell>
@@ -937,12 +524,11 @@ export default function AdminPageFixed() {
                           variant="destructive"
                           size="icon"
                           onClick={() => {
-                            if (window.confirm("정말로 이 뉴스를 삭제하시겠습니까?")) {
+                            if (confirm("정말로 이 뉴스를 삭제하시겠습니까?")) {
                               deleteNewsMutation.mutate(item.id);
                             }
                           }}
                           disabled={isDeletingNews === item.id}
-                          type="button"
                         >
                           {isDeletingNews === item.id ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -969,7 +555,7 @@ export default function AdminPageFixed() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {isLoadingUsers && !usersLoaded ? (
+              {isLoadingUsers ? (
                 <div className="flex items-center justify-center py-10">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
@@ -979,7 +565,7 @@ export default function AdminPageFixed() {
                 </div>
               ) : (
                 <Table>
-                  <TableCaption>총 {displayUsers?.length || 0}명의 사용자</TableCaption>
+                  <TableCaption>총 {users?.length || 0}명의 사용자</TableCaption>
                   <TableHeader>
                     <TableRow>
                       <TableHead>ID</TableHead>
@@ -991,7 +577,7 @@ export default function AdminPageFixed() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {displayUsers.map((user) => (
+                    {users?.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">{user.id}</TableCell>
                         <TableCell>{user.username}</TableCell>
@@ -1014,7 +600,7 @@ export default function AdminPageFixed() {
                                 return;
                               }
                               if (
-                                window.confirm(
+                                confirm(
                                   "정말로 이 사용자를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다."
                                 )
                               ) {
@@ -1024,7 +610,6 @@ export default function AdminPageFixed() {
                             disabled={
                               isDeletingUser === user.id || user.role === "admin"
                             }
-                            type="button"
                           >
                             {isDeletingUser === user.id ? (
                               <Loader2 className="h-4 w-4 animate-spin" />

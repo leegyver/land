@@ -92,7 +92,7 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
     floor: null,
     totalFloors: null,
     direction: "",
-    elevator: false,
+    elevator: null,
     parking: "",
     heatingSystem: "",
     approvalDate: "",
@@ -106,7 +106,7 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
     clientName: "",
     clientPhone: "",
     specialNote: "",
-    coListing: false,
+    coListing: null,
     propertyDescription: "",
     privateNote: "",
   };
@@ -128,14 +128,16 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
         dealType: Array.isArray(property.dealType) && property.dealType.length > 0 
           ? property.dealType 
           : ["매매"],
-        featured: Boolean(property.featured),
-        supplyArea: property.supplyArea ? property.supplyArea.toString() : "",
-        privateArea: property.privateArea ? property.privateArea.toString() : "",
-        floor: property.floor ? property.floor.toString() : "",
-        totalFloors: property.totalFloors ? property.totalFloors.toString() : "",
-        deposit: property.deposit ? property.deposit.toString() : "",
-        monthlyRent: property.monthlyRent ? property.monthlyRent.toString() : "",
-        maintenanceFee: property.maintenanceFee ? property.maintenanceFee.toString() : "",
+        featured: property.featured === null ? null : Boolean(property.featured),
+        elevator: property.elevator === null ? null : Boolean(property.elevator),
+        coListing: property.coListing === null ? null : Boolean(property.coListing),
+        supplyArea: property.supplyArea ? property.supplyArea.toString() : null,
+        privateArea: property.privateArea ? property.privateArea.toString() : null,
+        floor: property.floor ? property.floor.toString() : null,
+        totalFloors: property.totalFloors ? property.totalFloors.toString() : null,
+        deposit: property.deposit ? property.deposit.toString() : null,
+        monthlyRent: property.monthlyRent ? property.monthlyRent.toString() : null,
+        maintenanceFee: property.maintenanceFee ? property.maintenanceFee.toString() : null,
       });
     } else {
       form.reset(defaultFormValues);
@@ -146,9 +148,29 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
   const onSubmit = async (data: PropertyFormValues) => {
     setIsSubmitting(true);
     try {
+      // 데이터 타입 변환
+      const formattedData = {
+        ...data,
+        // 숫자 필드 변환
+        price: data.price ? parseFloat(data.price.toString()) : null,
+        size: data.size ? parseFloat(data.size.toString()) : null,
+        supplyArea: data.supplyArea ? parseFloat(data.supplyArea.toString()) : null,
+        privateArea: data.privateArea ? parseFloat(data.privateArea.toString()) : null,
+        floor: data.floor ? parseInt(data.floor.toString()) : null,
+        totalFloors: data.totalFloors ? parseInt(data.totalFloors.toString()) : null,
+        deposit: data.deposit ? parseFloat(data.deposit.toString()) : null,
+        monthlyRent: data.monthlyRent ? parseFloat(data.monthlyRent.toString()) : null,
+        maintenanceFee: data.maintenanceFee ? parseFloat(data.maintenanceFee.toString()) : null,
+        
+        // 불리언 필드 변환
+        featured: data.featured === null ? false : Boolean(data.featured),
+        elevator: data.elevator === null ? false : Boolean(data.elevator),
+        coListing: data.coListing === null ? false : Boolean(data.coListing),
+      };
+
       if (property) {
         // 부동산 수정
-        const res = await apiRequest("PATCH", `/api/properties/${property.id}`, data);
+        const res = await apiRequest("PATCH", `/api/properties/${property.id}`, formattedData);
         if (!res.ok) {
           const errorData = await res.json();
           throw new Error(errorData.message || "부동산 수정에 실패했습니다");
@@ -162,7 +184,7 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
         });
       } else {
         // 새 부동산 생성
-        const res = await apiRequest("POST", "/api/properties", data);
+        const res = await apiRequest("POST", "/api/properties", formattedData);
         if (!res.ok) {
           const errorData = await res.json();
           throw new Error(errorData.message || "부동산 등록에 실패했습니다");
@@ -349,7 +371,7 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
                       <Checkbox
                         checked={field.value === true}
                         onCheckedChange={(checked) => {
-                          field.onChange(checked === true);
+                          field.onChange(checked);
                         }}
                       />
                     </FormControl>

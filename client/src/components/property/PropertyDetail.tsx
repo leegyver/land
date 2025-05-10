@@ -497,12 +497,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
             </div>
           )}
           
-          {/* 문의 게시판을 매물 설명 위쪽으로 이동 */}
-          <Card className="mt-8 mb-8">
-            <CardContent className="pt-6">
-              {/* 매물 문의게시판은 매물 특이사항 아래로 이동됨 */}
-            </CardContent>
-          </Card>
+          {/* 불필요한 박스 제거 */}
           
           <div className="mt-8">
             {/* 매물 설명은 매물 정보 상단에 표시하므로 여기서는 제거 */}

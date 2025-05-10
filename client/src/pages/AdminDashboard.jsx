@@ -188,13 +188,22 @@ function AdminDashboard() {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">부동산 관리</h2>
-              <a 
-                href="/admin-old"
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md inline-flex items-center"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                고급 관리 페이지
-              </a>
+              <div className="flex space-x-2">
+                <a 
+                  href="/properties/new"
+                  className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md inline-flex items-center"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  새 부동산 등록
+                </a>
+                <a 
+                  href="/admin-old"
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md inline-flex items-center"
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  고급 관리 페이지
+                </a>
+              </div>
             </div>
             
             {loading.properties ? (
@@ -238,6 +247,12 @@ function AdminDashboard() {
                           <TableCell>{property.price}</TableCell>
                           <TableCell>
                             <div className="flex space-x-2">
+                              <a 
+                                href={`/properties/edit/${property.id}`}
+                                className="inline-flex h-8 items-center justify-center rounded-md bg-blue-500 px-2 text-sm font-medium text-white shadow hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </a>
                               <Button 
                                 variant="destructive" 
                                 size="sm"

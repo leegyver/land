@@ -339,10 +339,11 @@ function PropertyForm() {
       // 서버에 맞게 데이터 타입 변환하기
       const submissionData = {
         ...formData,
-        // 숫자 필드들 명시적으로 숫자 타입으로 변환
+        // 숫자 필드들 처리
         agentId: Number(formData.agentId),
         totalFloors: Number(formData.totalFloors || 0),
-        size: Number(formData.size || 0),
+        // size는 서버에서 string으로 처리하므로 그대로 전송
+        size: formData.size || "0",
         bedrooms: Number(formData.bedrooms),
         bathrooms: Number(formData.bathrooms),
         featuredImageIndex: featuredImageIndex
@@ -521,8 +522,14 @@ function PropertyForm() {
                       id="size"
                       name="size"
                       type="text"
-                      value={formData.size}
-                      onChange={handleChange}
+                      value={formData.size || ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData(prev => ({
+                          ...prev,
+                          size: val
+                        }));
+                      }}
                       required
                     />
                   </div>

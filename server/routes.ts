@@ -364,30 +364,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // 이 부분에서 로그를 추가하여 디버깅
           console.log(`매물 ID ${p.id}의 지역: "${propertyDistrict}", 검색 지역: "${searchDistrict}"`);
           
-          // 검색 조건 분석: 읍/면 단위 검색을 지원
+          // 검색 조건 분석: 정확한 일치 검색 (등록 시와 동일한 지역명 사용)
           let isMatch = false;
           
-          // 정확한 일치 케이스 (드물지만 완전히 일치하는 경우)
+          // 정확한 일치 케이스 
           if (propertyDistrict === searchDistrict) {
             isMatch = true;
           }
-          // 강화군 특수 케이스
-          else if (searchDistrict === '강화군') {
-            // 강화군 내의 어떤 지역이든 매칭
-            isMatch = true;
+          // 강화군외 특수 케이스 (district 필드가 비어있거나 '강화'가 포함되지 않은 경우)
+          else if (searchDistrict === '강화군외') {
+            isMatch = !propertyDistrict.includes('강화') || propertyDistrict === '';
           }
-          // 접두어 매칭 (예: 검색어가 '강화읍'일 때 '강화읍 갑곳리' 매칭)
-          else if (propertyDistrict.startsWith(searchDistrict)) {
+          // all인 경우 모든 매물 표시
+          else if (searchDistrict === 'all') {
             isMatch = true;
-          }
-          // 부분 매칭 (예: 검색어가 '강화읍'이고 실제 값이 '갑곳리 강화읍' 같은 경우)
-          else if (propertyDistrict.includes(` ${searchDistrict}`)) {
-            isMatch = true;
-          }
-          // 강화외지역 특수 케이스 처리
-          else if (searchDistrict === '강화외지역') {
-            // '강화'라는 단어가 포함되지 않는 지역은 강화외지역으로 간주
-            isMatch = !propertyDistrict.includes('강화');
           }
           
           if (isMatch) {

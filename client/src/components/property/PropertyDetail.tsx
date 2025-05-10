@@ -61,25 +61,9 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   
-  // 카카오 SDK 초기화
+  // 컴포넌트 마운트 시 필요한 초기화 작업
   useEffect(() => {
-    try {
-      // 직접 API 키 할당
-      const KAKAO_API_KEY = "2f6ff1b2e516329499e3e785899159e9";
-      console.log("카카오 SDK 초기화 시작");
-      
-      if (window.Kakao && !window.Kakao.isInitialized()) {
-        console.log("Kakao SDK 로드됨, 초기화 시도 중...");
-        window.Kakao.init(KAKAO_API_KEY);
-        console.log("카카오 SDK 초기화 완료:", window.Kakao.isInitialized());
-      } else if (!window.Kakao) {
-        console.warn("카카오 SDK가 로드되지 않았습니다.");
-      } else {
-        console.log("카카오 SDK가 이미 초기화되어 있습니다.");
-      }
-    } catch (e) {
-      console.error("카카오 SDK 초기화 중 오류 발생:", e);
-    }
+    // 향후 추가 초기화 작업이 필요할 경우 이곳에 작성
   }, []);
   
   const { data: propertyData, isLoading: propertyLoading, error: propertyError } = useQuery<PropertyType>({
@@ -650,95 +634,37 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                   {/* 카카오톡 공유 버튼 */}
                   <Button 
                     variant="outline" 
-                    className="w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-900 border-yellow-300"
+                    className="w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-900 border-yellow-300 relative pl-10"
                     onClick={() => {
                       try {
-                        console.log("카카오톡 공유 버튼 클릭");
-                        console.log("Kakao SDK 로드됨:", !!window.Kakao);
-                        console.log("Kakao Share 로드됨:", !!(window.Kakao && window.Kakao.Share));
+                        // 공유할 URL (현재 페이지 URL)
+                        const shareUrl = encodeURIComponent(window.location.href);
                         
-                        if (window.Kakao && window.Kakao.Share) {
-                          // 이미지 URL 획득
-                          const imageUrl = images && images.length > 0 ? 
-                            images[currentImageIndex] : defaultImage;
-                          
-                          console.log("공유할 이미지 URL:", imageUrl);
-                          
-                          // 공유할 URL (현재 페이지 URL)
-                          const shareUrl = window.location.href;
-                          console.log("공유할 URL:", shareUrl);
-                          
-                          // 공유할 제목과 설명
-                          const title = `[한국부동산] ${property.title}`;
-                          let description = `${property.district} 위치 - ${property.type}`;
-                          if (property.price) {
-                            description += ` - ${formatPrice(property.price)}`;
-                          }
-                          
-                          console.log("공유할 제목:", title);
-                          console.log("공유할 설명:", description);
-                          
-                          // 데이터 URL인지 확인 (base64 이미지)
-                          const isDataUrl = (url: string) => {
-                            return url.startsWith('data:');
-                          };
-                          
-                          // 절대 URL 확인
-                          const isAbsoluteUrl = (url: string) => {
-                            return /^(?:https?:)?\/\//i.test(url);
-                          };
-                          
-                          // 이미지 처리
-                          let absoluteImageUrl;
-                          if (isDataUrl(imageUrl)) {
-                            // 데이터 URL인 경우 대체 이미지 사용
-                            absoluteImageUrl = 'https://via.placeholder.com/800x600?text=Real+Estate+Property';
-                          } else if (isAbsoluteUrl(imageUrl)) {
-                            // 이미 절대 URL인 경우
-                            absoluteImageUrl = imageUrl;
-                          } else {
-                            // 상대 URL을 절대 URL로 변환
-                            absoluteImageUrl = `${window.location.origin}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
-                          }
-                          
-                          console.log("절대 이미지 URL:", absoluteImageUrl);
-                          
-                          // 카카오톡 공유하기 실행
-                          window.Kakao.Share.sendDefault({
-                            objectType: 'feed',
-                            content: {
-                              title: title,
-                              description: description,
-                              imageUrl: absoluteImageUrl,
-                              link: {
-                                mobileWebUrl: shareUrl,
-                                webUrl: shareUrl,
-                              },
-                            },
-                            buttons: [
-                              {
-                                title: '매물 보기',
-                                link: {
-                                  mobileWebUrl: shareUrl,
-                                  webUrl: shareUrl,
-                                },
-                              },
-                            ],
-                          });
-                          
-                          console.log("카카오톡 공유 성공");
-                        } else {
-                          // 카카오 SDK가 없는 경우 알림
-                          console.error("카카오 SDK가 로드되지 않았습니다.");
-                          alert('카카오톡 공유 기능을 사용할 수 없습니다. 페이지를 새로고침하거나 잠시 후 다시 시도해주세요.');
-                        }
+                        // 카카오 공유하기 웹 페이지로 리디렉션
+                        // 이 방식은 SDK 인증 문제를 우회합니다
+                        const kakaoShareUrl = `https://sharer.kakao.com/talk/friends/picker/link?app_key=2f6ff1b2e516329499e3e785899159e9&meta=${encodeURIComponent(
+                          JSON.stringify({
+                            title: `[한국부동산] ${property.title}`,
+                            description: `${property.district} 위치 - ${property.type} - ${formatPrice(property.price)}`,
+                            image_url: 'https://developers.kakao.com/assets/img/about/logos/kakaolink/kakaolink_btn_medium.png'
+                          })
+                        )}&webUrl=${shareUrl}`;
+                        
+                        // 새 창에서 열기
+                        window.open(kakaoShareUrl, '_blank');
+                        
                       } catch (error) {
                         console.error("카카오톡 공유 중 오류 발생:", error);
-                        alert('카카오톡 공유 중 오류가 발생했습니다: ' + (error instanceof Error ? error.message : String(error)));
+                        alert('카카오톡 공유 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
                       }
                     }}
                   >
-                    <Share2 className="w-4 h-4 mr-2" />
+                    <div className="absolute left-2 top-1/2 transform -translate-y-1/2 w-6 h-6 flex items-center justify-center">
+                      <svg width="22" height="20" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+                        <path fill="#FFE812" d="M128 36.108C57.655 36.108 0 80.783 0 135.993c0 34.742 23.34 65.333 58.572 83.97c-2.564 9.503-9.247 34.391-10.577 39.688c-1.652 6.531 2.407 6.451 5.063 4.693c2.097-1.387 33.289-22.525 46.723-31.673c9.141 1.323 18.638 2.022 28.22 2.022c70.345 0 128-44.675 128-99.885c0-55.21-57.655-99.885-128-99.885"/>
+                        <path fill="#381F1F" d="M70.318 146.234c-3.993 0-7.241-3.248-7.241-7.241V113.95c0-3.993 3.248-7.241 7.241-7.241c3.993 0 7.241 3.248 7.241 7.241v25.043c0 3.993-3.248 7.241-7.241 7.241zm33.507 0c-3.993 0-7.241-3.248-7.241-7.241V113.95c0-3.993 3.248-7.241 7.241-7.241c3.993 0 7.241 3.248 7.241 7.241v25.043c0 3.993-3.248 7.241-7.241 7.241zm33.507 0c-3.993 0-7.241-3.248-7.241-7.241V113.95c0-3.992 3.248-7.241 7.241-7.241c3.993 0 7.241 3.249 7.241 7.241v25.043c0 3.993-3.248 7.241-7.241 7.241zm33.508 0c-3.993 0-7.241-3.248-7.241-7.241V113.95c0-3.992 3.248-7.241 7.241-7.241c3.993 0 7.241 3.249 7.241 7.241v25.043c0 3.993-3.248 7.241-7.241 7.241z"/>
+                      </svg>
+                    </div>
                     카카오톡으로 공유하기
                   </Button>
                 </div>

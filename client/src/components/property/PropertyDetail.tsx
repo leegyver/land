@@ -26,8 +26,8 @@ declare global {
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-// 더 이상 사용하지 않음
-// import { RenderAfterNavermapsLoaded, NaverMap, Marker } from "react-naver-maps";
+// 네이버 지도 관련 임포트
+import { RenderAfterNavermapsLoaded, NaverMap, Marker } from "react-naver-maps";
 // 카카오톡 이미지 가져오기
 import kakaoImage from "../../assets/kakao.jpg";
 import { Property as PropertyType } from "@shared/schema";
@@ -716,11 +716,27 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
           <div className="bg-gray-50 rounded-lg overflow-hidden h-64 mb-4">
             {/* 실제 매물 위치 네이버 지도 표시 */}
             <div style={{ width: '100%', height: '100%' }}>
-              <img 
-                src={`https://naveropenapi.apigw.ntruss.com/map-static/v2/raster-cors?w=400&h=300&center=${getPropertyLocation().lng},${getPropertyLocation().lat}&level=14&X-NCP-APIGW-API-KEY=${NAVER_CLIENT_ID}`}
-                alt="위치 지도" 
-                className="w-full h-full object-cover"
-              />
+              <RenderAfterNavermapsLoaded
+                ncpClientId={import.meta.env.VITE_NAVER_CLIENT_ID || window.NAVER_CLIENT_ID}
+                error={<p>네이버 지도를 불러올 수 없습니다.</p>}
+                loading={<p>지도를 불러오는 중...</p>}
+              >
+                <NaverMap
+                  mapDivId={'map'}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                  }}
+                  defaultCenter={getPropertyLocation()}
+                  defaultZoom={15}
+                >
+                  <Marker
+                    position={getPropertyLocation()}
+                    animation={2}
+                    onClick={() => alert(`${property.title}\n${property.district}`)}
+                  />
+                </NaverMap>
+              </RenderAfterNavermapsLoaded>
             </div>
           </div>
           

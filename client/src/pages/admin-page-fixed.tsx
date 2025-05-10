@@ -321,11 +321,25 @@ export default function AdminPageFixed() {
   // 다중 뉴스 삭제 뮤테이션
   const bulkDeleteNewsMutation = useMutation({
     mutationFn: async (ids: number[]) => {
-      console.log("클라이언트에서 삭제 요청할 ID 목록:", ids);
+      console.log("클라이언트에서 삭제 요청할 ID 목록 (타입):", 
+        ids.map(id => ({ id, type: typeof id })));
+      
+      // 문자열 ID를 숫자로 변환 (필요시)
+      const numericIds = ids.map(id => Number(id));
+      console.log("변환된 숫자 ID 목록:", numericIds);
+      
       setIsBulkDeletingNews(true);
       
       try {
-        const res = await apiRequest("POST", "/api/news/bulk-delete", { ids });
+        // 일괄 삭제 요청 전 뉴스 목록 확인
+        const newsRes = await fetch("/api/news");
+        const newsList = await newsRes.json();
+        console.log("삭제 전 뉴스 목록:", newsList.map(n => ({ id: n.id, title: n.title })));
+        
+        // 요청 전송
+        const res = await apiRequest("POST", "/api/news/bulk-delete", { 
+          ids: numericIds  // 숫자 ID 배열로 전송
+        });
         console.log("서버 응답 상태:", res.status);
         
         if (!res.ok) {
@@ -336,6 +350,12 @@ export default function AdminPageFixed() {
         
         const responseData = await res.json();
         console.log("서버 성공 응답:", responseData);
+        
+        // 삭제 후 뉴스 목록 다시 확인 
+        const afterNewsRes = await fetch("/api/news");
+        const afterNewsList = await afterNewsRes.json();
+        console.log("삭제 후 뉴스 목록:", afterNewsList.map(n => ({ id: n.id, title: n.title })));
+        
         return responseData;
       } catch (error) {
         console.error("API 호출 중 예외 발생:", error);

@@ -211,10 +211,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 해당 매물에 대한 문의글 목록 가져오기
       const inquiries = await storage.getPropertyInquiries(propertyId);
       
-      // 사용자가 작성한 문의글만 필터링 (관리자는 모든 문의글 볼 수 있음)
-      const filteredInquiries = isAdmin 
-        ? inquiries 
-        : inquiries.filter(inquiry => inquiry.userId === user.id);
+      // 문의글 필터링 (다음 조건에 따라 내용 확인 가능)
+      // 1. 관리자인 경우: 모든 문의글 볼 수 있음
+      // 2. 일반 사용자인 경우:
+      //   - 본인이 작성한 문의글은 모두 볼 수 있음
+      //   - 답변글은 자신이 작성한 문의글의 답변만 볼 수 있음
+      
+      const filteredInquiries = inquiries.filter(inquiry => {
+        // 관리자는 모든 글 볼 수 있음
+        if (isAdmin) return true;
+        
+        // 자신이 작성한 글은 볼 수 있음
+        if (inquiry.userId === user.id) return true;
+        
+        // 답변글인 경우 자신이 작성한 문의글의 답변만 볼 수 있음
+        if (inquiry.isReply && inquiry.parentId) {
+          // 원글 작성자 찾기
+          const parentInquiry = inquiries.find(i => i.id === inquiry.parentId);
+          return parentInquiry?.userId === user.id;
+        }
+        
+        // 그 외의 경우는 접근 불가
+        return false;
+      });
         
       res.json(filteredInquiries);
     } catch (error) {

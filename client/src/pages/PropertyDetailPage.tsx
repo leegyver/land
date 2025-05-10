@@ -35,7 +35,8 @@ const PropertyDetailPage = () => {
           }
         />
         {property && <meta property="og:image" content={
-          Array.isArray(property.imageUrls) && property.imageUrls.length > 0 && property.featuredImageIndex !== undefined
+          Array.isArray(property.imageUrls) && property.imageUrls.length > 0 && 
+          typeof property.featuredImageIndex === 'number'
             ? property.imageUrls[property.featuredImageIndex]
             : (property.imageUrls && property.imageUrls.length > 0 
                 ? property.imageUrls[0] 

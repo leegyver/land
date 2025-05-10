@@ -102,17 +102,19 @@ const detailedDistricts: DetailedDistrictsType = {
 const propertyFormSchema = insertPropertySchema.extend({
   // 기본 정보
   price: z
-    .string()
-    .min(1, "가격은 필수 입력 항목입니다")
-    .refine((val) => !isNaN(parseInt(val)), {
-      message: "가격은 숫자 형식이어야 합니다",
-    }),
+    .union([
+      z.string().min(1, "가격은 필수 입력 항목입니다").refine((val) => !isNaN(Number(val)), {
+        message: "가격은 숫자 형식이어야 합니다",
+      }),
+      z.number().min(1, "가격은 필수 입력 항목입니다")
+    ]),
   size: z
-    .string()
-    .min(1, "면적은 필수 입력 항목입니다")
-    .refine((val) => !isNaN(parseFloat(val)), {
-      message: "면적은 숫자 형식이어야 합니다",
-    }),
+    .union([
+      z.string().min(1, "면적은 필수 입력 항목입니다").refine((val) => !isNaN(Number(val)), {
+        message: "면적은 숫자 형식이어야 합니다",
+      }),
+      z.number().min(1, "면적은 필수 입력 항목입니다")
+    ]),
   
   // 위치 정보
   district: z.string().min(1, "읍면동은 필수 입력 항목입니다"),
@@ -121,13 +123,13 @@ const propertyFormSchema = insertPropertySchema.extend({
   unitNumber: z.string().optional(),
   
   // 면적 정보
-  supplyArea: z.string().optional(),
-  privateArea: z.string().optional(),
+  supplyArea: z.union([z.string().optional(), z.number().optional()]),
+  privateArea: z.union([z.string().optional(), z.number().optional()]),
   areaSize: z.string().optional(),
   
   // 건물 정보
-  floor: z.string().optional(),
-  totalFloors: z.string().optional(),
+  floor: z.union([z.string().optional(), z.number().optional()]),
+  totalFloors: z.union([z.string().optional(), z.number().optional()]),
   direction: z.string().optional(),
   elevator: z.boolean().optional().default(false),
   parking: z.string().optional(),
@@ -136,9 +138,9 @@ const propertyFormSchema = insertPropertySchema.extend({
   
   // 금액 정보
   dealType: z.array(z.string()).default([]),
-  deposit: z.string().optional(),
-  monthlyRent: z.string().optional(),
-  maintenanceFee: z.string().optional(),
+  deposit: z.union([z.string().optional(), z.number().optional()]),
+  monthlyRent: z.union([z.string().optional(), z.number().optional()]),
+  maintenanceFee: z.union([z.string().optional(), z.number().optional()]),
   
   // 연락처 정보
   ownerName: z.string().optional(),
@@ -155,8 +157,14 @@ const propertyFormSchema = insertPropertySchema.extend({
   privateNote: z.string().optional(),
   
   // 기존 필드들
-  bedrooms: z.number().min(0, "침실 수는 0 이상이어야 합니다"),
-  bathrooms: z.number().min(0, "욕실 수는 0 이상이어야 합니다"),
+  bedrooms: z.union([
+    z.string().optional().transform(val => val ? Number(val) : 0), 
+    z.number().min(0, "침실 수는 0 이상이어야 합니다")
+  ]),
+  bathrooms: z.union([
+    z.string().optional().transform(val => val ? Number(val) : 0), 
+    z.number().min(0, "욕실 수는 0 이상이어야 합니다")
+  ]),
   featured: z.boolean().optional().default(false),
 });
 

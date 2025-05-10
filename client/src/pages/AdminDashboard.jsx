@@ -190,7 +190,7 @@ function AdminDashboard() {
               <h2 className="text-xl font-bold">부동산 관리</h2>
               <div className="flex space-x-2">
                 <a 
-                  href="/properties/new"
+                  href="/admin/properties/new"
                   className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md inline-flex items-center"
                 >
                   <Plus className="h-4 w-4 mr-2" />
@@ -248,7 +248,7 @@ function AdminDashboard() {
                           <TableCell>
                             <div className="flex space-x-2">
                               <a 
-                                href={`/properties/edit/${property.id}`}
+                                href={`/admin/properties/edit/${property.id}`}
                                 className="inline-flex h-8 items-center justify-center rounded-md bg-blue-500 px-2 text-sm font-medium text-white shadow hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                               >
                                 <Edit className="h-4 w-4" />

@@ -40,8 +40,8 @@ function AppRouter() {
       <SimpleProtectedRoute path="/profile" component={ProfilePage} />
       <SimpleProtectedRoute path="/admin" component={AdminPage} admin={true} />
       <SimpleProtectedRoute path="/admin-old" component={AdminOldPage} admin={true} />
-      <SimpleProtectedRoute path="/properties/new" component={PropertyForm} admin={true} />
-      <SimpleProtectedRoute path="/properties/edit/:id" component={PropertyForm} admin={true} />
+      <SimpleProtectedRoute path="/admin/properties/new" component={PropertyForm} admin={true} />
+      <SimpleProtectedRoute path="/admin/properties/edit/:id" component={PropertyForm} admin={true} />
       <Route component={NotFound} />
     </Switch>
   );

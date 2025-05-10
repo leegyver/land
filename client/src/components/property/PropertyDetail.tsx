@@ -24,6 +24,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PropertyInquiryBoard from "@/components/property/PropertyInquiryBoard";
 
+import { RenderAfterNavermapsLoaded, NaverMap, Marker } from "react-naver-maps";
+
 interface PropertyDetailProps {
   propertyId: string;
 }
@@ -233,10 +235,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
               <TabsTrigger value="map">위치 정보</TabsTrigger>
             </TabsList>
             <TabsContent value="details" className="mt-4">
-              <h2 className="text-2xl font-bold mb-4">매물 설명</h2>
-              <p className="text-gray-medium whitespace-pre-line mb-6">
-                {property.description}
-              </p>
+              {/* 매물설명 필드 삭제 요청에 따라 제거됨 */}
               
               <h3 className="text-xl font-bold mb-4">주요 특징</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -429,12 +428,26 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
             </TabsContent>
             <TabsContent value="map">
               <div className="bg-gray-light p-2 rounded-lg overflow-hidden h-64">
-                {/* 카카오맵 API를 통해 지도를 불러오는 것이 더 좋지만 현재는 프로토타입으로 대체 */}
-                <img 
-                  src="https://images.unsplash.com/photo-1609587312208-cea54be969e7?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1200&h=600" 
-                  alt={`${property.district} 지역 지도`} 
-                  className="w-full h-full object-cover"
-                />
+                <RenderAfterNavermapsLoaded 
+                  ncpClientId={process.env.NAVER_CLIENT_ID || ""}
+                  error={<p>지도를 불러오는데 실패했습니다.</p>}
+                  loading={<p>지도를 불러오는 중...</p>}
+                >
+                  <NaverMap
+                    mapDivId={'maps-getting-started-uncontrolled'}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                    }}
+                    defaultCenter={{ lat: 37.7465, lng: 126.4829 }} // 강화군 중심 좌표
+                    defaultZoom={11}
+                  >
+                    <Marker 
+                      position={{ lat: 37.7465, lng: 126.4829 }}
+                      animation={2}
+                    />
+                  </NaverMap>
+                </RenderAfterNavermapsLoaded>
               </div>
               <div className="mt-4">
                 <h3 className="text-xl font-bold mb-2">위치 정보</h3>

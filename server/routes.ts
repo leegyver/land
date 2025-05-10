@@ -204,16 +204,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "해당 매물을 찾을 수 없습니다." });
       }
       
-      // 접근 권한 확인 (관리자인 경우만 허용 - 실제로는 매물 소유자도 확인할 수 있어야 하지만 현재 구현에서는 관리자만 가능)
+      // 접근 권한 확인 (관리자 또는 문의글을 작성한 사용자)
       const user = req.user as Express.User;
       const isAdmin = user.role === "admin";
       
-      if (!isAdmin) {
-        return res.status(403).json({ message: "해당 매물의 문의글에 접근할 권한이 없습니다." });
-      }
-      
+      // 해당 매물에 대한 문의글 목록 가져오기
       const inquiries = await storage.getPropertyInquiries(propertyId);
-      res.json(inquiries);
+      
+      // 사용자가 작성한 문의글만 필터링 (관리자는 모든 문의글 볼 수 있음)
+      const filteredInquiries = isAdmin 
+        ? inquiries 
+        : inquiries.filter(inquiry => inquiry.userId === user.id);
+        
+      res.json(filteredInquiries);
     } catch (error) {
       console.error("Error getting property inquiries:", error);
       res.status(500).json({ message: "문의글 목록을 가져오는 중 오류가 발생했습니다." });

@@ -21,8 +21,8 @@ declare global {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Kakao?: any;
     kakaoKey?: string;
-    naver?: any;
-    NAVER_CLIENT_ID?: string;
+    kakaoMapLoaded?: boolean;
+    kakao?: any;
   }
 }
 import { useAuth } from "@/hooks/use-auth";
@@ -312,42 +312,47 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
       }
     }
 
-    // 지도 초기화 - Leaflet으로 대체
-    if (property && mapRef.current && window.L) {
+    // 카카오 지도 초기화
+    if (property && mapRef.current && window.kakao) {
       const location = getPropertyLocation();
       
       try {
-        // 기존 지도 인스턴스가 있다면 제거
-        if (mapInstance.current) {
-          mapInstance.current.remove();
-          mapInstance.current = null;
+        // 지도 옵션 설정
+        const options = {
+          center: new window.kakao.maps.LatLng(location.lat, location.lng),
+          level: 3
+        };
+        
+        // 지도 생성
+        mapInstance.current = new window.kakao.maps.Map(mapRef.current, options);
+        
+        // 마커 생성
+        const markerPosition = new window.kakao.maps.LatLng(location.lat, location.lng);
+        const marker = new window.kakao.maps.Marker({
+          position: markerPosition
+        });
+        
+        // 마커를 지도에 표시
+        marker.setMap(mapInstance.current);
+        
+        // 지도 로드 성공 - 폴백 UI 숨기기
+        const mapFallback = document.getElementById("mapFallback");
+        if (mapFallback) {
+          mapFallback.classList.add("hidden");
         }
         
-        // Leaflet 지도 생성
-        mapInstance.current = window.L.map(mapRef.current).setView([location.lat, location.lng], 14);
-        
-        // OpenStreetMap 타일 레이어 추가
-        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(mapInstance.current);
-        
-        // 마커 추가
-        window.L.marker([location.lat, location.lng])
-          .addTo(mapInstance.current)
-          .bindPopup('매물 위치');
-          
-        console.log("Leaflet 지도 초기화 성공");
+        console.log("카카오 지도 초기화 성공");
       } catch (error) {
-        console.error("지도 초기화 실패:", error);
-        // 지도 로드 실패 시 네이버 지도 대체 링크 표시
+        console.error("카카오 지도 초기화 실패:", error);
+        // 지도 로드 실패 시 대체 UI 표시
         const mapFallback = document.getElementById("mapFallback");
         if (mapFallback) {
           mapFallback.classList.remove("hidden");
         }
       }
     } else {
-      // Leaflet이 로드되지 않았거나 mapRef가 없는 경우
-      console.log("Leaflet 또는 mapRef 없음");
+      // 카카오 지도 API가 로드되지 않음
+      console.log("카카오 지도 API 미로드 또는 mapRef 없음");
       const mapFallback = document.getElementById("mapFallback");
       if (mapFallback) {
         mapFallback.classList.remove("hidden");
@@ -768,16 +773,41 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
             </p>
           </div>
           
-          {/* 위치 정보 표시 - Leaflet OpenStreetMap 사용 */}
+          {/* 위치 정보 표시 - 카카오 지도 사용 */}
           <div className="bg-gray-50 rounded-lg overflow-hidden h-64 mb-4">
             <div className="w-full h-full relative">
-              {/* Leaflet 지도 컨테이너 */}
+              {/* 카카오 지도 컨테이너 */}
               <div ref={mapRef} className="w-full h-full" id="map"></div>
               
               {/* 지도 타이틀 오버레이 */}
               <div className="absolute top-4 left-0 right-0 z-10 flex flex-col items-center">
                 <div className="bg-white/90 rounded-md px-4 py-2 shadow-sm">
                   <h3 className="text-lg font-semibold">매물 위치</h3>
+                </div>
+              </div>
+              
+              {/* 지도 로딩 실패 시 대체 UI - 평소에는 숨김 처리 */}
+              <div 
+                className="absolute inset-0 bg-white/95 flex items-center justify-center hidden" 
+                id="mapFallback"
+              >
+                <div className="text-center p-6">
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4 mx-auto">
+                    <MapPin className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">매물 위치</h3>
+                  <p className="text-sm text-gray-500 mb-4">
+                    정확한 위치는 문의 시 안내해 드립니다.
+                  </p>
+                  <Button size="sm" onClick={() => {
+                    const fullAddress = [
+                      property.district,
+                      property.address
+                    ].filter(Boolean).join(' ');
+                    window.open(`https://map.kakao.com/link/search/${encodeURIComponent(fullAddress)}`, '_blank');
+                  }}>
+                    카카오 지도에서 보기
+                  </Button>
                 </div>
               </div>
               
@@ -788,9 +818,9 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                     property.district,
                     property.address
                   ].filter(Boolean).join(' ');
-                  window.open(`https://map.naver.com/p/search/${encodeURIComponent(fullAddress)}`, '_blank');
+                  window.open(`https://map.kakao.com/link/search/${encodeURIComponent(fullAddress)}`, '_blank');
                 }}>
-                  네이버 지도에서 보기
+                  카카오 지도에서 보기
                 </Button>
               </div>
             </div>

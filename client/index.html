@@ -10,16 +10,16 @@
       // 사용할 앱의 JavaScript 키를 설정
       window.kakaoKey = "2f6ff1b2e516329499e3e785899159e9";
     </script>
-    <!-- 네이버 지도 API -->
-    <script type="text/javascript" src="https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=5krkdv0tgs&submodules=geocoder"></script>
+    <!-- 카카오 지도 API -->
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=2f6ff1b2e516329499e3e785899159e9&libraries=services"></script>
     <script>
-      // 네이버 지도 API 키 설정
-      window.NAVER_CLIENT_ID = "5krkdv0tgs";
+      // 카카오 맵 초기화가 완료되었는지 확인하기 위한 플래그
+      window.kakaoMapLoaded = false;
+      // Kakao Maps SDK 로드 완료 이벤트 처리
+      window.addEventListener('load', function() {
+        window.kakaoMapLoaded = true;
+      });
     </script>
-    
-    <!-- Leaflet OpenStreetMap (대체 지도 솔루션) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   </head>
   <body>
     <div id="root"></div>

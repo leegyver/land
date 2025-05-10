@@ -15,7 +15,8 @@ export const properties = pgTable("properties", {
   size: numeric("size").notNull(), // 면적(㎡)
   bedrooms: integer("bedrooms").notNull(), // 방 개수
   bathrooms: integer("bathrooms").notNull(), // 화장실 개수
-  imageUrl: text("image_url").notNull(), // 이미지 URL
+  imageUrl: text("image_url").notNull(), // 단일 이미지 URL (하위 호환성 유지)
+  imageUrls: text("image_urls").array(), // 다중 이미지 URLs
   agentId: integer("agent_id").notNull(), // 담당 중개사 ID
   featured: boolean("featured").default(false), // 추천 매물 여부
   createdAt: timestamp("created_at").defaultNow(), // 등록일

@@ -56,6 +56,7 @@ function PropertyForm() {
     bedrooms: 1,
     bathrooms: 1,
     imageUrl: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914",
+    imageUrls: [], // 다중 이미지 저장용 배열
     agentId: "",
     featured: false,
     
@@ -98,6 +99,10 @@ function PropertyForm() {
     privateNote: "",
   });
   
+  // 이미지 업로드 관련 상태
+  const [uploadedImages, setUploadedImages] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
+  
   // 에이전트 목록 가져오기
   useEffect(() => {
     const fetchAgents = async () => {
@@ -131,13 +136,35 @@ function PropertyForm() {
           if (response.ok) {
             const data = await response.json();
             console.log("불러온 부동산 데이터:", data);
+            // 데이터 설정
             setFormData({
               ...data,
               dealType: data.dealType || ["매매"],
+              imageUrls: data.imageUrls || [],
               elevator: Boolean(data.elevator),
               coListing: Boolean(data.coListing),
               featured: Boolean(data.featured),
             });
+            
+            // 이미지가 있으면 이미지 미리보기에 추가
+            if (data.imageUrls && Array.isArray(data.imageUrls) && data.imageUrls.length > 0) {
+              const images = data.imageUrls.map((url, index) => ({
+                id: Date.now() + index,
+                url: url
+              }));
+              setUploadedImages(images);
+            }
+            // 단일 이미지가 있고 배열이 비어있으면 배열에도 추가
+            else if (data.imageUrl && (!data.imageUrls || data.imageUrls.length === 0)) {
+              setUploadedImages([{
+                id: Date.now(),
+                url: data.imageUrl
+              }]);
+              setFormData(prev => ({
+                ...prev,
+                imageUrls: [data.imageUrl]
+              }));
+            }
           } else {
             toast({
               title: "오류", 
@@ -435,14 +462,141 @@ function PropertyForm() {
                     />
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="imageUrl">이미지 URL</Label>
-                    <Input
-                      id="imageUrl"
-                      name="imageUrl"
-                      value={formData.imageUrl}
-                      onChange={handleChange}
-                    />
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>이미지 업로드 (최대 5장)</Label>
+                      <div className="flex flex-col gap-4">
+                        <div className="border rounded-md p-4 bg-gray-50">
+                          <div className="flex items-center justify-center w-full">
+                            <label 
+                              htmlFor="imageUpload" 
+                              className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 border-gray-300"
+                            >
+                              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                <svg className="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                                  <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                                </svg>
+                                <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">클릭하여 업로드</span></p>
+                                <p className="text-xs text-gray-500">PNG, JPG 또는 GIF (최대 10MB)</p>
+                              </div>
+                              <input 
+                                id="imageUpload" 
+                                type="file" 
+                                accept="image/*" 
+                                className="hidden" 
+                                onChange={(e) => {
+                                  if (uploadedImages.length >= 5) {
+                                    toast({
+                                      title: "최대 5장까지 업로드 가능합니다",
+                                      variant: "destructive"
+                                    });
+                                    return;
+                                  }
+
+                                  const file = e.target.files[0];
+                                  if (!file) return;
+                                  
+                                  const reader = new FileReader();
+                                  reader.onload = (event) => {
+                                    if (event.target) {
+                                      const newImage = {
+                                        id: Date.now(), // 임시 ID
+                                        url: event.target.result,
+                                        file: file
+                                      };
+                                      
+                                      // 기존 이미지에 추가
+                                      const updatedImages = [...uploadedImages, newImage];
+                                      setUploadedImages(updatedImages);
+                                      
+                                      // formData의 imageUrls 업데이트
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        imageUrls: updatedImages.map(img => img.url)
+                                      }));
+                                      
+                                      // 첫 번째 이미지는 대표 이미지로 설정
+                                      if (updatedImages.length === 1) {
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          imageUrl: updatedImages[0].url
+                                        }));
+                                      }
+                                    }
+                                  };
+                                  reader.readAsDataURL(file);
+                                  
+                                  // input 초기화
+                                  e.target.value = '';
+                                }}
+                                disabled={isUploading || uploadedImages.length >= 5}
+                              />
+                            </label>
+                          </div>
+                        </div>
+                        
+                        {/* 업로드된 이미지 미리보기 */}
+                        {uploadedImages.length > 0 && (
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-3">
+                            {uploadedImages.map((image, index) => (
+                              <div key={image.id} className="relative group">
+                                <img 
+                                  src={image.url} 
+                                  alt={`이미지 ${index + 1}`} 
+                                  className="h-24 w-full object-cover rounded-md border"
+                                />
+                                <div className="absolute inset-0 bg-black bg-opacity-30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-md">
+                                  <button
+                                    type="button"
+                                    className="p-1 bg-red-500 text-white rounded-full"
+                                    onClick={() => {
+                                      // 이미지 제거
+                                      const updatedImages = uploadedImages.filter(img => img.id !== image.id);
+                                      setUploadedImages(updatedImages);
+                                      
+                                      // formData 업데이트
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        imageUrls: updatedImages.map(img => img.url),
+                                        // 첫 번째 이미지를 대표 이미지로 설정 (없으면 기본값)
+                                        imageUrl: updatedImages.length > 0 
+                                          ? updatedImages[0].url 
+                                          : "https://images.unsplash.com/photo-1580587771525-78b9dba3b914"
+                                      }));
+                                    }}
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </button>
+                                  {index === 0 && (
+                                    <span className="absolute top-0 left-0 bg-green-500 text-white text-xs px-1 py-0.5 rounded-tr-md rounded-bl-md">
+                                      대표
+                                    </span>
+                                  )}
+                                </div>
+                                {index === 0 && (
+                                  <span className="absolute top-0 left-0 bg-green-500 text-white text-xs px-1 py-0.5 rounded-tr-md rounded-bl-md">
+                                    대표
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="imageUrl">대표 이미지 URL (선택사항)</Label>
+                      <Input
+                        id="imageUrl"
+                        name="imageUrl"
+                        value={formData.imageUrl}
+                        onChange={handleChange}
+                        placeholder="이미지를 업로드하거나 URL을 입력하세요"
+                      />
+                    </div>
                   </div>
                   
                   <div className="space-y-2">

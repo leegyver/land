@@ -249,7 +249,6 @@ export function PropertyFormModal({ open, onOpenChange, property }: PropertyForm
       district: "강화읍 갑곳리", 
       address: "",
       size: "",
-      imageUrl: "",
       agentId: 1,
       
       // 위치 정보

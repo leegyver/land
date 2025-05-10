@@ -243,7 +243,6 @@ export function PropertyFormCustomModal({ isOpen, onClose, property }: PropertyF
       district: "강화읍 갑곳리", 
       address: "",
       size: "",
-      imageUrl: "",
       agentId: 1,
       
       // 위치 정보
@@ -397,7 +396,6 @@ export function PropertyFormCustomModal({ isOpen, onClose, property }: PropertyF
         size: property.size.toString(),
         bedrooms: property.bedrooms,
         bathrooms: property.bathrooms,
-        imageUrl: property.imageUrl,
         agentId: property.agentId,
         featured: property.featured === null ? undefined : property.featured,
         buildingName: property.buildingName || "",
@@ -439,7 +437,6 @@ export function PropertyFormCustomModal({ isOpen, onClose, property }: PropertyF
         district: "강화읍 갑곳리", 
         address: "",
         size: "",
-        imageUrl: "",
         agentId: 1,
         
         // 위치 정보
@@ -734,21 +731,7 @@ export function PropertyFormCustomModal({ isOpen, onClose, property }: PropertyF
                 />
               </div>
 
-              <div>
-                <FormField
-                  control={form.control}
-                  name="imageUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>이미지 URL</FormLabel>
-                      <FormControl>
-                        <Input placeholder="이미지 URL" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+
 
               <div>
                 <FormField

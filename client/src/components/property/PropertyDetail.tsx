@@ -312,42 +312,46 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
       }
     }
 
-    // 네이버 지도 초기화
-    if (property && mapRef.current && window.naver) {
+    // 지도 초기화 - Leaflet으로 대체
+    if (property && mapRef.current && window.L) {
       const location = getPropertyLocation();
       
       try {
-        // 지도 생성
-        mapInstance.current = new window.naver.maps.Map(mapRef.current, {
-          center: new window.naver.maps.LatLng(location.lat, location.lng),
-          zoom: 15,
-          zoomControl: true,
-          zoomControlOptions: {
-            position: window.naver.maps.Position.TOP_RIGHT
-          }
-        });
-
-        // 마커 생성
-        new window.naver.maps.Marker({
-          map: mapInstance.current,
-          position: new window.naver.maps.LatLng(location.lat, location.lng),
-          title: property.title
-        });
+        // 기존 지도 인스턴스가 있다면 제거
+        if (mapInstance.current) {
+          mapInstance.current.remove();
+          mapInstance.current = null;
+        }
         
-        // 지도 로드 성공 - 폴백 UI 숨기기
-        document.getElementById("mapFallback")?.classList.add("hidden");
+        // Leaflet 지도 생성
+        mapInstance.current = window.L.map(mapRef.current).setView([location.lat, location.lng], 14);
+        
+        // OpenStreetMap 타일 레이어 추가
+        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(mapInstance.current);
+        
+        // 마커 추가
+        window.L.marker([location.lat, location.lng])
+          .addTo(mapInstance.current)
+          .bindPopup('매물 위치');
+          
+        console.log("Leaflet 지도 초기화 성공");
       } catch (error) {
-        console.error("네이버 지도 초기화 실패:", error);
-        // 지도 로드 실패 - 폴백 UI 표시
-        document.getElementById("mapFallback")?.classList.remove("hidden");
+        console.error("지도 초기화 실패:", error);
+        // 지도 로드 실패 시 네이버 지도 대체 링크 표시
+        const mapFallback = document.getElementById("mapFallback");
+        if (mapFallback) {
+          mapFallback.classList.remove("hidden");
+        }
       }
     } else {
-      // 네이버 지도 API가 로드되지 않음 - 폴백 UI 표시
-      setTimeout(() => {
-        if (!mapInstance.current) {
-          document.getElementById("mapFallback")?.classList.remove("hidden");
-        }
-      }, 1000); // 1초 후 확인
+      // Leaflet이 로드되지 않았거나 mapRef가 없는 경우
+      console.log("Leaflet 또는 mapRef 없음");
+      const mapFallback = document.getElementById("mapFallback");
+      if (mapFallback) {
+        mapFallback.classList.remove("hidden");
+      }
     }
   }, [property]);
   
@@ -764,10 +768,10 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
             </p>
           </div>
           
-          {/* 위치 정보 표시 - 네이버 지도 전체화면 표시 */}
+          {/* 위치 정보 표시 - Leaflet OpenStreetMap 사용 */}
           <div className="bg-gray-50 rounded-lg overflow-hidden h-64 mb-4">
             <div className="w-full h-full relative">
-              {/* 네이버 지도 컨테이너 */}
+              {/* Leaflet 지도 컨테이너 */}
               <div ref={mapRef} className="w-full h-full" id="map"></div>
               
               {/* 지도 타이틀 오버레이 */}
@@ -788,28 +792,6 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                 }}>
                   네이버 지도에서 보기
                 </Button>
-              </div>
-              
-              {/* 지도 로딩 실패 시 대체 UI - 평소에는 숨김 처리 */}
-              <div className="absolute inset-0 bg-white/95 flex items-center justify-center hidden" id="mapFallback">
-                <div className="text-center p-6">
-                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4 mx-auto">
-                    <MapPin className="w-6 h-6 text-primary" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">매물 위치</h3>
-                  <p className="text-sm text-gray-500 mb-4">
-                    정확한 위치는 문의 시 안내해 드립니다.
-                  </p>
-                  <Button size="sm" onClick={() => {
-                    const fullAddress = [
-                      property.district,
-                      property.address
-                    ].filter(Boolean).join(' ');
-                    window.open(`https://map.naver.com/p/search/${encodeURIComponent(fullAddress)}`, '_blank');
-                  }}>
-                    네이버 지도에서 보기
-                  </Button>
-                </div>
               </div>
             </div>
           </div>

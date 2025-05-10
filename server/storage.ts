@@ -9,7 +9,7 @@ import {
   favorites, type Favorite, type InsertFavorite
 } from "@shared/schema";
 import { db, pool } from "./db";
-import { eq, desc, and, gte, lte, like } from "drizzle-orm";
+import { eq, desc, and, gte, lte, like, inArray } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
@@ -775,6 +775,100 @@ export class DatabaseStorage implements IStorage {
       return true;
     } catch (error) {
       console.error("Error deleting property inquiry:", error);
+      return false;
+    }
+  }
+
+  // 관심 매물 (Favorites) 메서드
+  async getUserFavorites(userId: number): Promise<Favorite[]> {
+    try {
+      return await db.select()
+        .from(favorites)
+        .where(eq(favorites.userId, userId))
+        .orderBy(desc(favorites.createdAt));
+    } catch (error) {
+      console.error("Error fetching user favorites:", error);
+      return [];
+    }
+  }
+  
+  async getFavoriteProperties(userId: number): Promise<Property[]> {
+    try {
+      const favs = await db.select({
+          propertyId: favorites.propertyId
+        })
+        .from(favorites)
+        .where(eq(favorites.userId, userId));
+      
+      if (favs.length === 0) return [];
+      
+      const propertyIds = favs.map(f => f.propertyId);
+      
+      const results = await db.select()
+        .from(properties)
+        .where(inArray(properties.id, propertyIds));
+      
+      // 호환성을 위한 imageUrls 처리
+      return results.map(property => ({
+        ...property,
+        imageUrls: property.imageUrls || []
+      }));
+    } catch (error) {
+      console.error("Error fetching favorite properties:", error);
+      return [];
+    }
+  }
+  
+  async isFavorite(userId: number, propertyId: number): Promise<boolean> {
+    try {
+      const result = await db.select()
+        .from(favorites)
+        .where(and(
+          eq(favorites.userId, userId),
+          eq(favorites.propertyId, propertyId)
+        ));
+      
+      return result.length > 0;
+    } catch (error) {
+      console.error("Error checking if property is favorite:", error);
+      return false;
+    }
+  }
+  
+  async addFavorite(favorite: InsertFavorite): Promise<Favorite> {
+    try {
+      // 이미 존재하는지 확인
+      const existing = await this.isFavorite(favorite.userId, favorite.propertyId);
+      if (existing) {
+        throw new Error("이미 관심 매물로 등록되어 있습니다.");
+      }
+      
+      const result = await db.insert(favorites)
+        .values({
+          ...favorite,
+          createdAt: new Date()
+        })
+        .returning();
+      
+      return result[0];
+    } catch (error) {
+      console.error("Error adding favorite:", error);
+      throw error;
+    }
+  }
+  
+  async removeFavorite(userId: number, propertyId: number): Promise<boolean> {
+    try {
+      const result = await db.delete(favorites)
+        .where(and(
+          eq(favorites.userId, userId),
+          eq(favorites.propertyId, propertyId)
+        ))
+        .returning();
+      
+      return result.length > 0;
+    } catch (error) {
+      console.error("Error removing favorite:", error);
       return false;
     }
   }

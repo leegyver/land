@@ -6,7 +6,8 @@ import {
   insertInquirySchema, 
   insertPropertySchema, 
   insertNewsSchema, 
-  insertPropertyInquirySchema 
+  insertPropertyInquirySchema,
+  insertFavoriteSchema
 } from "@shared/schema";
 import { memoryCache } from "./cache";
 import { setupAuth } from "./auth";

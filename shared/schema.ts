@@ -172,7 +172,7 @@ export const insertNewsSchema = createInsertSchema(news).omit({
 export type News = typeof news.$inferSelect;
 export type InsertNews = z.infer<typeof insertNewsSchema>;
 
-// Property inquiry board schema
+// Property inquiry board schema (전방 선언)
 export const propertyInquiries = pgTable("property_inquiries", {
   id: serial("id").primaryKey(),
   propertyId: integer("property_id").notNull().references(() => properties.id, { onDelete: "cascade" }),
@@ -180,7 +180,7 @@ export const propertyInquiries = pgTable("property_inquiries", {
   title: text("title").notNull(),
   content: text("content").notNull(),
   isReply: boolean("is_reply").default(false).notNull(),
-  parentId: integer("parent_id").references(() => propertyInquiries.id),
+  parentId: integer("parent_id"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

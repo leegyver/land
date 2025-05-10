@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getQueryFn, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Property, User, News, insertPropertySchema } from "@shared/schema";
-import { PropertyFormDialog } from "@/components/admin/PropertyFormDialog";
+import { PropertyFormModal } from "@/components/admin/PropertyFormModal";
 import * as z from "zod";
 
 type PropertyFormValues = z.infer<typeof insertPropertySchema>;
@@ -440,18 +440,14 @@ export default function AdminPage() {
             </CardContent>
           </Card>
 
-          {/* 속성 폼 다이얼로그 - renderDialog prop을 사용하여 부모와 분리 */}
-          <PropertyFormDialog 
-            onSubmitSuccess={handleCloseDialog}
+          {/* 속성 폼 모달 */}
+          <PropertyFormModal 
+            open={openPropertyDialog}
+            onOpenChange={(open) => {
+              setOpenPropertyDialog(open);
+              if (!open) setEditingProperty(null);
+            }}
             property={editingProperty} 
-            renderDialog={(content) => (
-              <Dialog 
-                open={openPropertyDialog}
-                onOpenChange={(open) => !open && handleCloseDialog()}
-              >
-                {content}
-              </Dialog>
-            )} 
           />
         </TabsContent>
 

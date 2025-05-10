@@ -267,23 +267,7 @@ function PropertyForm() {
   
   // 셀렉트 필드 변경 핸들러
   const handleSelectChange = (name, value) => {
-    // city가 변경되면 district를 초기화
-    if (name === "city") {
-      setFormData({ 
-        ...formData, 
-        [name]: value,
-        district: "" // 도시가 변경되면 지역 초기화
-      });
-    } else if (name === "district" && value === "강화군") {
-      // 강화군이 선택되면 하위 지역(읍면동) 필드를 활성화하기 위한 준비
-      setFormData({ 
-        ...formData, 
-        [name]: value,
-        subdistrict: "" // 선택된 하위 지역 초기화
-      });
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
+    setFormData({ ...formData, [name]: value });
   };
   
   // 거래 유형 체크박스 핸들러

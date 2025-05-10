@@ -4,8 +4,9 @@ import { setupVite, serveStatic, log } from "./vite";
 import { setupNewsScheduler } from "./news-fetcher";
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// 파일 업로드 크기 제한 증가 (기본값 100kb → 10MB)
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 app.use((req, res, next) => {
   const start = Date.now();

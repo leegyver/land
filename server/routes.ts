@@ -192,11 +192,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Property Inquiry Board API
   app.get("/api/properties/:propertyId/inquiries", async (req, res) => {
     try {
-      // 인증 확인
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
-      }
-      
       const propertyId = parseInt(req.params.propertyId);
       const property = await storage.getProperty(propertyId);
       
@@ -204,9 +199,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "해당 매물을 찾을 수 없습니다." });
       }
       
-      // 접근 권한 확인 (관리자 또는 문의글을 작성한 사용자)
-      const user = req.user as Express.User;
-      const isAdmin = user.role === "admin";
+      // 사용자 인증 상태 확인
+      let user = null;
+      let isAdmin = false;
+      
+      if (req.isAuthenticated()) {
+        user = req.user as Express.User;
+        isAdmin = user.role === "admin";
+      }
       
       // 해당 매물에 대한 문의글 목록 가져오기
       const inquiries = await storage.getPropertyInquiries(propertyId);
@@ -217,14 +217,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // 1. 관리자인 경우: 모든 문의글 전체 내용 볼 수 있음
         if (isAdmin) return inquiry;
         
-        // 2. 자신이 작성한 글은 전체 내용 볼 수 있음
-        if (inquiry.userId === user.id) return inquiry;
+        // 2. 로그인한 사용자이고 자신이 작성한 글은 전체 내용 볼 수 있음
+        if (user && inquiry.userId === user.id) return inquiry;
         
-        // 3. 답변글인 경우 자신이 작성한 문의글의 답변만 내용을 볼 수 있음
-        if (inquiry.isReply && inquiry.parentId) {
+        // 3. 로그인한 사용자이고 답변글인 경우 자신이 작성한 문의글의 답변만 내용을 볼 수 있음
+        if (user && inquiry.isReply && inquiry.parentId) {
           // 원글 작성자 찾기
           const parentInquiry = inquiries.find(i => i.id === inquiry.parentId);
-          if (parentInquiry?.userId === user.id) return inquiry;
+          if (user && parentInquiry?.userId === user.id) return inquiry;
           
           // 원글 작성자가 아닌 경우 내용을 숨김
           return {

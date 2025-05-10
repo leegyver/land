@@ -43,9 +43,9 @@ function AdminDashboard() {
   // 데이터 로드 함수
   const loadData = async () => {
     try {
-      // 부동산 정보 로드
+      // 부동산 정보 로드 (캐시 무시하고 항상 최신 데이터 로드)
       setLoading(prev => ({ ...prev, properties: true }));
-      const propertiesRes = await fetch("/api/properties");
+      const propertiesRes = await fetch("/api/properties?skipCache=true");
       if (propertiesRes.ok) {
         const propertiesData = await propertiesRes.json();
         setProperties(propertiesData);
@@ -125,14 +125,9 @@ function AdminDashboard() {
           variant: "default"
         });
         
-        // 목록 업데이트
-        if (type === "property") {
-          setProperties(properties.filter(p => p.id !== id));
-        } else if (type === "news") {
-          setNews(news.filter(n => n.id !== id));
-        } else if (type === "user") {
-          setUsers(users.filter(u => u.id !== id));
-        }
+        // 항목이 삭제된 후 최신 데이터를 다시 로드
+        // 서버에서 캐시가 삭제되었을 테니, 다시 최신 데이터 로드
+        loadData();
       } else {
         const errorData = await response.json();
         throw new Error(errorData.message || "삭제 실패");

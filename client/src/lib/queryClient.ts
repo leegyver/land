@@ -26,10 +26,13 @@ export async function apiRequest(
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
+  customUrl?: string;
 }) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
+  ({ on401: unauthorizedBehavior, customUrl }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
+    // customUrl이 제공되면 그것을 사용, 아니면 queryKey
+    const url = customUrl || (queryKey[0] as string);
+    const res = await fetch(url, {
       credentials: "include",
     });
 

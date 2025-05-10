@@ -505,7 +505,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
           </Card>
           
           <div className="mt-8">
-            {/* 매물설명 필드 삭제 요청에 따라 제거됨 */}
+            {/* 매물 설명은 매물 정보 상단에 표시하므로 여기서는 제거 */}
             
             <h3 className="text-xl font-bold mb-4">주요 특징</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">

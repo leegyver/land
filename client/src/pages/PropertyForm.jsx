@@ -37,7 +37,6 @@ function PropertyForm() {
   
   const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
-  const [agents, setAgents] = useState([]);
   
   // 거래 유형 정의
   const dealTypeOptions = ["매매", "전세", "월세", "완료", "보류중"];
@@ -69,7 +68,6 @@ function PropertyForm() {
     bathrooms: 1,
     imageUrl: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914",
     imageUrls: [], // 다중 이미지 저장용 배열
-    agentId: "",
     featured: false,
     
     // 위치 정보
@@ -115,27 +113,7 @@ function PropertyForm() {
   const [uploadedImages, setUploadedImages] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
   
-  // 에이전트 목록 가져오기
-  useEffect(() => {
-    const fetchAgents = async () => {
-      try {
-        const response = await fetch("/api/agents");
-        if (response.ok) {
-          const data = await response.json();
-          setAgents(data);
-          
-          // 첫 번째 에이전트를 기본값으로 설정
-          if (data.length > 0 && !isEditMode) {
-            setFormData(prev => ({ ...prev, agentId: data[0].id }));
-          }
-        }
-      } catch (error) {
-        console.error("에이전트 로드 오류:", error);
-      }
-    };
-    
-    fetchAgents();
-  }, [isEditMode]);
+
   
   // 편집 모드일 경우 기존 데이터 로드
   useEffect(() => {
@@ -726,25 +704,7 @@ function PropertyForm() {
                     </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="agentId">담당 중개사</Label>
-                    <Select 
-                      name="agentId" 
-                      value={formData.agentId.toString()}
-                      onValueChange={(value) => handleSelectChange("agentId", parseInt(value))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="중개사 선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {agents.map(agent => (
-                          <SelectItem key={agent.id} value={agent.id.toString()}>
-                            {agent.name} ({agent.title})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+
                   
                   <div className="flex items-center space-x-2 pt-4">
                     <Checkbox

@@ -210,12 +210,13 @@ function AdminDashboard() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>번호</TableHead>
-                      <TableHead>제목</TableHead>
-                      <TableHead>유형</TableHead>
-                      <TableHead>위치</TableHead>
-                      <TableHead>가격</TableHead>
-                      <TableHead>작업</TableHead>
+                      <TableHead className="w-[80px]">번호</TableHead>
+                      <TableHead className="min-w-[200px]">제목/이미지</TableHead>
+                      <TableHead className="w-[120px]">유형</TableHead>
+                      <TableHead className="min-w-[150px]">위치</TableHead>
+                      <TableHead className="w-[120px]">가격</TableHead>
+                      <TableHead className="w-[100px]">거래유형</TableHead>
+                      <TableHead className="w-[100px]">작업</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

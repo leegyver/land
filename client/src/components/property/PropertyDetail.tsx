@@ -55,6 +55,15 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
       ? property.imageUrls 
       : (property.imageUrl ? [property.imageUrl] : [defaultImage])
   ) : [defaultImage];
+  
+  // 이미지 로딩 후 대표 이미지를 먼저 표시
+  React.useEffect(() => {
+    if (property && property.featuredImageIndex !== undefined && 
+        Array.isArray(property.imageUrls) && 
+        property.imageUrls[property.featuredImageIndex]) {
+      setCurrentImageIndex(property.featuredImageIndex);
+    }
+  }, [property]);
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length);
@@ -247,13 +256,178 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                 </div>
                 <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg flex flex-col items-center shadow-sm">
                   <Calendar className="text-primary mb-2 h-6 w-6" />
-                  <span className="font-bold text-lg">즉시 입주</span>
-                  <span className="text-sm text-gray-600">입주가능일</span>
+                  <span className="font-bold text-lg">{property.direction || "남향"}</span>
+                  <span className="text-sm text-gray-600">방향</span>
                 </div>
               </div>
+              
+              {/* 상세 부동산 정보 표 */}
+              <div className="mt-8 mb-6">
+                <h3 className="text-xl font-bold mb-4">상세 정보</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                  {/* 기본 정보 */}
+                  <div className="space-y-4">
+                    <div className="border-b pb-2">
+                      <h4 className="font-semibold text-lg mb-3">기본 정보</h4>
+                      <table className="w-full">
+                        <tbody>
+                          {property.buildingName && (
+                            <tr className="border-b border-gray-100">
+                              <td className="py-2 text-gray-600 w-1/3">건물명</td>
+                              <td className="py-2 font-medium">{property.buildingName}</td>
+                            </tr>
+                          )}
+                          {property.unitNumber && (
+                            <tr className="border-b border-gray-100">
+                              <td className="py-2 text-gray-600">동호수</td>
+                              <td className="py-2 font-medium">{property.unitNumber}</td>
+                            </tr>
+                          )}
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2 text-gray-600">주소</td>
+                            <td className="py-2 font-medium">{property.address}</td>
+                          </tr>
+                          {property.approvalDate && (
+                            <tr className="border-b border-gray-100">
+                              <td className="py-2 text-gray-600">사용승인</td>
+                              <td className="py-2 font-medium">{property.approvalDate}</td>
+                            </tr>
+                          )}
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2 text-gray-600">유형</td>
+                            <td className="py-2 font-medium">{property.type}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* 면적 정보 */}
+                    <div className="border-b pb-2">
+                      <h4 className="font-semibold text-lg mb-3">면적 정보</h4>
+                      <table className="w-full">
+                        <tbody>
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2 text-gray-600 w-1/3">공급면적</td>
+                            <td className="py-2 font-medium">{property.supplyArea ? `${property.supplyArea}m²` : `${property.size}m²`}</td>
+                          </tr>
+                          {property.privateArea && (
+                            <tr className="border-b border-gray-100">
+                              <td className="py-2 text-gray-600">전용면적</td>
+                              <td className="py-2 font-medium">{property.privateArea}m²</td>
+                            </tr>
+                          )}
+                          {property.areaSize && (
+                            <tr className="border-b border-gray-100">
+                              <td className="py-2 text-gray-600">평형</td>
+                              <td className="py-2 font-medium">{property.areaSize}</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* 건물 정보 */}
+                  <div className="space-y-4">
+                    <div className="border-b pb-2">
+                      <h4 className="font-semibold text-lg mb-3">건물 정보</h4>
+                      <table className="w-full">
+                        <tbody>
+                          {property.floor && (
+                            <tr className="border-b border-gray-100">
+                              <td className="py-2 text-gray-600 w-1/3">해당 층</td>
+                              <td className="py-2 font-medium">{property.floor}층</td>
+                            </tr>
+                          )}
+                          {property.totalFloors && (
+                            <tr className="border-b border-gray-100">
+                              <td className="py-2 text-gray-600">총 층수</td>
+                              <td className="py-2 font-medium">{property.totalFloors}층</td>
+                            </tr>
+                          )}
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2 text-gray-600">방 / 욕실</td>
+                            <td className="py-2 font-medium">방 {property.bedrooms}개 / 욕실 {property.bathrooms}개</td>
+                          </tr>
+                          {property.direction && (
+                            <tr className="border-b border-gray-100">
+                              <td className="py-2 text-gray-600">방향</td>
+                              <td className="py-2 font-medium">{property.direction}</td>
+                            </tr>
+                          )}
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2 text-gray-600">승강기</td>
+                            <td className="py-2 font-medium">{property.elevator ? "있음" : "없음"}</td>
+                          </tr>
+                          {property.parking && (
+                            <tr className="border-b border-gray-100">
+                              <td className="py-2 text-gray-600">주차</td>
+                              <td className="py-2 font-medium">{property.parking}</td>
+                            </tr>
+                          )}
+                          {property.heatingSystem && (
+                            <tr className="border-b border-gray-100">
+                              <td className="py-2 text-gray-600">난방방식</td>
+                              <td className="py-2 font-medium">{property.heatingSystem}</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* 금액 정보 */}
+                    <div className="border-b pb-2">
+                      <h4 className="font-semibold text-lg mb-3">금액 정보</h4>
+                      <table className="w-full">
+                        <tbody>
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2 text-gray-600 w-1/3">매매가</td>
+                            <td className="py-2 font-medium">{formatPrice(property.price)}</td>
+                          </tr>
+                          {property.deposit && Number(property.deposit) > 0 && (
+                            <tr className="border-b border-gray-100">
+                              <td className="py-2 text-gray-600">보증금</td>
+                              <td className="py-2 font-medium">{formatPrice(property.deposit)}</td>
+                            </tr>
+                          )}
+                          {property.monthlyRent && Number(property.monthlyRent) > 0 && (
+                            <tr className="border-b border-gray-100">
+                              <td className="py-2 text-gray-600">월세</td>
+                              <td className="py-2 font-medium">{formatPrice(property.monthlyRent)}</td>
+                            </tr>
+                          )}
+                          {property.maintenanceFee && Number(property.maintenanceFee) > 0 && (
+                            <tr className="border-b border-gray-100">
+                              <td className="py-2 text-gray-600">관리비</td>
+                              <td className="py-2 font-medium">{formatPrice(property.maintenanceFee)}</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* 특이사항 섹션 */}
+              {property.specialNote && (
+                <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <h4 className="font-semibold text-lg mb-2">매물 특이사항</h4>
+                  <p className="text-gray-700 whitespace-pre-line">{property.specialNote}</p>
+                </div>
+              )}
+              
+              {/* 부동산 상세 설명 */}
+              {property.propertyDescription && (
+                <div className="mb-6">
+                  <h4 className="font-semibold text-lg mb-2">매물 상세 설명</h4>
+                  <p className="text-gray-700 whitespace-pre-line">{property.propertyDescription}</p>
+                </div>
+              )}
             </TabsContent>
             <TabsContent value="map">
               <div className="bg-gray-light p-2 rounded-lg overflow-hidden h-64">
+                {/* 카카오맵 API를 통해 지도를 불러오는 것이 더 좋지만 현재는 프로토타입으로 대체 */}
                 <img 
                   src="https://images.unsplash.com/photo-1609587312208-cea54be969e7?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1200&h=600" 
                   alt={`${property.district} 지역 지도`} 
@@ -262,9 +436,14 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
               </div>
               <div className="mt-4">
                 <h3 className="text-xl font-bold mb-2">위치 정보</h3>
-                <p className="text-gray-medium">
-                  {property.district}, {property.city}는 중심부에 위치하고 있으며, 주변에 대중교통, 학교, 상업시설 등이 잘 갖추어져 있습니다.
-                </p>
+                <div className="space-y-4">
+                  <p className="text-gray-medium whitespace-pre-line">
+                    <span className="font-semibold block">주소:</span> {property.address}
+                  </p>
+                  <p className="text-gray-medium">
+                    <span className="font-semibold block">지역:</span> {property.district}, {property.city}
+                  </p>
+                </div>
               </div>
             </TabsContent>
           </Tabs>
@@ -331,7 +510,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                     <Maximize className="text-primary w-4 h-4 mr-2" />
                     <div>
                       <div className="text-xs text-gray-500">면적</div>
-                      <div className="font-medium">{property.size}m²</div>
+                      <div className="font-medium">{property.supplyArea ? `${property.supplyArea}m²` : `${property.size}m²`}</div>
                     </div>
                   </div>
                   <div className="flex items-center p-2 bg-gray-50 rounded-md">
@@ -356,6 +535,44 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                     </div>
                   </div>
                 </div>
+                
+                {/* 추가 정보 표시 - 더 많은 정보 담기 */}
+                {(property.floor || property.totalFloors || property.direction || property.elevator) && (
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    {property.floor && (
+                      <div className="flex items-center p-2 bg-gray-50 rounded-md">
+                        <div>
+                          <div className="text-xs text-gray-500">층수</div>
+                          <div className="font-medium">{property.floor}층 / {property.totalFloors || "?"}층</div>
+                        </div>
+                      </div>
+                    )}
+                    {property.direction && (
+                      <div className="flex items-center p-2 bg-gray-50 rounded-md">
+                        <div>
+                          <div className="text-xs text-gray-500">방향</div>
+                          <div className="font-medium">{property.direction}</div>
+                        </div>
+                      </div>
+                    )}
+                    {property.elevator !== undefined && (
+                      <div className="flex items-center p-2 bg-gray-50 rounded-md">
+                        <div>
+                          <div className="text-xs text-gray-500">승강기</div>
+                          <div className="font-medium">{property.elevator ? "있음" : "없음"}</div>
+                        </div>
+                      </div>
+                    )}
+                    {property.heatingSystem && (
+                      <div className="flex items-center p-2 bg-gray-50 rounded-md">
+                        <div>
+                          <div className="text-xs text-gray-500">난방</div>
+                          <div className="font-medium">{property.heatingSystem}</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
                 
                 {/* 카카오톡 문의하기 링크 */}
                 <a 

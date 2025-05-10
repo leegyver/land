@@ -44,9 +44,10 @@ function PropertyForm() {
   const propertyTypeOptions = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
   
   // 지역 정보 정의
-  const cityOptions = ["인천광역시"];
+  const cityOptions = ["인천광역시", "인천광역시 외"];
   const districtOptions = {
-    "인천광역시": ["강화군", "강화군 외"]
+    "인천광역시": ["강화군", "강화군 외"],
+    "인천광역시 외": ["기타 지역"]
   };
   
   const ganghwaSubdistrictOptions = [

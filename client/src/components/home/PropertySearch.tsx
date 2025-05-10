@@ -108,6 +108,7 @@ const PropertySearch = () => {
                         <SelectItem value="양사면">양사면</SelectItem>
                         <SelectItem value="하점면">하점면</SelectItem>
                         <SelectItem value="화도면">화도면</SelectItem>
+                        <SelectItem value="강화군">강화군</SelectItem>
                         <SelectItem value="강화외지역">강화외지역</SelectItem>
                       </SelectContent>
                     </Select>

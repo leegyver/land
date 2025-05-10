@@ -1,9 +1,13 @@
 import { Link } from "wouter";
-import { Heart, Maximize, Bed, Bath } from "lucide-react";
+import { Heart, Maximize, Bed, Bath, Loader2 } from "lucide-react";
 import { type Property } from "@shared/schema";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 interface PropertyCardProps {
   property: Property;
@@ -20,6 +24,82 @@ const formatPrice = (price: string | number) => {
 };
 
 const PropertyCard = ({ property }: PropertyCardProps) => {
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  
+  // 관심매물 상태 조회
+  const { data: favoriteData, isLoading: favoriteLoading } = useQuery<{ isFavorite: boolean }>({
+    queryKey: [`/api/properties/${property.id}/is-favorite`],
+    enabled: !!property.id && !!user, // 사용자가 로그인한 경우에만 쿼리 실행
+  });
+  
+  // 관심매물 추가 mutation
+  const addFavoriteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/favorites", { propertyId: Number(property.id) });
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "관심매물 등록",
+        description: "관심매물로 등록되었습니다.",
+      });
+      // 관심매물 상태 업데이트
+      queryClient.invalidateQueries({ queryKey: [`/api/properties/${property.id}/is-favorite`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/favorites'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "관심매물 등록 실패",
+        description: "관심매물 등록 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // 관심매물 삭제 mutation
+  const removeFavoriteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("DELETE", `/api/favorites/${property.id}`);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "관심매물 삭제",
+        description: "관심매물에서 삭제되었습니다.",
+      });
+      // 관심매물 상태 업데이트
+      queryClient.invalidateQueries({ queryKey: [`/api/properties/${property.id}/is-favorite`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/favorites'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "관심매물 삭제 실패",
+        description: "관심매물 삭제 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // 관심매물 토글 함수
+  const toggleFavorite = () => {
+    if (!user) {
+      toast({
+        title: "로그인 필요",
+        description: "관심매물 기능은 로그인이 필요합니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (favoriteData?.isFavorite) {
+      removeFavoriteMutation.mutate();
+    } else {
+      addFavoriteMutation.mutate();
+    }
+  };
+  
   return (
     <Card className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition group">
       <div className="relative h-60 overflow-hidden">
@@ -109,6 +189,8 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
                     type === "매매" ? "border-red-500 text-red-500" : 
                     type === "전세" ? "border-amber-500 text-amber-500" : 
                     type === "월세" ? "border-indigo-500 text-indigo-500" :
+                    type === "완료" ? "border-gray-500 text-gray-500" :
+                    type === "보류중" ? "border-pink-500 text-pink-500" :
                     "border-secondary text-secondary"
                   )}
                 >
@@ -118,8 +200,28 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
             </div>
             <span className="text-xl font-bold text-primary">{formatPrice(property.price)}</span>
           </div>
-          <button className="text-dark hover:text-primary transition-colors">
-            <Heart className="w-5 h-5" />
+          <button 
+            className={cn(
+              "flex items-center justify-center w-8 h-8 rounded-full transition-colors",
+              favoriteLoading && "opacity-50 cursor-not-allowed",
+              favoriteData?.isFavorite
+                ? "text-red-500 hover:text-red-600"
+                : "text-gray-400 hover:text-red-500"
+            )}
+            onClick={toggleFavorite}
+            disabled={favoriteLoading || addFavoriteMutation.isPending || removeFavoriteMutation.isPending}
+            aria-label={favoriteData?.isFavorite ? "관심매물 삭제" : "관심매물 추가"}
+          >
+            {favoriteLoading || addFavoriteMutation.isPending || removeFavoriteMutation.isPending ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Heart 
+                className={cn(
+                  "w-5 h-5", 
+                  favoriteData?.isFavorite && "fill-current"
+                )}
+              />
+            )}
           </button>
         </div>
       </div>

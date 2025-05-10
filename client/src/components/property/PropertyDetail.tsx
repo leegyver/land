@@ -576,12 +576,18 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                       <tbody>
                         <tr className="border-b border-gray-100">
                           <td className="py-2 text-gray-600 w-1/3">공급면적</td>
-                          <td className="py-2 font-medium">{property.supplyArea ? `${property.supplyArea}m²` : `${property.size}m²`}</td>
+                          <td className="py-2 font-medium">
+                            {property.supplyArea 
+                              ? `${property.supplyArea}m² (약 ${(Number(property.supplyArea) * 0.3025).toFixed(2)}평)` 
+                              : `${property.size}m² (약 ${(Number(property.size) * 0.3025).toFixed(2)}평)`}
+                          </td>
                         </tr>
                         {property.privateArea && (
                           <tr className="border-b border-gray-100">
                             <td className="py-2 text-gray-600">전용면적</td>
-                            <td className="py-2 font-medium">{property.privateArea}m²</td>
+                            <td className="py-2 font-medium">
+                              {`${property.privateArea}m² (약 ${(Number(property.privateArea) * 0.3025).toFixed(2)}평)`}
+                            </td>
                           </tr>
                         )}
                         {property.areaSize && (

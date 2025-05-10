@@ -79,7 +79,11 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
         <div className="flex items-center justify-between mb-4 p-2 bg-gray-50 rounded-md">
           <span className="flex items-center text-sm font-medium">
             <Maximize className="w-4 h-4 mr-1 text-primary" /> 
-            <span>{property.size}m²</span>
+            <span>
+              {property.size 
+                ? `${property.size}m² (약 ${(Number(property.size) * 0.3025).toFixed(1)}평)` 
+                : '정보 없음'}
+            </span>
           </span>
           <span className="flex items-center text-sm font-medium">
             <Bed className="w-4 h-4 mr-1 text-primary" /> 

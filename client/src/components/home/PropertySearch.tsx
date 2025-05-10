@@ -38,24 +38,36 @@ const PropertySearch = () => {
   });
 
   const onSubmit = (data: z.infer<typeof FormSchema>) => {
+    // 검색 파라미터 구성
     let searchParams = new URLSearchParams();
     
+    // 지역 설정 추가
     if (data.district !== "all") {
       searchParams.append("district", data.district);
     }
     
+    // 유형 설정 추가
     if (data.type !== "all") {
       searchParams.append("type", data.type);
     }
     
+    // 가격 범위 설정 추가
     if (data.priceRange !== "all") {
       const [min, max] = data.priceRange.split("-");
       if (min) searchParams.append("minPrice", min);
       if (max) searchParams.append("maxPrice", max);
     }
     
+    // 디버깅용 로그
+    console.log("검색 파라미터:", {
+      district: data.district,
+      type: data.type,
+      priceRange: data.priceRange
+    });
+    console.log("검색 URL:", `/properties?${searchParams.toString()}`);
+    
+    // 해당 URL로 페이지 이동
     setLocation(`/properties?${searchParams.toString()}`);
-    // Navigate to the properties page with search parameters
   };
 
   return (

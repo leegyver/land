@@ -672,49 +672,26 @@ export function SimplePropertyForm({ onClose, property }: SimplePropertyFormProp
               />
             </div>
 
-            <div>
-              <FormItem>
-                <FormLabel>읍면</FormLabel>
-                <Select
-                  onValueChange={handleDistrictChange}
-                  defaultValue={selectedMainDistrict}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="지역 선택" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {districts.map((district) => (
-                      <SelectItem key={district} value={district}>
-                        {district}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormItem>
-            </div>
-
-            <div>
+            <div className="md:col-span-2">
               <FormField
                 control={form.control}
                 name="district"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>읍면동</FormLabel>
+                    <FormLabel>지역 (읍면동리)</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="상세 지역 선택" />
+                          <SelectValue placeholder="지역 선택" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
-                        {detailedDistrictOptions.map((district) => (
-                          <SelectItem key={district} value={district}>
-                            {district}
+                      <SelectContent className="max-h-[300px]">
+                        {allLocations.map((location) => (
+                          <SelectItem key={location} value={location}>
+                            {location}
                           </SelectItem>
                         ))}
                       </SelectContent>

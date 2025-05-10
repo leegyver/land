@@ -292,11 +292,50 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
   
   // 이미지 로딩 후 대표 이미지를 먼저 표시
   useEffect(() => {
+    // 대표 이미지 표시
     if (property && 
         typeof property.featuredImageIndex === 'number' && 
         Array.isArray(property.imageUrls) && 
         property.imageUrls[property.featuredImageIndex]) {
       setCurrentImageIndex(property.featuredImageIndex);
+    }
+
+    // 카카오 SDK 초기화
+    if (property && window.Kakao && window.Kakao.isInitialized()) {
+      console.log("카카오 SDK가 이미 초기화되어 있습니다");
+    } else if (property && window.Kakao && !window.Kakao.isInitialized()) {
+      console.log("카카오 SDK 초기화 시도");
+      const key = window.kakaoKey || import.meta.env.VITE_KAKAO_API_KEY;
+      if (key) {
+        window.Kakao.init(key);
+        console.log("카카오 SDK 초기화 성공:", window.Kakao.isInitialized());
+      }
+    }
+
+    // 네이버 지도 초기화
+    if (property && mapRef.current && window.naver) {
+      const location = getPropertyLocation();
+      
+      try {
+        // 지도 생성
+        mapInstance.current = new window.naver.maps.Map(mapRef.current, {
+          center: new window.naver.maps.LatLng(location.lat, location.lng),
+          zoom: 15,
+          zoomControl: true,
+          zoomControlOptions: {
+            position: window.naver.maps.Position.TOP_RIGHT
+          }
+        });
+
+        // 마커 생성
+        new window.naver.maps.Marker({
+          map: mapInstance.current,
+          position: new window.naver.maps.LatLng(location.lat, location.lng),
+          title: property.title
+        });
+      } catch (error) {
+        console.error("네이버 지도 초기화 실패:", error);
+      }
     }
   }, [property]);
   

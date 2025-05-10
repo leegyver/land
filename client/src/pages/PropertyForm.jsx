@@ -232,9 +232,9 @@ function PropertyForm() {
               // 이미지 배열 사용
               imageList = [...data.imageUrls];
             } 
-            else if (imageUrl) {
+            else if (data.imageUrl) {
               // 단일 이미지가 있으면 배열에 추가
-              imageList = [imageUrl];
+              imageList = [data.imageUrl];
             }
             
             // 이미지 객체 배열로 변환
@@ -244,6 +244,15 @@ function PropertyForm() {
                 url: url
               }));
               setUploadedImages(images);
+              
+              // 대표 이미지 인덱스 설정
+              // 단일 imageUrl이 있고 그 URL이 imageUrls 배열에 있으면 해당 인덱스를 대표 이미지로 설정
+              if (data.imageUrl) {
+                const representativeIndex = imageList.findIndex(url => url === data.imageUrl);
+                if (representativeIndex !== -1) {
+                  setFeaturedImageIndex(representativeIndex);
+                }
+              }
               
               // 폼 데이터의 imageUrls도 업데이트
               setFormData(prev => ({
@@ -557,7 +566,12 @@ function PropertyForm() {
                   
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label>이미지 업로드 (최대 5장)</Label>
+                      <div className="flex justify-between items-center">
+                        <Label>이미지 업로드 (최대 5장)</Label>
+                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                          별표(⭐) 버튼을 클릭하여 대표 이미지를 지정할 수 있습니다
+                        </span>
+                      </div>
                       <div className="flex flex-col gap-4">
                         <div className="border rounded-md p-4 bg-gray-50">
                           <div className="flex items-center justify-center w-full">
@@ -570,7 +584,7 @@ function PropertyForm() {
                                   <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
                                 </svg>
                                 <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">클릭하여 업로드</span></p>
-                                <p className="text-xs text-gray-500">PNG, JPG 또는 GIF (최대 10MB)</p>
+                                <p className="text-xs text-gray-500">PNG, JPG 또는 GIF (최대 10MB, 자동 압축됨)</p>
                               </div>
                               <input 
                                 id="imageUpload" 
@@ -717,22 +731,26 @@ function PropertyForm() {
                                   {/* 대표 이미지 선택 버튼 */}
                                   <button
                                     type="button"
-                                    className={`absolute bottom-1 right-1 p-1 text-white rounded-full ${index === featuredImageIndex ? 'bg-green-500' : 'bg-gray-500'}`}
+                                    className={`absolute bottom-1 right-1 p-1.5 text-white rounded-full ${
+                                      index === featuredImageIndex 
+                                        ? 'bg-green-500 ring-2 ring-white' 
+                                        : 'bg-gray-500 bg-opacity-70 hover:bg-gray-500'
+                                    }`}
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setFeaturedImageIndex(index);
                                     }}
                                     title={index === featuredImageIndex ? "현재 대표 이미지입니다" : "대표 이미지로 설정"}
                                   >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill={index === featuredImageIndex ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={index === featuredImageIndex ? 0 : 2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                                     </svg>
                                   </button>
                                 </div>
                                 {/* 대표 이미지 표시 라벨 */}
                                 {index === featuredImageIndex && (
-                                  <span className="absolute top-0 left-0 bg-green-500 text-white text-xs px-1 py-0.5 rounded-tr-md rounded-bl-md">
-                                    대표
+                                  <span className="absolute top-0 left-0 bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-tr-md rounded-bl-md font-medium">
+                                    대표이미지
                                   </span>
                                 )}
                               </div>

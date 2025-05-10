@@ -726,11 +726,14 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
               </p>
               <div className="mt-4">
                 <Button size="sm" variant="outline" onClick={() => {
-                  if (property.latitude && property.longitude) {
-                    window.open(`https://map.naver.com/v5/search/${property.district}`, '_blank');
-                  } else {
-                    window.open(`https://map.naver.com/v5/search/${property.district}`, '_blank');
-                  }
+                  // 주소 조합: 지역필드 + 주소필드
+                  const fullAddress = [
+                    property.district,
+                    property.address,
+                    property.buildingName
+                  ].filter(Boolean).join(' ');
+                  
+                  window.open(`https://map.naver.com/v5/search/${encodeURIComponent(fullAddress)}`, '_blank');
                 }}>
                   네이버 지도에서 보기
                 </Button>

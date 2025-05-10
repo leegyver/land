@@ -14,6 +14,8 @@ import {
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
+// 카카오톡 이미지 가져오기
+import kakaoImage from "../../assets/kakao.jpg";
 import { Property } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -355,10 +357,19 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                   </div>
                 </div>
                 
-                {/* 문의하기 버튼 */}
-                <Button className="w-full mt-5" size="lg">
-                  <Phone className="w-4 h-4 mr-2" /> 문의하기
-                </Button>
+                {/* 카카오톡 문의하기 링크 */}
+                <a 
+                  href="https://pf.kakao.com/_xaxbxlxfs/chat" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="block w-full mt-5 hover:opacity-90 transition-opacity"
+                >
+                  <img 
+                    src={kakaoImage}
+                    alt="카카오톡 1:1 상담 시작하기"
+                    className="w-full rounded-md shadow-sm"
+                  />
+                </a>
               </div>
             </CardContent>
           </Card>

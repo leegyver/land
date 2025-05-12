@@ -40,20 +40,27 @@ export default function AdminPage() {
   const queryClient = useQueryClient();
   
   // 필터링 상태 (지역 필터 제거)
-  const [filterType, setFilterType] = useState<string>("");
-  const [filterDealType, setFilterDealType] = useState<string>("");
+  const [filterType, setFilterType] = useState<string>("all");
+  const [filterDistrict, setFilterDistrict] = useState<string>("all");
+  const [filterDealType, setFilterDealType] = useState<string>("all");
   
   // 부동산 필터링 함수
   const filterProperties = (props: Property[]) => {
     if (!props) return [];
     
+    // 필터링 로그
+    console.log("필터링 적용: ", { filterType, filterDistrict, filterDealType });
+    
     return props.filter(property => {
       // 유형 필터
-      if (filterType && property.type !== filterType) {
+      if (filterType && filterType !== 'all' && property.type !== filterType) {
         return false;
       }
       
-      // 지역 필터 제거 (클라이언트 요청)
+      // 지역 필터
+      if (filterDistrict && filterDistrict !== 'all' && property.district !== filterDistrict) {
+        return false;
+      }
       
       // 거래유형 필터
       if (filterDealType && filterDealType !== 'all' && property.dealType) {
@@ -106,7 +113,34 @@ export default function AdminPage() {
     { value: "보류중", label: "보류중" },
   ];
   
-  // 지역 필터 제거 (클라이언트 요청)
+  // 지역 필터 추가 (클라이언트 요청)
+  const districts = [
+    { value: "강화읍 갑곳리", label: "강화읍 갑곳리" },
+    { value: "강화읍 국화리", label: "강화읍 국화리" },
+    { value: "강화읍 남산리", label: "강화읍 남산리" },
+    { value: "강화읍 내리", label: "강화읍 내리" },
+    { value: "강화읍 망월리", label: "강화읍 망월리" },
+    { value: "강화읍 방산리", label: "강화읍 방산리" },
+    { value: "강화읍 북산리", label: "강화읍 북산리" },
+    { value: "강화읍 신문리", label: "강화읍 신문리" },
+    { value: "강화읍 옥림리", label: "강화읍 옥림리" },
+    { value: "강화읍 용정리", label: "강화읍 용정리" },
+    { value: "강화읍 월곶리", label: "강화읍 월곶리" },
+    { value: "강화읍 관청리", label: "강화읍 관청리" },
+    { value: "교동면", label: "교동면" },
+    { value: "삼산면", label: "삼산면" },
+    { value: "서도면", label: "서도면" },
+    { value: "송해면", label: "송해면" },
+    { value: "양도면", label: "양도면" },
+    { value: "양사면", label: "양사면" },
+    { value: "하점면", label: "하점면" },
+    { value: "화도면", label: "화도면" },
+    { value: "내가면", label: "내가면" },
+    { value: "불은면", label: "불은면" },
+    { value: "선원면", label: "선원면" },
+    { value: "길상면", label: "길상면" },
+    { value: "강화읍 외 지역", label: "강화읍 외 지역" }
+  ];
   
   // 기존 배열 (참고용)
   const oldPropertyTypes = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];

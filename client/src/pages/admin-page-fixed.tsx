@@ -3,28 +3,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getQueryFn, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-
-// 필터링에 사용할 목록들
-const propertyTypes = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
-const dealTypes = ["매매", "전세", "월세", "단기임대"];
-
-// 지역 목록 (district)
-const districts = [
-  "강화읍 갑곳리",
-  "강화읍 관청리",
-  "강화읍 국화리",
-  "강화읍 남산리",
-  "강화읍 대산리",
-  "강화읍 신문리",
-  "강화읍 옥림리",
-  "강화읍 용정리",
-  "화도면 장화리",
-  "길상면 길직리",
-  "길상면 선두리",
-  "길상면 온수리",
-  "길상면 장흥리",
-  "길상면 초지리"
-];
 import { Property, User, News, insertPropertySchema } from "@shared/schema";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
@@ -178,15 +156,32 @@ export default function AdminPageFixed() {
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [currentDeleteType, setCurrentDeleteType] = useState<'properties' | 'news' | 'users' | null>(null);
   
-  // 필터 상태 추가
-  const [filterType, setFilterType] = useState("");
-  const [filterDistrict, setFilterDistrict] = useState("");
-  const [filterDealType, setFilterDealType] = useState("");
-  
-  // 필터링 상태
+  // 필터 상태
   const [filterType, setFilterType] = useState<string>("");
   const [filterDistrict, setFilterDistrict] = useState<string>("");
   const [filterDealType, setFilterDealType] = useState<string>("");
+  
+  // 필터링에 사용할 목록들
+  const propertyTypes = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
+  const dealTypes = ["매매", "전세", "월세", "단기임대"];
+  
+  // 지역 목록 (district)
+  const districts = [
+    "강화읍 갑곳리",
+    "강화읍 관청리",
+    "강화읍 국화리",
+    "강화읍 남산리",
+    "강화읍 대산리",
+    "강화읍 신문리",
+    "강화읍 옥림리",
+    "강화읍 용정리",
+    "화도면 장화리",
+    "길상면 길직리",
+    "길상면 선두리",
+    "길상면 온수리",
+    "길상면 장흥리",
+    "길상면 초지리"
+  ];
 
   // 기본 폼 값
   const defaultFormValues: PropertyFormValues = {
@@ -778,40 +773,32 @@ export default function AdminPageFixed() {
 
   // 필터링 함수
   const filterProperties = (props: Property[]) => {
+    if (!props) return [];
+    
     return props.filter(property => {
       // 유형 필터
       if (filterType && property.type !== filterType) {
         return false;
       }
       
-      // 지역 필터 - district가 문자열인지 확인
+      // 지역 필터
       if (filterDistrict && typeof property.district === 'string') {
-        if (!property.district.includes(filterDistrict)) {
+        if (property.district !== filterDistrict) {
           return false;
         }
       }
       
       // 거래유형 필터
-      if (filterDealType) {
+      if (filterDealType && property.dealType) {
         // 배열인 경우
         if (Array.isArray(property.dealType)) {
-          const hasMatchingDealType = property.dealType.some(type => 
-            typeof type === 'string' && type.includes(filterDealType)
-          );
-          if (!hasMatchingDealType) {
-            return false;
-          }
+          return property.dealType.includes(filterDealType);
         } 
         // 문자열인 경우
         else if (typeof property.dealType === 'string') {
-          if (!property.dealType.includes(filterDealType)) {
-            return false;
-          }
-        } 
-        // dealType이 없는 경우
-        else if (!property.dealType) {
-          return false;
+          return property.dealType === filterDealType;
         }
+        return false;
       }
       
       return true;

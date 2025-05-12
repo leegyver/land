@@ -44,6 +44,44 @@ export default function AdminPage() {
   // 데이터 로드를 위한 쿼리 매개변수
   const [skipCache, setSkipCache] = useState(false);
   
+  // 필터링 상태
+  const [filterType, setFilterType] = useState<string>("");
+  const [filterDistrict, setFilterDistrict] = useState<string>("");
+  const [filterDealType, setFilterDealType] = useState<string>("");
+  
+  // 부동산 유형 및 거래 유형 목록
+  const propertyTypes = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
+  const dealTypes = ["매매", "전세", "월세", "단기임대"];
+  
+  // 지역 목록 (district)
+  const districts = [
+    "강화읍 갑곳리",
+    "강화읍 국화리",
+    "강화읍 남산리",
+    "강화읍 내리",
+    "강화읍 망월리",
+    "강화읍 방산리",
+    "강화읍 북산리",
+    "강화읍 신문리",
+    "강화읍 옥림리", 
+    "강화읍 용정리",
+    "강화읍 월곶리",
+    "강화읍 관청리",
+    "교동면",
+    "삼산면",
+    "서도면",
+    "송해면",
+    "양도면",
+    "양사면",
+    "하점면",
+    "화도면",
+    "내가면",
+    "불은면",
+    "선원면",
+    "길상면",
+    "강화읍 외 지역"
+  ];
+  
   // 데이터 로드
   const { 
     data: properties,

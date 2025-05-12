@@ -1011,6 +1011,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // 통합 일괄 삭제 API 엔드포인트 (admin-page-new.tsx와 호환)
+  app.post("/api/admin/batch-delete/:type", async (req, res) => {
+    try {
+      // 인증 및 관리자 권한 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증이 필요합니다." });
+      }
+      
+      const user = req.user as Express.User;
+      if (user.role !== "admin") {
+        return res.status(403).json({ message: "관리자 권한이 필요합니다." });
+      }
+      
+      const { type } = req.params;
+      const { ids } = req.body;
+      
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "유효한 ID 목록이 필요합니다." });
+      }
+      
+      console.log(`일괄 삭제 요청: ${type}, IDs:`, ids);
+      
+      let successCount = 0;
+      
+      switch (type) {
+        case 'properties':
+          for (const id of ids) {
+            const result = await storage.deleteProperty(id);
+            if (result) successCount++;
+          }
+          // 관련 캐시 삭제
+          memoryCache.deleteByPrefix("properties_");
+          break;
+          
+        case 'news':
+          for (const id of ids) {
+            const result = await storage.deleteNews(id);
+            if (result) successCount++;
+          }
+          // 관련 캐시 삭제
+          memoryCache.deleteByPrefix("news_");
+          break;
+          
+        case 'users':
+          // 자기 자신은 삭제할 수 없도록 필터링
+          const filteredIds = ids.filter(id => id !== user.id);
+          if (filteredIds.length !== ids.length) {
+            console.log("사용자가 자기 자신을 삭제하려고 시도했습니다.");
+          }
+          
+          for (const id of filteredIds) {
+            // 관리자 계정은 제외
+            const userToDelete = await storage.getUser(id);
+            if (userToDelete && userToDelete.role !== 'admin') {
+              const result = await storage.deleteUser(id);
+              if (result) successCount++;
+            }
+          }
+          break;
+          
+        default:
+          return res.status(400).json({ message: "지원되지 않는 유형입니다." });
+      }
+      
+      res.json({ 
+        success: true, 
+        message: `${successCount}개의 항목이 삭제되었습니다.`,
+        deletedCount: successCount,
+        skippedSelf: type === 'users' && ids.includes(user.id)
+      });
+    } catch (error) {
+      console.error('일괄 삭제 오류:', error);
+      res.status(500).json({ message: "일괄 삭제 중 오류가 발생했습니다." });
+    }
+  });
+  
   const httpServer = createServer(app);
   return httpServer;
 }

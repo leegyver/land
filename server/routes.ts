@@ -832,17 +832,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // 뉴스 수동 업데이트 API 엔드포인트 (테스트용)
-  app.get("/api/news/update-now", async (req, res) => {
+  app.get("/api/admin/update-news", async (req, res) => {
     try {
-      const newsItems = await fetchAndSaveNews();
-      res.json({ 
+      // 관리자 인증 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증이 필요합니다" });
+      }
+      
+      // 뉴스 수동 업데이트 실행
+      let newsItems = [];
+      try {
+        newsItems = await fetchAndSaveNews();
+        console.log("뉴스 업데이트 성공:", newsItems.length, "개의 뉴스 항목");
+      } catch (fetchError) {
+        console.error("뉴스 업데이트 중 오류:", fetchError);
+        return res.status(500).json({ message: "뉴스 업데이트 중 오류가 발생했습니다: " + fetchError.message });
+      }
+
+      return res.json({ 
+        success: true,
         message: "뉴스가 성공적으로 업데이트되었습니다.", 
-        count: newsItems.length,
-        news: newsItems
+        count: newsItems.length
       });
     } catch (error) {
-      console.error("뉴스 업데이트 오류:", error);
-      res.status(500).json({ message: "뉴스 업데이트 중 오류가 발생했습니다." });
+      console.error("뉴스 수동 업데이트 API 오류:", error);
+      return res.status(500).json({ message: "뉴스 업데이트 중 오류가 발생했습니다." });
     }
   });
   

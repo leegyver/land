@@ -58,7 +58,6 @@ export default function AdminPage() {
   
   // 필터 옵션 - DB에 있는 실제 필드값 적용
   const propertyTypes = [
-    { value: "all", label: "매물 유형 선택" },
     { value: "아파트", label: "아파트" },
     { value: "아파트연립다세대", label: "아파트연립다세대" },
     { value: "주택", label: "주택" },
@@ -67,14 +66,12 @@ export default function AdminPage() {
   ];
   
   const dealTypes = [
-    { value: "all", label: "거래 유형 선택" },
     { value: "매매", label: "매매" },
     { value: "전세", label: "전세" },
     { value: "월세", label: "월세" },
   ];
   
   const districts = [
-    { value: "all", label: "지역 선택" },
     { value: "강남구", label: "강남구" },
     { value: "강화읍 갑곳리", label: "강화읍 갑곳리" },
     { value: "강화읍 관청리", label: "강화읍 관청리" },

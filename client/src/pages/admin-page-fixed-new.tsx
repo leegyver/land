@@ -51,7 +51,7 @@ export default function AdminPage() {
   // 데이터 로드를 위한 쿼리 매개변수
   const [skipCache, setSkipCache] = useState(false);
   
-  // 필터링 상태
+  // 필터링 상태 (초기값은 "all"로 모든 항목을 표시)
   const [filterType, setFilterType] = useState<string>("all");
   const [filterDistrict, setFilterDistrict] = useState<string>("all");
   const [filterDealType, setFilterDealType] = useState<string>("all");
@@ -138,6 +138,8 @@ export default function AdminPage() {
   const filterProperties = (props: Property[]) => {
     if (!props) return [];
     
+    console.log("필터링 적용: ", { filterType, filterDistrict, filterDealType });
+    
     return props.filter(property => {
       // 유형 필터
       if (filterType && filterType !== 'all' && property.type !== filterType) {
@@ -145,15 +147,15 @@ export default function AdminPage() {
       }
       
       // 지역 필터
-      if (filterDistrict && filterDistrict !== 'all' && typeof property.district === 'string') {
-        if (property.district !== filterDistrict) {
+      if (filterDistrict && filterDistrict !== 'all') {
+        if (!property.district || property.district !== filterDistrict) {
           return false;
         }
       }
       
       // 거래유형 필터
       if (filterDealType && filterDealType !== 'all' && property.dealType) {
-        // 배열인 경우 ({매매,월세} 형태)
+        // 배열인 경우
         if (Array.isArray(property.dealType)) {
           return property.dealType.includes(filterDealType);
         } 

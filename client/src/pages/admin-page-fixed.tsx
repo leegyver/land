@@ -861,6 +861,18 @@ export default function AdminPageFixed() {
                 <TableBody>
                   {displayProperties.map((property) => (
                     <TableRow key={property.id}>
+                      <TableCell>
+                        <Checkbox 
+                          checked={selectedProperties.includes(property.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedProperties(prev => [...prev, property.id]);
+                            } else {
+                              setSelectedProperties(prev => prev.filter(id => id !== property.id));
+                            }
+                          }}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{property.id}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{property.title}</TableCell>
                       <TableCell>{property.type}</TableCell>
@@ -1172,11 +1184,22 @@ export default function AdminPageFixed() {
                   등록된 뉴스 목록을 관리합니다.
                 </CardDescription>
               </div>
-              <Button 
-                onClick={handleUpdateNews} 
-                disabled={isUpdatingNews}
-                className="ml-auto"
-              >
+              <div className="flex gap-2">
+                {selectedNews.length > 0 && (
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={() => openDeleteConfirm('news')}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {selectedNews.length}개 삭제
+                  </Button>
+                )}
+                <Button 
+                  onClick={handleUpdateNews} 
+                  disabled={isUpdatingNews}
+                  className="ml-auto"
+                >
                 {isUpdatingNews ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1195,6 +1218,18 @@ export default function AdminPageFixed() {
                 <TableCaption>총 {displayNews?.length || 0}개의 뉴스</TableCaption>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox 
+                        checked={selectedNews.length > 0 && selectedNews.length === displayNews.length}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedNews(displayNews.map(n => n.id));
+                          } else {
+                            setSelectedNews([]);
+                          }
+                        }}
+                      />
+                    </TableHead>
                     <TableHead>ID</TableHead>
                     <TableHead>제목</TableHead>
                     <TableHead>날짜</TableHead>
@@ -1205,6 +1240,18 @@ export default function AdminPageFixed() {
                 <TableBody>
                   {displayNews.map((item) => (
                     <TableRow key={item.id}>
+                      <TableCell>
+                        <Checkbox 
+                          checked={selectedNews.includes(item.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedNews(prev => [...prev, item.id]);
+                            } else {
+                              setSelectedNews(prev => prev.filter(id => id !== item.id));
+                            }
+                          }}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{item.id}</TableCell>
                       <TableCell className="max-w-[300px] truncate">{item.title}</TableCell>
                       <TableCell>

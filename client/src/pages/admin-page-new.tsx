@@ -510,7 +510,7 @@ export default function AdminPage() {
                     <SelectValue placeholder="모든 유형" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">모든 유형</SelectItem>
+                    <SelectItem value="all">모든 유형</SelectItem>
                     {propertyTypes.map((type) => (
                       <SelectItem key={type.value} value={type.value}>
                         {type.label}
@@ -520,7 +520,22 @@ export default function AdminPage() {
                 </Select>
               </div>
               
-              {/* 지역 필터 제거됨 (클라이언트 요청) */}
+              <div>
+                <label className="block text-sm font-medium mb-1">지역</label>
+                <Select value={filterDistrict} onValueChange={setFilterDistrict}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="모든 지역" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">모든 지역</SelectItem>
+                    {districts.map((district) => (
+                      <SelectItem key={district.value} value={district.value}>
+                        {district.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               
               <div>
                 <label className="block text-sm font-medium mb-1">거래 유형</label>
@@ -529,7 +544,7 @@ export default function AdminPage() {
                     <SelectValue placeholder="모든 거래 유형" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">모든 거래 유형</SelectItem>
+                    <SelectItem value="all">모든 거래 유형</SelectItem>
                     {dealTypes.map((type) => (
                       <SelectItem key={type.value} value={type.value}>
                         {type.label}

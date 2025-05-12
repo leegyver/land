@@ -118,40 +118,136 @@ export default function KakaoMap({ singleProperty, zoom = 3 }: KakaoMapProps) {
       
       // 단일 매물이 제공된 경우 해당 매물만 표시
       if (singleProperty) {
-        const location = getPropertyLocation(singleProperty);
-        const markerPosition = new window.kakao.maps.LatLng(location.lat, location.lng);
+        // 지오코더 생성
+        const geocoder = new window.kakao.maps.services.Geocoder();
+        const markers: any[] = [];
         
-        // 마커 생성
-        const marker = new window.kakao.maps.Marker({
-          map: map,
-          position: markerPosition,
-          title: singleProperty.title
-        });
+        // 지역 필드 + 주소 필드 형식으로 주소 구성 (멀티 매물 모드와 동일한 주소 구성 방식 사용)
+        const district = singleProperty.district || '';
+        const detailAddress = singleProperty.address || '';
         
-        // 인포윈도우 생성
-        const infoWindow = new window.kakao.maps.InfoWindow({ 
-          zIndex: 1,
-          content: `
-            <div style="padding:8px;font-size:12px;max-width:250px;">
-              <div style="font-weight:bold;margin-bottom:4px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${singleProperty.title}</div>
-              <div style="color:#666;font-size:12px;margin-bottom:4px;">${singleProperty.type} · ${singleProperty.dealType && Array.isArray(singleProperty.dealType) ? singleProperty.dealType.join(', ') : '매매'}</div>
-              <div style="color:#2563eb;font-weight:bold;font-size:13px;">${formatPrice(Number(singleProperty.price) || 0)}</div>
-              <div style="color:#888;font-size:11px;margin-top:4px;"><i>* 위치는 대략적인 지역 중심 기준</i></div>
-            </div>
-          `
-        });
+        // 강화군 지역은 특별 처리
+        let address = '';
+        if (district.includes('강화')) {
+          // 강화군은 '인천광역시 강화군'으로 명시
+          address = `인천광역시 강화군 ${district} ${detailAddress}`.trim();
+        } 
+        // 서울 지역 처리
+        else if (district.includes('서울')) {
+          // 서울 지역은 '서울특별시'로 통일
+          const cleanDistrict = district.replace(/서울특별시|서울시|서울/g, '').trim();
+          address = `서울특별시 ${cleanDistrict} ${detailAddress}`.trim();
+        }
+        // 인천 지역 처리 (강화군 제외)
+        else if (district.includes('인천')) {
+          address = `인천광역시 ${district} ${detailAddress}`.trim();
+        }
+        // 기타 지역
+        else {
+          address = `인천광역시 ${district} ${detailAddress}`.trim();
+        }
         
-        // 마커 클릭 시 인포윈도우 표시
-        window.kakao.maps.event.addListener(marker, 'click', function() {
+        console.log(`[단일 매물] 주소 검색 시도: ${address}`);
+        
+        // 검색 옵션 설정 (정확도 향상)
+        const searchOptions = {
+          size: 1,  // 결과 개수 제한
+          analyze_type: 'similar'  // 유사 매칭 분석 타입
+        };
+        
+        // 주소 검색이 가능한 경우 실행
+        if (address.trim() && address.length > 5) {
+          // 주소 검색 실행
+          geocoder.addressSearch(address, (result: any, status: any) => {
+            let markerPosition;
+            let isExactLocation = false;
+            
+            if (status === window.kakao.maps.services.Status.OK) {
+              console.log(`[단일 매물] 주소 검색 성공: ${result[0].address_name}`);
+              
+              // 검색 성공한 좌표 사용
+              markerPosition = new window.kakao.maps.LatLng(result[0].y, result[0].x);
+              isExactLocation = true;
+            } else {
+              console.log(`[단일 매물] 주소를 찾을 수 없습니다. 대략적인 위치 사용: ${address}`);
+              
+              // 주소 검색 실패 시 대략적인 위치 사용
+              const location = getPropertyLocation(singleProperty);
+              markerPosition = new window.kakao.maps.LatLng(location.lat, location.lng);
+            }
+            
+            // 마커 생성
+            const marker = new window.kakao.maps.Marker({
+              map: map,
+              position: markerPosition,
+              title: singleProperty.title
+            });
+            
+            markers.push(marker);
+            
+            // 인포윈도우 생성
+            const infoWindow = new window.kakao.maps.InfoWindow({ 
+              zIndex: 1,
+              content: `
+                <div style="padding:8px;font-size:12px;max-width:250px;">
+                  <div style="font-weight:bold;margin-bottom:4px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${singleProperty.title}</div>
+                  <div style="color:#666;font-size:12px;margin-bottom:4px;">${singleProperty.type} · ${singleProperty.dealType && Array.isArray(singleProperty.dealType) ? singleProperty.dealType.join(', ') : '매매'}</div>
+                  <div style="color:#2563eb;font-weight:bold;font-size:13px;">${formatPrice(Number(singleProperty.price) || 0)}</div>
+                  ${!isExactLocation ? `<div style="color:#888;font-size:11px;margin-top:4px;"><i>* 위치는 대략적인 지역 중심 기준</i></div>` : ''}
+                </div>
+              `
+            });
+            
+            // 마커 클릭 시 인포윈도우 표시
+            window.kakao.maps.event.addListener(marker, 'click', function() {
+              infoWindow.open(map, marker);
+            });
+            
+            // 지도 로딩 완료 시 바로 인포윈도우 표시
+            infoWindow.open(map, marker);
+            
+            // 지도 중심 위치 조정
+            map.setCenter(markerPosition);
+          }, searchOptions);
+        } else {
+          // 주소가 없는 경우 대략적인 위치 사용
+          const location = getPropertyLocation(singleProperty);
+          const markerPosition = new window.kakao.maps.LatLng(location.lat, location.lng);
+          
+          // 마커 생성
+          const marker = new window.kakao.maps.Marker({
+            map: map,
+            position: markerPosition,
+            title: singleProperty.title
+          });
+          
+          markers.push(marker);
+          
+          // 인포윈도우 생성
+          const infoWindow = new window.kakao.maps.InfoWindow({ 
+            zIndex: 1,
+            content: `
+              <div style="padding:8px;font-size:12px;max-width:250px;">
+                <div style="font-weight:bold;margin-bottom:4px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${singleProperty.title}</div>
+                <div style="color:#666;font-size:12px;margin-bottom:4px;">${singleProperty.type} · ${singleProperty.dealType && Array.isArray(singleProperty.dealType) ? singleProperty.dealType.join(', ') : '매매'}</div>
+                <div style="color:#2563eb;font-weight:bold;font-size:13px;">${formatPrice(Number(singleProperty.price) || 0)}</div>
+                <div style="color:#888;font-size:11px;margin-top:4px;"><i>* 위치는 대략적인 지역 중심 기준</i></div>
+              </div>
+            `
+          });
+          
+          // 마커 클릭 시 인포윈도우 표시
+          window.kakao.maps.event.addListener(marker, 'click', function() {
+            infoWindow.open(map, marker);
+          });
+          
+          // 지도 로딩 완료 시 바로 인포윈도우 표시
           infoWindow.open(map, marker);
-        });
-        
-        // 지도 로딩 완료 시 바로 인포윈도우 표시
-        infoWindow.open(map, marker);
+        }
         
         // 컴포넌트 언마운트 시 마커 제거
         return () => {
-          marker.setMap(null);
+          markers.forEach(marker => marker.setMap(null));
         };
       } 
       // 다중 매물 모드

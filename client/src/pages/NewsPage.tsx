@@ -93,12 +93,12 @@ export default function NewsPage() {
     <div className="container mx-auto px-4 py-20">
       <Helmet>
         <title>부동산 뉴스 | 한국부동산</title>
-        <meta name="description" content="강화도와 인천 지역의 최신 부동산 뉴스와 정보를 확인하세요." />
+        <meta name="description" content="강화군과 수도권의 최신 부동산 뉴스와 정보를 확인하세요." />
       </Helmet>
 
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold mb-2">부동산 뉴스</h1>
-        <p className="text-neutral-600">강화도와 관련된 부동산 뉴스를 게시합니다</p>
+        <p className="text-neutral-600">알고 있어야할 강화군, 수도권 부동산 뉴스</p>
       </div>
 
       <div className="space-y-12">

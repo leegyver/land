@@ -633,6 +633,22 @@ export default function AdminPageFixed() {
     }
   };
   
+  const handleSelectNews = (id: number, checked: boolean) => {
+    if (checked) {
+      setSelectedNews(prev => [...prev, id]);
+    } else {
+      setSelectedNews(prev => prev.filter(newsId => newsId !== id));
+    }
+  };
+  
+  const handleSelectUser = (id: number, checked: boolean) => {
+    if (checked) {
+      setSelectedUsers(prev => [...prev, id]);
+    } else {
+      setSelectedUsers(prev => prev.filter(userId => userId !== id));
+    }
+  };
+  
   // 폼 닫기 핸들러
   const handleCloseForm = () => {
     setShowPropertyForm(false);
@@ -1258,13 +1274,7 @@ export default function AdminPageFixed() {
                       <TableCell>
                         <Checkbox 
                           checked={selectedNews.includes(item.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedNews(prev => [...prev, item.id]);
-                            } else {
-                              setSelectedNews(prev => prev.filter(id => id !== item.id));
-                            }
-                          }}
+                          onCheckedChange={(checked) => handleSelectNews(item.id, !!checked)}
                         />
                       </TableCell>
                       <TableCell className="font-medium">{item.id}</TableCell>

@@ -21,7 +21,7 @@ function formatPrice(price: number): string {
   return `${price.toLocaleString()}원`;
 }
 
-export default function SimpleMap() {
+export default function KakaoMap() {
   const mapRef = useRef<HTMLDivElement>(null);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   
@@ -32,13 +32,11 @@ export default function SimpleMap() {
 
   // 지도 초기화
   useEffect(() => {
-    // 스크립트가 이미 로드되었는지 확인
     if (!window.kakao || !window.kakao.maps) {
       console.log("카카오맵 SDK가 로드되지 않았습니다");
       return;
     }
 
-    // 지도 컨테이너가 없으면 중단
     if (!mapRef.current) {
       console.log("지도 컨테이너가 없습니다");
       return;
@@ -47,10 +45,10 @@ export default function SimpleMap() {
     console.log("카카오맵 초기화 시작");
     
     try {
-      // 지도 생성
+      // 지도 생성 (강화군 중심으로)
       const mapOptions = {
-        center: new window.kakao.maps.LatLng(37.7464, 126.4878), // 강화군 중심 좌표
-        level: 9 // 지도 확대 레벨
+        center: new window.kakao.maps.LatLng(37.7464, 126.4878),
+        level: 9
       };
       
       const map = new window.kakao.maps.Map(mapRef.current, mapOptions);
@@ -73,21 +71,11 @@ export default function SimpleMap() {
       properties.forEach((property, index) => {
         // 주소 구성 (정확도 향상을 위한 방식)
         let address = '';
-        let region = '';
         
         // 지역별 정확한 주소 형식 구성
         if (property.district && property.district.includes('강화')) {
           // 강화군 지역 주소 최적화
-          region = '인천광역시 강화군';
-          
-          // 상세 주소에서 읍/면 정보 추출 또는 기본 읍 설정
-          if (property.address && (property.address.includes('읍') || property.address.includes('면'))) {
-            // 주소에서 읍/면 정보 포함된 경우 그대로 사용
-            // 이미 region에 '강화군'이 있으므로 추가 작업 불필요
-          } else {
-            // 읍/면이 포함되지 않은 경우 강화읍으로 기본 설정
-            region += ' 강화읍';
-          }
+          const region = '인천광역시 강화군';
           
           // 상세 주소 구성
           if (property.address) {
@@ -109,25 +97,19 @@ export default function SimpleMap() {
           address = `${property.city || '인천광역시'} ${property.district || ''} ${property.address || ''}`.trim();
         }
         
-        console.log(`주소 검색 시도 (최적화): ${address}`);
+        console.log(`주소 검색 시도: ${address}`);
         
         // 주소가 있고 최소 길이 조건을 만족하면 검색 시도
         if (address.trim() && address.length > 5) {
-          // 주소 검색 옵션 (정확도 향상을 위한 설정)
-          const searchOptions = {
-            size: 1,  // 결과 개수 제한
-            analyze_type: 'similar'  // 유사 매칭 분석 타입 (exact가 안 될 경우 대안)
-          };
-          
-          // 주소 검색 옵션으로 검색 (옵션 파라미터 전달)
+          // 카카오맵 API는 옵션을 마지막 파라미터로 전달
           geocoder.addressSearch(address, (result: any, status: any) => {
             if (status === window.kakao.maps.services.Status.OK) {
-              console.log(`주소 검색 성공 (정확도: ${result[0].address_name})`);
+              console.log(`주소 검색 성공: ${result[0].address_name}`);
               
               // 좌표 생성
               const coords = new window.kakao.maps.LatLng(result[0].y, result[0].x);
               
-              // 마커 생성 (정확한 위치에)
+              // 마커 생성
               const marker = new window.kakao.maps.Marker({
                 map: map,
                 position: coords,
@@ -142,10 +124,7 @@ export default function SimpleMap() {
                 // 선택된 매물 설정
                 setSelectedProperty(property);
                 
-                // 정확한 주소 정보
-                const foundAddress = result[0].address_name || address;
-                
-                // 인포윈도우 내용 설정 (상세 정보 포함)
+                // 인포윈도우 내용 설정
                 const content = `
                   <div style="padding:8px;font-size:12px;max-width:250px;">
                     <div style="font-weight:bold;margin-bottom:4px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${property.title}</div>
@@ -160,7 +139,7 @@ export default function SimpleMap() {
                 
                 // 지도 중심 이동 및 확대
                 map.setCenter(coords);
-                map.setLevel(3); // 상세 보기 시 확대 레벨
+                map.setLevel(3);
               });
               
               // 마지막 매물 처리 후 지도 범위 조정
@@ -170,10 +149,10 @@ export default function SimpleMap() {
             } else {
               console.log(`주소를 찾을 수 없습니다: ${address}`);
               
-              // 주소 검색 실패 시 대체 주소 시도 (지역 중심 좌표 사용)
+              // 주소 검색 실패 시 대체 좌표 사용
               let fallbackCoords;
               
-              // 지역에 따른 중심 좌표 사용 (실제 지역 중심으로 설정)
+              // 지역에 따른 중심 좌표 사용
               if (property.district && property.district.includes('강화')) {
                 // 강화군 중심
                 fallbackCoords = new window.kakao.maps.LatLng(37.7464, 126.4878);
@@ -231,15 +210,17 @@ export default function SimpleMap() {
     }
   }, [properties]);
 
+  // 로딩 화면 표시
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh] bg-gray-100">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full h-[60vh]">
-      {/* 로딩 표시 */}
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100/75 z-10">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-        </div>
-      )}
-      
       {/* 지도 컨테이너 */}
       <div ref={mapRef} className="w-full h-full"></div>
       

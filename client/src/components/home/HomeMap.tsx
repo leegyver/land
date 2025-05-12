@@ -1,12 +1,12 @@
 import { Link } from 'wouter';
-import SimpleMap from '@/components/map/SimpleMap';
+import KakaoMap from '@/components/map/KakaoMap';
 
 const HomeMap = () => {
   return (
     <section className="relative">
       {/* 지도를 배경으로 사용 */}
       <div className="h-[60vh] w-full">
-        <SimpleMap />
+        <KakaoMap />
       </div>
       
       {/* 오버레이 텍스트 및 버튼 */}

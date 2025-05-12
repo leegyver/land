@@ -1212,6 +1212,7 @@ export default function AdminPageFixed() {
                   </>
                 )}
               </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>

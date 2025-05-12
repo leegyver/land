@@ -1,12 +1,12 @@
 import { Link } from 'wouter';
-import PropertyMap from '@/components/map/PropertyMap';
+import SimpleMap from '@/components/map/SimpleMap';
 
 const HomeMap = () => {
   return (
     <section className="relative">
       {/* 지도를 배경으로 사용 */}
       <div className="h-[60vh] w-full">
-        <PropertyMap />
+        <SimpleMap />
       </div>
       
       {/* 오버레이 텍스트 및 버튼 */}

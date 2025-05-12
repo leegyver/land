@@ -8,8 +8,8 @@ import { cn } from '@/lib/utils';
 declare global {
   interface Window {
     kakao: any;
-    kakaoKey: string;
-    kakaoMapLoaded: boolean;
+    kakaoKey?: string;
+    kakaoMapLoaded?: boolean;
   }
 }
 
@@ -194,6 +194,7 @@ const PropertyMap = () => {
     
     } catch (error) {
       console.error("매물 마커 생성 중 오류 발생:", error);
+      return () => {};
     }
   }, [map, properties, infoWindow]);
 

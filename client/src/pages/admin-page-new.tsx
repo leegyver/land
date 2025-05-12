@@ -113,17 +113,41 @@ export default function AdminPage() {
     { value: "보류중", label: "보류중" },
   ];
   
-  // 지역 필터 - 실제 DB에 있는 매물 지역 기준으로 필터링
+  // 지역 필터 - 매물 검색 페이지의 필터와 동일한 카테고리 사용
   const districts = [
     { value: "all", label: "모든 지역" },
-    { value: "강남구", label: "강남구" },
+    { value: "강화군외", label: "강화군외" },
+    // 강화읍 옵션
     { value: "강화읍 갑곳리", label: "강화읍 갑곳리" },
     { value: "강화읍 관청리", label: "강화읍 관청리" },
     { value: "강화읍 국화리", label: "강화읍 국화리" },
-    { value: "마포구", label: "마포구" },
-    { value: "서초구", label: "서초구" },
-    { value: "용산구", label: "용산구" },
-    { value: "화도면 장화리", label: "화도면 장화리" }
+    { value: "강화읍 남산리", label: "강화읍 남산리" },
+    { value: "강화읍 대산리", label: "강화읍 대산리" },
+    { value: "강화읍 신문리", label: "강화읍 신문리" },
+    { value: "강화읍 옥림리", label: "강화읍 옥림리" },
+    { value: "강화읍 용정리", label: "강화읍 용정리" },
+    { value: "강화읍 월곳리", label: "강화읍 월곳리" },
+    
+    // 교동면 옵션
+    { value: "교동면 고구리", label: "교동면 고구리" },
+    { value: "교동면 난정리", label: "교동면 난정리" },
+    { value: "교동면 대룡리", label: "교동면 대룡리" },
+    { value: "교동면 동산리", label: "교동면 동산리" },
+    { value: "교동면 무학리", label: "교동면 무학리" },
+    { value: "교동면 봉소리", label: "교동면 봉소리" },
+    { value: "교동면 상용리", label: "교동면 상용리" },
+    { value: "교동면 서한리", label: "교동면 서한리" },
+    
+    // 화도면 옵션
+    { value: "화도면 내리", label: "화도면 내리" },
+    { value: "화도면 덕포리", label: "화도면 덕포리" },
+    { value: "화도면 동막리", label: "화도면 동막리" },
+    { value: "화도면 문산리", label: "화도면 문산리" },
+    { value: "화도면 사기리", label: "화도면 사기리" },
+    { value: "화도면 상방리", label: "화도면 상방리" },
+    { value: "화도면 여차리", label: "화도면 여차리" },
+    { value: "화도면 장화리", label: "화도면 장화리" },
+    { value: "화도면 흥왕리", label: "화도면 흥왕리" }
   ];
   
   // 기존 배열 (참고용)

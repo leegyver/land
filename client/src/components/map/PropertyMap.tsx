@@ -51,7 +51,10 @@ const PropertyMap = () => {
     };
 
     return () => {
-      document.head.removeChild(script);
+      // 스크립트 제거
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
     };
   }, []);
 
@@ -84,21 +87,8 @@ const PropertyMap = () => {
 
     // 매물들의 좌표를 얻기 위한 함수
     const getCoordinates = (property: Property, index: number) => {
-      // 주소가 없는 경우 좌표 정보 활용
-      if (property.latitude && property.longitude) {
-        const position = new window.kakao.maps.LatLng(property.latitude, property.longitude);
-        createMarker(property, position, index);
-        bounds.extend(position);
-        
-        // 마지막 매물 처리 후 지도 범위 재설정
-        if (index === properties.length - 1) {
-          map.setBounds(bounds);
-        }
-        return;
-      }
-
       // 주소 정보로 위치 찾기
-      const address = `${property.city} ${property.district} ${property.neighborhood || ''}`;
+      const address = `${property.city || '인천광역시'} ${property.district} ${property.address}`;
       geocoder.addressSearch(address, (result: any, status: any) => {
         if (status === window.kakao.maps.services.Status.OK) {
           const position = new window.kakao.maps.LatLng(result[0].y, result[0].x);
@@ -131,12 +121,18 @@ const PropertyMap = () => {
         // 클릭된 매물 정보 설정
         setSelectedProperty(property);
         
+        // 거래 유형 (매매/전세/월세) 판단
+        let dealTypeText = '매매';
+        if (property.dealType && Array.isArray(property.dealType)) {
+          dealTypeText = property.dealType[0] || '매매';
+        }
+        
         // 정보창 내용 구성
         const content = `
           <div style="padding: 8px; max-width: 250px; font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;">
             <div style="font-weight: bold; margin-bottom: 4px; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${property.title}</div>
-            <div style="color: #666; font-size: 12px; margin-bottom: 4px;">${property.type} · ${property.transactionType}</div>
-            <div style="color: #2563eb; font-weight: bold; font-size: 13px;">${formatNumberToKorean(property.price || 0)}원</div>
+            <div style="color: #666; font-size: 12px; margin-bottom: 4px;">${property.type} · ${dealTypeText}</div>
+            <div style="color: #2563eb; font-weight: bold; font-size: 13px;">${formatNumberToKorean(Number(property.price) || 0)}원</div>
           </div>
         `;
         
@@ -148,9 +144,7 @@ const PropertyMap = () => {
 
     // 각 매물에 대해 좌표 획득 및 마커 생성
     properties.forEach((property, index) => {
-      if (property.isVisible !== false) { // 숨김 처리된 매물은 제외
-        getCoordinates(property, index);
-      }
+      getCoordinates(property, index);
     });
 
     // 컴포넌트 언마운트 시 마커 제거
@@ -191,9 +185,9 @@ const PropertyMap = () => {
             <Badge variant="outline" className="bg-primary/10 text-primary">
               {selectedProperty.type}
             </Badge>
-            {selectedProperty.transactionType && (
+            {selectedProperty.dealType && Array.isArray(selectedProperty.dealType) && (
               <Badge variant="outline" className="bg-secondary/10 text-secondary">
-                {selectedProperty.transactionType}
+                {selectedProperty.dealType[0]}
               </Badge>
             )}
           </div>
@@ -210,7 +204,7 @@ const PropertyMap = () => {
             
             <div className="text-gray-500">가격:</div>
             <div className="font-semibold text-primary">
-              {formatNumberToKorean(selectedProperty.price || 0)}원
+              {formatNumberToKorean(Number(selectedProperty.price) || 0)}원
             </div>
           </div>
           

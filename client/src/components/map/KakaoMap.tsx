@@ -67,6 +67,18 @@ export default function KakaoMap() {
       const infoWindow = new window.kakao.maps.InfoWindow({ zIndex: 1 });
       const markers: any[] = [];
       
+      // 지도 줌 변경 이벤트에 인포윈도우 닫기 추가 (중복 방지)
+      window.kakao.maps.event.addListener(map, 'zoom_changed', () => {
+        // 지도 줌 변경시 열려있는 인포윈도우 닫기
+        infoWindow.close();
+      });
+      
+      // 드래그 완료 이벤트에도 인포윈도우 닫기 적용
+      window.kakao.maps.event.addListener(map, 'dragend', () => {
+        // 지도 드래그 완료시 열려있는 인포윈도우 닫기
+        infoWindow.close();
+      });
+      
       // 각 매물의 주소를 좌표로 변환하여 마커 생성
       properties.forEach((property, index) => {
         // 주소 구성 (정확도 향상을 위한 방식)
@@ -121,6 +133,9 @@ export default function KakaoMap() {
               
               // 마커 클릭 이벤트
               window.kakao.maps.event.addListener(marker, 'click', () => {
+                // 기존 인포윈도우 닫기 (중복 방지)
+                infoWindow.close();
+                
                 // 선택된 매물 설정
                 setSelectedProperty(property);
                 
@@ -182,6 +197,9 @@ export default function KakaoMap() {
               
               // 마커 클릭 이벤트
               window.kakao.maps.event.addListener(marker, 'click', () => {
+                // 기존 인포윈도우 닫기 (중복 방지)
+                infoWindow.close();
+                
                 setSelectedProperty(property);
                 
                 const content = `

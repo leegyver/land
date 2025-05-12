@@ -11,6 +11,7 @@ import {
 } from "@shared/schema";
 import { memoryCache } from "./cache";
 import { setupAuth } from "./auth";
+import { fetchAndSaveNews } from "./news-fetcher";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // 인증 시스템 설정

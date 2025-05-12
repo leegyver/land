@@ -214,14 +214,17 @@ export default function AdminPageFixed() {
     error: propertiesError,
   } = useQuery<Property[]>({
     queryKey: ["/api/properties"],
-    queryFn: getQueryFn({ on401: "throw" }),
-    onSuccess: (data) => {
-      if (!propertiesLoaded) {
-        setLocalProperties(data);
-        setPropertiesLoaded(true);
-      }
-    }
+    queryFn: getQueryFn({ on401: "throw" })
   });
+
+  // 프로퍼티 데이터 로딩 시 로컬 상태 업데이트
+  useEffect(() => {
+    if (properties && !propertiesLoaded) {
+      setLocalProperties(properties);
+      setPropertiesLoaded(true);
+      setSelectedProperties([]);
+    }
+  }, [properties, propertiesLoaded]);
 
   // 사용자 목록 조회 (관리자만)
   const {
@@ -231,14 +234,17 @@ export default function AdminPageFixed() {
   } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
     queryFn: getQueryFn({ on401: "throw" }),
-    enabled: currentUser?.role === "admin",
-    onSuccess: (data) => {
-      if (!usersLoaded) {
-        setLocalUsers(data);
-        setUsersLoaded(true);
-      }
-    }
+    enabled: currentUser?.role === "admin"
   });
+
+  // 사용자 데이터 로딩 시 로컬 상태 업데이트
+  useEffect(() => {
+    if (users && !usersLoaded) {
+      setLocalUsers(users);
+      setUsersLoaded(true);
+      setSelectedUsers([]);
+    }
+  }, [users, usersLoaded]);
   
   // 뉴스 목록 조회
   const {
@@ -619,35 +625,7 @@ export default function AdminPageFixed() {
     }
   };
 
-  // 다중 선택 관련 핸들러
-  const openDeleteConfirm = (type: 'properties' | 'news' | 'users') => {
-    setCurrentDeleteType(type);
-    setIsDeleteAlertOpen(true);
-  };
-  
-  const handleSelectProperty = (id: number, checked: boolean) => {
-    if (checked) {
-      setSelectedProperties(prev => [...prev, id]);
-    } else {
-      setSelectedProperties(prev => prev.filter(propId => propId !== id));
-    }
-  };
-  
-  const handleSelectNews = (id: number, checked: boolean) => {
-    if (checked) {
-      setSelectedNews(prev => [...prev, id]);
-    } else {
-      setSelectedNews(prev => prev.filter(newsId => newsId !== id));
-    }
-  };
-  
-  const handleSelectUser = (id: number, checked: boolean) => {
-    if (checked) {
-      setSelectedUsers(prev => [...prev, id]);
-    } else {
-      setSelectedUsers(prev => prev.filter(userId => userId !== id));
-    }
-  };
+  // 참고: 다중 선택 관련 핸들러는 위에서 이미 정의되었습니다.
   
   // 폼 닫기 핸들러
   const handleCloseForm = () => {

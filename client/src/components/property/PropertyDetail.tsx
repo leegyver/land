@@ -311,98 +311,10 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
       }
     }
 
-    // 카카오 지도 초기화
-    if (property && mapRef.current && window.kakao) {
-      const location = getPropertyLocation();
-      
-      try {
-        // 지도 옵션 설정
-        const options = {
-          center: new window.kakao.maps.LatLng(location.lat, location.lng),
-          level: 3
-        };
-        
-        // 지도 생성
-        mapInstance.current = new window.kakao.maps.Map(mapRef.current, options);
-        
-        // 마커 생성
-        const markerPosition = new window.kakao.maps.LatLng(location.lat, location.lng);
-        const marker = new window.kakao.maps.Marker({
-          position: markerPosition
-        });
-        
-        // 마커를 지도에 표시
-        marker.setMap(mapInstance.current);
-        
-        // 지도 로드 성공 - 폴백 UI 숨기기
-        const mapFallback = document.getElementById("mapFallback");
-        if (mapFallback) {
-          mapFallback.classList.add("hidden");
-        }
-        
-        console.log("카카오 지도 초기화 성공");
-      } catch (error) {
-        console.error("카카오 지도 초기화 실패:", error);
-        // 지도 로드 실패 시 대체 UI 표시
-        const mapFallback = document.getElementById("mapFallback");
-        if (mapFallback) {
-          mapFallback.classList.remove("hidden");
-        }
-      }
-    } else {
-      // 카카오 지도 API가 로드되지 않음
-      console.log("카카오 지도 API 미로드 또는 mapRef 없음");
-      const mapFallback = document.getElementById("mapFallback");
-      if (mapFallback) {
-        mapFallback.classList.remove("hidden");
-      }
-    }
+    // 지도는 이제 KakaoMap 컴포넌트에서 처리합니다.
   }, [property]);
   
-  // 강화군 기본 좌표 (위도/경도)
-  const defaultLocation = { lat: 37.7466, lng: 126.4881 };
-  
-  // 매물 위치 좌표 계산 함수
-  const getPropertyLocation = () => {
-    if (!property) return defaultLocation;
-    
-    // 실제 위/경도 정보가 있는 경우 (향후 데이터베이스에 추가될 수 있음)
-    if (property.latitude !== undefined && property.longitude !== undefined) {
-      const lat = Number(property.latitude);
-      const lng = Number(property.longitude);
-      
-      if (!isNaN(lat) && !isNaN(lng)) {
-        return { lat, lng };
-      }
-    }
-    
-    // 지역에 따른 대략적인 위치 (강화군 내 주요 지역)
-    const districtLocations: {[key: string]: {lat: number, lng: number}} = {
-      '강화읍': { lat: 37.7466, lng: 126.4881 },
-      '선원면': { lat: 37.7132, lng: 126.4777 },
-      '불은면': { lat: 37.7049, lng: 126.5357 },
-      '길상면': { lat: 37.6390, lng: 126.5306 },
-      '화도면': { lat: 37.6254, lng: 126.4273 },
-      '양도면': { lat: 37.6629, lng: 126.4003 },
-      '내가면': { lat: 37.7098, lng: 126.3767 },
-      '하점면': { lat: 37.7627, lng: 126.4274 },
-      '양사면': { lat: 37.7825, lng: 126.3799 },
-      '송해면': { lat: 37.7639, lng: 126.4615 },
-      '교동면': { lat: 37.8103, lng: 126.2724 },
-      '삼산면': { lat: 37.7290, lng: 126.3368 },
-      '서도면': { lat: 37.7504, lng: 126.2108 }
-    };
-    
-    // 매물의 district에 포함된 지역명을 찾아서 좌표 반환
-    for (const [district, location] of Object.entries(districtLocations)) {
-      if (property.district && property.district.includes(district)) {
-        return location;
-      }
-    }
-    
-    // 일치하는 지역이 없으면 강화읍 좌표 반환
-    return defaultLocation;
-  };
+  // 위치 좌표 관련 코드는 KakaoMap 컴포넌트로 이동했습니다.
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length);

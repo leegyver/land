@@ -156,19 +156,19 @@ export default function AdminPage() {
     
     return props.filter(property => {
       // 유형 필터
-      if (filterType && property.type !== filterType) {
+      if (filterType && filterType !== 'all' && property.type !== filterType) {
         return false;
       }
       
       // 지역 필터
-      if (filterDistrict && typeof property.district === 'string') {
+      if (filterDistrict && filterDistrict !== 'all' && typeof property.district === 'string') {
         if (property.district !== filterDistrict) {
           return false;
         }
       }
       
       // 거래유형 필터
-      if (filterDealType && property.dealType) {
+      if (filterDealType && filterDealType !== 'all' && property.dealType) {
         // 배열인 경우
         if (Array.isArray(property.dealType)) {
           return property.dealType.includes(filterDealType);
@@ -513,7 +513,7 @@ export default function AdminPage() {
                     <SelectValue placeholder="모든 유형" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">모든 유형</SelectItem>
+                    <SelectItem value="all">모든 유형</SelectItem>
                     {propertyTypes.map((type) => (
                       <SelectItem key={type.value} value={type.value}>
                         {type.label}
@@ -530,7 +530,7 @@ export default function AdminPage() {
                     <SelectValue placeholder="모든 지역" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">모든 지역</SelectItem>
+                    <SelectItem value="all">모든 지역</SelectItem>
                     {districts.map((district) => (
                       <SelectItem key={district.value} value={district.value}>
                         {district.label}
@@ -547,7 +547,7 @@ export default function AdminPage() {
                     <SelectValue placeholder="모든 거래 유형" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">모든 거래 유형</SelectItem>
+                    <SelectItem value="all">모든 거래 유형</SelectItem>
                     {dealTypes.map((type) => (
                       <SelectItem key={type.value} value={type.value}>
                         {type.label}

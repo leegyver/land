@@ -894,13 +894,7 @@ export default function AdminPageFixed() {
                       <TableCell>
                         <Checkbox 
                           checked={selectedProperties.includes(property.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedProperties(prev => [...prev, property.id]);
-                            } else {
-                              setSelectedProperties(prev => prev.filter(id => id !== property.id));
-                            }
-                          }}
+                          onCheckedChange={(checked) => handleSelectProperty(property.id, !!checked)}
                         />
                       </TableCell>
                       <TableCell className="font-medium">{property.id}</TableCell>
@@ -1373,13 +1367,7 @@ export default function AdminPageFixed() {
                         <TableCell>
                           <Checkbox 
                             checked={selectedUsers.includes(user.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedUsers(prev => [...prev, user.id]);
-                              } else {
-                                setSelectedUsers(prev => prev.filter(id => id !== user.id));
-                              }
-                            }}
+                            onCheckedChange={(checked) => handleSelectUser(user.id, !!checked)}
                           />
                         </TableCell>
                         <TableCell className="font-medium">{user.id}</TableCell>
@@ -1431,6 +1419,33 @@ export default function AdminPageFixed() {
           </Card>
         </TabsContent>
       </Tabs>
+      {/* 삭제 확인 대화 상자 */}
+      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {currentDeleteType === 'properties' && '부동산 매물 일괄 삭제'}
+              {currentDeleteType === 'news' && '뉴스 일괄 삭제'}
+              {currentDeleteType === 'users' && '사용자 일괄 삭제'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {currentDeleteType === 'properties' && 
+                `선택한 ${selectedProperties.length}개의 부동산 매물을 삭제하시겠습니까?`}
+              {currentDeleteType === 'news' && 
+                `선택한 ${selectedNews.length}개의 뉴스를 삭제하시겠습니까?`}
+              {currentDeleteType === 'users' && 
+                `선택한 ${selectedUsers.length}명의 사용자를 삭제하시겠습니까? 관리자 계정은 삭제되지 않습니다.`}
+              <div className="mt-2 text-red-500">이 작업은 되돌릴 수 없습니다.</div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBatchDelete} className="bg-destructive">
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

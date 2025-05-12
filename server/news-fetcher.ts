@@ -115,15 +115,45 @@ export async function fetchAndSaveNews() {
     index === self.findIndex(t => stripHtmlTags(t.title) === stripHtmlTags(item.title))
   );
 
-  // 최신순으로 정렬
-  uniqueNewsItems.sort((a, b) => 
+  // 강화군 관련 뉴스 필터링
+  const ganghwaNewsItems = uniqueNewsItems.filter(item => {
+    const title = stripHtmlTags(item.title).toLowerCase();
+    const description = stripHtmlTags(item.description).toLowerCase();
+    return title.includes('강화군') || description.includes('강화군') || 
+           title.includes('강화도') || description.includes('강화도');
+  });
+
+  // 강화군 관련 뉴스 최신순 정렬
+  ganghwaNewsItems.sort((a, b) => 
     new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
   );
-
-  // 상위 3개만 저장
-  await saveNewsToDatabase(uniqueNewsItems.slice(0, 3));
   
-  return uniqueNewsItems.slice(0, 3);
+  // 강화군 관련 뉴스 최대 3개 선택
+  const ganghwaTopNews = ganghwaNewsItems.slice(0, 3);
+  
+  // 나머지 뉴스 (강화군 관련 제외)
+  const otherNewsItems = uniqueNewsItems.filter(item => {
+    const title = stripHtmlTags(item.title).toLowerCase();
+    const description = stripHtmlTags(item.description).toLowerCase();
+    return !(title.includes('강화군') || description.includes('강화군') || 
+             title.includes('강화도') || description.includes('강화도'));
+  });
+  
+  // 나머지 뉴스 최신순 정렬
+  otherNewsItems.sort((a, b) => 
+    new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
+  );
+  
+  // 나머지 뉴스에서 최대 3개 선택
+  const otherTopNews = otherNewsItems.slice(0, 3);
+  
+  // 두 그룹 합치기 (강화군 관련 뉴스 우선)
+  const newsToSave = [...ganghwaTopNews, ...otherTopNews];
+  
+  // 저장
+  await saveNewsToDatabase(newsToSave);
+  
+  return newsToSave;
 }
 
 // 스케줄러 설정

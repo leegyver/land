@@ -757,22 +757,34 @@ export default function AdminPageFixed() {
         return false;
       }
       
-      // 지역 필터
-      if (filterDistrict && !property.district.includes(filterDistrict)) {
-        return false;
+      // 지역 필터 - district가 문자열인지 확인
+      if (filterDistrict && typeof property.district === 'string') {
+        if (!property.district.includes(filterDistrict)) {
+          return false;
+        }
       }
       
       // 거래유형 필터
-      if (filterDealType && Array.isArray(property.dealType)) {
-        if (!property.dealType.includes(filterDealType)) {
+      if (filterDealType) {
+        // 배열인 경우
+        if (Array.isArray(property.dealType)) {
+          const hasMatchingDealType = property.dealType.some(type => 
+            typeof type === 'string' && type.includes(filterDealType)
+          );
+          if (!hasMatchingDealType) {
+            return false;
+          }
+        } 
+        // 문자열인 경우
+        else if (typeof property.dealType === 'string') {
+          if (!property.dealType.includes(filterDealType)) {
+            return false;
+          }
+        } 
+        // dealType이 없는 경우
+        else if (!property.dealType) {
           return false;
         }
-      } else if (filterDealType && typeof property.dealType === 'string') {
-        if (!property.dealType.includes(filterDealType)) {
-          return false;
-        }
-      } else if (filterDealType && !property.dealType) {
-        return false;
       }
       
       return true;

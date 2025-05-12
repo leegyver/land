@@ -8,8 +8,8 @@ import { cn } from '@/lib/utils';
 declare global {
   interface Window {
     kakao: any;
-    kakaoKey?: string;
-    kakaoMapLoaded?: boolean;
+    kakaoKey: string;
+    kakaoMapLoaded: boolean;
   }
 }
 
@@ -36,77 +36,114 @@ const PropertyMap = () => {
 
   // 카카오맵 초기화
   useEffect(() => {
-    // 이미 카카오맵 스크립트가 로드되어 있는지 확인
-    if (window.kakao && window.kakao.maps) {
-      initializeMap();
-      return;
-    }
-
-    // 카카오맵 스크립트 동적 로드 (환경 변수 또는 window에 있는 키 사용)
-    const kakaoKey = window.kakaoKey || import.meta.env.VITE_KAKAO_API_KEY;
-    const script = document.createElement('script');
-    script.async = true;
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoKey}&autoload=false&libraries=services,clusterer,drawing`;
-    document.head.appendChild(script);
-
-    script.onload = () => {
-      window.kakao.maps.load(initializeMap);
-    };
-
-    return () => {
-      // 스크립트 제거
-      if (document.head.contains(script)) {
-        document.head.removeChild(script);
+    // HTML에 이미 삽입된 카카오맵 SDK 스크립트를 확인
+    const waitForKakaoSDK = () => {
+      if (window.kakao && window.kakao.maps) {
+        console.log("카카오맵 SDK 감지됨, 초기화 시작");
+        initializeMap();
+        return;
       }
+      
+      console.log("카카오맵 SDK 로딩 대기 중...");
+      // 일정 시간 후 다시 확인
+      setTimeout(waitForKakaoSDK, 500);
     };
+    
+    waitForKakaoSDK();
   }, []);
 
   // 맵 초기화 함수
   const initializeMap = () => {
-    if (!mapRef.current) return;
+    if (!mapRef.current) {
+      console.error("맵 컨테이너 요소가 없습니다");
+      return;
+    }
 
-    // 기본 위치를 강화군 중심으로 설정
-    const options = {
-      center: new window.kakao.maps.LatLng(37.7464, 126.4878), // 강화군 중심 좌표
-      level: 9 // 확대 레벨 (숫자가 작을수록 확대)
-    };
+    try {
+      console.log("카카오맵 초기화 시작");
+      
+      // 기본 위치를 강화군 중심으로 설정
+      const options = {
+        center: new window.kakao.maps.LatLng(37.7464, 126.4878), // 강화군 중심 좌표
+        level: 9 // 확대 레벨 (숫자가 작을수록 확대)
+      };
 
-    const kakaoMap = new window.kakao.maps.Map(mapRef.current, options);
-    setMap(kakaoMap);
+      const kakaoMap = new window.kakao.maps.Map(mapRef.current, options);
+      setMap(kakaoMap);
+      console.log("카카오맵 생성 성공");
 
-    // 정보 윈도우 생성
-    const kakaoInfoWindow = new window.kakao.maps.InfoWindow({ zIndex: 1 });
-    setInfoWindow(kakaoInfoWindow);
+      // 정보 윈도우 생성
+      const kakaoInfoWindow = new window.kakao.maps.InfoWindow({ zIndex: 1 });
+      setInfoWindow(kakaoInfoWindow);
+    } catch (error) {
+      console.error("카카오맵 초기화 오류:", error);
+    }
   };
 
   // 매물 마커 표시
   useEffect(() => {
-    if (!map || !properties || properties.length === 0) return;
+    if (!map || !properties || properties.length === 0) {
+      console.log("매물 데이터 또는 지도 객체가 없습니다");
+      return;
+    }
 
-    // 지오코더 서비스 객체 생성
-    const geocoder = new window.kakao.maps.services.Geocoder();
-    const bounds = new window.kakao.maps.LatLngBounds();
-    const markers: any[] = [];
-
-    // 매물들의 좌표를 얻기 위한 함수
-    const getCoordinates = (property: Property, index: number) => {
-      // 주소 정보로 위치 찾기
-      const address = `${property.city || '인천광역시'} ${property.district} ${property.address}`;
-      geocoder.addressSearch(address, (result: any, status: any) => {
-        if (status === window.kakao.maps.services.Status.OK) {
-          const position = new window.kakao.maps.LatLng(result[0].y, result[0].x);
-          createMarker(property, position, index);
-          bounds.extend(position);
+    try {
+      console.log("매물 마커 표시 시작, 매물 수:", properties.length);
+      
+      // 지오코더 서비스 객체 생성
+      const geocoder = new window.kakao.maps.services.Geocoder();
+      const bounds = new window.kakao.maps.LatLngBounds();
+      const markers: any[] = [];
+      
+      // 매물들의 좌표를 얻기 위한 함수
+      const getCoordinates = (property: Property, index: number) => {
+        try {
+          // 주소 정보로 위치 찾기 (주소 형식 개선)
+          let address = '';
           
-          // 마지막 매물 처리 후 지도 범위 재설정
-          if (index === properties.length - 1) {
-            map.setBounds(bounds);
+          // 강화군 지역 주소 최적화
+          if (property.district && property.district.includes('강화')) {
+            address = `인천광역시 강화군 ${property.address || ''}`;
+          } else {
+            address = `${property.city || '인천광역시'} ${property.district || ''} ${property.address || ''}`;
           }
-        } else {
-          console.log(`주소를 찾을 수 없습니다: ${address}`);
+          
+          // 주소에서 중복되는 지역명 제거
+          address = address.replace(/인천광역시 인천광역시/g, '인천광역시');
+          address = address.replace(/서울특별시 서울특별시/g, '서울특별시');
+          address = address.replace(/서울 서울/g, '서울');
+          
+          console.log(`주소 검색 시도: ${address}`);
+          
+          geocoder.addressSearch(address, (result: any, status: any) => {
+            if (status === window.kakao.maps.services.Status.OK) {
+              console.log(`주소 검색 성공: ${address}`);
+              const position = new window.kakao.maps.LatLng(result[0].y, result[0].x);
+              createMarker(property, position, index);
+              bounds.extend(position);
+              
+              // 마지막 매물 처리 후 지도 범위 재설정
+              if (index === properties.length - 1) {
+                map.setBounds(bounds);
+              }
+            } else {
+              console.log(`주소를 찾을 수 없습니다: ${address}`);
+              
+              // 주소를 찾을 수 없는 경우 임의의 포인트 지정 (테스트용)
+              if (property.id) {
+                // 강화군 중심에서 약간씩 위치를 변경하여 임시 마커 생성
+                const lat = 37.7464 + (Math.random() * 0.05 - 0.025);
+                const lng = 126.4878 + (Math.random() * 0.05 - 0.025);
+                const position = new window.kakao.maps.LatLng(lat, lng);
+                createMarker(property, position, index);
+                bounds.extend(position);
+              }
+            }
+          });
+        } catch (error) {
+          console.error("주소 검색 오류:", error);
         }
-      });
-    };
+      };
 
     // 마커 생성 함수
     const createMarker = (property: Property, position: any, index: number) => {
@@ -154,6 +191,10 @@ const PropertyMap = () => {
     return () => {
       markers.forEach(marker => marker.setMap(null));
     };
+    
+    } catch (error) {
+      console.error("매물 마커 생성 중 오류 발생:", error);
+    }
   }, [map, properties, infoWindow]);
 
   if (isLoading) {

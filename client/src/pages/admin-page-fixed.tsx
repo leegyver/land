@@ -3,6 +3,28 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getQueryFn, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+
+// 필터링에 사용할 목록들
+const propertyTypes = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
+const dealTypes = ["매매", "전세", "월세", "단기임대"];
+
+// 지역 목록 (district)
+const districts = [
+  "강화읍 갑곳리",
+  "강화읍 관청리",
+  "강화읍 국화리",
+  "강화읍 남산리",
+  "강화읍 대산리",
+  "강화읍 신문리",
+  "강화읍 옥림리",
+  "강화읍 용정리",
+  "화도면 장화리",
+  "길상면 길직리",
+  "길상면 선두리",
+  "길상면 온수리",
+  "길상면 장흥리",
+  "길상면 초지리"
+];
 import { Property, User, News, insertPropertySchema } from "@shared/schema";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
@@ -155,6 +177,11 @@ export default function AdminPageFixed() {
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [currentDeleteType, setCurrentDeleteType] = useState<'properties' | 'news' | 'users' | null>(null);
+  
+  // 필터 상태 추가
+  const [filterType, setFilterType] = useState("");
+  const [filterDistrict, setFilterDistrict] = useState("");
+  const [filterDealType, setFilterDealType] = useState("");
   
   // 필터링 상태
   const [filterType, setFilterType] = useState<string>("");

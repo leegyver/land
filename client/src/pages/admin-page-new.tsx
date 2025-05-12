@@ -26,6 +26,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function AdminPage() {
   const { user } = useAuth();
@@ -49,12 +56,54 @@ export default function AdminPage() {
   const [filterDistrict, setFilterDistrict] = useState<string>("");
   const [filterDealType, setFilterDealType] = useState<string>("");
   
-  // 부동산 유형 및 거래 유형 목록
-  const propertyTypes = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
-  const dealTypes = ["매매", "전세", "월세", "단기임대"];
+  // 필터 옵션
+  const propertyTypes = [
+    { value: "apartment", label: "아파트" },
+    { value: "villa", label: "빌라" },
+    { value: "house", label: "주택" },
+    { value: "officetel", label: "오피스텔" },
+    { value: "commercial", label: "상가" },
+    { value: "land", label: "토지" },
+    { value: "entrust", label: "위탁매물" },
+    { value: "full-option", label: "풀옵션" },
+    { value: "pension", label: "펜션" },
+  ];
   
-  // 지역 목록 (district)
+  const dealTypes = [
+    { value: "sale", label: "매매" },
+    { value: "jeonse", label: "전세" },
+    { value: "monthly", label: "월세" },
+  ];
+  
   const districts = [
+    { value: "강화읍", label: "강화읍" },
+    { value: "길상면", label: "길상면" },
+    { value: "선원면", label: "선원면" },
+    { value: "불은면", label: "불은면" },
+    { value: "양사면", label: "양사면" },
+    { value: "하점면", label: "하점면" },
+    { value: "송해면", label: "송해면" },
+    { value: "교동면", label: "교동면" },
+    { value: "내가면", label: "내가면" },
+    { value: "삼산면", label: "삼산면" },
+    { value: "양도면", label: "양도면" },
+    { value: "서도면", label: "서도면" },
+    { value: "서구", label: "서구" },
+    { value: "중구", label: "중구" },
+    { value: "동구", label: "동구" },
+    { value: "미추홀구", label: "미추홀구" },
+    { value: "연수구", label: "연수구" },
+    { value: "부평구", label: "부평구" },
+    { value: "계양구", label: "계양구" },
+    { value: "남동구", label: "남동구" },
+  ];
+  
+  // 기존 배열 (참고용)
+  const oldPropertyTypes = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
+  const oldDealTypes = ["매매", "전세", "월세", "단기임대"];
+  
+  // 지역 세부 목록 (참고용)
+  const districtDetail = [
     "강화읍 갑곳리",
     "강화읍 국화리",
     "강화읍 남산리",

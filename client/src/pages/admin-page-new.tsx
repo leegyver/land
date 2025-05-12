@@ -254,6 +254,40 @@ export default function AdminPage() {
     }
   };
   
+  // 부동산 필터링 함수
+  const filterProperties = (props: Property[]) => {
+    if (!props) return [];
+    
+    return props.filter(property => {
+      // 유형 필터
+      if (filterType && property.type !== filterType) {
+        return false;
+      }
+      
+      // 지역 필터
+      if (filterDistrict && typeof property.district === 'string') {
+        if (property.district !== filterDistrict) {
+          return false;
+        }
+      }
+      
+      // 거래유형 필터
+      if (filterDealType && property.dealType) {
+        // 배열인 경우
+        if (Array.isArray(property.dealType)) {
+          return property.dealType.includes(filterDealType);
+        } 
+        // 문자열인 경우
+        else if (typeof property.dealType === 'string') {
+          return property.dealType === filterDealType;
+        }
+        return false;
+      }
+      
+      return true;
+    });
+  };
+  
   const handleSelectNews = (id: number, checked: boolean) => {
     if (checked) {
       setSelectedNews([...selectedNews, id]);

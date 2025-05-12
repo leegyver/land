@@ -575,14 +575,16 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                           </tr>
                         )}
                         
-                        {/* 평형 정보는 관리자 페이지의 평형 필드값을 사용 */}
-                        {(property.areaSize || property.size) && (
+                        {/* 평형 정보는 관리자 페이지의 전용(평) 필드값을 사용 */}
+                        {(property.privateArea || property.areaSize) && (
                           <tr className="border-b border-gray-100">
                             <td className="py-2 text-gray-600">평형</td>
                             <td className="py-2 font-medium">
-                              {property.areaSize 
-                                ? `${property.areaSize}평형` 
-                                : `${(Number(property.size) * 0.3025).toFixed(2)}평형`}
+                              {property.privateArea 
+                                ? `${property.privateArea}평형`
+                                : property.areaSize
+                                  ? `${property.areaSize}평형`
+                                  : `${(Number(property.size) * 0.3025).toFixed(2)}평형`}
                             </td>
                           </tr>
                         )}

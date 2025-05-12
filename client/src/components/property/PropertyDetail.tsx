@@ -279,9 +279,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
   // 부동산 등록시 첨부한 이미지들을 사용
   const defaultImage = "https://via.placeholder.com/800x500?text=매물+이미지+준비중";
   
-  // 네이버 지도 API를 위한 ref 및 설정
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<any>(null);
+  // 지도 관련 코드는 KakaoMap 컴포넌트로 이동했습니다.
   
   // imageUrls 배열이 있으면 사용하고, 없으면 기존 imageUrl을 배열로 변환
   // 이미지가 하나도 없는 경우 기본 이미지 사용

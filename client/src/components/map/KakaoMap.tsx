@@ -67,95 +67,109 @@ export default function KakaoMap() {
       const infoWindow = new window.kakao.maps.InfoWindow({ zIndex: 1 });
       const markers: any[] = [];
       
-      // 지도 줌 변경 이벤트에 인포윈도우 닫기 추가 (중복 방지)
-      window.kakao.maps.event.addListener(map, 'zoom_changed', () => {
-        // 지도 줌 변경시 열려있는 인포윈도우 닫기
+      // 인포윈도우 닫기 함수 (중복 방지)
+      const closeInfoWindow = () => {
         infoWindow.close();
-      });
+      };
+      
+      // 지도 줌 변경 이벤트에 인포윈도우 닫기 추가
+      window.kakao.maps.event.addListener(map, 'zoom_changed', closeInfoWindow);
       
       // 드래그 완료 이벤트에도 인포윈도우 닫기 적용
-      window.kakao.maps.event.addListener(map, 'dragend', () => {
-        // 지도 드래그 완료시 열려있는 인포윈도우 닫기
-        infoWindow.close();
-      });
+      window.kakao.maps.event.addListener(map, 'dragend', closeInfoWindow);
       
       // 각 매물의 주소를 좌표로 변환하여 마커 생성
       properties.forEach((property, index) => {
-        // 주소 구성 (정확도 향상을 위한 방식)
-        let address = '';
+        // 지역 필드 + 주소 필드 형식으로 주소 구성
+        const city = property.city || '';
+        const district = property.district || '';
+        const detailAddress = property.address || '';
         
-        // 지역별 정확한 주소 형식 구성
-        if (property.district && property.district.includes('강화')) {
-          // 강화군 지역 주소 최적화
-          const region = '인천광역시 강화군';
-          
-          // 상세 주소 구성
-          if (property.address) {
-            address = `${region} ${property.address}`;
-          } else {
-            address = region;
-          }
-        } else if (property.city && property.city.includes('서울')) {
-          // 서울 지역 주소 최적화
-          if (property.district) {
-            // 중복 구 이름 제거
-            const district = property.district.replace(/서울특별시|서울시|서울/g, '').trim();
-            address = `서울특별시 ${district} ${property.address || ''}`.trim();
-          } else {
-            address = `서울특별시 ${property.address || ''}`.trim();
-          }
-        } else {
-          // 기타 지역 주소 최적화
-          address = `${property.city || '인천광역시'} ${property.district || ''} ${property.address || ''}`.trim();
+        // 강화군 지역은 특별 처리
+        let address = '';
+        if (district.includes('강화')) {
+          // 강화군은 '인천광역시 강화군'으로 명시
+          address = `인천광역시 강화군 ${district} ${detailAddress}`.trim();
+        } 
+        // 서울 지역 처리
+        else if (city.includes('서울')) {
+          // 서울 지역은 '서울특별시'로 통일
+          const cleanDistrict = district.replace(/서울특별시|서울시|서울/g, '').trim();
+          address = `서울특별시 ${cleanDistrict} ${detailAddress}`.trim();
+        }
+        // 인천 지역 처리 (강화군 제외)
+        else if (city.includes('인천')) {
+          address = `인천광역시 ${district} ${detailAddress}`.trim();
+        }
+        // 기타 지역
+        else {
+          address = `${city} ${district} ${detailAddress}`.trim();
         }
         
         console.log(`주소 검색 시도: ${address}`);
         
         // 주소가 있고 최소 길이 조건을 만족하면 검색 시도
         if (address.trim() && address.length > 5) {
-          // 카카오맵 API는 옵션을 마지막 파라미터로 전달
+          // 검색 옵션 설정 (정확도 향상)
+          const searchOptions = {
+            size: 1,  // 결과 개수 제한
+            analyze_type: 'similar'  // 유사 매칭 분석 타입
+          };
+          
+          // 마커 생성 함수
+          const createMarker = (coords: any, isExactLocation: boolean = true) => {
+            const marker = new window.kakao.maps.Marker({
+              map: map,
+              position: coords,
+              title: property.title
+            });
+            
+            markers.push(marker);
+            bounds.extend(coords);
+            
+            // 마커 클릭 이벤트
+            window.kakao.maps.event.addListener(marker, 'click', () => {
+              // 기존 인포윈도우 닫기 (중복 방지)
+              infoWindow.close();
+              
+              // 선택된 매물 설정
+              setSelectedProperty(property);
+              
+              // 인포윈도우 내용 설정
+              let content = `
+                <div style="padding:8px;font-size:12px;max-width:250px;">
+                  <div style="font-weight:bold;margin-bottom:4px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${property.title}</div>
+                  <div style="color:#666;font-size:12px;margin-bottom:4px;">${property.type} · ${property.dealType ? property.dealType[0] : '매매'}</div>
+                  <div style="color:#2563eb;font-weight:bold;font-size:13px;">${formatPrice(Number(property.price) || 0)}</div>
+              `;
+              
+              // 대략적인 위치를 사용한 경우 알림 추가
+              if (!isExactLocation) {
+                content += `<div style="color:#888;font-size:11px;margin-top:4px;"><i>* 위치는 대략적인 지역 중심 기준</i></div>`;
+              }
+              
+              content += `</div>`;
+              
+              // 인포윈도우 표시
+              infoWindow.setContent(content);
+              infoWindow.open(map, marker);
+              
+              // 지도 중심 이동 및 확대 (정확한 위치인 경우만)
+              if (isExactLocation) {
+                map.setCenter(coords);
+                map.setLevel(3);
+              }
+            });
+          };
+          
+          // 카카오맵 API에 주소 검색 요청 (옵션 전달)
           geocoder.addressSearch(address, (result: any, status: any) => {
             if (status === window.kakao.maps.services.Status.OK) {
               console.log(`주소 검색 성공: ${result[0].address_name}`);
               
-              // 좌표 생성
+              // 좌표 생성 및 마커 표시
               const coords = new window.kakao.maps.LatLng(result[0].y, result[0].x);
-              
-              // 마커 생성
-              const marker = new window.kakao.maps.Marker({
-                map: map,
-                position: coords,
-                title: property.title
-              });
-              
-              markers.push(marker);
-              bounds.extend(coords);
-              
-              // 마커 클릭 이벤트
-              window.kakao.maps.event.addListener(marker, 'click', () => {
-                // 기존 인포윈도우 닫기 (중복 방지)
-                infoWindow.close();
-                
-                // 선택된 매물 설정
-                setSelectedProperty(property);
-                
-                // 인포윈도우 내용 설정
-                const content = `
-                  <div style="padding:8px;font-size:12px;max-width:250px;">
-                    <div style="font-weight:bold;margin-bottom:4px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${property.title}</div>
-                    <div style="color:#666;font-size:12px;margin-bottom:4px;">${property.type} · ${property.dealType ? property.dealType[0] : '매매'}</div>
-                    <div style="color:#2563eb;font-weight:bold;font-size:13px;">${formatPrice(Number(property.price) || 0)}</div>
-                  </div>
-                `;
-                
-                // 인포윈도우 표시
-                infoWindow.setContent(content);
-                infoWindow.open(map, marker);
-                
-                // 지도 중심 이동 및 확대
-                map.setCenter(coords);
-                map.setLevel(3);
-              });
+              createMarker(coords, true);
               
               // 마지막 매물 처리 후 지도 범위 조정
               if (index === properties.length - 1) {
@@ -168,54 +182,24 @@ export default function KakaoMap() {
               let fallbackCoords;
               
               // 지역에 따른 중심 좌표 사용
-              if (property.district && property.district.includes('강화')) {
-                // 강화군 중심
-                fallbackCoords = new window.kakao.maps.LatLng(37.7464, 126.4878);
-              } else if (property.city && property.city.includes('서울')) {
-                // 서울 중심
-                fallbackCoords = new window.kakao.maps.LatLng(37.5665, 126.9780);
-              } else if (property.city && property.city.includes('인천')) {
-                // 인천 중심
-                fallbackCoords = new window.kakao.maps.LatLng(37.4563, 126.7052);
+              if (district.includes('강화')) {
+                fallbackCoords = new window.kakao.maps.LatLng(37.7464, 126.4878); // 강화군 중심
+              } else if (city.includes('서울')) {
+                fallbackCoords = new window.kakao.maps.LatLng(37.5665, 126.9780); // 서울 중심
+              } else if (city.includes('인천')) {
+                fallbackCoords = new window.kakao.maps.LatLng(37.4563, 126.7052); // 인천 중심
               } else {
-                // 기본 위치 (강화군)
+                // 기본 위치에 약간의 랜덤성 추가 (마커 중첩 방지)
                 fallbackCoords = new window.kakao.maps.LatLng(
                   37.7464 + (Math.random() * 0.02 - 0.01), 
                   126.4878 + (Math.random() * 0.02 - 0.01)
                 );
               }
               
-              // 마커 생성
-              const marker = new window.kakao.maps.Marker({
-                map: map,
-                position: fallbackCoords,
-                title: property.title
-              });
-              
-              markers.push(marker);
-              bounds.extend(fallbackCoords);
-              
-              // 마커 클릭 이벤트
-              window.kakao.maps.event.addListener(marker, 'click', () => {
-                // 기존 인포윈도우 닫기 (중복 방지)
-                infoWindow.close();
-                
-                setSelectedProperty(property);
-                
-                const content = `
-                  <div style="padding:8px;font-size:12px;max-width:250px;">
-                    <div style="font-weight:bold;margin-bottom:4px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${property.title}</div>
-                    <div style="color:#666;font-size:12px;margin-bottom:4px;">${property.type} · ${property.dealType ? property.dealType[0] : '매매'}</div>
-                    <div style="color:#2563eb;font-weight:bold;font-size:13px;">${formatPrice(Number(property.price) || 0)}</div>
-                    <div style="color:#888;font-size:11px;margin-top:4px;"><i>* 위치는 대략적인 지역 중심 기준</i></div>
-                  </div>
-                `;
-                
-                infoWindow.setContent(content);
-                infoWindow.open(map, marker);
-              });
+              // 대략적인 위치에 마커 생성
+              createMarker(fallbackCoords, false);
             }
-          });
+          }, searchOptions); // 검색 옵션 전달
         }
       });
       

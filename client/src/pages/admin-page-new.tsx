@@ -488,19 +488,38 @@ export default function AdminPage() {
                             }).format(Number(property.price))}
                           </TableCell>
                           <TableCell>
-                            <div>
-                              {property.dealType && property.dealType.length > 0 ? (
-                                <span className={`px-2 py-1 rounded-full text-xs ${
-                                  property.dealType.includes("매매") 
-                                    ? 'bg-blue-100 text-blue-800' 
-                                    : property.dealType.includes("전세")
-                                    ? 'bg-green-100 text-green-800'
-                                    : property.dealType.includes("월세")
-                                    ? 'bg-orange-100 text-orange-800'
-                                    : 'bg-gray-100 text-gray-800'
-                                }`}>
-                                  {Array.isArray(property.dealType) ? property.dealType[0] : property.dealType}
-                                </span>
+                            <div className="flex flex-col gap-1">
+                              {property.dealType && (Array.isArray(property.dealType) ? property.dealType.length > 0 : typeof property.dealType === 'string' && property.dealType.length > 0) ? (
+                                Array.isArray(property.dealType) ? 
+                                  property.dealType.map((type, idx) => {
+                                    const dealTypeClass = 
+                                      typeof type === 'string' && type.includes("매매") 
+                                        ? 'bg-blue-100 text-blue-800' 
+                                        : typeof type === 'string' && type.includes("전세")
+                                        ? 'bg-green-100 text-green-800'
+                                        : typeof type === 'string' && type.includes("월세")
+                                        ? 'bg-orange-100 text-orange-800'
+                                        : 'bg-gray-100 text-gray-800';
+                                    
+                                    return (
+                                      <span key={idx} className={`px-2 py-1 rounded-full text-xs inline-block ${dealTypeClass}`}>
+                                        {type}
+                                      </span>
+                                    );
+                                  })
+                                : (
+                                  <span className={`px-2 py-1 rounded-full text-xs ${
+                                    typeof property.dealType === 'string' && property.dealType.includes("매매") 
+                                      ? 'bg-blue-100 text-blue-800' 
+                                      : typeof property.dealType === 'string' && property.dealType.includes("전세")
+                                      ? 'bg-green-100 text-green-800'
+                                      : typeof property.dealType === 'string' && property.dealType.includes("월세")
+                                      ? 'bg-orange-100 text-orange-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {property.dealType}
+                                  </span>
+                                )
                               ) : (
                                 <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
                                   미지정

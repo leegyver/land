@@ -75,6 +75,8 @@ export default function AdminPage() {
   
   // 지역 필터 추가 (클라이언트 요청)
   const districts = [
+    // 강화읍
+    { value: "강화읍", label: "강화읍" },
     { value: "강화읍 갑곳리", label: "강화읍 갑곳리" },
     { value: "강화읍 국화리", label: "강화읍 국화리" },
     { value: "강화읍 남산리", label: "강화읍 남산리" },
@@ -87,18 +89,105 @@ export default function AdminPage() {
     { value: "강화읍 용정리", label: "강화읍 용정리" },
     { value: "강화읍 월곶리", label: "강화읍 월곶리" },
     { value: "강화읍 관청리", label: "강화읍 관청리" },
+    { value: "강화읍 대산리", label: "강화읍 대산리" },
+    { value: "강화읍 석쇠리", label: "강화읍 석쇠리" },
+    { value: "강화읍 합점리", label: "강화읍 합점리" },
+    
+    // 교동면
     { value: "교동면", label: "교동면" },
+    { value: "교동면 대룡리", label: "교동면 대룡리" },
+    { value: "교동면 상용리", label: "교동면 상용리" },
+    { value: "교동면 고구리", label: "교동면 고구리" },
+    { value: "교동면 난정리", label: "교동면 난정리" },
+    { value: "교동면 삼선리", label: "교동면 삼선리" },
+    { value: "교동면 무학리", label: "교동면 무학리" },
+    { value: "교동면 인사리", label: "교동면 인사리" },
+    
+    // 삼산면
     { value: "삼산면", label: "삼산면" },
+    { value: "삼산면 석모리", label: "삼산면 석모리" },
+    { value: "삼산면 서검리", label: "삼산면 서검리" },
+    { value: "삼산면 미법리", label: "삼산면 미법리" },
+    { value: "삼산면 매음리", label: "삼산면 매음리" },
+    { value: "삼산면 석포리", label: "삼산면 석포리" },
+    
+    // 서도면
     { value: "서도면", label: "서도면" },
+    { value: "서도면 주문도리", label: "서도면 주문도리" },
+    { value: "서도면 아차도리", label: "서도면 아차도리" },
+    { value: "서도면 말도리", label: "서도면 말도리" },
+    { value: "서도면 볼음도리", label: "서도면 볼음도리" },
+    
+    // 송해면
     { value: "송해면", label: "송해면" },
+    { value: "송해면 당산리", label: "송해면 당산리" },
+    { value: "송해면 상도리", label: "송해면 상도리" },
+    { value: "송해면 하도리", label: "송해면 하도리" },
+    { value: "송해면 솔정리", label: "송해면 솔정리" },
+    { value: "송해면 신당리", label: "송해면 신당리" },
+    
+    // 양도면
     { value: "양도면", label: "양도면" },
+    { value: "양도면 조산리", label: "양도면 조산리" },
+    { value: "양도면 인산리", label: "양도면 인산리" },
+    { value: "양도면 삼흥리", label: "양도면 삼흥리" },
+    { value: "양도면 도장리", label: "양도면 도장리" },
+    { value: "양도면 건평리", label: "양도면 건평리" },
+    
+    // 양사면
     { value: "양사면", label: "양사면" },
+    { value: "양사면 덕하리", label: "양사면 덕하리" },
+    { value: "양사면 북성리", label: "양사면 북성리" },
+    { value: "양사면 철산리", label: "양사면 철산리" },
+    { value: "양사면 인화리", label: "양사면 인화리" },
+    { value: "양사면 감정리", label: "양사면 감정리" },
+    
+    // 하점면
     { value: "하점면", label: "하점면" },
+    { value: "하점면 망원리", label: "하점면 망원리" },
+    { value: "하점면 이강리", label: "하점면 이강리" },
+    { value: "하점면 신봉리", label: "하점면 신봉리" },
+    { value: "하점면 장정리", label: "하점면 장정리" },
+    { value: "하점면 망월리", label: "하점면 망월리" },
+    
+    // 화도면
     { value: "화도면", label: "화도면" },
+    { value: "화도면 사기리", label: "화도면 사기리" },
+    { value: "화도면 장화리", label: "화도면 장화리" },
+    { value: "화도면 흥왕리", label: "화도면 흥왕리" },
+    { value: "화도면 내리", label: "화도면 내리" },
+    { value: "화도면 덕포리", label: "화도면 덕포리" },
+    
+    // 내가면
     { value: "내가면", label: "내가면" },
+    { value: "내가면 외포리", label: "내가면 외포리" },
+    { value: "내가면 고천리", label: "내가면 고천리" },
+    { value: "내가면 황청리", label: "내가면 황청리" },
+    { value: "내가면 내리", label: "내가면 내리" },
+    
+    // 불은면
     { value: "불은면", label: "불은면" },
+    { value: "불은면 두운리", label: "불은면 두운리" },
+    { value: "불은면 오두리", label: "불은면 오두리" },
+    { value: "불은면 삼성리", label: "불은면 삼성리" },
+    { value: "불은면 덕성리", label: "불은면 덕성리" },
+    
+    // 선원면
     { value: "선원면", label: "선원면" },
+    { value: "선원면 연리", label: "선원면 연리" },
+    { value: "선원면 이룡리", label: "선원면 이룡리" },
+    { value: "선원면 신정리", label: "선원면 신정리" },
+    { value: "선원면 선원리", label: "선원면 선원리" },
+    { value: "선원면 창리", label: "선원면 창리" },
+    
+    // 길상면
     { value: "길상면", label: "길상면" },
+    { value: "길상면 길직리", label: "길상면 길직리" },
+    { value: "길상면 장흥리", label: "길상면 장흥리" },
+    { value: "길상면 온수리", label: "길상면 온수리" },
+    { value: "길상면 선두리", label: "길상면 선두리" },
+    
+    // 기타
     { value: "강화읍 외 지역", label: "강화읍 외 지역" }
   ];
   

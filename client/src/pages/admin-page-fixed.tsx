@@ -445,6 +445,91 @@ export default function AdminPageFixed() {
     },
   });
 
+  // 부동산 다중 삭제 mutation
+  const batchDeletePropertiesMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      const res = await apiRequest("POST", "/api/properties/batch-delete", { ids });
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
+      toast({
+        title: "부동산 일괄 삭제 완료",
+        description: data.message,
+      });
+      setSelectedProperties([]);
+      setIsDeleteAlertOpen(false);
+      setCurrentDeleteType(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "부동산 일괄 삭제 실패",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  // 뉴스 다중 삭제 mutation
+  const batchDeleteNewsMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      const res = await apiRequest("POST", "/api/news/batch-delete", { ids });
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/news"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/news/latest"] });
+      toast({
+        title: "뉴스 일괄 삭제 완료",
+        description: data.message,
+      });
+      setSelectedNews([]);
+      setIsDeleteAlertOpen(false);
+      setCurrentDeleteType(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "뉴스 일괄 삭제 실패",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  // 사용자 다중 삭제 mutation
+  const batchDeleteUsersMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      const res = await apiRequest("POST", "/api/users/batch-delete", { ids });
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      toast({
+        title: "사용자 일괄 삭제 완료",
+        description: data.message,
+      });
+      
+      // 자기 자신을 포함해서 삭제했는지 확인
+      if (data.skippedSelf) {
+        toast({
+          title: "알림",
+          description: "현재 로그인된 계정은 삭제할 수 없습니다.",
+        });
+      }
+      
+      setSelectedUsers([]);
+      setIsDeleteAlertOpen(false);
+      setCurrentDeleteType(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "사용자 일괄 삭제 실패",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
   // 뉴스 수동 업데이트 핸들러
   const handleUpdateNews = () => {
     if (window.confirm("네이버 뉴스 API를 통해 최신 뉴스를 가져오시겠습니까?")) {
@@ -457,6 +542,80 @@ export default function AdminPageFixed() {
   const handleDeleteProperty = (id: number) => {
     if (window.confirm("정말로 이 부동산을 삭제하시겠습니까?")) {
       deletePropertyMutation.mutate(id);
+    }
+  };
+  
+  // 다중 선택 핸들러
+  const handleSelectProperty = (id: number, checked: boolean) => {
+    if (checked) {
+      setSelectedProperties([...selectedProperties, id]);
+    } else {
+      setSelectedProperties(selectedProperties.filter(propId => propId !== id));
+    }
+  };
+  
+  const handleSelectNews = (id: number, checked: boolean) => {
+    if (checked) {
+      setSelectedNews([...selectedNews, id]);
+    } else {
+      setSelectedNews(selectedNews.filter(newsId => newsId !== id));
+    }
+  };
+  
+  const handleSelectUser = (id: number, checked: boolean) => {
+    if (checked) {
+      setSelectedUsers([...selectedUsers, id]);
+    } else {
+      setSelectedUsers(selectedUsers.filter(userId => userId !== id));
+    }
+  };
+  
+  // 일괄 삭제 확인 다이얼로그 열기
+  const openDeleteConfirm = (type: 'properties' | 'news' | 'users') => {
+    setCurrentDeleteType(type);
+    setIsDeleteAlertOpen(true);
+  };
+  
+  // 일괄 삭제 실행
+  const handleBatchDelete = () => {
+    if (!currentDeleteType) return;
+    
+    switch (currentDeleteType) {
+      case 'properties':
+        if (selectedProperties.length === 0) {
+          toast({
+            title: "선택된 항목 없음",
+            description: "삭제할 부동산 매물을 선택해주세요.",
+            variant: "destructive",
+          });
+          return;
+        }
+        batchDeletePropertiesMutation.mutate(selectedProperties);
+        break;
+      
+      case 'news':
+        if (selectedNews.length === 0) {
+          toast({
+            title: "선택된 항목 없음",
+            description: "삭제할 뉴스를 선택해주세요.",
+            variant: "destructive",
+          });
+          return;
+        }
+        batchDeleteNewsMutation.mutate(selectedNews);
+        break;
+      
+      case 'users':
+        if (selectedUsers.length === 0) {
+          toast({
+            title: "선택된 항목 없음",
+            description: "삭제할 사용자를 선택해주세요.",
+            variant: "destructive",
+          });
+          return;
+        }
+        batchDeleteUsersMutation.mutate(selectedUsers);
+        break;
     }
   };
 

@@ -139,7 +139,7 @@ export default function KakaoMap() {
               let content = `
                 <div style="padding:8px;font-size:12px;max-width:250px;">
                   <div style="font-weight:bold;margin-bottom:4px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${property.title}</div>
-                  <div style="color:#666;font-size:12px;margin-bottom:4px;">${property.type} · ${property.dealType ? property.dealType[0] : '매매'}</div>
+                  <div style="color:#666;font-size:12px;margin-bottom:4px;">${property.type} · ${property.dealType && Array.isArray(property.dealType) ? property.dealType.join(', ') : '매매'}</div>
                   <div style="color:#2563eb;font-weight:bold;font-size:13px;">${formatPrice(Number(property.price) || 0)}</div>
               `;
               
@@ -246,11 +246,11 @@ export default function KakaoMap() {
             <Badge variant="outline" className="bg-primary/10 text-primary">
               {selectedProperty.type}
             </Badge>
-            {selectedProperty.dealType && Array.isArray(selectedProperty.dealType) && (
-              <Badge variant="outline" className="bg-secondary/10 text-secondary">
-                {selectedProperty.dealType[0]}
+            {selectedProperty.dealType && Array.isArray(selectedProperty.dealType) && selectedProperty.dealType.map((type, index) => (
+              <Badge key={index} variant="outline" className="bg-primary/10 text-primary font-bold">
+                {type}
               </Badge>
-            )}
+            ))}
           </div>
           
           <div className="grid grid-cols-2 gap-x-2 gap-y-1 mb-3 text-sm">

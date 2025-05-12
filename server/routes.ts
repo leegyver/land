@@ -831,6 +831,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 뉴스 수동 업데이트 API 엔드포인트 (테스트용)
+  app.get("/api/news/update-now", async (req, res) => {
+    try {
+      const newsItems = await fetchAndSaveNews();
+      res.json({ 
+        message: "뉴스가 성공적으로 업데이트되었습니다.", 
+        count: newsItems.length,
+        news: newsItems
+      });
+    } catch (error) {
+      console.error("뉴스 업데이트 오류:", error);
+      res.status(500).json({ message: "뉴스 업데이트 중 오류가 발생했습니다." });
+    }
+  });
+  
   const httpServer = createServer(app);
   return httpServer;
 }

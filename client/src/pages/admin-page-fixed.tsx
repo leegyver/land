@@ -1290,11 +1290,23 @@ export default function AdminPageFixed() {
         {/* 사용자 관리 탭 (관리자만) */}
         <TabsContent value="users">
           <Card>
-            <CardHeader>
-              <CardTitle>사용자 목록</CardTitle>
-              <CardDescription>
-                등록된 사용자 목록을 관리합니다.
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>사용자 목록</CardTitle>
+                <CardDescription>
+                  등록된 사용자 목록을 관리합니다.
+                </CardDescription>
+              </div>
+              {selectedUsers.length > 0 && (
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  onClick={() => openDeleteConfirm('users')}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {selectedUsers.length}명 삭제
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               {isLoadingUsers && !usersLoaded ? (
@@ -1310,6 +1322,18 @@ export default function AdminPageFixed() {
                   <TableCaption>총 {displayUsers?.length || 0}명의 사용자</TableCaption>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-12">
+                        <Checkbox 
+                          checked={selectedUsers.length > 0 && selectedUsers.length === displayUsers.length}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedUsers(displayUsers.map(u => u.id));
+                            } else {
+                              setSelectedUsers([]);
+                            }
+                          }}
+                        />
+                      </TableHead>
                       <TableHead>ID</TableHead>
                       <TableHead>사용자명</TableHead>
                       <TableHead>이메일</TableHead>
@@ -1321,6 +1345,18 @@ export default function AdminPageFixed() {
                   <TableBody>
                     {displayUsers.map((user) => (
                       <TableRow key={user.id}>
+                        <TableCell>
+                          <Checkbox 
+                            checked={selectedUsers.includes(user.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedUsers(prev => [...prev, user.id]);
+                              } else {
+                                setSelectedUsers(prev => prev.filter(id => id !== user.id));
+                              }
+                            }}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium">{user.id}</TableCell>
                         <TableCell>{user.username}</TableCell>
                         <TableCell>{user.email}</TableCell>

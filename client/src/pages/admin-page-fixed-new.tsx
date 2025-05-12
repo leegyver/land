@@ -69,13 +69,15 @@ export default function AdminPage() {
     { value: "매매", label: "매매" },
     { value: "전세", label: "전세" },
     { value: "월세", label: "월세" },
+    { value: "완료", label: "완료" },
+    { value: "보류중", label: "보류중" },
   ];
   
   const districts = [];
   
   // 기존 배열 (참고용)
   const oldPropertyTypes = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
-  const oldDealTypes = ["매매", "전세", "월세", "단기임대"];
+  const oldDealTypes = ["매매", "전세", "월세", "단기임대", "완료", "보류중"];
   
   // 지역 세부 목록 (참고용)
   const districtDetail = [

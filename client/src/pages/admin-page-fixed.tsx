@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getQueryFn, apiRequest } from "@/lib/queryClient";
@@ -749,8 +749,39 @@ export default function AdminPageFixed() {
     );
   }
 
+  // 필터링 함수
+  const filterProperties = (props: Property[]) => {
+    return props.filter(property => {
+      // 유형 필터
+      if (filterType && property.type !== filterType) {
+        return false;
+      }
+      
+      // 지역 필터
+      if (filterDistrict && !property.district.includes(filterDistrict)) {
+        return false;
+      }
+      
+      // 거래유형 필터
+      if (filterDealType && Array.isArray(property.dealType)) {
+        if (!property.dealType.includes(filterDealType)) {
+          return false;
+        }
+      } else if (filterDealType && typeof property.dealType === 'string') {
+        if (!property.dealType.includes(filterDealType)) {
+          return false;
+        }
+      } else if (filterDealType && !property.dealType) {
+        return false;
+      }
+      
+      return true;
+    });
+  };
+  
   // 표시할 데이터 결정
-  const displayProperties = propertiesLoaded ? localProperties : (properties || []);
+  const baseProperties = propertiesLoaded ? localProperties : (properties || []);
+  const displayProperties = filterProperties(baseProperties);
   const displayUsers = usersLoaded ? localUsers : (users || []);
   const displayNews = newsLoaded ? localNews : (news || []);
 
@@ -845,6 +876,85 @@ export default function AdminPageFixed() {
               </div>
             </CardHeader>
             <CardContent>
+              {/* 필터 UI */}
+              <div className="mb-6 p-4 border rounded-lg bg-gray-50">
+                <h3 className="text-lg font-medium mb-3">필터링</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Select
+                      value={filterType}
+                      onValueChange={setFilterType}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="유형별 필터" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">전체 유형</SelectItem>
+                        {propertyTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Select
+                      value={filterDistrict}
+                      onValueChange={setFilterDistrict}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="지역별 필터" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">전체 지역</SelectItem>
+                        {districts.map((district) => (
+                          <SelectItem key={district} value={district}>
+                            {district}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Select
+                      value={filterDealType}
+                      onValueChange={setFilterDealType}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="거래유형별 필터" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">전체 거래유형</SelectItem>
+                        {dealTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                {(filterType || filterDistrict || filterDealType) && (
+                  <div className="mt-4 flex justify-end">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setFilterType("");
+                        setFilterDistrict("");
+                        setFilterDealType("");
+                      }}
+                    >
+                      필터 초기화
+                    </Button>
+                  </div>
+                )}
+              </div>
+              
               <Table>
                 <TableCaption>총 {displayProperties?.length || 0}개의 부동산 매물</TableCaption>
                 <TableHeader>

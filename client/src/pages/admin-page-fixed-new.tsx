@@ -59,14 +59,10 @@ export default function AdminPage() {
   // 필터 옵션 - DB에 있는 실제 필드값 적용
   const propertyTypes = [
     { value: "아파트", label: "아파트" },
-    { value: "빌라", label: "빌라" },
+    { value: "아파트연립다세대", label: "아파트연립다세대" },
     { value: "주택", label: "주택" },
     { value: "오피스텔", label: "오피스텔" },
-    { value: "상가", label: "상가" },
-    { value: "토지", label: "토지" },
-    { value: "위탁매물", label: "위탁매물" },
-    { value: "풀옵션", label: "풀옵션" },
-    { value: "펜션", label: "펜션" },
+    { value: "상가공장창고펜션", label: "상가공장창고펜션" },
   ];
   
   const dealTypes = [
@@ -76,26 +72,14 @@ export default function AdminPage() {
   ];
   
   const districts = [
-    { value: "강화읍", label: "강화읍" },
-    { value: "길상면", label: "길상면" },
-    { value: "선원면", label: "선원면" },
-    { value: "불은면", label: "불은면" },
-    { value: "양사면", label: "양사면" },
-    { value: "하점면", label: "하점면" },
-    { value: "송해면", label: "송해면" },
-    { value: "교동면", label: "교동면" },
-    { value: "내가면", label: "내가면" },
-    { value: "삼산면", label: "삼산면" },
-    { value: "양도면", label: "양도면" },
-    { value: "서도면", label: "서도면" },
-    { value: "서구", label: "서구" },
-    { value: "중구", label: "중구" },
-    { value: "동구", label: "동구" },
-    { value: "미추홀구", label: "미추홀구" },
-    { value: "연수구", label: "연수구" },
-    { value: "부평구", label: "부평구" },
-    { value: "계양구", label: "계양구" },
-    { value: "남동구", label: "남동구" },
+    { value: "강화읍 관청리", label: "강화읍 관청리" },
+    { value: "강화읍 갑곳리", label: "강화읍 갑곳리" },
+    { value: "강화읍 국화리", label: "강화읍 국화리" },
+    { value: "화도면 장화리", label: "화도면 장화리" },
+    { value: "용산구", label: "용산구" },
+    { value: "마포구", label: "마포구" },
+    { value: "강남구", label: "강남구" },
+    { value: "서초구", label: "서초구" },
   ];
   
   // 기존 배열 (참고용)
@@ -169,11 +153,16 @@ export default function AdminPage() {
       
       // 거래유형 필터
       if (filterDealType && filterDealType !== 'all' && property.dealType) {
-        // 배열인 경우
+        // 배열인 경우 ({매매,월세} 형태)
         if (Array.isArray(property.dealType)) {
           return property.dealType.includes(filterDealType);
         } 
-        // 문자열인 경우
+        // PostgreSQL 배열 형식의 문자열인 경우 ("{매매,월세}" 형태)
+        else if (typeof property.dealType === 'string' && property.dealType.startsWith('{') && property.dealType.endsWith('}')) {
+          const dealTypes = property.dealType.substring(1, property.dealType.length - 1).split(',');
+          return dealTypes.includes(filterDealType);
+        }
+        // 일반 문자열인 경우 (매매 형태)
         else if (typeof property.dealType === 'string') {
           return property.dealType === filterDealType;
         }

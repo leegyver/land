@@ -17,8 +17,8 @@ export async function fetchNaverBlogPosts(blogId: string, categoryNo: string = '
     const response = await fetch(url);
     const xml = await response.text();
     
-    // XML을 JavaScript 객체로 변환
-    const result: any = xml2js(xml, { compact: true, spaces: 2 });
+    // XML을 JavaScript 객체로 변환 (타입 오류 방지를 위해 any로 타입 지정)
+    const result: any = xml2js(xml, { compact: true } as any);
     
     if (!result || !result.rss || !result.rss.channel || !result.rss.channel.item) {
       console.error('RSS 피드 형식이 예상과 다릅니다:', result);
@@ -37,7 +37,23 @@ export async function fetchNaverBlogPosts(blogId: string, categoryNo: string = '
     const posts: BlogPost[] = await Promise.all(
       limitedItems.map(async (item: any) => {
         const title = item.title._text || item.title._cdata || '';
-        const link = item.link._text || '';
+        
+        // item에서 guid 또는 link를 사용하여 URL 구성
+        // 많은 경우 guid는 blog.naver.com/PostView.naver?blogId=XXX&logNo=XXX 형식의 URL을 포함함
+        let link = '';
+        if (item.guid && item.guid._text) {
+          link = item.guid._text;
+        } else if (item.link && item.link._text) {
+          link = item.link._text;
+        }
+        
+        // link가 비어있는 경우 (RSS 피드에서 URL을 제공하지 않는 경우), 
+        // 제목을 기반으로 직접 블로그 링크를 구성
+        if (!link) {
+          // 블로그 메인 페이지로 이동
+          link = `https://blog.naver.com/${blogId}`;
+        }
+        
         const pubDateStr = item.pubDate._text || '';
         const pubDate = new Date(pubDateStr);
         const date = pubDate.toLocaleDateString('ko-KR');
@@ -50,28 +66,24 @@ export async function fetchNaverBlogPosts(blogId: string, categoryNo: string = '
           summary = summary.replace(/<\/?[^>]+(>|$)/g, '');
         }
         
-        // 썸네일 이미지 추출 (포스트 내용에서 첫 번째 이미지 추출 시도)
+        // 썸네일 이미지 추출
         let thumbnail = '';
         
-        try {
-          // 포스트 내용에서 첫 번째 이미지를 찾기 위해 포스트 페이지 요청
-          const postResponse = await fetch(link);
-          const postHtml = await postResponse.text();
-          const $ = cheerio.load(postHtml);
-          
-          // 오픈그래프 이미지 태그 찾기 (더 신뢰성 있는 썸네일 소스)
-          const ogImage = $('meta[property="og:image"]').attr('content');
-          if (ogImage) {
-            thumbnail = ogImage;
-          } else {
-            // 첫 번째 이미지 찾기
-            const firstImage = $('img').first();
-            if (firstImage.length > 0) {
-              thumbnail = firstImage.attr('src') || '';
-            }
+        // 기본 썸네일 이미지 설정 (네이버 블로그 로고 등)
+        thumbnail = 'https://logoproject.naver.com/img/img_story_naver.png';
+        
+        // RSS 피드에 enclosure 태그가 있는지 확인 (일부 RSS 피드는 여기에 이미지 URL을 포함)
+        if (item.enclosure && item.enclosure._attributes && item.enclosure._attributes.url) {
+          thumbnail = item.enclosure._attributes.url;
+        }
+        
+        // description에서 이미지 태그를 찾을 수도 있음
+        if (!thumbnail && item.description) {
+          const desc = item.description._text || item.description._cdata || '';
+          const imgMatch = desc.match(/<img[^>]+src="([^">]+)"/i);
+          if (imgMatch && imgMatch[1]) {
+            thumbnail = imgMatch[1];
           }
-        } catch (err) {
-          console.error('블로그 포스트 썸네일 추출 실패:', err);
         }
         
         return {

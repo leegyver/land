@@ -56,12 +56,17 @@ export default function AdminPage() {
       // 지역 필터 제거 (클라이언트 요청)
       
       // 거래유형 필터
-      if (filterDealType && property.dealType) {
+      if (filterDealType && filterDealType !== 'all' && property.dealType) {
         // 배열인 경우
         if (Array.isArray(property.dealType)) {
           return property.dealType.includes(filterDealType);
         } 
-        // 문자열인 경우
+        // PostgreSQL 배열 형식의 문자열인 경우 ("{매매,월세}" 형태)
+        else if (typeof property.dealType === 'string' && property.dealType.startsWith('{') && property.dealType.endsWith('}')) {
+          const dealTypes = property.dealType.substring(1, property.dealType.length - 1).split(',');
+          return dealTypes.includes(filterDealType);
+        }
+        // 일반 문자열인 경우 (매매 형태)
         else if (typeof property.dealType === 'string') {
           return property.dealType === filterDealType;
         }
@@ -97,13 +102,15 @@ export default function AdminPage() {
     { value: "매매", label: "매매" },
     { value: "전세", label: "전세" },
     { value: "월세", label: "월세" },
+    { value: "완료", label: "완료" },
+    { value: "보류중", label: "보류중" },
   ];
   
   // 지역 필터 제거 (클라이언트 요청)
   
   // 기존 배열 (참고용)
   const oldPropertyTypes = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
-  const oldDealTypes = ["매매", "전세", "월세", "단기임대"];
+  const oldDealTypes = ["매매", "전세", "월세", "단기임대", "완료", "보류중"];
   
   // 지역 관련 코드 제거 (클라이언트 요청)
   

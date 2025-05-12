@@ -527,58 +527,67 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                             <td className="py-2 font-medium">{property.approvalDate}</td>
                           </tr>
                         )}
-                        <tr className="border-b border-gray-100">
-                          <td className="py-2 text-gray-600">유형</td>
-                          <td className="py-2 font-medium">{property.type}</td>
-                        </tr>
+                        {property.type && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2 text-gray-600">유형</td>
+                            <td className="py-2 font-medium">{property.type}</td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
 
-                  {/* 면적 정보 */}
-                  <div className="border-b pb-2">
-                    <h4 className="font-semibold text-lg mb-3">면적 정보</h4>
-                    <table className="w-full">
-                      <tbody>
+                  {/* 면적 정보 - 정보가 있는 경우에만 표시 */}
+                  {(property.size || property.supplyArea || property.privateArea || property.areaSize) && (
+                    <div className="border-b pb-2">
+                      <h4 className="font-semibold text-lg mb-3">면적 정보</h4>
+                      <table className="w-full">
+                        <tbody>
                         {/* 총면적 - 기본 정보의 면적필드 사용 */}
-                        <tr className="border-b border-gray-100">
-                          <td className="py-2 text-gray-600 w-1/3">총면적</td>
-                          <td className="py-2 font-medium">
-                            {`${property.size}m² (약 ${(Number(property.size) * 0.3025).toFixed(2)}평)`}
-                          </td>
-                        </tr>
+                        {property.size && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2 text-gray-600 w-1/3">총면적</td>
+                            <td className="py-2 font-medium">
+                              {`${property.size}m² (약 ${(Number(property.size) * 0.3025).toFixed(2)}평)`}
+                            </td>
+                          </tr>
+                        )}
                         
                         {/* 공급면적 - 상세정보의 공급필드 사용 */}
-                        <tr className="border-b border-gray-100">
-                          <td className="py-2 text-gray-600 w-1/3">공급면적</td>
-                          <td className="py-2 font-medium">
-                            {property.supplyArea 
-                              ? `${property.supplyArea}m² (약 ${(Number(property.supplyArea) * 0.3025).toFixed(2)}평)` 
-                              : "정보 없음"}
-                          </td>
-                        </tr>
+                        {property.supplyArea && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2 text-gray-600 w-1/3">공급면적</td>
+                            <td className="py-2 font-medium">
+                              {`${property.supplyArea}m² (약 ${(Number(property.supplyArea) * 0.3025).toFixed(2)}평)`}
+                            </td>
+                          </tr>
+                        )}
                         
                         {/* 전용면적 - 상세정보의 전용필드 사용 */}
-                        <tr className="border-b border-gray-100">
-                          <td className="py-2 text-gray-600">전용면적</td>
-                          <td className="py-2 font-medium">
-                            {property.privateArea 
-                              ? `${property.privateArea}m² (약 ${(Number(property.privateArea) * 0.3025).toFixed(2)}평)`
-                              : "정보 없음"}
-                          </td>
-                        </tr>
+                        {property.privateArea && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2 text-gray-600">전용면적</td>
+                            <td className="py-2 font-medium">
+                              {`${property.privateArea}m² (약 ${(Number(property.privateArea) * 0.3025).toFixed(2)}평)`}
+                            </td>
+                          </tr>
+                        )}
+                        
                         {/* 평형 정보가 있는 경우 표시, 없으면 총면적을 기준으로 계산 */}
-                        <tr className="border-b border-gray-100">
-                          <td className="py-2 text-gray-600">평형</td>
-                          <td className="py-2 font-medium">
-                            {property.areaSize 
-                              ? property.areaSize 
-                              : `${(Number(property.size) * 0.3025).toFixed(2)}평`}
-                          </td>
-                        </tr>
+                        {(property.areaSize || property.size) && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2 text-gray-600">평형</td>
+                            <td className="py-2 font-medium">
+                              {property.areaSize 
+                                ? property.areaSize 
+                                : `${(Number(property.size) * 0.3025).toFixed(2)}평`}
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
+                  )}
                 </div>
 
                 {/* 건물 정보 */}
@@ -599,20 +608,24 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                             <td className="py-2 font-medium">{property.totalFloors}층</td>
                           </tr>
                         )}
-                        <tr className="border-b border-gray-100">
-                          <td className="py-2 text-gray-600">방 / 욕실</td>
-                          <td className="py-2 font-medium">방 {property.bedrooms}개 / 욕실 {property.bathrooms}개</td>
-                        </tr>
+                        {(property.bedrooms !== undefined && property.bathrooms !== undefined) && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2 text-gray-600">방 / 욕실</td>
+                            <td className="py-2 font-medium">방 {property.bedrooms}개 / 욕실 {property.bathrooms}개</td>
+                          </tr>
+                        )}
                         {property.direction && (
                           <tr className="border-b border-gray-100">
                             <td className="py-2 text-gray-600">방향</td>
                             <td className="py-2 font-medium">{property.direction}</td>
                           </tr>
                         )}
-                        <tr className="border-b border-gray-100">
-                          <td className="py-2 text-gray-600">승강기</td>
-                          <td className="py-2 font-medium">{property.elevator ? "있음" : "없음"}</td>
-                        </tr>
+                        {property.elevator !== undefined && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2 text-gray-600">승강기</td>
+                            <td className="py-2 font-medium">{property.elevator ? "있음" : "없음"}</td>
+                          </tr>
+                        )}
                         {property.parking && (
                           <tr className="border-b border-gray-100">
                             <td className="py-2 text-gray-600">주차</td>
@@ -634,10 +647,12 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                     <h4 className="font-semibold text-lg mb-3">가격 정보</h4>
                     <table className="w-full">
                       <tbody>
-                        <tr className="border-b border-gray-100">
-                          <td className="py-2 text-gray-600 w-1/3">매매가</td>
-                          <td className="py-2 font-medium">{formatPrice(property.price)}</td>
-                        </tr>
+                        {property.price && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2 text-gray-600 w-1/3">매매가</td>
+                            <td className="py-2 font-medium">{formatPrice(property.price)}</td>
+                          </tr>
+                        )}
                         {property.deposit && Number(property.deposit) > 0 && (
                           <tr className="border-b border-gray-100">
                             <td className="py-2 text-gray-600">보증금</td>

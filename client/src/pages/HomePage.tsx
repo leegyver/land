@@ -1,4 +1,4 @@
-import Hero from "@/components/home/Hero";
+import HomeMap from "@/components/home/HomeMap";
 import PropertySearch from "@/components/home/PropertySearch";
 import FeaturedProperties from "@/components/home/FeaturedProperties";
 import WhyChooseUs from "@/components/home/WhyChooseUs";
@@ -25,7 +25,7 @@ const HomePage = () => {
   return (
     <>
       <div className="pt-16"> {/* Offset for fixed header */}
-        <Hero />
+        <HomeMap />
         <PropertySearch />
         <FeaturedProperties />
         <WhyChooseUs />

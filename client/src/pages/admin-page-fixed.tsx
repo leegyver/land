@@ -7,7 +7,10 @@ import { Property, User, News, insertPropertySchema } from "@shared/schema";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { RefreshCw, Edit, Trash2, Loader2, Check, Settings, Home, ListFilter, Layout, LogOut } from "lucide-react";
+import { 
+  RefreshCw, Settings, ListFilter, Layout, LogOut, Plus, 
+  Trash2, Edit, Loader2, Check, Home, X, MoreHorizontal
+} from "lucide-react";
 
 // 기본 UI 컴포넌트
 import {
@@ -54,7 +57,16 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Loader2, Home, Plus, Trash2, Edit, Check, X } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // 폼 스키마
 const propertyFormSchema = insertPropertySchema.extend({
@@ -136,6 +148,13 @@ export default function AdminPageFixed() {
   const [usersLoaded, setUsersLoaded] = useState(false);
   const [localNews, setLocalNews] = useState<News[]>([]);
   const [newsLoaded, setNewsLoaded] = useState(false);
+  
+  // 다중 선택 관련 상태
+  const [selectedProperties, setSelectedProperties] = useState<number[]>([]);
+  const [selectedNews, setSelectedNews] = useState<number[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [currentDeleteType, setCurrentDeleteType] = useState<'properties' | 'news' | 'users' | null>(null);
 
   // 기본 폼 값
   const defaultFormValues: PropertyFormValues = {

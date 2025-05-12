@@ -868,6 +868,149 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // 부동산 다중 삭제 API
+  app.post("/api/properties/batch-delete", async (req, res) => {
+    try {
+      // 인증 및 권한 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      }
+      
+      const user = req.user as Express.User;
+      if (user.role !== "admin") {
+        return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+      }
+      
+      const { ids } = req.body;
+      
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "삭제할 매물 ID가 필요합니다." });
+      }
+      
+      const results = await Promise.all(
+        ids.map(async (id) => {
+          try {
+            return await storage.deleteProperty(parseInt(id));
+          } catch (err) {
+            console.error(`매물 ID ${id} 삭제 중 오류:`, err);
+            return false;
+          }
+        })
+      );
+      
+      const successCount = results.filter(Boolean).length;
+      
+      // 캐시 삭제
+      memoryCache.deleteByPrefix("properties_");
+      
+      res.status(200).json({ 
+        message: `총 ${ids.length}개 중 ${successCount}개의 매물이 삭제되었습니다.`,
+        successCount,
+        totalCount: ids.length
+      });
+    } catch (error) {
+      console.error("매물 일괄 삭제 중 오류:", error);
+      res.status(500).json({ message: "매물 일괄 삭제 중 오류가 발생했습니다." });
+    }
+  });
+  
+  // 뉴스 다중 삭제 API
+  app.post("/api/news/batch-delete", async (req, res) => {
+    try {
+      // 인증 및 권한 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      }
+      
+      const user = req.user as Express.User;
+      if (user.role !== "admin") {
+        return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+      }
+      
+      const { ids } = req.body;
+      
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "삭제할 뉴스 ID가 필요합니다." });
+      }
+      
+      const results = await Promise.all(
+        ids.map(async (id) => {
+          try {
+            return await storage.deleteNews(parseInt(id));
+          } catch (err) {
+            console.error(`뉴스 ID ${id} 삭제 중 오류:`, err);
+            return false;
+          }
+        })
+      );
+      
+      const successCount = results.filter(Boolean).length;
+      
+      // 캐시 삭제
+      memoryCache.deleteByPrefix("news_");
+      
+      res.status(200).json({ 
+        message: `총 ${ids.length}개 중 ${successCount}개의 뉴스가 삭제되었습니다.`,
+        successCount,
+        totalCount: ids.length
+      });
+    } catch (error) {
+      console.error("뉴스 일괄 삭제 중 오류:", error);
+      res.status(500).json({ message: "뉴스 일괄 삭제 중 오류가 발생했습니다." });
+    }
+  });
+  
+  // 사용자 다중 삭제 API
+  app.post("/api/users/batch-delete", async (req, res) => {
+    try {
+      // 인증 및 권한 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      }
+      
+      const user = req.user as Express.User;
+      if (user.role !== "admin") {
+        return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+      }
+      
+      const { ids } = req.body;
+      
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "삭제할 사용자 ID가 필요합니다." });
+      }
+      
+      // 자기 자신은 삭제할 수 없도록 필터링
+      const filteredIds = ids.filter(id => parseInt(id) !== user.id);
+      
+      if (filteredIds.length !== ids.length) {
+        console.log("사용자가 자기 자신을 삭제하려고 시도했습니다.");
+      }
+      
+      const results = await Promise.all(
+        filteredIds.map(async (id) => {
+          try {
+            return await storage.deleteUser(parseInt(id));
+          } catch (err) {
+            console.error(`사용자 ID ${id} 삭제 중 오류:`, err);
+            return false;
+          }
+        })
+      );
+      
+      const successCount = results.filter(Boolean).length;
+      
+      res.status(200).json({ 
+        message: `총 ${filteredIds.length}개 중 ${successCount}개의 사용자 계정이 삭제되었습니다.`,
+        successCount,
+        totalCount: filteredIds.length,
+        skippedSelf: ids.length !== filteredIds.length
+      });
+    } catch (error) {
+      console.error("사용자 일괄 삭제 중 오류:", error);
+      res.status(500).json({ message: "사용자 일괄 삭제 중 오류가 발생했습니다." });
+    }
+  });
+  
   const httpServer = createServer(app);
   return httpServer;
 }

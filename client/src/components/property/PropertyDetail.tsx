@@ -664,7 +664,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                               ? property.areaSize 
                               : `${(Number(property.size) * 0.3025).toFixed(2)}평`}
                           </td>
-                          </tr>
+                        </tr>
                       </tbody>
                     </table>
                   </div>

@@ -8,6 +8,8 @@ import { cn } from '@/lib/utils';
 declare global {
   interface Window {
     kakao: any;
+    kakaoKey?: string;
+    kakaoMapLoaded?: boolean;
   }
 }
 
@@ -40,10 +42,11 @@ const PropertyMap = () => {
       return;
     }
 
-    // 카카오맵 스크립트 동적 로드
+    // 카카오맵 스크립트 동적 로드 (환경 변수 또는 window에 있는 키 사용)
+    const kakaoKey = window.kakaoKey || import.meta.env.VITE_KAKAO_API_KEY;
     const script = document.createElement('script');
     script.async = true;
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${import.meta.env.VITE_KAKAO_API_KEY}&autoload=false&libraries=services,clusterer,drawing`;
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoKey}&autoload=false&libraries=services,clusterer,drawing`;
     document.head.appendChild(script);
 
     script.onload = () => {

@@ -2,12 +2,14 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
+import { db } from "./db";
 import { 
   insertInquirySchema, 
   insertPropertySchema, 
   insertNewsSchema, 
   insertPropertyInquirySchema,
-  insertFavoriteSchema
+  insertFavoriteSchema,
+  news
 } from "@shared/schema";
 import { memoryCache } from "./cache";
 import { setupAuth } from "./auth";
@@ -831,12 +833,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // 뉴스 수동 업데이트 API 엔드포인트 (테스트용)
+  // 뉴스 수동 업데이트 API 엔드포인트 (GET: 테스트용, POST: 정식 인터페이스)
   app.get("/api/admin/update-news", async (req, res) => {
     try {
       // 관리자 인증 확인
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "인증이 필요합니다" });
+      }
+      
+      const user = req.user as Express.User;
+      if (user.role !== "admin") {
+        return res.status(403).json({ message: "관리자 권한이 필요합니다." });
       }
       
       // 뉴스 수동 업데이트 실행

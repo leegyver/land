@@ -39,9 +39,8 @@ export default function AdminPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // 필터링 상태
+  // 필터링 상태 (지역 필터 제거)
   const [filterType, setFilterType] = useState<string>("");
-  const [filterDistrict, setFilterDistrict] = useState<string>("");
   const [filterDealType, setFilterDealType] = useState<string>("");
   
   // 부동산 필터링 함수
@@ -54,12 +53,7 @@ export default function AdminPage() {
         return false;
       }
       
-      // 지역 필터
-      if (filterDistrict && typeof property.district === 'string') {
-        if (property.district !== filterDistrict) {
-          return false;
-        }
-      }
+      // 지역 필터 제거 (클라이언트 요청)
       
       // 거래유형 필터
       if (filterDealType && property.dealType) {
@@ -90,80 +84,28 @@ export default function AdminPage() {
   // 데이터 로드를 위한 쿼리 매개변수
   const [skipCache, setSkipCache] = useState(false);
   
-  // 필터 옵션
+  // 필터 옵션 - DB에 있는 실제 필드값 적용
   const propertyTypes = [
-    { value: "apartment", label: "아파트" },
-    { value: "villa", label: "빌라" },
-    { value: "house", label: "주택" },
-    { value: "officetel", label: "오피스텔" },
-    { value: "commercial", label: "상가" },
-    { value: "land", label: "토지" },
-    { value: "entrust", label: "위탁매물" },
-    { value: "full-option", label: "풀옵션" },
-    { value: "pension", label: "펜션" },
+    { value: "아파트", label: "아파트" },
+    { value: "아파트연립다세대", label: "아파트연립다세대" },
+    { value: "주택", label: "주택" },
+    { value: "오피스텔", label: "오피스텔" },
+    { value: "상가공장창고펜션", label: "상가공장창고펜션" },
   ];
   
   const dealTypes = [
-    { value: "sale", label: "매매" },
-    { value: "jeonse", label: "전세" },
-    { value: "monthly", label: "월세" },
+    { value: "매매", label: "매매" },
+    { value: "전세", label: "전세" },
+    { value: "월세", label: "월세" },
   ];
   
-  const districts = [
-    { value: "강화읍", label: "강화읍" },
-    { value: "길상면", label: "길상면" },
-    { value: "선원면", label: "선원면" },
-    { value: "불은면", label: "불은면" },
-    { value: "양사면", label: "양사면" },
-    { value: "하점면", label: "하점면" },
-    { value: "송해면", label: "송해면" },
-    { value: "교동면", label: "교동면" },
-    { value: "내가면", label: "내가면" },
-    { value: "삼산면", label: "삼산면" },
-    { value: "양도면", label: "양도면" },
-    { value: "서도면", label: "서도면" },
-    { value: "서구", label: "서구" },
-    { value: "중구", label: "중구" },
-    { value: "동구", label: "동구" },
-    { value: "미추홀구", label: "미추홀구" },
-    { value: "연수구", label: "연수구" },
-    { value: "부평구", label: "부평구" },
-    { value: "계양구", label: "계양구" },
-    { value: "남동구", label: "남동구" },
-  ];
+  // 지역 필터 제거 (클라이언트 요청)
   
   // 기존 배열 (참고용)
   const oldPropertyTypes = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
   const oldDealTypes = ["매매", "전세", "월세", "단기임대"];
   
-  // 지역 세부 목록 (참고용)
-  const districtDetail = [
-    "강화읍 갑곳리",
-    "강화읍 국화리",
-    "강화읍 남산리",
-    "강화읍 내리",
-    "강화읍 망월리",
-    "강화읍 방산리",
-    "강화읍 북산리",
-    "강화읍 신문리",
-    "강화읍 옥림리", 
-    "강화읍 용정리",
-    "강화읍 월곶리",
-    "강화읍 관청리",
-    "교동면",
-    "삼산면",
-    "서도면",
-    "송해면",
-    "양도면",
-    "양사면",
-    "하점면",
-    "화도면",
-    "내가면",
-    "불은면",
-    "선원면",
-    "길상면",
-    "강화읍 외 지역"
-  ];
+  // 지역 관련 코드 제거 (클라이언트 요청)
   
   // 데이터 로드
   const { 
@@ -537,22 +479,7 @@ export default function AdminPage() {
                 </Select>
               </div>
               
-              <div>
-                <label className="block text-sm font-medium mb-1">지역</label>
-                <Select value={filterDistrict} onValueChange={setFilterDistrict}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="모든 지역" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">모든 지역</SelectItem>
-                    {districts.map((district) => (
-                      <SelectItem key={district.value} value={district.value}>
-                        {district.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* 지역 필터 제거됨 (클라이언트 요청) */}
               
               <div>
                 <label className="block text-sm font-medium mb-1">거래 유형</label>

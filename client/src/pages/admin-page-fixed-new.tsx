@@ -56,23 +56,23 @@ export default function AdminPage() {
   const [filterDistrict, setFilterDistrict] = useState<string>("");
   const [filterDealType, setFilterDealType] = useState<string>("");
   
-  // 필터 옵션
+  // 필터 옵션 - DB에 있는 실제 필드값 적용
   const propertyTypes = [
-    { value: "apartment", label: "아파트" },
-    { value: "villa", label: "빌라" },
-    { value: "house", label: "주택" },
-    { value: "officetel", label: "오피스텔" },
-    { value: "commercial", label: "상가" },
-    { value: "land", label: "토지" },
-    { value: "entrust", label: "위탁매물" },
-    { value: "full-option", label: "풀옵션" },
-    { value: "pension", label: "펜션" },
+    { value: "아파트", label: "아파트" },
+    { value: "빌라", label: "빌라" },
+    { value: "주택", label: "주택" },
+    { value: "오피스텔", label: "오피스텔" },
+    { value: "상가", label: "상가" },
+    { value: "토지", label: "토지" },
+    { value: "위탁매물", label: "위탁매물" },
+    { value: "풀옵션", label: "풀옵션" },
+    { value: "펜션", label: "펜션" },
   ];
   
   const dealTypes = [
-    { value: "sale", label: "매매" },
-    { value: "jeonse", label: "전세" },
-    { value: "monthly", label: "월세" },
+    { value: "매매", label: "매매" },
+    { value: "전세", label: "전세" },
+    { value: "월세", label: "월세" },
   ];
   
   const districts = [

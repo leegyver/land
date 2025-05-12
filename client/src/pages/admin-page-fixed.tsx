@@ -904,11 +904,30 @@ export default function AdminPageFixed() {
         {/* 뉴스 관리 탭 */}
         <TabsContent value="news">
           <Card>
-            <CardHeader>
-              <CardTitle>뉴스 목록</CardTitle>
-              <CardDescription>
-                등록된 뉴스 목록을 관리합니다.
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>뉴스 목록</CardTitle>
+                <CardDescription>
+                  등록된 뉴스 목록을 관리합니다.
+                </CardDescription>
+              </div>
+              <Button 
+                onClick={handleUpdateNews} 
+                disabled={isUpdatingNews}
+                className="ml-auto"
+              >
+                {isUpdatingNews ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    업데이트 중...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    뉴스 업데이트
+                  </>
+                )}
+              </Button>
             </CardHeader>
             <CardContent>
               <Table>

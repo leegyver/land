@@ -7,6 +7,16 @@ import { eq } from 'drizzle-orm';
 
 const SEARCH_ENDPOINT = "https://openapi.naver.com/v1/search/news.json";
 
+// 부동산 관련 이미지 모음 (실제 부동산 이미지로 다양하게 준비)
+const REAL_ESTATE_IMAGES = [
+  'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500',
+  'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500',
+  'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500',
+  'https://images.unsplash.com/photo-1523217582562-09d0def993a6?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500',
+  'https://images.unsplash.com/photo-1558036117-15d82a90b9b1?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500',
+  'https://images.unsplash.com/photo-1602941525421-8f8b81d3edbb?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500'
+];
+
 // 검색 키워드 목록
 const SEARCH_KEYWORDS = [
   '강화군',
@@ -76,6 +86,10 @@ async function saveNewsToDatabase(newsItems: any[]) {
         continue;
       }
 
+      // 랜덤 부동산 이미지 선택 
+      const randomImageIndex = Math.floor(Math.random() * REAL_ESTATE_IMAGES.length);
+      const selectedImage = REAL_ESTATE_IMAGES[randomImageIndex];
+      
       // 뉴스 저장
       await storage.createNews({
         title: cleanTitle,
@@ -85,7 +99,7 @@ async function saveNewsToDatabase(newsItems: any[]) {
         source: new URL(item.originallink || item.link).hostname,
         sourceUrl: item.originallink || item.link,
         url: item.link,
-        imageUrl: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500',
+        imageUrl: selectedImage,
         category: '인천 부동산',
         isPinned: false
       });

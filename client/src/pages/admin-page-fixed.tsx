@@ -7,7 +7,7 @@ import { Property, User, News, insertPropertySchema } from "@shared/schema";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { RefreshCw, Edit, Trash2, Loader2, Check } from "lucide-react";
+import { RefreshCw, Edit, Trash2, Loader2, Check, Settings, Home, ListFilter, Layout, LogOut } from "lucide-react";
 
 // 기본 UI 컴포넌트
 import {

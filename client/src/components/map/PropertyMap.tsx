@@ -1,0 +1,229 @@
+import { useState, useEffect, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Property } from '@shared/schema';
+import { Link } from 'wouter';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+
+declare global {
+  interface Window {
+    kakao: any;
+  }
+}
+
+// 숫자를 한국어 표기법으로 변환 (예: 10000 -> 1만)
+const formatNumberToKorean = (num: number): string => {
+  if (num >= 100000000) {
+    return `${(num / 100000000).toFixed(1).replace(/\.0$/, '')}억`;
+  } else if (num >= 10000) {
+    return `${(num / 10000).toFixed(0)}만`;
+  }
+  return num.toLocaleString();
+};
+
+const PropertyMap = () => {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const [map, setMap] = useState<any>(null);
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [infoWindow, setInfoWindow] = useState<any>(null);
+
+  // 모든 매물 데이터 가져오기
+  const { data: properties, isLoading } = useQuery<Property[]>({
+    queryKey: ['/api/properties'],
+  });
+
+  // 카카오맵 초기화
+  useEffect(() => {
+    // 이미 카카오맵 스크립트가 로드되어 있는지 확인
+    if (window.kakao && window.kakao.maps) {
+      initializeMap();
+      return;
+    }
+
+    // 카카오맵 스크립트 동적 로드
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${import.meta.env.VITE_KAKAO_API_KEY}&autoload=false&libraries=services,clusterer,drawing`;
+    document.head.appendChild(script);
+
+    script.onload = () => {
+      window.kakao.maps.load(initializeMap);
+    };
+
+    return () => {
+      document.head.removeChild(script);
+    };
+  }, []);
+
+  // 맵 초기화 함수
+  const initializeMap = () => {
+    if (!mapRef.current) return;
+
+    // 기본 위치를 강화군 중심으로 설정
+    const options = {
+      center: new window.kakao.maps.LatLng(37.7464, 126.4878), // 강화군 중심 좌표
+      level: 9 // 확대 레벨 (숫자가 작을수록 확대)
+    };
+
+    const kakaoMap = new window.kakao.maps.Map(mapRef.current, options);
+    setMap(kakaoMap);
+
+    // 정보 윈도우 생성
+    const kakaoInfoWindow = new window.kakao.maps.InfoWindow({ zIndex: 1 });
+    setInfoWindow(kakaoInfoWindow);
+  };
+
+  // 매물 마커 표시
+  useEffect(() => {
+    if (!map || !properties || properties.length === 0) return;
+
+    // 지오코더 서비스 객체 생성
+    const geocoder = new window.kakao.maps.services.Geocoder();
+    const bounds = new window.kakao.maps.LatLngBounds();
+    const markers: any[] = [];
+
+    // 매물들의 좌표를 얻기 위한 함수
+    const getCoordinates = (property: Property, index: number) => {
+      // 주소가 없는 경우 좌표 정보 활용
+      if (property.latitude && property.longitude) {
+        const position = new window.kakao.maps.LatLng(property.latitude, property.longitude);
+        createMarker(property, position, index);
+        bounds.extend(position);
+        
+        // 마지막 매물 처리 후 지도 범위 재설정
+        if (index === properties.length - 1) {
+          map.setBounds(bounds);
+        }
+        return;
+      }
+
+      // 주소 정보로 위치 찾기
+      const address = `${property.city} ${property.district} ${property.neighborhood || ''}`;
+      geocoder.addressSearch(address, (result: any, status: any) => {
+        if (status === window.kakao.maps.services.Status.OK) {
+          const position = new window.kakao.maps.LatLng(result[0].y, result[0].x);
+          createMarker(property, position, index);
+          bounds.extend(position);
+          
+          // 마지막 매물 처리 후 지도 범위 재설정
+          if (index === properties.length - 1) {
+            map.setBounds(bounds);
+          }
+        } else {
+          console.log(`주소를 찾을 수 없습니다: ${address}`);
+        }
+      });
+    };
+
+    // 마커 생성 함수
+    const createMarker = (property: Property, position: any, index: number) => {
+      // 마커 생성
+      const marker = new window.kakao.maps.Marker({
+        map: map,
+        position: position,
+        title: property.title,
+      });
+      
+      markers.push(marker);
+
+      // 마커 클릭 이벤트
+      window.kakao.maps.event.addListener(marker, 'click', () => {
+        // 클릭된 매물 정보 설정
+        setSelectedProperty(property);
+        
+        // 정보창 내용 구성
+        const content = `
+          <div style="padding: 8px; max-width: 250px; font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;">
+            <div style="font-weight: bold; margin-bottom: 4px; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${property.title}</div>
+            <div style="color: #666; font-size: 12px; margin-bottom: 4px;">${property.type} · ${property.transactionType}</div>
+            <div style="color: #2563eb; font-weight: bold; font-size: 13px;">${formatNumberToKorean(property.price || 0)}원</div>
+          </div>
+        `;
+        
+        // 정보창 표시
+        infoWindow.setContent(content);
+        infoWindow.open(map, marker);
+      });
+    };
+
+    // 각 매물에 대해 좌표 획득 및 마커 생성
+    properties.forEach((property, index) => {
+      if (property.isVisible !== false) { // 숨김 처리된 매물은 제외
+        getCoordinates(property, index);
+      }
+    });
+
+    // 컴포넌트 언마운트 시 마커 제거
+    return () => {
+      markers.forEach(marker => marker.setMap(null));
+    };
+  }, [map, properties, infoWindow]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh] bg-gray-100">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative h-[60vh] w-full">
+      <div ref={mapRef} className="w-full h-full"></div>
+      
+      {/* 선택된 매물 정보 패널 */}
+      {selectedProperty && (
+        <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 bg-white rounded-lg shadow-lg p-4 z-10">
+          <button 
+            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+            onClick={() => setSelectedProperty(null)}
+          >
+            ✕
+          </button>
+          
+          <Link href={`/properties/${selectedProperty.id}`}>
+            <h3 className="font-bold text-lg mb-2 hover:text-primary transition-colors">
+              {selectedProperty.title}
+            </h3>
+          </Link>
+          
+          <div className="flex flex-wrap gap-2 mb-2">
+            <Badge variant="outline" className="bg-primary/10 text-primary">
+              {selectedProperty.type}
+            </Badge>
+            {selectedProperty.transactionType && (
+              <Badge variant="outline" className="bg-secondary/10 text-secondary">
+                {selectedProperty.transactionType}
+              </Badge>
+            )}
+          </div>
+          
+          <div className="grid grid-cols-2 gap-x-2 gap-y-1 mb-3 text-sm">
+            <div className="text-gray-500">지역:</div>
+            <div>{selectedProperty.district}</div>
+            
+            <div className="text-gray-500">면적:</div>
+            <div>
+              {selectedProperty.size} m² 
+              {Number(selectedProperty.size) > 0 && ` (${(Number(selectedProperty.size) * 0.3025).toFixed(1)} 평)`}
+            </div>
+            
+            <div className="text-gray-500">가격:</div>
+            <div className="font-semibold text-primary">
+              {formatNumberToKorean(selectedProperty.price || 0)}원
+            </div>
+          </div>
+          
+          <Link 
+            href={`/properties/${selectedProperty.id}`}
+            className="block w-full bg-primary hover:bg-secondary text-white text-center py-2 rounded transition-colors"
+          >
+            상세보기
+          </Link>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default PropertyMap;

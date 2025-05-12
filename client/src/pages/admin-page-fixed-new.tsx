@@ -53,7 +53,7 @@ export default function AdminPage() {
   
   // 필터링 상태 (초기값은 "all"로 모든 항목을 표시)
   const [filterType, setFilterType] = useState<string>("all");
-  // 지역 필터 제거 (클라이언트 요청)
+  const [filterDistrict, setFilterDistrict] = useState<string>("all");
   const [filterDealType, setFilterDealType] = useState<string>("all");
   
   // 필터 옵션 - DB에 있는 실제 필드값 적용
@@ -73,40 +73,38 @@ export default function AdminPage() {
     { value: "보류중", label: "보류중" },
   ];
   
-  const districts = [];
+  // 지역 필터 추가 (클라이언트 요청)
+  const districts = [
+    { value: "강화읍 갑곳리", label: "강화읍 갑곳리" },
+    { value: "강화읍 국화리", label: "강화읍 국화리" },
+    { value: "강화읍 남산리", label: "강화읍 남산리" },
+    { value: "강화읍 내리", label: "강화읍 내리" },
+    { value: "강화읍 망월리", label: "강화읍 망월리" },
+    { value: "강화읍 방산리", label: "강화읍 방산리" },
+    { value: "강화읍 북산리", label: "강화읍 북산리" },
+    { value: "강화읍 신문리", label: "강화읍 신문리" },
+    { value: "강화읍 옥림리", label: "강화읍 옥림리" },
+    { value: "강화읍 용정리", label: "강화읍 용정리" },
+    { value: "강화읍 월곶리", label: "강화읍 월곶리" },
+    { value: "강화읍 관청리", label: "강화읍 관청리" },
+    { value: "교동면", label: "교동면" },
+    { value: "삼산면", label: "삼산면" },
+    { value: "서도면", label: "서도면" },
+    { value: "송해면", label: "송해면" },
+    { value: "양도면", label: "양도면" },
+    { value: "양사면", label: "양사면" },
+    { value: "하점면", label: "하점면" },
+    { value: "화도면", label: "화도면" },
+    { value: "내가면", label: "내가면" },
+    { value: "불은면", label: "불은면" },
+    { value: "선원면", label: "선원면" },
+    { value: "길상면", label: "길상면" },
+    { value: "강화읍 외 지역", label: "강화읍 외 지역" }
+  ];
   
   // 기존 배열 (참고용)
   const oldPropertyTypes = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
   const oldDealTypes = ["매매", "전세", "월세", "단기임대", "완료", "보류중"];
-  
-  // 지역 세부 목록 (참고용)
-  const districtDetail = [
-    "강화읍 갑곳리",
-    "강화읍 국화리",
-    "강화읍 남산리",
-    "강화읍 내리",
-    "강화읍 망월리",
-    "강화읍 방산리",
-    "강화읍 북산리",
-    "강화읍 신문리",
-    "강화읍 옥림리", 
-    "강화읍 용정리",
-    "강화읍 월곶리",
-    "강화읍 관청리",
-    "교동면",
-    "삼산면",
-    "서도면",
-    "송해면",
-    "양도면",
-    "양사면",
-    "하점면",
-    "화도면",
-    "내가면",
-    "불은면",
-    "선원면",
-    "길상면",
-    "강화읍 외 지역"
-  ];
   
   // 데이터 로드
   const { 
@@ -131,12 +129,17 @@ export default function AdminPage() {
   const filterProperties = (props: Property[]) => {
     if (!props) return [];
     
-    // 지역 필터가 제거되어 filterType과 filterDealType만 적용됨
-    console.log("필터링 적용: ", { filterType, filterDealType });
+    // 필터링 로그
+    console.log("필터링 적용: ", { filterType, filterDistrict, filterDealType });
     
     return props.filter(property => {
       // 유형 필터
       if (filterType && filterType !== 'all' && property.type !== filterType) {
+        return false;
+      }
+      
+      // 지역 필터
+      if (filterDistrict && filterDistrict !== 'all' && property.district !== filterDistrict) {
         return false;
       }
       
@@ -501,7 +504,22 @@ export default function AdminPage() {
                 </Select>
               </div>
               
-              {/* 지역 필터는 클라이언트 요청에 따라 제거됨 */}
+              <div>
+                <label className="block text-sm font-medium mb-1">지역</label>
+                <Select value={filterDistrict} onValueChange={setFilterDistrict}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="모든 지역" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">모든 지역</SelectItem>
+                    {districts.map((district) => (
+                      <SelectItem key={district.value} value={district.value}>
+                        {district.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               
               <div>
                 <label className="block text-sm font-medium mb-1">거래 유형</label>

@@ -1105,8 +1105,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // 네이버 블로그에서 데이터 가져오기 (RSS 피드 사용)
-      const posts = await fetchNaverBlogPosts("9551304", "", count);
+      // 네이버 블로그의 특정 카테고리(11)에서 데이터 가져오기
+      const posts = await fetchNaverBlogPosts("9551304", "11", count);
       
       // 캐시 스킵이 아닐 경우에만 캐시 저장 (30분 동안 유지)
       if (!skipCache && posts.length > 0) {

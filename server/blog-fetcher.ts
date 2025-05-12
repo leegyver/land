@@ -11,7 +11,9 @@ import { xml2js } from 'xml-js';
 export async function fetchNaverBlogPosts(blogId: string, categoryNo: string = '', count: number = 5) {
   try {
     // RSS 피드 URL (카테고리가 있으면 해당 카테고리만, 없으면 전체 포스트)
-    const url = `https://rss.blog.naver.com/${blogId}${categoryNo ? '/category/' + categoryNo : ''}`;
+    const url = categoryNo 
+      ? `https://rss.blog.naver.com/${blogId}?categoryNo=${categoryNo}`
+      : `https://rss.blog.naver.com/${blogId}`;
     
     console.log(`Fetching Naver blog RSS from: ${url}`);
     const response = await fetch(url);
@@ -48,10 +50,35 @@ export async function fetchNaverBlogPosts(blogId: string, categoryNo: string = '
         }
         
         // link가 비어있는 경우 (RSS 피드에서 URL을 제공하지 않는 경우), 
-        // 제목을 기반으로 직접 블로그 링크를 구성
+        // 카테고리 페이지로 이동하도록 설정
         if (!link) {
-          // 블로그 메인 페이지로 이동
-          link = `https://blog.naver.com/${blogId}`;
+          if (categoryNo) {
+            // 특정 카테고리 페이지로 이동
+            link = `https://blog.naver.com/PostList.naver?blogId=${blogId}&from=postList&categoryNo=${categoryNo}`;
+          } else {
+            // 기본 블로그 홈으로 이동
+            link = `https://blog.naver.com/${blogId}`;
+          }
+        }
+        
+        // GUID나 item의 다른 속성에서 글 번호(logNo)를 추출해보기
+        const logNoPattern = /logNo=([0-9]+)/;
+        let logNo = '';
+        
+        // guid나 link에서 logNo 추출 시도
+        if (item.guid && item.guid._text) {
+          const match = item.guid._text.match(logNoPattern);
+          if (match && match[1]) logNo = match[1];
+        }
+        
+        if (!logNo && link) {
+          const match = link.match(logNoPattern);
+          if (match && match[1]) logNo = match[1];
+        }
+        
+        // logNo가 추출되었다면 직접 포스트 URL 구성
+        if (logNo) {
+          link = `https://blog.naver.com/${blogId}/${logNo}`;
         }
         
         const pubDateStr = item.pubDate._text || '';

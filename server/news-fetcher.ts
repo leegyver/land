@@ -97,6 +97,29 @@ async function isNewsAlreadyExists(title: string): Promise<boolean> {
   return existingNews.length > 0;
 }
 
+// 제목에 동일한 단어가 3개 이상 사용되었는지 확인
+function hasTooManyRepeatedWords(title: string): boolean {
+  // 특수문자 및 공백 제거 후 단어 분리
+  const cleanedTitle = title.replace(/[^a-zA-Z0-9가-힣\s]/g, '').toLowerCase();
+  const words = cleanedTitle.split(/\s+/).filter(word => word.length > 1); // 한 글자 단어는 제외
+  
+  // 단어별 등장 횟수 카운트
+  const wordCount: Record<string, number> = {};
+  for (const word of words) {
+    wordCount[word] = (wordCount[word] || 0) + 1;
+  }
+  
+  // 3번 이상 반복된 단어가 있는지 확인
+  for (const word in wordCount) {
+    if (wordCount[word] >= 3) {
+      console.log(`중복 단어 발견: '${word}'가 ${wordCount[word]}번 등장 (제목: ${title})`);
+      return true;
+    }
+  }
+  
+  return false;
+}
+
 // 뉴스 이미지 추출 함수
 async function extractImageFromNews(url: string): Promise<string | null> {
   try {
@@ -159,6 +182,12 @@ async function saveNewsToDatabase(newsItems: any[]) {
       if (exists) {
         continue;
       }
+      
+      // 제목에 단어 중복 체크 (동일한 단어가 3번 이상 반복되면 필터링)
+      if (hasTooManyRepeatedWords(cleanTitle)) {
+        console.log(`단어 중복 필터링: "${cleanTitle}"`);
+        continue;
+      }
 
       // 원본 뉴스에서 이미지 추출 시도
       let imageUrl = await extractImageFromNews(item.link);
@@ -190,8 +219,36 @@ async function saveNewsToDatabase(newsItems: any[]) {
   }
 }
 
+// 기존 뉴스에서 중복 단어가 많은 항목 필터링
+async function filterExistingNewsByRepeatedWords() {
+  try {
+    // 모든 뉴스 가져오기
+    const allNews = await db.select().from(news);
+    
+    let removedCount = 0;
+    
+    // 각 뉴스 제목을 검사하여 중복 단어가 많은 항목 필터링
+    for (const newsItem of allNews) {
+      if (hasTooManyRepeatedWords(newsItem.title)) {
+        console.log(`기존 뉴스 필터링 (중복 단어): ${newsItem.title}`);
+        await storage.deleteNews(newsItem.id);
+        removedCount++;
+      }
+    }
+    
+    if (removedCount > 0) {
+      console.log(`총 ${removedCount}개의 중복 단어가 많은 뉴스를 삭제했습니다.`);
+    }
+  } catch (error) {
+    console.error('기존 뉴스 필터링 중 오류:', error);
+  }
+}
+
 // 메인 실행 함수
 export async function fetchAndSaveNews() {
+  // 기존 뉴스 필터링 (중복 단어가 많은 항목)
+  await filterExistingNewsByRepeatedWords();
+  
   let allNewsItems: any[] = [];
 
   // 각 키워드별로 검색 실행

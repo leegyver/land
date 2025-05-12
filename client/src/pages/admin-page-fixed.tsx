@@ -155,6 +155,11 @@ export default function AdminPageFixed() {
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [currentDeleteType, setCurrentDeleteType] = useState<'properties' | 'news' | 'users' | null>(null);
+  
+  // 필터링 상태
+  const [filterType, setFilterType] = useState<string>("");
+  const [filterDistrict, setFilterDistrict] = useState<string>("");
+  const [filterDealType, setFilterDealType] = useState<string>("");
 
   // 기본 폼 값
   const defaultFormValues: PropertyFormValues = {

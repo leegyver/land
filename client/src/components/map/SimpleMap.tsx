@@ -173,10 +173,10 @@ export default function SimpleMap() {
               if (property.district && property.district.includes('강화')) {
                 // 강화군 중심
                 fallbackCoords = new window.kakao.maps.LatLng(37.7464, 126.4878);
-              } else if (property.city && property.city.includes('서울')) {
+              } else if (property.district && property.district.includes('서울')) {
                 // 서울 중심
                 fallbackCoords = new window.kakao.maps.LatLng(37.5665, 126.9780);
-              } else if (property.city && property.city.includes('인천')) {
+              } else if (property.district && property.district.includes('인천')) {
                 // 인천 중심
                 fallbackCoords = new window.kakao.maps.LatLng(37.4563, 126.7052);
               } else {

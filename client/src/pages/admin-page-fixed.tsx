@@ -122,6 +122,7 @@ export default function AdminPageFixed() {
   const [isDeleting, setIsDeleting] = useState<number | false>(false);
   const [isDeletingUser, setIsDeletingUser] = useState<number | false>(false);
   const [isDeletingNews, setIsDeletingNews] = useState<number | false>(false);
+  const [isUpdatingNews, setIsUpdatingNews] = useState(false);
   const [selectedMainDistrict, setSelectedMainDistrict] = useState("강화읍");
   const [detailedDistrictOptions, setDetailedDistrictOptions] = useState<string[]>(
     detailedDistricts["강화읍"]

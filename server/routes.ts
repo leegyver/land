@@ -844,7 +844,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         newsItems = await fetchAndSaveNews();
         console.log("뉴스 업데이트 성공:", newsItems.length, "개의 뉴스 항목");
-      } catch (fetchError) {
+      } catch (err) {
+        const fetchError = err as Error;
         console.error("뉴스 업데이트 중 오류:", fetchError);
         return res.status(500).json({ message: "뉴스 업데이트 중 오류가 발생했습니다: " + fetchError.message });
       }

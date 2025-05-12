@@ -63,9 +63,32 @@ async function fetchNaverNews(keyword: string) {
   }
 }
 
-// HTML 태그 제거 함수
+// HTML 태그와 엔티티 처리 함수
 function stripHtmlTags(html: string): string {
-  return html.replace(/<\/?[^>]+(>|$)/g, "");
+  // HTML 태그 제거
+  let text = html.replace(/<\/?[^>]+(>|$)/g, "");
+  
+  // HTML 엔티티 디코딩 (주요 엔티티만 변환)
+  const entities: Record<string, string> = {
+    '&quot;': '"',
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&nbsp;': ' ',
+    '&#039;': "'",
+    '&#39;': "'",
+    '&ldquo;': '"',
+    '&rdquo;': '"',
+    '&hellip;': '...',
+    '&middot;': '·'
+  };
+  
+  // 모든 엔티티 패턴을 순회하며 변환
+  Object.entries(entities).forEach(([entity, replacement]) => {
+    text = text.replace(new RegExp(entity, 'g'), replacement);
+  });
+  
+  return text;
 }
 
 // 중복 체크 함수

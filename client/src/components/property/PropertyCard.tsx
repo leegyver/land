@@ -154,7 +154,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
             <circle cx="12" cy="10" r="3"></circle>
           </svg>
-          {property.district}{property.city ? `, ${property.city}` : ""}
+          {property.district}
         </p>
         <div className="flex items-center justify-between mb-4 p-2 bg-gray-50 rounded-md">
           <span className="flex items-center text-sm font-medium">

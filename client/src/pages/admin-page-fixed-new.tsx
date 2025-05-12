@@ -39,45 +39,6 @@ export default function AdminPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  // 필터링 상태
-  const [filterType, setFilterType] = useState<string>("");
-  const [filterDistrict, setFilterDistrict] = useState<string>("");
-  const [filterDealType, setFilterDealType] = useState<string>("");
-  
-  // 부동산 필터링 함수
-  const filterProperties = (props: Property[]) => {
-    if (!props) return [];
-    
-    return props.filter(property => {
-      // 유형 필터
-      if (filterType && property.type !== filterType) {
-        return false;
-      }
-      
-      // 지역 필터
-      if (filterDistrict && typeof property.district === 'string') {
-        if (property.district !== filterDistrict) {
-          return false;
-        }
-      }
-      
-      // 거래유형 필터
-      if (filterDealType && property.dealType) {
-        // 배열인 경우
-        if (Array.isArray(property.dealType)) {
-          return property.dealType.includes(filterDealType);
-        } 
-        // 문자열인 경우
-        else if (typeof property.dealType === 'string') {
-          return property.dealType === filterDealType;
-        }
-        return false;
-      }
-      
-      return true;
-    });
-  };
-  
   // 선택된 항목 관리
   const [selectedProperties, setSelectedProperties] = useState<number[]>([]);
   const [selectedNews, setSelectedNews] = useState<number[]>([]);
@@ -89,6 +50,11 @@ export default function AdminPage() {
   
   // 데이터 로드를 위한 쿼리 매개변수
   const [skipCache, setSkipCache] = useState(false);
+  
+  // 필터링 상태
+  const [filterType, setFilterType] = useState<string>("");
+  const [filterDistrict, setFilterDistrict] = useState<string>("");
+  const [filterDealType, setFilterDealType] = useState<string>("");
   
   // 필터 옵션
   const propertyTypes = [
@@ -169,6 +135,7 @@ export default function AdminPage() {
   const { 
     data: properties,
     isLoading: isLoadingProperties,
+    refetch: refetchProperties
   } = useQuery<Property[]>({
     queryKey: ["/api/properties", skipCache],
     queryFn: getQueryFn({ on401: "throw" })
@@ -177,10 +144,45 @@ export default function AdminPage() {
   const {
     data: news,
     isLoading: isLoadingNews,
+    refetch: refetchNews
   } = useQuery<News[]>({
     queryKey: ["/api/news"],
     queryFn: getQueryFn({ on401: "throw" })
   });
+  
+  // 부동산 필터링 함수
+  const filterProperties = (props: Property[]) => {
+    if (!props) return [];
+    
+    return props.filter(property => {
+      // 유형 필터
+      if (filterType && property.type !== filterType) {
+        return false;
+      }
+      
+      // 지역 필터
+      if (filterDistrict && typeof property.district === 'string') {
+        if (property.district !== filterDistrict) {
+          return false;
+        }
+      }
+      
+      // 거래유형 필터
+      if (filterDealType && property.dealType) {
+        // 배열인 경우
+        if (Array.isArray(property.dealType)) {
+          return property.dealType.includes(filterDealType);
+        } 
+        // 문자열인 경우
+        else if (typeof property.dealType === 'string') {
+          return property.dealType === filterDealType;
+        }
+        return false;
+      }
+      
+      return true;
+    });
+  };
   
   // 필터링된 부동산 목록
   const filteredProperties = filterProperties(properties || []);
@@ -188,6 +190,7 @@ export default function AdminPage() {
   const {
     data: users,
     isLoading: isLoadingUsers,
+    refetch: refetchUsers
   } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
     queryFn: getQueryFn({ on401: "throw" }),
@@ -283,20 +286,27 @@ export default function AdminPage() {
     onSuccess: () => {
       if (currentDeleteType === 'properties') {
         queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
-        setSelectedProperties([]);
       } else if (currentDeleteType === 'news') {
         queryClient.invalidateQueries({ queryKey: ["/api/news"] });
-        setSelectedNews([]);
       } else if (currentDeleteType === 'users') {
         queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      }
+      
+      // 선택 초기화
+      if (currentDeleteType === 'properties') {
+        setSelectedProperties([]);
+      } else if (currentDeleteType === 'news') {
+        setSelectedNews([]);
+      } else if (currentDeleteType === 'users') {
         setSelectedUsers([]);
       }
       
       toast({
         title: "일괄 삭제 성공",
-        description: "선택한 항목들이 성공적으로 삭제되었습니다.",
+        description: "선택한 항목이 성공적으로 삭제되었습니다.",
       });
       
+      // 모달 닫기
       setIsDeleteAlertOpen(false);
       setCurrentDeleteType(null);
     },
@@ -306,30 +316,34 @@ export default function AdminPage() {
         description: error.message,
         variant: "destructive",
       });
+      
+      // 모달 닫기
       setIsDeleteAlertOpen(false);
+      setCurrentDeleteType(null);
     },
   });
   
-  // 부동산 삭제 핸들러
-  const handleDeleteProperty = (id: number) => {
-    if (window.confirm("정말로 이 부동산을 삭제하시겠습니까?")) {
-      deletePropertyMutation.mutate(id);
-    }
-  };
-  
-  // 뉴스 삭제 핸들러
-  const handleDeleteNews = (id: number) => {
-    if (window.confirm("정말로 이 뉴스를 삭제하시겠습니까?")) {
-      deleteNewsMutation.mutate(id);
-    }
-  };
-  
-  // 사용자 삭제 핸들러
-  const handleDeleteUser = (id: number) => {
-    if (window.confirm("정말로 이 사용자를 삭제하시겠습니까?")) {
-      deleteUserMutation.mutate(id);
-    }
-  };
+  // 뉴스 업데이트 뮤테이션
+  const updateNewsMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/news/update");
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/news"] });
+      toast({
+        title: "뉴스 업데이트 성공",
+        description: "뉴스가 성공적으로 업데이트되었습니다.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "뉴스 업데이트 실패",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
   
   // 다중 선택 핸들러
   const handleSelectProperty = (id: number, checked: boolean) => {
@@ -339,8 +353,6 @@ export default function AdminPage() {
       setSelectedProperties(selectedProperties.filter(propId => propId !== id));
     }
   };
-  
-
   
   const handleSelectNews = (id: number, checked: boolean) => {
     if (checked) {
@@ -383,7 +395,7 @@ export default function AdminPage() {
     }
   };
   
-  // 일괄 삭제 확인 다이얼로그 열기
+  // 삭제 확인 모달 열기
   const openDeleteConfirm = (type: 'properties' | 'news' | 'users') => {
     setCurrentDeleteType(type);
     setIsDeleteAlertOpen(true);
@@ -432,65 +444,39 @@ export default function AdminPage() {
     }
   };
   
-  // 데이터 새로고침
-  const refreshData = () => {
-    setSkipCache(prev => !prev);
-    queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/news"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-    
-    toast({
-      title: "데이터 새로고침",
-      description: "최신 데이터를 불러오고 있습니다.",
-    });
-  };
-  
-  // 뉴스 수집 요청 함수
-  const fetchNewsManually = async () => {
-    try {
-      await apiRequest("POST", "/api/admin/fetch-news");
-      toast({
-        title: "뉴스 수집 요청 성공",
-        description: "새로운 뉴스를 수집 중입니다. 잠시 후 새로고침 해주세요.",
-      });
-      
-      // 3초 후 자동 새로고침
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["/api/news"] });
-      }, 3000);
-      
-    } catch (error) {
-      toast({
-        title: "뉴스 수집 요청 실패",
-        description: "뉴스 수집에 실패했습니다. 잠시 후 다시 시도해 주세요.",
-        variant: "destructive",
-      });
+  // 페이지 렌더링 시 재로드
+  useEffect(() => {
+    if (skipCache) {
+      refetchProperties();
+      refetchNews();
+      refetchUsers();
+      setSkipCache(false);
     }
-  };
+  }, [skipCache, refetchProperties, refetchNews, refetchUsers]);
   
-  // 현재 상태에 따른 제목 표시
-  const getTitle = () => {
-    if (!user) return "로딩 중...";
-    return `관리자 대시보드 - ${user.username}님`;
+  const handleRefreshClick = () => {
+    setSkipCache(true);
   };
   
   return (
-    <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">{getTitle()}</h1>
-        <Button onClick={refreshData} variant="outline" size="sm">
-          <RefreshCw className="h-4 w-4 mr-2" />
+    <div className="container mx-auto py-6">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2">관리자 대시보드</h1>
+        <p className="text-gray-500">부동산, 뉴스, 사용자를 관리할 수 있습니다.</p>
+      </div>
+      
+      <div className="mb-4 flex justify-end">
+        <Button variant="outline" onClick={handleRefreshClick}>
+          <RefreshCw className="mr-2 h-4 w-4" />
           새로고침
         </Button>
       </div>
-
-      <Tabs defaultValue="properties" className="w-full">
+      
+      <Tabs defaultValue="properties">
         <TabsList className="mb-4">
           <TabsTrigger value="properties">부동산</TabsTrigger>
           <TabsTrigger value="news">뉴스</TabsTrigger>
-          {user?.role === "admin" && (
-            <TabsTrigger value="users">사용자</TabsTrigger>
-          )}
+          <TabsTrigger value="users">사용자</TabsTrigger>
         </TabsList>
 
         {/* 부동산 탭 */}
@@ -632,97 +618,77 @@ export default function AdminPage() {
                                     </span>
                                   )}
                                 </div>
-                              ) : property.imageUrl ? (
-                                <div className="relative h-10 w-16 overflow-hidden rounded">
-                                  <img 
-                                    src={property.imageUrl} 
-                                    alt={property.title} 
-                                    className="h-full w-full object-cover"
-                                  />
-                                </div>
                               ) : (
-                                <div className="h-10 w-16 bg-gray-200 flex items-center justify-center rounded">
-                                  <Edit className="h-5 w-5 text-gray-500" />
+                                <div className="h-10 w-16 bg-gray-200 rounded flex items-center justify-center">
+                                  <span className="text-gray-400 text-xs">No Image</span>
                                 </div>
                               )}
                               <div>
-                                <a 
-                                  href={`/properties/${property.id}`}
-                                  className="text-blue-600 hover:underline font-medium"
-                                >
-                                  {property.title}
-                                </a>
+                                <div className="font-medium">{property.title}</div>
+                                <div className="text-xs text-gray-500 truncate max-w-[200px]">
+                                  {property.description}
+                                </div>
                               </div>
                             </div>
                           </TableCell>
                           <TableCell>{property.type}</TableCell>
                           <TableCell>
-                            <div className="flex flex-col">
-                              <span className="text-xs text-gray-500">{property.district}</span>
-                            </div>
+                            <div className="truncate max-w-[150px]">{property.district} {property.address}</div>
                           </TableCell>
+                          <TableCell>{property.price}</TableCell>
                           <TableCell>
-                            {new Intl.NumberFormat('ko-KR', {
-                              style: 'currency',
-                              currency: 'KRW',
-                              maximumFractionDigits: 0
-                            }).format(Number(property.price))}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col gap-1">
-                              {property.dealType && (Array.isArray(property.dealType) ? property.dealType.length > 0 : typeof property.dealType === 'string' && property.dealType.length > 0) ? (
-                                Array.isArray(property.dealType) ? 
-                                  property.dealType.map((type, idx) => {
-                                    const dealTypeClass = 
-                                      typeof type === 'string' && type.includes("매매") 
-                                        ? 'bg-blue-100 text-blue-800' 
-                                        : typeof type === 'string' && type.includes("전세")
-                                        ? 'bg-green-100 text-green-800'
-                                        : typeof type === 'string' && type.includes("월세")
-                                        ? 'bg-orange-100 text-orange-800'
-                                        : 'bg-gray-100 text-gray-800';
-                                    
-                                    return (
-                                      <span key={idx} className={`px-2 py-1 rounded-full text-xs inline-block ${dealTypeClass}`}>
-                                        {type}
-                                      </span>
-                                    );
-                                  })
-                                : (
-                                  <span className={`px-2 py-1 rounded-full text-xs ${
-                                    typeof property.dealType === 'string' && property.dealType.includes("매매") 
-                                      ? 'bg-blue-100 text-blue-800' 
-                                      : typeof property.dealType === 'string' && property.dealType.includes("전세")
-                                      ? 'bg-green-100 text-green-800'
-                                      : typeof property.dealType === 'string' && property.dealType.includes("월세")
-                                      ? 'bg-orange-100 text-orange-800'
-                                      : 'bg-gray-100 text-gray-800'
-                                  }`}>
-                                    {property.dealType}
+                            <div className="flex flex-wrap gap-1">
+                              {Array.isArray(property.dealType) ? (
+                                property.dealType.map((type, idx) => (
+                                  <span 
+                                    key={idx} 
+                                    className={`text-xs px-2 py-1 rounded ${
+                                      type === '매매' ? 'bg-blue-100 text-blue-800' : 
+                                      type === '전세' ? 'bg-green-100 text-green-800' : 
+                                      type === '월세' ? 'bg-orange-100 text-orange-800' : 
+                                      'bg-gray-100 text-gray-800'
+                                    }`}
+                                  >
+                                    {type}
                                   </span>
-                                )
+                                ))
                               ) : (
-                                <span className="px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
-                                  미지정
+                                <span 
+                                  className={`text-xs px-2 py-1 rounded ${
+                                    property.dealType === '매매' ? 'bg-blue-100 text-blue-800' : 
+                                    property.dealType === '전세' ? 'bg-green-100 text-green-800' : 
+                                    property.dealType === '월세' ? 'bg-orange-100 text-orange-800' : 
+                                    'bg-gray-100 text-gray-800'
+                                  }`}
+                                >
+                                  {property.dealType}
                                 </span>
                               )}
                             </div>
                           </TableCell>
                           <TableCell>
-                            <div className="flex space-x-2">
+                            <div className="flex space-x-1">
                               <a 
-                                href={`/admin/properties/edit/${property.id}`}
-                                className="inline-flex h-8 items-center justify-center rounded-md bg-blue-500 px-2 text-sm font-medium text-white shadow hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                href={`/properties/${property.id}`} 
+                                className="p-2 text-gray-500 hover:text-primary"
+                                title="보기"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </a>
+                              <a 
+                                href={`/admin/properties/${property.id}/edit`} 
+                                className="p-2 text-gray-500 hover:text-primary"
+                                title="수정"
                               >
                                 <Edit className="h-4 w-4" />
                               </a>
-                              <Button 
-                                variant="destructive" 
-                                size="sm"
-                                onClick={() => handleDeleteProperty(property.id)}
+                              <button 
+                                onClick={() => deletePropertyMutation.mutate(property.id)}
+                                className="p-2 text-gray-500 hover:text-red-500"
+                                title="삭제"
                               >
                                 <Trash2 className="h-4 w-4" />
-                              </Button>
+                              </button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -750,12 +716,9 @@ export default function AdminPage() {
                     선택 삭제 ({selectedNews.length})
                   </Button>
                 )}
-                <Button 
-                  variant="outline" 
-                  onClick={fetchNewsManually}
-                >
+                <Button variant="outline" onClick={() => updateNewsMutation.mutate()}>
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  뉴스 수집
+                  뉴스 업데이트
                 </Button>
               </div>
             </div>
@@ -775,17 +738,17 @@ export default function AdminPage() {
                           onCheckedChange={handleSelectAllNews}
                         />
                       </TableHead>
-                      <TableHead>번호</TableHead>
-                      <TableHead>제목</TableHead>
-                      <TableHead>출처</TableHead>
-                      <TableHead>작성일</TableHead>
-                      <TableHead>작업</TableHead>
+                      <TableHead className="w-[80px]">번호</TableHead>
+                      <TableHead className="min-w-[200px]">제목/이미지</TableHead>
+                      <TableHead className="w-[120px]">출처</TableHead>
+                      <TableHead className="w-[120px]">날짜</TableHead>
+                      <TableHead className="w-[100px]">작업</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {!news || news.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-4">
+                        <TableCell colSpan={8} className="text-center py-4">
                           등록된 뉴스가 없습니다.
                         </TableCell>
                       </TableRow>
@@ -801,35 +764,49 @@ export default function AdminPage() {
                             />
                           </TableCell>
                           <TableCell>{newsItem.id}</TableCell>
-                          <TableCell className="font-medium">
-                            <a 
-                              href={`/news/${newsItem.id}`}
-                              className="text-blue-600 hover:underline"
-                            >
-                              {newsItem.title}
-                            </a>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              {newsItem.imageUrl ? (
+                                <div className="h-10 w-16 overflow-hidden rounded">
+                                  <img 
+                                    src={newsItem.imageUrl} 
+                                    alt={newsItem.title} 
+                                    className="h-full w-full object-cover"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="h-10 w-16 bg-gray-200 rounded flex items-center justify-center">
+                                  <span className="text-gray-400 text-xs">No Image</span>
+                                </div>
+                              )}
+                              <div>
+                                <div className="font-medium">{newsItem.title}</div>
+                                <div className="text-xs text-gray-500 truncate max-w-[200px]">
+                                  {newsItem.description}
+                                </div>
+                              </div>
+                            </div>
                           </TableCell>
                           <TableCell>{newsItem.source}</TableCell>
                           <TableCell>
-                            {newsItem.createdAt 
-                              ? new Date(newsItem.createdAt).toLocaleDateString() 
-                              : '날짜 없음'}
+                            {newsItem.createdAt && new Date(newsItem.createdAt).toLocaleDateString()}
                           </TableCell>
                           <TableCell>
-                            <div className="flex space-x-2">
+                            <div className="flex space-x-1">
                               <a 
-                                href={`/news/${newsItem.id}`}
-                                className="inline-flex h-8 items-center justify-center rounded-md bg-blue-500 px-2 text-sm font-medium text-white shadow hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                href={`/news/${newsItem.id}`} 
+                                className="p-2 text-gray-500 hover:text-primary"
+                                title="보기"
                               >
                                 <Eye className="h-4 w-4" />
                               </a>
-                              <Button 
-                                variant="destructive" 
-                                size="sm"
-                                onClick={() => handleDeleteNews(newsItem.id)}
+                              <button 
+                                onClick={() => deleteNewsMutation.mutate(newsItem.id)}
+                                className="p-2 text-gray-500 hover:text-red-500"
+                                title="삭제"
                               >
                                 <Trash2 className="h-4 w-4" />
-                              </Button>
+                              </button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -842,124 +819,118 @@ export default function AdminPage() {
           </div>
         </TabsContent>
 
-        {/* 사용자 탭 (관리자만) */}
-        {user?.role === "admin" && (
-          <TabsContent value="users">
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">사용자 관리</h2>
-                {selectedUsers.length > 0 && (
-                  <Button 
-                    variant="destructive" 
-                    onClick={() => openDeleteConfirm('users')}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    선택 삭제 ({selectedUsers.length})
-                  </Button>
-                )}
-              </div>
-              
-              {isLoadingUsers ? (
-                <div className="flex justify-center py-10">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[40px]">
-                          <Checkbox 
-                            checked={users && users.length > 0 && selectedUsers.length === users.length}
-                            onCheckedChange={handleSelectAllUsers}
-                          />
-                        </TableHead>
-                        <TableHead>번호</TableHead>
-                        <TableHead>사용자명</TableHead>
-                        <TableHead>이메일</TableHead>
-                        <TableHead>권한</TableHead>
-                        <TableHead>작업</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {!users || users.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center py-4">
-                            등록된 사용자가 없습니다.
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        users.map((user) => (
-                          <TableRow key={user.id}>
-                            <TableCell>
-                              {user.role !== 'admin' && (
-                                <Checkbox 
-                                  checked={selectedUsers.includes(user.id)}
-                                  onCheckedChange={(checked) => 
-                                    handleSelectUser(user.id, checked === true)
-                                  }
-                                />
-                              )}
-                            </TableCell>
-                            <TableCell>{user.id}</TableCell>
-                            <TableCell className="font-medium">{user.username}</TableCell>
-                            <TableCell>{user.email}</TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 rounded-full text-xs ${
-                                user.role === "admin" 
-                                  ? 'bg-purple-100 text-purple-800' 
-                                  : 'bg-blue-100 text-blue-800'
-                              }`}>
-                                {user.role === "admin" ? "관리자" : "일반사용자"}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex space-x-2">
-                                {user.role !== 'admin' && (
-                                  <Button 
-                                    variant="destructive" 
-                                    size="sm"
-                                    onClick={() => handleDeleteUser(user.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+        {/* 사용자 탭 */}
+        <TabsContent value="users">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">사용자 관리</h2>
+              {selectedUsers.length > 0 && (
+                <Button 
+                  variant="destructive" 
+                  onClick={() => openDeleteConfirm('users')}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  선택 삭제 ({selectedUsers.length})
+                </Button>
               )}
             </div>
-          </TabsContent>
-        )}
+            
+            {isLoadingUsers ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[40px]">
+                        <Checkbox 
+                          checked={users && users.length > 0 && selectedUsers.length === users.length}
+                          onCheckedChange={handleSelectAllUsers}
+                        />
+                      </TableHead>
+                      <TableHead className="w-[80px]">번호</TableHead>
+                      <TableHead className="min-w-[200px]">사용자명</TableHead>
+                      <TableHead className="min-w-[200px]">이메일</TableHead>
+                      <TableHead className="w-[100px]">역할</TableHead>
+                      <TableHead className="w-[100px]">작업</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {!users || users.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-4">
+                          등록된 사용자가 없습니다.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      users.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell>
+                            <Checkbox 
+                              checked={selectedUsers.includes(user.id)}
+                              onCheckedChange={(checked) => 
+                                handleSelectUser(user.id, checked === true)
+                              }
+                            />
+                          </TableCell>
+                          <TableCell>{user.id}</TableCell>
+                          <TableCell>{user.username}</TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>
+                            <span 
+                              className={`text-xs px-2 py-1 rounded ${
+                                user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                              }`}
+                            >
+                              {user.role}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex space-x-1">
+                              <button 
+                                onClick={() => deleteUserMutation.mutate(user.id)}
+                                className="p-2 text-gray-500 hover:text-red-500"
+                                title="삭제"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        </TabsContent>
       </Tabs>
-
+      
       {/* 삭제 확인 대화 상자 */}
-      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+      <AlertDialog 
+        open={isDeleteAlertOpen} 
+        onOpenChange={setIsDeleteAlertOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {currentDeleteType === 'properties' && '부동산 매물 일괄 삭제'}
-              {currentDeleteType === 'news' && '뉴스 일괄 삭제'}
-              {currentDeleteType === 'users' && '사용자 일괄 삭제'}
-            </AlertDialogTitle>
+            <AlertDialogTitle>정말 삭제하시겠습니까?</AlertDialogTitle>
             <AlertDialogDescription>
-              {currentDeleteType === 'properties' && 
-                `선택한 ${selectedProperties.length}개의 부동산 매물을 삭제하시겠습니까?`}
-              {currentDeleteType === 'news' && 
-                `선택한 ${selectedNews.length}개의 뉴스를 삭제하시겠습니까?`}
-              {currentDeleteType === 'users' && 
-                `선택한 ${selectedUsers.length}명의 사용자를 삭제하시겠습니까? 관리자 계정은 삭제되지 않습니다.`}
-              <div className="mt-2 text-red-500">이 작업은 되돌릴 수 없습니다.</div>
+              {currentDeleteType === 'properties' && `선택한 ${selectedProperties.length}개의 부동산을 삭제합니다.`}
+              {currentDeleteType === 'news' && `선택한 ${selectedNews.length}개의 뉴스를 삭제합니다.`}
+              {currentDeleteType === 'users' && `선택한 ${selectedUsers.length}개의 사용자를 삭제합니다.`}
+              <br />
+              이 작업은 취소할 수 없습니다.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>취소</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBatchDelete} className="bg-destructive">
+            <AlertDialogAction 
+              onClick={handleBatchDelete}
+              className="bg-red-500 hover:bg-red-600"
+            >
               삭제
             </AlertDialogAction>
           </AlertDialogFooter>

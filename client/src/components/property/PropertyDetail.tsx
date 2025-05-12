@@ -701,13 +701,6 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
           {/* 위치 정보 표시 - 카카오 지도 사용 (KakaoMap 컴포넌트로 대체) */}
           <div className="bg-gray-50 rounded-lg overflow-hidden h-64 mb-4">
             <div className="w-full h-full relative">
-              {/* 타이틀 오버레이 */}
-              <div className="absolute top-4 left-0 right-0 z-10 flex flex-col items-center pointer-events-none">
-                <div className="bg-white/90 rounded-md px-4 py-2 shadow-sm">
-                  <h3 className="text-lg font-semibold">매물 위치</h3>
-                </div>
-              </div>
-              
               {/* KakaoMap 컴포넌트 (단일 매물 모드) */}
               {property && (
                 <KakaoMap 

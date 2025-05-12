@@ -568,7 +568,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
               <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg flex flex-col items-center shadow-sm">
                 <Maximize className="text-primary mb-2 h-6 w-6" />
                 <span className="font-bold text-lg">{property.size}m²</span>
-                <span className="text-sm text-gray-600">면적</span>
+                <span className="text-sm text-gray-600">총면적</span>
               </div>
               <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg flex flex-col items-center shadow-sm">
                 <Bed className="text-primary mb-2 h-6 w-6" />
@@ -629,28 +629,42 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                     <h4 className="font-semibold text-lg mb-3">면적 정보</h4>
                     <table className="w-full">
                       <tbody>
+                        {/* 총면적 - 기본 정보의 면적필드 사용 */}
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2 text-gray-600 w-1/3">총면적</td>
+                          <td className="py-2 font-medium">
+                            {`${property.size}m² (약 ${(Number(property.size) * 0.3025).toFixed(2)}평)`}
+                          </td>
+                        </tr>
+                        
+                        {/* 공급면적 - 상세정보의 공급필드 사용 */}
                         <tr className="border-b border-gray-100">
                           <td className="py-2 text-gray-600 w-1/3">공급면적</td>
                           <td className="py-2 font-medium">
                             {property.supplyArea 
                               ? `${property.supplyArea}m² (약 ${(Number(property.supplyArea) * 0.3025).toFixed(2)}평)` 
-                              : `${property.size}m² (약 ${(Number(property.size) * 0.3025).toFixed(2)}평)`}
+                              : "정보 없음"}
                           </td>
                         </tr>
-                        {property.privateArea && (
-                          <tr className="border-b border-gray-100">
-                            <td className="py-2 text-gray-600">전용면적</td>
-                            <td className="py-2 font-medium">
-                              {`${property.privateArea}m² (약 ${(Number(property.privateArea) * 0.3025).toFixed(2)}평)`}
-                            </td>
+                        
+                        {/* 전용면적 - 상세정보의 전용필드 사용 */}
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2 text-gray-600">전용면적</td>
+                          <td className="py-2 font-medium">
+                            {property.privateArea 
+                              ? `${property.privateArea}m² (약 ${(Number(property.privateArea) * 0.3025).toFixed(2)}평)`
+                              : "정보 없음"}
+                          </td>
+                        </tr>
+                        {/* 평형 정보가 있는 경우 표시, 없으면 총면적을 기준으로 계산 */}
+                        <tr className="border-b border-gray-100">
+                          <td className="py-2 text-gray-600">평형</td>
+                          <td className="py-2 font-medium">
+                            {property.areaSize 
+                              ? property.areaSize 
+                              : `${(Number(property.size) * 0.3025).toFixed(2)}평`}
+                          </td>
                           </tr>
-                        )}
-                        {property.areaSize && (
-                          <tr className="border-b border-gray-100">
-                            <td className="py-2 text-gray-600">평형</td>
-                            <td className="py-2 font-medium">{property.areaSize}</td>
-                          </tr>
-                        )}
                       </tbody>
                     </table>
                   </div>

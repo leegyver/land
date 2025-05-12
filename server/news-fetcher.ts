@@ -9,6 +9,8 @@ const SEARCH_ENDPOINT = "https://openapi.naver.com/v1/search/news.json";
 
 // 검색 키워드 목록
 const SEARCH_KEYWORDS = [
+  '강화군',
+  '강화군 부동산',
   '강화도 부동산',
   '인천 부동산',
   '강화군 개발',

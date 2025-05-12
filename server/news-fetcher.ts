@@ -4,6 +4,7 @@ import { db } from './db';
 import { news } from '@shared/schema';
 import { log } from './vite';
 import { eq } from 'drizzle-orm';
+import * as cheerio from 'cheerio';
 
 const SEARCH_ENDPOINT = "https://openapi.naver.com/v1/search/news.json";
 
@@ -73,6 +74,56 @@ async function isNewsAlreadyExists(title: string): Promise<boolean> {
   return existingNews.length > 0;
 }
 
+// 뉴스 이미지 추출 함수
+async function extractImageFromNews(url: string): Promise<string | null> {
+  try {
+    // 원본 뉴스 페이지 가져오기
+    const response = await fetch(url);
+    const html = await response.text();
+    const $ = cheerio.load(html);
+    
+    // 뉴스 본문 이미지 찾기 (네이버 뉴스 구조)
+    let imageUrl: string | null = null;
+    
+    // 네이버 뉴스 메인 이미지
+    const naverNewsImage = $('#articleBodyContents img, #newsEndContents img, .end_photo_org img').first();
+    if (naverNewsImage.length) {
+      imageUrl = naverNewsImage.attr('src') || null;
+    }
+    
+    // 다른 뉴스 사이트의 메타 태그 이미지
+    if (!imageUrl) {
+      const metaImage = $('meta[property="og:image"]').attr('content');
+      if (metaImage) {
+        imageUrl = metaImage;
+      }
+    }
+    
+    // 일반 이미지 검색 (fallback)
+    if (!imageUrl) {
+      const firstImage = $('article img, .article img, .news_body img').first();
+      if (firstImage.length) {
+        imageUrl = firstImage.attr('src') || null;
+      }
+    }
+    
+    // 이미지 URL 정규화
+    if (imageUrl && !imageUrl.startsWith('http')) {
+      if (imageUrl.startsWith('//')) {
+        imageUrl = 'https:' + imageUrl;
+      } else {
+        const baseUrl = new URL(url);
+        imageUrl = `${baseUrl.protocol}//${baseUrl.host}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+      }
+    }
+    
+    return imageUrl;
+  } catch (error) {
+    log(`이미지 추출 오류 (${url}): ${error}`, 'error');
+    return null;
+  }
+}
+
 // 뉴스 저장 함수
 async function saveNewsToDatabase(newsItems: any[]) {
   for (const item of newsItems) {
@@ -86,9 +137,14 @@ async function saveNewsToDatabase(newsItems: any[]) {
         continue;
       }
 
-      // 랜덤 부동산 이미지 선택 
-      const randomImageIndex = Math.floor(Math.random() * REAL_ESTATE_IMAGES.length);
-      const selectedImage = REAL_ESTATE_IMAGES[randomImageIndex];
+      // 원본 뉴스에서 이미지 추출 시도
+      let imageUrl = await extractImageFromNews(item.link);
+      
+      // 이미지 추출 실패 시 대체 이미지 사용
+      if (!imageUrl) {
+        const randomImageIndex = Math.floor(Math.random() * REAL_ESTATE_IMAGES.length);
+        imageUrl = REAL_ESTATE_IMAGES[randomImageIndex];
+      }
       
       // 뉴스 저장
       await storage.createNews({
@@ -99,7 +155,7 @@ async function saveNewsToDatabase(newsItems: any[]) {
         source: new URL(item.originallink || item.link).hostname,
         sourceUrl: item.originallink || item.link,
         url: item.link,
-        imageUrl: selectedImage,
+        imageUrl: imageUrl,
         category: '인천 부동산',
         isPinned: false
       });

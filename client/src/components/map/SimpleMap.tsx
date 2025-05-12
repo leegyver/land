@@ -95,18 +95,14 @@ export default function SimpleMap() {
           } else {
             address = region;
           }
-        } else if (property.city && property.city.includes('서울')) {
+        } else if (property.district && property.district.includes('서울')) {
           // 서울 지역 주소 최적화
-          if (property.district) {
-            // 중복 구 이름 제거
-            const district = property.district.replace(/서울특별시|서울시|서울/g, '').trim();
-            address = `서울특별시 ${district} ${property.address || ''}`.trim();
-          } else {
-            address = `서울특별시 ${property.address || ''}`.trim();
-          }
+          // 중복 구 이름 제거
+          const district = property.district.replace(/서울특별시|서울시|서울/g, '').trim();
+          address = `서울특별시 ${district} ${property.address || ''}`.trim();
         } else {
           // 기타 지역 주소 최적화
-          address = `${property.city || '인천광역시'} ${property.district || ''} ${property.address || ''}`.trim();
+          address = `인천광역시 ${property.district || ''} ${property.address || ''}`.trim();
         }
         
         console.log(`주소 검색 시도 (최적화): ${address}`);

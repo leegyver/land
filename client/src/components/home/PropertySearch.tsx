@@ -95,7 +95,6 @@ const PropertySearch = () => {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="all">전체</SelectItem>
-                        <SelectItem value="강화군외">강화군외</SelectItem>
                         {/* 강화읍 옵션 */}
                         <SelectItem value="강화읍 갑곳리">강화읍 갑곳리</SelectItem>
                         <SelectItem value="강화읍 관청리">강화읍 관청리</SelectItem>
@@ -106,7 +105,7 @@ const PropertySearch = () => {
                         <SelectItem value="강화읍 옥림리">강화읍 옥림리</SelectItem>
                         <SelectItem value="강화읍 용정리">강화읍 용정리</SelectItem>
                         <SelectItem value="강화읍 월곳리">강화읍 월곳리</SelectItem>
-                        
+
                         {/* 교동면 옵션 */}
                         <SelectItem value="교동면 고구리">교동면 고구리</SelectItem>
                         <SelectItem value="교동면 난정리">교동면 난정리</SelectItem>
@@ -114,9 +113,99 @@ const PropertySearch = () => {
                         <SelectItem value="교동면 동산리">교동면 동산리</SelectItem>
                         <SelectItem value="교동면 무학리">교동면 무학리</SelectItem>
                         <SelectItem value="교동면 봉소리">교동면 봉소리</SelectItem>
+                        <SelectItem value="교동면 삼선리">교동면 삼선리</SelectItem>
                         <SelectItem value="교동면 상용리">교동면 상용리</SelectItem>
                         <SelectItem value="교동면 서한리">교동면 서한리</SelectItem>
-                        
+                        <SelectItem value="교동면 양갑리">교동면 양갑리</SelectItem>
+                        <SelectItem value="교동면 읍내리">교동면 읍내리</SelectItem>
+                        <SelectItem value="교동면 인사리">교동면 인사리</SelectItem>
+                        <SelectItem value="교동면 지석리">교동면 지석리</SelectItem>
+
+                        {/* 길상면 옵션 */}
+                        <SelectItem value="길상면 길직리">길상면 길직리</SelectItem>
+                        <SelectItem value="길상면 동검리">길상면 동검리</SelectItem>
+                        <SelectItem value="길상면 선두리">길상면 선두리</SelectItem>
+                        <SelectItem value="길상면 온수리">길상면 온수리</SelectItem>
+                        <SelectItem value="길상면 장흥리">길상면 장흥리</SelectItem>
+                        <SelectItem value="길상면 초지리">길상면 초지리</SelectItem>
+
+                        {/* 내가면 옵션 */}
+                        <SelectItem value="내가면 고천리">내가면 고천리</SelectItem>
+                        <SelectItem value="내가면 구하리">내가면 구하리</SelectItem>
+                        <SelectItem value="내가면 오상리">내가면 오상리</SelectItem>
+                        <SelectItem value="내가면 외포리">내가면 외포리</SelectItem>
+                        <SelectItem value="내가면 황청리">내가면 황청리</SelectItem>
+
+                        {/* 불은면 옵션 */}
+                        <SelectItem value="불은면 고능리">불은면 고능리</SelectItem>
+                        <SelectItem value="불은면 넙성리">불은면 넙성리</SelectItem>
+                        <SelectItem value="불은면 덕성리">불은면 덕성리</SelectItem>
+                        <SelectItem value="불은면 두운리">불은면 두운리</SelectItem>
+                        <SelectItem value="불은면 삼동암리">불은면 삼동암리</SelectItem>
+                        <SelectItem value="불은면 삼성리">불은면 삼성리</SelectItem>
+                        <SelectItem value="불은면 신현리">불은면 신현리</SelectItem>
+                        <SelectItem value="불은면 오두리">불은면 오두리</SelectItem>
+
+                        {/* 삼산면 옵션 */}
+                        <SelectItem value="삼산면 매음리">삼산면 매음리</SelectItem>
+                        <SelectItem value="삼산면 미법리">삼산면 미법리</SelectItem>
+                        <SelectItem value="삼산면 상리">삼산면 상리</SelectItem>
+                        <SelectItem value="삼산면 서검리">삼산면 서검리</SelectItem>
+                        <SelectItem value="삼산면 석모리">삼산면 석모리</SelectItem>
+                        <SelectItem value="삼산면 석포리">삼산면 석포리</SelectItem>
+                        <SelectItem value="삼산면 하리">삼산면 하리</SelectItem>
+
+                        {/* 서도면 옵션 */}
+                        <SelectItem value="서도면 말도리">서도면 말도리</SelectItem>
+                        <SelectItem value="서도면 볼음도리">서도면 볼음도리</SelectItem>
+                        <SelectItem value="서도면 아차도리">서도면 아차도리</SelectItem>
+                        <SelectItem value="서도면 주문도리">서도면 주문도리</SelectItem>
+
+                        {/* 선원면 옵션 */}
+                        <SelectItem value="선원면 금월리">선원면 금월리</SelectItem>
+                        <SelectItem value="선원면 냉정리">선원면 냉정리</SelectItem>
+                        <SelectItem value="선원면 선행리">선원면 선행리</SelectItem>
+                        <SelectItem value="선원면 신정리">선원면 신정리</SelectItem>
+                        <SelectItem value="선원면 연리">선원면 연리</SelectItem>
+                        <SelectItem value="선원면 지산리">선원면 지산리</SelectItem>
+                        <SelectItem value="선원면 창리">선원면 창리</SelectItem>
+
+                        {/* 송해면 옵션 */}
+                        <SelectItem value="송해면 당산리">송해면 당산리</SelectItem>
+                        <SelectItem value="송해면 상도리">송해면 상도리</SelectItem>
+                        <SelectItem value="송해면 솔정리">송해면 솔정리</SelectItem>
+                        <SelectItem value="송해면 숭뢰리">송해면 숭뢰리</SelectItem>
+                        <SelectItem value="송해면 신당리">송해면 신당리</SelectItem>
+                        <SelectItem value="송해면 양오리">송해면 양오리</SelectItem>
+                        <SelectItem value="송해면 하도리">송해면 하도리</SelectItem>
+
+                        {/* 양도면 옵션 */}
+                        <SelectItem value="양도면 건평리">양도면 건평리</SelectItem>
+                        <SelectItem value="양도면 길정리">양도면 길정리</SelectItem>
+                        <SelectItem value="양도면 능내리">양도면 능내리</SelectItem>
+                        <SelectItem value="양도면 도장리">양도면 도장리</SelectItem>
+                        <SelectItem value="양도면 삼흥리">양도면 삼흥리</SelectItem>
+                        <SelectItem value="양도면 인산리">양도면 인산리</SelectItem>
+                        <SelectItem value="양도면 조산리">양도면 조산리</SelectItem>
+                        <SelectItem value="양도면 하일리">양도면 하일리</SelectItem>
+
+                        {/* 양사면 옵션 */}
+                        <SelectItem value="양사면 교산리">양사면 교산리</SelectItem>
+                        <SelectItem value="양사면 덕하리">양사면 덕하리</SelectItem>
+                        <SelectItem value="양사면 북성리">양사면 북성리</SelectItem>
+                        <SelectItem value="양사면 인화리">양사면 인화리</SelectItem>
+                        <SelectItem value="양사면 철산리">양사면 철산리</SelectItem>
+
+                        {/* 하점면 옵션 */}
+                        <SelectItem value="하점면 망월리">하점면 망월리</SelectItem>
+                        <SelectItem value="하점면 부근리">하점면 부근리</SelectItem>
+                        <SelectItem value="하점면 삼거리">하점면 삼거리</SelectItem>
+                        <SelectItem value="하점면 신봉리">하점면 신봉리</SelectItem>
+                        <SelectItem value="하점면 신삼리">하점면 신삼리</SelectItem>
+                        <SelectItem value="하점면 이강리">하점면 이강리</SelectItem>
+                        <SelectItem value="하점면 장정리">하점면 장정리</SelectItem>
+                        <SelectItem value="하점면 창후리">하점면 창후리</SelectItem>
+
                         {/* 화도면 옵션 */}
                         <SelectItem value="화도면 내리">화도면 내리</SelectItem>
                         <SelectItem value="화도면 덕포리">화도면 덕포리</SelectItem>
@@ -127,6 +216,9 @@ const PropertySearch = () => {
                         <SelectItem value="화도면 여차리">화도면 여차리</SelectItem>
                         <SelectItem value="화도면 장화리">화도면 장화리</SelectItem>
                         <SelectItem value="화도면 흥왕리">화도면 흥왕리</SelectItem>
+                        
+                        {/* 기타 옵션 */}
+                        <SelectItem value="기타지역">기타지역</SelectItem>
                       </SelectContent>
                     </Select>
                   </FormItem>

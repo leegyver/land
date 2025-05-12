@@ -7,6 +7,7 @@ import { Property, User, News, insertPropertySchema } from "@shared/schema";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { RefreshCw, Edit, Trash2, Loader2, Check } from "lucide-react";
 
 // 기본 UI 컴포넌트
 import {
@@ -400,6 +401,39 @@ export default function AdminPageFixed() {
     },
   });
 
+  // 뉴스 수동 업데이트 mutation
+  const updateNewsMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("GET", "/api/admin/update-news");
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/news"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/news/latest"] });
+      toast({
+        title: "뉴스 업데이트 성공",
+        description: "최신 뉴스가 성공적으로 업데이트되었습니다.",
+      });
+      setIsUpdatingNews(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "뉴스 업데이트 실패",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsUpdatingNews(false);
+    },
+  });
+
+  // 뉴스 수동 업데이트 핸들러
+  const handleUpdateNews = () => {
+    if (window.confirm("네이버 뉴스 API를 통해 최신 뉴스를 가져오시겠습니까?")) {
+      setIsUpdatingNews(true);
+      updateNewsMutation.mutate();
+    }
+  };
+  
   // 부동산 삭제 핸들러
   const handleDeleteProperty = (id: number) => {
     if (window.confirm("정말로 이 부동산을 삭제하시겠습니까?")) {

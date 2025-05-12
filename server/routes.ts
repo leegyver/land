@@ -1088,6 +1088,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // 네이버 블로그 최신글 가져오기 API
+  app.get("/api/blog-posts", async (req, res) => {
+    try {
+      // 캐시 확인 여부를 쿼리 파라미터로 제어
+      const skipCache = req.query.skipCache === 'true';
+      const count = parseInt(req.query.count as string) || 5;
+      
+      if (!skipCache) {
+        // 캐시에서 먼저 확인
+        const cacheKey = "naver_blog_posts";
+        const cachedPosts = memoryCache.get(cacheKey);
+        
+        if (cachedPosts) {
+          return res.json(cachedPosts);
+        }
+      }
+      
+      // 네이버 블로그에서 데이터 가져오기
+      const posts = await fetchNaverBlogPosts("9551304", "11", count);
+      
+      // 캐시 스킵이 아닐 경우에만 캐시 저장 (30분 동안 유지)
+      if (!skipCache && posts.length > 0) {
+        memoryCache.set("naver_blog_posts", posts, 30 * 60 * 1000);
+      }
+      
+      res.json(posts);
+    } catch (error) {
+      console.error("블로그 포스트를 가져오는 중 오류 발생:", error);
+      res.status(500).json({ message: "블로그 포스트를 가져오는 중 오류가 발생했습니다." });
+    }
+  });
+  
   const httpServer = createServer(app);
   return httpServer;
 }

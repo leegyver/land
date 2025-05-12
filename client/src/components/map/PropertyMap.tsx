@@ -105,7 +105,7 @@ const PropertyMap = () => {
           if (property.district && property.district.includes('강화')) {
             address = `인천광역시 강화군 ${property.address || ''}`;
           } else {
-            address = `${property.city || '인천광역시'} ${property.district || ''} ${property.address || ''}`;
+            address = `인천광역시 ${property.district || ''} ${property.address || ''}`;
           }
           
           // 주소에서 중복되는 지역명 제거

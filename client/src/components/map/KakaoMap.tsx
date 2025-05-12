@@ -81,7 +81,6 @@ export default function KakaoMap() {
       // 각 매물의 주소를 좌표로 변환하여 마커 생성
       properties.forEach((property, index) => {
         // 지역 필드 + 주소 필드 형식으로 주소 구성
-        const city = property.city || '';
         const district = property.district || '';
         const detailAddress = property.address || '';
         
@@ -92,18 +91,18 @@ export default function KakaoMap() {
           address = `인천광역시 강화군 ${district} ${detailAddress}`.trim();
         } 
         // 서울 지역 처리
-        else if (city.includes('서울')) {
+        else if (district.includes('서울')) {
           // 서울 지역은 '서울특별시'로 통일
           const cleanDistrict = district.replace(/서울특별시|서울시|서울/g, '').trim();
           address = `서울특별시 ${cleanDistrict} ${detailAddress}`.trim();
         }
         // 인천 지역 처리 (강화군 제외)
-        else if (city.includes('인천')) {
+        else if (district.includes('인천')) {
           address = `인천광역시 ${district} ${detailAddress}`.trim();
         }
         // 기타 지역
         else {
-          address = `${city} ${district} ${detailAddress}`.trim();
+          address = `인천광역시 ${district} ${detailAddress}`.trim();
         }
         
         console.log(`주소 검색 시도: ${address}`);
@@ -184,9 +183,9 @@ export default function KakaoMap() {
               // 지역에 따른 중심 좌표 사용
               if (district.includes('강화')) {
                 fallbackCoords = new window.kakao.maps.LatLng(37.7464, 126.4878); // 강화군 중심
-              } else if (city.includes('서울')) {
+              } else if (district.includes('서울')) {
                 fallbackCoords = new window.kakao.maps.LatLng(37.5665, 126.9780); // 서울 중심
-              } else if (city.includes('인천')) {
+              } else if (district.includes('인천')) {
                 fallbackCoords = new window.kakao.maps.LatLng(37.4563, 126.7052); // 인천 중심
               } else {
                 // 기본 위치에 약간의 랜덤성 추가 (마커 중첩 방지)

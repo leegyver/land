@@ -743,6 +743,31 @@ export default function AdminPageFixed() {
 
   return (
     <div className="container mx-auto py-6 space-y-6">
+      {/* 일괄 삭제 확인 다이얼로그 */}
+      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>선택한 항목 일괄 삭제</AlertDialogTitle>
+            <AlertDialogDescription>
+              {currentDeleteType === 'properties' && `선택한 ${selectedProperties.length}개의 부동산 매물을 삭제하시겠습니까?`}
+              {currentDeleteType === 'news' && `선택한 ${selectedNews.length}개의 뉴스를 삭제하시겠습니까?`}
+              {currentDeleteType === 'users' && `선택한 ${selectedUsers.length}개의 사용자를 삭제하시겠습니까?`}
+              <br /><br />
+              이 작업은 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleBatchDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">관리자 패널</h1>
@@ -788,10 +813,22 @@ export default function AdminPageFixed() {
                     등록된 부동산 매물 목록을 관리합니다.
                   </CardDescription>
                 </div>
-                <Button onClick={handleAddProperty} type="button">
-                  <Plus className="h-4 w-4 mr-2" />
-                  부동산 등록
-                </Button>
+                <div className="flex gap-2">
+                  {selectedProperties.length > 0 && (
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      onClick={() => openDeleteConfirm('properties')}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {selectedProperties.length}개 삭제
+                    </Button>
+                  )}
+                  <Button onClick={handleAddProperty} type="button">
+                    <Plus className="h-4 w-4 mr-2" />
+                    부동산 등록
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -799,6 +836,18 @@ export default function AdminPageFixed() {
                 <TableCaption>총 {displayProperties?.length || 0}개의 부동산 매물</TableCaption>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox 
+                        checked={selectedProperties.length > 0 && selectedProperties.length === displayProperties.length}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedProperties(displayProperties.map(p => p.id));
+                          } else {
+                            setSelectedProperties([]);
+                          }
+                        }}
+                      />
+                    </TableHead>
                     <TableHead>ID</TableHead>
                     <TableHead>제목</TableHead>
                     <TableHead>유형</TableHead>

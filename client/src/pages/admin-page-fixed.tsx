@@ -619,6 +619,20 @@ export default function AdminPageFixed() {
     }
   };
 
+  // 다중 선택 관련 핸들러
+  const openDeleteConfirm = (type: 'properties' | 'news' | 'users') => {
+    setCurrentDeleteType(type);
+    setIsDeleteAlertOpen(true);
+  };
+  
+  const handleSelectProperty = (id: number, checked: boolean) => {
+    if (checked) {
+      setSelectedProperties(prev => [...prev, id]);
+    } else {
+      setSelectedProperties(prev => prev.filter(propId => propId !== id));
+    }
+  };
+  
   // 폼 닫기 핸들러
   const handleCloseForm = () => {
     setShowPropertyForm(false);

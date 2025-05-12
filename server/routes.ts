@@ -374,8 +374,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (propertyDistrict === searchDistrict) {
             isMatch = true;
           }
-          // 강화군외 특수 케이스 (district 필드가 비어있거나 '강화'가 포함되지 않은 경우)
-          else if (searchDistrict === '강화군외') {
+          // 기타지역 특수 케이스 (district 필드가 비어있거나 '강화'가 포함되지 않은 경우)
+          else if (searchDistrict === '기타지역') {
             isMatch = !propertyDistrict.includes('강화') || propertyDistrict === '';
           }
           // all인 경우 모든 매물 표시

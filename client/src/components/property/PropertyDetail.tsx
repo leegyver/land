@@ -28,6 +28,7 @@ declare global {
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import KakaoMap from "@/components/map/KakaoMap";
 // 네이버 지도 API 사용
 import kakaoImage from "../../assets/kakao.jpg";
 import { Property as PropertyType } from "@shared/schema";
@@ -787,39 +788,23 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
             </p>
           </div>
           
-          {/* 위치 정보 표시 - 카카오 지도 사용 */}
+          {/* 위치 정보 표시 - 카카오 지도 사용 (KakaoMap 컴포넌트로 대체) */}
           <div className="bg-gray-50 rounded-lg overflow-hidden h-64 mb-4">
             <div className="w-full h-full relative">
-              {/* 카카오 지도 컨테이너 */}
-              <div ref={mapRef} className="w-full h-full" id="map"></div>
-              
-              {/* 지도 타이틀 오버레이 */}
-              <div className="absolute top-4 left-0 right-0 z-10 flex flex-col items-center">
+              {/* 타이틀 오버레이 */}
+              <div className="absolute top-4 left-0 right-0 z-10 flex flex-col items-center pointer-events-none">
                 <div className="bg-white/90 rounded-md px-4 py-2 shadow-sm">
                   <h3 className="text-lg font-semibold">매물 위치</h3>
                 </div>
               </div>
               
-              {/* 지도 로딩 실패 시 대체 UI - 평소에는 숨김 처리 */}
-              <div 
-                className="absolute inset-0 bg-white/95 flex items-center justify-center hidden" 
-                id="mapFallback"
-              >
-                <div className="text-center p-6">
-                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4 mx-auto">
-                    <MapPin className="w-6 h-6 text-primary" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">매물 위치</h3>
-                  <p className="text-sm text-gray-500 mb-4">
-                    정확한 위치는 문의 시 안내해 드립니다.
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    본 지도는 매물의 대략적인 위치만 표시합니다.
-                  </p>
-                </div>
-              </div>
-              
-
+              {/* KakaoMap 컴포넌트 (단일 매물 모드) */}
+              {property && (
+                <KakaoMap 
+                  singleProperty={property} 
+                  zoom={3} 
+                />
+              )}
             </div>
           </div>
           

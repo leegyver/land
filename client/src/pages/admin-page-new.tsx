@@ -148,6 +148,9 @@ export default function AdminPage() {
     queryFn: getQueryFn({ on401: "throw" })
   });
   
+  // 필터링된 부동산 목록
+  const filteredProperties = filterProperties(properties || []);
+  
   const {
     data: users,
     isLoading: isLoadingUsers,
@@ -303,39 +306,7 @@ export default function AdminPage() {
     }
   };
   
-  // 부동산 필터링 함수
-  const filterProperties = (props: Property[]) => {
-    if (!props) return [];
-    
-    return props.filter(property => {
-      // 유형 필터
-      if (filterType && property.type !== filterType) {
-        return false;
-      }
-      
-      // 지역 필터
-      if (filterDistrict && typeof property.district === 'string') {
-        if (property.district !== filterDistrict) {
-          return false;
-        }
-      }
-      
-      // 거래유형 필터
-      if (filterDealType && property.dealType) {
-        // 배열인 경우
-        if (Array.isArray(property.dealType)) {
-          return property.dealType.includes(filterDealType);
-        } 
-        // 문자열인 경우
-        else if (typeof property.dealType === 'string') {
-          return property.dealType === filterDealType;
-        }
-        return false;
-      }
-      
-      return true;
-    });
-  };
+
   
   const handleSelectNews = (id: number, checked: boolean) => {
     if (checked) {
@@ -355,8 +326,8 @@ export default function AdminPage() {
   
   // 전체 선택 핸들러
   const handleSelectAllProperties = (checked: boolean) => {
-    if (checked && properties) {
-      setSelectedProperties(properties.map(p => p.id));
+    if (checked && filteredProperties.length > 0) {
+      setSelectedProperties(filteredProperties.map(p => p.id));
     } else {
       setSelectedProperties([]);
     }
@@ -513,6 +484,60 @@ export default function AdminPage() {
               </div>
             </div>
             
+            {/* 필터 UI */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">유형</label>
+                <Select value={filterType} onValueChange={setFilterType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="모든 유형" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">모든 유형</SelectItem>
+                    {propertyTypes.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">지역</label>
+                <Select value={filterDistrict} onValueChange={setFilterDistrict}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="모든 지역" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">모든 지역</SelectItem>
+                    {districts.map((district) => (
+                      <SelectItem key={district.value} value={district.value}>
+                        {district.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">거래 유형</label>
+                <Select value={filterDealType} onValueChange={setFilterDealType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="모든 거래 유형" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">모든 거래 유형</SelectItem>
+                    {dealTypes.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
             {isLoadingProperties ? (
               <div className="flex justify-center py-10">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -524,7 +549,7 @@ export default function AdminPage() {
                     <TableRow>
                       <TableHead className="w-[40px]">
                         <Checkbox 
-                          checked={properties && properties.length > 0 && selectedProperties.length === properties.length}
+                          checked={filteredProperties && filteredProperties.length > 0 && selectedProperties.length === filteredProperties.length}
                           onCheckedChange={handleSelectAllProperties}
                         />
                       </TableHead>
@@ -538,14 +563,16 @@ export default function AdminPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {!properties || properties.length === 0 ? (
+                    {!filteredProperties || filteredProperties.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={8} className="text-center py-4">
-                          등록된 부동산이 없습니다.
+                          {properties && properties.length > 0 
+                            ? "필터링 조건에 맞는 부동산이 없습니다." 
+                            : "등록된 부동산이 없습니다."}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      properties.map((property) => (
+                      filteredProperties.map((property) => (
                         <TableRow key={property.id}>
                           <TableCell>
                             <Checkbox 

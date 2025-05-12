@@ -575,14 +575,14 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                           </tr>
                         )}
                         
-                        {/* 평형 정보가 있는 경우 표시, 없으면 총면적을 기준으로 계산 */}
+                        {/* 평형 정보는 관리자 페이지의 평형 필드값을 사용 */}
                         {(property.areaSize || property.size) && (
                           <tr className="border-b border-gray-100">
                             <td className="py-2 text-gray-600">평형</td>
                             <td className="py-2 font-medium">
                               {property.areaSize 
-                                ? property.areaSize 
-                                : `${(Number(property.size) * 0.3025).toFixed(2)}평`}
+                                ? `${property.areaSize}평형` 
+                                : `${(Number(property.size) * 0.3025).toFixed(2)}평형`}
                             </td>
                           </tr>
                         )}

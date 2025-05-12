@@ -53,7 +53,7 @@ export default function AdminPage() {
   
   // 필터링 상태 (초기값은 "all"로 모든 항목을 표시)
   const [filterType, setFilterType] = useState<string>("all");
-  const [filterDistrict, setFilterDistrict] = useState<string>("all");
+  // 지역 필터 제거 (클라이언트 요청)
   const [filterDealType, setFilterDealType] = useState<string>("all");
   
   // 필터 옵션 - DB에 있는 실제 필드값 적용
@@ -71,16 +71,7 @@ export default function AdminPage() {
     { value: "월세", label: "월세" },
   ];
   
-  const districts = [
-    { value: "강남구", label: "강남구" },
-    { value: "강화읍 갑곳리", label: "강화읍 갑곳리" },
-    { value: "강화읍 관청리", label: "강화읍 관청리" },
-    { value: "강화읍 국화리", label: "강화읍 국화리" },
-    { value: "마포구", label: "마포구" },
-    { value: "서초구", label: "서초구" },
-    { value: "용산구", label: "용산구" },
-    { value: "화도면 장화리", label: "화도면 장화리" },
-  ];
+  const districts = [];
   
   // 기존 배열 (참고용)
   const oldPropertyTypes = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
@@ -138,19 +129,13 @@ export default function AdminPage() {
   const filterProperties = (props: Property[]) => {
     if (!props) return [];
     
-    console.log("필터링 적용: ", { filterType, filterDistrict, filterDealType });
+    // 지역 필터가 제거되어 filterType과 filterDealType만 적용됨
+    console.log("필터링 적용: ", { filterType, filterDealType });
     
     return props.filter(property => {
       // 유형 필터
       if (filterType && filterType !== 'all' && property.type !== filterType) {
         return false;
-      }
-      
-      // 지역 필터
-      if (filterDistrict && filterDistrict !== 'all') {
-        if (!property.district || property.district !== filterDistrict) {
-          return false;
-        }
       }
       
       // 거래유형 필터
@@ -514,22 +499,7 @@ export default function AdminPage() {
                 </Select>
               </div>
               
-              <div>
-                <label className="block text-sm font-medium mb-1">지역</label>
-                <Select value={filterDistrict} onValueChange={setFilterDistrict}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="모든 지역" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">모든 지역</SelectItem>
-                    {districts.map((district) => (
-                      <SelectItem key={district.value} value={district.value}>
-                        {district.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* 지역 필터는 클라이언트 요청에 따라 제거됨 */}
               
               <div>
                 <label className="block text-sm font-medium mb-1">거래 유형</label>

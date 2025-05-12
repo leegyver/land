@@ -476,7 +476,6 @@ export default function AdminPage() {
                           <TableCell>{property.type}</TableCell>
                           <TableCell>
                             <div className="flex flex-col">
-                              <span>{property.city}</span>
                               <span className="text-xs text-gray-500">{property.district}</span>
                             </div>
                           </TableCell>

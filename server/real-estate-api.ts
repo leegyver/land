@@ -31,6 +31,7 @@ export async function getApartmentTransactions(params: {
   LAWD_CD: string; // 지역코드 (강화군: 28710)
   DEAL_YMD: string; // 계약년월(YYYYMM)
 }): Promise<RealEstateTransaction[]> {
+  // 재발급된 인증키로 URL 호출: 인코딩된 키를 직접 사용
   const baseUrl = 'http://openapi.molit.go.kr/OpenAPI_ToolInstallPackage/service/rest/RTMSOBJSvc/getRTMSDataSvcAptTradeDev';
   const serviceKey = process.env.DATA_GO_KR_API_KEY;
 

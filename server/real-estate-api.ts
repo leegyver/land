@@ -28,7 +28,7 @@ export async function getApartmentTransactions(params: {
   LAWD_CD: string; // 지역코드 (강화군: 28710)
   DEAL_YMD: string; // 계약년월(YYYYMM)
 }): Promise<RealEstateTransaction[]> {
-  const baseUrl = 'http://openapi.molit.go.kr/OpenAPI_ToolInstallPackage/service/rest/RTMSOBJSvc/getRTMSDataSvcAptTrade';
+  const baseUrl = 'https://apis.data.go.kr/1613000/AptTradeSvc/getRTMSDataSvcAptTrade';
   const serviceKey = process.env.DATA_GO_KR_API_KEY;
 
   if (!serviceKey) {
@@ -50,11 +50,15 @@ export async function getApartmentTransactions(params: {
   
   try {
     console.log(`아파트 실거래 데이터 요청: ${params.LAWD_CD}, ${params.DEAL_YMD}`);
+    console.log('요청 URL:', url);
     
+    // 요청 헤더 및 User-Agent 추가 (CORS 방지)
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'Accept': 'application/xml'
+        'Accept': 'application/xml',
+        'Content-Type': 'application/xml',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
       }
     });
     
@@ -155,7 +159,7 @@ export async function getHouseTransactions(params: {
   LAWD_CD: string; // 지역코드 (강화군: 28710)
   DEAL_YMD: string; // 계약년월(YYYYMM)
 }): Promise<RealEstateTransaction[]> {
-  const baseUrl = 'http://openapi.molit.go.kr/OpenAPI_ToolInstallPackage/service/rest/RTMSOBJSvc/getRTMSDataSvcSHTrade';
+  const baseUrl = 'https://apis.data.go.kr/1613000/TradeService/getRTMSDataSvcSHTrade';
   const serviceKey = process.env.DATA_GO_KR_API_KEY;
 
   if (!serviceKey) {
@@ -177,11 +181,15 @@ export async function getHouseTransactions(params: {
   
   try {
     console.log(`단독다가구 실거래 데이터 요청: ${params.LAWD_CD}, ${params.DEAL_YMD}`);
+    console.log('요청 URL:', url);
     
+    // 요청 헤더 및 User-Agent 추가 (CORS 방지)
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'Accept': 'application/xml'
+        'Accept': 'application/xml',
+        'Content-Type': 'application/xml',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
       }
     });
     
@@ -274,7 +282,7 @@ export async function getLandTransactions(params: {
   LAWD_CD: string; // 지역코드 (강화군: 28710)
   DEAL_YMD: string; // 계약년월(YYYYMM)
 }): Promise<RealEstateTransaction[]> {
-  const baseUrl = 'http://openapi.molit.go.kr/OpenAPI_ToolInstallPackage/service/rest/RTMSOBJSvc/getRTMSDataSvcLandTrade';
+  const baseUrl = 'https://apis.data.go.kr/1613000/TradeService/getRTMSDataSvcLandTrade';
   const serviceKey = process.env.DATA_GO_KR_API_KEY;
 
   if (!serviceKey) {

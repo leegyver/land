@@ -14,7 +14,7 @@ import {
 import { memoryCache } from "./cache";
 import { setupAuth } from "./auth";
 import { fetchAndSaveNews } from "./news-fetcher";
-import { fetchNaverBlogPosts, BlogPost } from "./blog-fetcher";
+// 블로그 포스트 관련 코드 제거됨
 import { sendEmail, createInquiryEmailTemplate } from "./mailer";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -1078,106 +1078,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // 네이버 블로그 최신글 가져오기 API
-  app.get("/api/blog-posts", async (req, res) => {
-    try {
-      // 캐시 확인 여부를 쿼리 파라미터로 제어
-      const skipCache = req.query.skipCache === 'true';
-      const count = parseInt(req.query.count as string) || 5;
-      
-      // 개발 중에는 항상 최신 데이터를 가져오도록 캐시 비우기
-      memoryCache.delete("naver_blog_posts");
-      
-      if (!skipCache && process.env.NODE_ENV === 'production') {
-        // 프로덕션 환경에서만 캐시 사용
-        const cacheKey = "naver_blog_posts";
-        const cachedPosts = memoryCache.get(cacheKey);
-        
-        if (cachedPosts) {
-          return res.json(cachedPosts);
-        }
-      }
-      
-      // 여러 카테고리에서 블로그 포스트 가져오기 (직접 웹 스크래핑)
-      const categories = ["21", "35", "36"]; // 사용자가 지정한 카테고리
-      const allPosts: BlogPost[] = [];
-      const uniquePostUrls = new Set<string>(); // 중복 제거를 위한 URL 세트
-      
-      try {
-        // 각 카테고리에서 직접 웹 스크래핑으로 포스트 가져오기
-        for (const category of categories) {
-          console.log(`카테고리 ${category}에서 포스트 직접 스크래핑 시작...`);
-          const categoryPosts = await fetchNaverBlogPosts("9551304", category, 10);
-          
-          if (categoryPosts.length > 0) {
-            console.log(`카테고리 ${category}에서 ${categoryPosts.length}개 포스트 발견`);
-            
-            // 중복 제거하면서 추가
-            for (const post of categoryPosts) {
-              // URL 기반 중복 체크 (link 사용)
-              if (!uniquePostUrls.has(post.link)) {
-                uniquePostUrls.add(post.link);
-                allPosts.push(post);
-                console.log(`추가된 포스트: ${post.title}`);
-              } else {
-                console.log(`중복 포스트 제외: ${post.title}`);
-              }
-            }
-          } else {
-            console.log(`카테고리 ${category}에서 포스트를 찾을 수 없습니다`);
-          }
-        }
-        
-        console.log(`총 ${allPosts.length}개 고유 포스트 수집 완료`);
-      } catch (error) {
-        console.error("블로그 포스트 스크래핑 중 오류:", error);
-      }
-      
-      // 날짜 문자열을 Date 객체로 변환하여 정렬 (네이버 블로그 날짜 형식: YYYY. MM. DD.)
-      const parseDateString = (dateStr: string): Date => {
-        try {
-          // "2025. 5. 9." 형식 처리
-          const parts = dateStr.split('.');
-          if (parts.length >= 3) {
-            const year = parseInt(parts[0].trim());
-            const month = parseInt(parts[1].trim()) - 1; // 월은 0-11
-            const day = parseInt(parts[2].trim());
-            return new Date(year, month, day);
-          }
-          return new Date(); // 파싱 실패시 현재 날짜
-        } catch (e) {
-          console.error("날짜 파싱 오류:", e);
-          return new Date();
-        }
-      };
-      
-      // 날짜 기준으로 정렬 (최신순)
-      allPosts.sort((a, b) => {
-        const dateA = parseDateString(a.date);
-        const dateB = parseDateString(b.date);
-        return dateB.getTime() - dateA.getTime(); // 내림차순(최신순)
-      });
-      
-      // 요청한 개수만큼만 반환
-      const limitedPosts = allPosts.slice(0, count);
-      console.log(`최종 ${limitedPosts.length}개 포스트 반환 (중복 제거 및 최신순 정렬 후)`);
-      
-      // 디버깅용: 최종 선택된 포스트 목록 출력
-      limitedPosts.forEach((post, index) => {
-        console.log(`${index + 1}. ${post.title} (${post.date})`);
-      });
-      
-      // 캐시 스킵이 아닐 경우에만 캐시 저장 (30분 동안 유지)
-      if (!skipCache && limitedPosts.length > 0) {
-        memoryCache.set("naver_blog_posts", limitedPosts, 30 * 60 * 1000);
-      }
-      
-      res.json(limitedPosts);
-    } catch (error) {
-      console.error("블로그 포스트를 가져오는 중 오류 발생:", error);
-      res.status(500).json({ message: "블로그 포스트를 가져오는 중 오류가 발생했습니다." });
-    }
-  });
+  // 블로그 포스트 관련 API 제거됨
   
   const httpServer = createServer(app);
   return httpServer;

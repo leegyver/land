@@ -3,11 +3,24 @@ import nodemailer from "nodemailer";
 // 네이버 SMTP 서버를 사용한 메일 전송기 설정
 const transporter = nodemailer.createTransport({
   host: "smtp.naver.com",
-  port: 587,
-  secure: false, // true는 포트 465를 사용할 때, false는 다른 포트에서 사용
+  port: 465,  // 포트 465로 변경 (SSL/TLS 사용)
+  secure: true, // true는 포트 465를 사용할 때, false는 다른 포트에서 사용
   auth: {
     user: process.env.NAVER_EMAIL,
     pass: process.env.NAVER_PASSWORD
+  },
+  debug: true, // 디버깅 모드 활성화
+  logger: true // 로깅 활성화
+});
+
+// 초기화 시 확인
+console.log('SMTP 설정 정보:', {
+  host: "smtp.naver.com",
+  port: 465,
+  secure: true,
+  auth: {
+    user: process.env.NAVER_EMAIL ? "설정됨" : "미설정",
+    pass: process.env.NAVER_PASSWORD ? "설정됨" : "미설정"
   }
 });
 
@@ -18,23 +31,38 @@ export async function sendEmail(
   htmlContent: string
 ): Promise<boolean> {
   try {
+    console.log("이메일 전송 시도...");
+    
     if (!process.env.NAVER_EMAIL || !process.env.NAVER_PASSWORD) {
       console.error("네이버 메일 인증 정보가 없습니다.");
       return false;
     }
-
+    
+    console.log(`발신자: ${process.env.NAVER_EMAIL}`);
+    console.log(`수신자: ${to}`);
+    console.log(`제목: ${subject}`);
+    
+    // 발신자와 수신자가 동일한 네이버 계정인 경우
+    const fromAddress = process.env.NAVER_EMAIL;
+    
+    // 메일 옵션 설정
     const mailOptions = {
-      from: process.env.NAVER_EMAIL,
+      from: `"이가이버부동산" <${fromAddress}>`, // 발신자 표시명 추가
       to,
       subject,
       html: htmlContent
     };
-
+    
+    console.log("SMTP 서버로 전송 중...");
     const info = await transporter.sendMail(mailOptions);
-    console.log("이메일 전송 성공:", info.messageId);
+    console.log("이메일 전송 성공:", info);
     return true;
   } catch (error) {
-    console.error("이메일 전송 실패:", error);
+    console.error("이메일 전송 실패 - 상세 오류:", error);
+    if (error instanceof Error) {
+      console.error("오류 메시지:", error.message);
+      console.error("오류 스택:", error.stack);
+    }
     return false;
   }
 }

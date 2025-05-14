@@ -16,9 +16,12 @@ interface BlogPost {
 }
 
 const BlogPosts = () => {
-  // 블로그 포스트 데이터 가져오기
+  // 블로그 포스트 데이터 가져오기 (skipCache=true로 항상 최신 데이터)
   const { data: blogPosts, isLoading, error } = useQuery<BlogPost[]>({
-    queryKey: ["/api/blog-posts"],
+    queryKey: ["/api/blog-posts", { skipCache: true }],
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    staleTime: 0, // 항상 최신 데이터를 가져오도록 설정
   });
 
   return (

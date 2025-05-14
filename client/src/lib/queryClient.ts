@@ -31,7 +31,20 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior, customUrl }) =>
   async ({ queryKey }) => {
     // customUrl이 제공되면 그것을 사용, 아니면 queryKey
-    const url = customUrl || (queryKey[0] as string);
+    let url = customUrl || (queryKey[0] as string);
+    
+    // 두 번째 queryKey가 파라미터 객체인 경우 URL 쿼리 파라미터로 변환
+    if (queryKey.length > 1 && typeof queryKey[1] === 'object') {
+      const params = new URLSearchParams();
+      Object.entries(queryKey[1] as Record<string, any>).forEach(([key, value]) => {
+        if (value !== undefined) {
+          params.append(key, String(value));
+        }
+      });
+      const queryString = params.toString();
+      url = queryString ? `${url}?${queryString}` : url;
+    }
+    
     const res = await fetch(url, {
       credentials: "include",
     });

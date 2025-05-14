@@ -10,23 +10,23 @@ export async function testRealEstateAPI() {
     return;
   }
 
-  // 다양한 접근 방식 테스트
+  // 다양한 접근 방식 테스트 - 새로운 엔드포인트 추가
   const tests = [
     {
-      name: '방법 7: 공식 URL (data.go.kr) + 키 제거 (테스트)',
-      url: `https://apis.data.go.kr/1613000/AptTradeSvc/getRTMSDataSvcAptTrade?LAWD_CD=28710&DEAL_YMD=202503&numOfRows=10&pageNo=1`
+      name: '새로운 토지 실거래가 엔드포인트 + 인코딩 키',
+      url: `https://apis.data.go.kr/1613000/RTMSDataSvcLandTrade/getLandTradeInfo?serviceKey=${apiKey}&LAWD_CD=28710&DEAL_YMD=202503&numOfRows=10&pageNo=1`
     },
     {
-      name: '방법 8: 대체 엔드포인트 (아파트 실거래자료) + 인코딩 키',
-      url: `http://openapi.molit.go.kr:8081/OpenAPI_ToolInstallPackage/service/rest/RTMSOBJSvc/getRTMSDataSvcAptTradeDev?serviceKey=${apiKey}&LAWD_CD=28710&DEAL_YMD=202503`
+      name: '새로운 토지 실거래가 엔드포인트 + 디코딩 키',
+      url: `https://apis.data.go.kr/1613000/RTMSDataSvcLandTrade/getLandTradeInfo?serviceKey=${decodeURIComponent(apiKey)}&LAWD_CD=28710&DEAL_YMD=202503&numOfRows=10&pageNo=1`
     },
     {
-      name: '방법 9: 대체 엔드포인트 (아파트 실거래자료) + 디코딩 키',
-      url: `http://openapi.molit.go.kr:8081/OpenAPI_ToolInstallPackage/service/rest/RTMSOBJSvc/getRTMSDataSvcAptTradeDev?serviceKey=${decodeURIComponent(apiKey)}&LAWD_CD=28710&DEAL_YMD=202503`
+      name: '새로운 아파트 실거래가 엔드포인트 + 인코딩 키',
+      url: `https://apis.data.go.kr/1613000/AptTradeSvc/getAptTradingInfo?serviceKey=${apiKey}&LAWD_CD=28710&DEAL_YMD=202503&numOfRows=10&pageNo=1`
     },
     {
-      name: '방법 10: 국토교통부 개발 서버 + 인코딩 키',
-      url: `http://apis.data.go.kr/1611000/nsdi/eios/ServiceDetail/dev/rest/transactionDownloadRolex/getRolex?authKey=${apiKey}&pnu=2817010300&stdrYear=2018&format=xml`
+      name: '새로운 아파트 실거래가 엔드포인트 + 디코딩 키',
+      url: `https://apis.data.go.kr/1613000/AptTradeSvc/getAptTradingInfo?serviceKey=${decodeURIComponent(apiKey)}&LAWD_CD=28710&DEAL_YMD=202503&numOfRows=10&pageNo=1`
     },
     {
       name: '방법 11: 동일 키 다른 API 호출 테스트 (날씨)',

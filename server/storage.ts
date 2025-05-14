@@ -217,43 +217,7 @@ export class DatabaseStorage implements IStorage {
     return result.length > 0;
   }
   
-  // Agent methods
-  async getAgents(): Promise<Agent[]> {
-    return await db.select().from(agents).orderBy(desc(agents.createdAt));
-  }
-  
-  async getAgent(id: number): Promise<Agent | undefined> {
-    const result = await db.select().from(agents).where(eq(agents.id, id));
-    return result[0];
-  }
-  
-  async createAgent(agent: InsertAgent): Promise<Agent> {
-    const result = await db.insert(agents)
-      .values({
-        ...agent,
-        createdAt: new Date()
-      })
-      .returning();
-    
-    return result[0];
-  }
-  
-  async updateAgent(id: number, agent: Partial<InsertAgent>): Promise<Agent | undefined> {
-    const result = await db.update(agents)
-      .set(agent)
-      .where(eq(agents.id, id))
-      .returning();
-    
-    return result[0];
-  }
-  
-  async deleteAgent(id: number): Promise<boolean> {
-    const result = await db.delete(agents)
-      .where(eq(agents.id, id))
-      .returning();
-    
-    return result.length > 0;
-  }
+  // Agent methods - 제거됨
   
   // Inquiry methods
   async getInquiries(): Promise<Inquiry[]> {
@@ -445,50 +409,7 @@ export class DatabaseStorage implements IStorage {
         role: "user"
       });
       
-      // 중개사 데이터
-      const agents: InsertAgent[] = [
-        {
-          name: "김지영",
-          title: "선임 중개사",
-          description: "강남, 서초 지역 10년 경력의 아파트 전문가",
-          email: "jiyoung.kim@korearealty.kr",
-          phone: "010-1234-5678",
-          imageUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=1000",
-          specialization: "아파트",
-        },
-        {
-          name: "이민호",
-          title: "대표 중개사",
-          description: "15년 경력의 주택 및 빌라 전문가",
-          email: "minho.lee@korearealty.kr",
-          phone: "010-2345-6789",
-          imageUrl: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=1000",
-          specialization: "주택,빌라",
-        },
-        {
-          name: "박수진",
-          title: "선임 중개사",
-          description: "마포, 용산 지역 8년 경력의 오피스텔 전문가",
-          email: "sujin.park@korearealty.kr",
-          phone: "010-3456-7890",
-          imageUrl: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=1000",
-          specialization: "오피스텔",
-        },
-        {
-          name: "정현우",
-          title: "상담 중개사",
-          description: "송파, 강동 지역 5년 경력의 투자 전문가",
-          email: "hyunwoo.jung@korearealty.kr",
-          phone: "010-4567-8901",
-          imageUrl: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=1000",
-          specialization: "투자,아파트",
-        }
-      ];
-      
-      const createdAgents: Agent[] = [];
-      for (const agent of agents) {
-        createdAgents.push(await this.createAgent(agent));
-      }
+      // 중개사 데이터 - 제거됨
       
       // 부동산 데이터
       const properties: InsertProperty[] = [
@@ -504,7 +425,6 @@ export class DatabaseStorage implements IStorage {
           bedrooms: 3,
           bathrooms: 2,
           imageUrl: "https://images.unsplash.com/photo-1592595896616-c37162298647?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500",
-          agentId: createdAgents[0].id,
           featured: true
         },
         {
@@ -519,7 +439,6 @@ export class DatabaseStorage implements IStorage {
           bedrooms: 4,
           bathrooms: 3,
           imageUrl: "https://images.unsplash.com/photo-1570129477492-45c003edd2be?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500",
-          agentId: createdAgents[1].id,
           featured: true
         },
         {
@@ -534,7 +453,6 @@ export class DatabaseStorage implements IStorage {
           bedrooms: 1,
           bathrooms: 1,
           imageUrl: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500",
-          agentId: createdAgents[2].id,
           featured: true
         },
         {

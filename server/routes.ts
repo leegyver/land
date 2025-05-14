@@ -1101,16 +1101,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 여러 카테고리에서 블로그 포스트 가져오기
       const categories = ["21", "35", "36"]; // 사용자가 지정한 카테고리
       const allPosts: BlogPost[] = [];
+      const uniquePostUrls = new Set<string>(); // 중복 제거를 위한 URL 세트
       
       // 각 카테고리에서 포스트 가져오기
       for (const category of categories) {
         console.log(`카테고리 ${category}에서 포스트 가져오는 중...`);
-        const categoryPosts = await fetchNaverBlogPosts("9551304", category, count);
+        const categoryPosts = await fetchNaverBlogPosts("9551304", category, 10); // 더 많은 포스트를 가져와서 필터링 후 선택할 수 있게 함
+        
         if (categoryPosts.length > 0) {
           console.log(`카테고리 ${category}에서 ${categoryPosts.length}개 포스트 발견`);
-          allPosts.push(...categoryPosts);
+          
+          // 중복 제거하면서 추가
+          for (const post of categoryPosts) {
+            // URL 기반 중복 체크 - 같은 logNo를 가진 글은 같은 글로 간주
+            if (!uniquePostUrls.has(post.link)) {
+              uniquePostUrls.add(post.link);
+              allPosts.push(post);
+              console.log(`추가된 포스트: ${post.title} (URL: ${post.link})`);
+            } else {
+              console.log(`중복 포스트 제외: ${post.title}`);
+            }
+          }
         }
       }
+      
+      console.log(`총 ${allPosts.length}개 고유 포스트 발견`);
       
       // 날짜 기준으로 정렬 (최신순)
       allPosts.sort((a, b) => {
@@ -1121,7 +1136,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // 요청한 개수만큼만 반환
       const limitedPosts = allPosts.slice(0, count);
-      console.log(`총 ${limitedPosts.length}개 포스트 반환`);
+      console.log(`최종 ${limitedPosts.length}개 포스트 반환 (중복 제거 후)`);
+      
+      // 디버깅용: 최종 선택된 포스트 목록 출력
+      limitedPosts.forEach((post, index) => {
+        console.log(`${index + 1}. ${post.title} (${post.date})`);
+      });
       
       // 캐시 스킵이 아닐 경우에만 캐시 저장 (30분 동안 유지)
       if (!skipCache && limitedPosts.length > 0) {

@@ -17,6 +17,7 @@ import { fetchAndSaveNews } from "./news-fetcher";
 // 블로그 포스트 관련 코드 제거됨
 import { sendEmail, createInquiryEmailTemplate } from "./mailer";
 import { getRecentTransactions } from "./real-estate-api";
+import { testRealEstateAPI } from "./test-api";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // 인증 시스템 설정
@@ -689,6 +690,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(news);
     } catch (error) {
       res.status(500).json({ message: "뉴스를 불러오는데 실패했습니다" });
+    }
+  });
+  
+  // API 테스트 엔드포인트 (문제 해결용)
+  app.get("/api/test-real-estate", async (req, res) => {
+    try {
+      await testRealEstateAPI();
+      res.json({ 
+        success: true, 
+        message: "API 테스트 완료, 서버 로그를 확인하세요" 
+      });
+    } catch (error) {
+      console.error("API 테스트 오류:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "API 테스트 중 오류 발생" 
+      });
     }
   });
   

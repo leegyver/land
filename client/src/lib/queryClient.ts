@@ -67,7 +67,6 @@ export const queryClient = new QueryClient({
       retry: false,
       gcTime: 10 * 60 * 1000, // 10분 동안 비활성 캐시 유지
       // 성능 향상을 위한 옵션
-      keepPreviousData: true,
       refetchOnMount: false,
     },
     mutations: {

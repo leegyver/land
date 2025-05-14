@@ -11,8 +11,7 @@ import Footer from "@/components/layout/Footer";
 import HomePage from "@/pages/HomePage";
 import PropertiesPage from "@/pages/PropertiesPage";
 import PropertyDetailPage from "@/pages/PropertyDetailPage";
-import AgentsPage from "@/pages/AgentsPage";
-import AgentDetailPage from "@/pages/AgentDetailPage";
+// Agent 관련 페이지 제거됨
 import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
 import AuthPage from "@/pages/auth-page";
@@ -29,8 +28,7 @@ function AppRouter() {
       <Route path="/" component={HomePage} />
       <Route path="/properties" component={PropertiesPage} />
       <Route path="/properties/:id" component={PropertyDetailPage} />
-      <Route path="/agents" component={AgentsPage} />
-      <Route path="/agents/:id" component={AgentDetailPage} />
+      {/* Agent 관련 라우트 제거됨 */}
       <Route path="/news" component={NewsPage} />
       <Route path="/news/:id" component={NewsDetailPage} />
       <Route path="/about" component={AboutPage} />

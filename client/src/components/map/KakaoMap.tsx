@@ -427,39 +427,39 @@ export default function KakaoMap({ singleProperty, zoom = 3 }: KakaoMapProps) {
       
       {/* 선택된 매물 정보 패널 - 다중 매물 모드에서만 표시 */}
       {!singleProperty && selectedProperty && (
-        <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 bg-white rounded-lg shadow-lg p-4 z-10 max-h-[90%] overflow-y-auto">
+        <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-64 bg-white rounded-lg shadow-lg p-3 z-10 max-h-[280px] overflow-y-auto">
           <button 
-            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+            className="absolute top-1 right-1 text-gray-400 hover:text-gray-600"
             onClick={() => setSelectedProperty(null)}
           >
             ✕
           </button>
           
           <Link href={`/properties/${selectedProperty.id}`}>
-            <h3 className="font-bold text-lg mb-2 hover:text-primary transition-colors">
+            <h3 className="font-bold text-base mb-1 hover:text-primary transition-colors truncate">
               {selectedProperty.title}
             </h3>
           </Link>
           
-          <div className="flex flex-wrap gap-2 mb-2">
-            <Badge variant="outline" className="bg-primary/10 text-primary">
+          <div className="flex flex-wrap gap-1 mb-2">
+            <Badge variant="outline" className="bg-primary/10 text-primary text-xs py-0 h-5">
               {selectedProperty.type}
             </Badge>
             {selectedProperty.dealType && Array.isArray(selectedProperty.dealType) && selectedProperty.dealType.map((type, index) => (
-              <Badge key={index} variant="outline" className="bg-primary/10 text-primary font-bold">
+              <Badge key={index} variant="outline" className="bg-primary/10 text-primary text-xs py-0 h-5">
                 {type}
               </Badge>
             ))}
           </div>
           
-          <div className="grid grid-cols-2 gap-x-2 gap-y-1 mb-3 text-sm">
+          <div className="grid grid-cols-2 gap-x-1 gap-y-1 mb-2 text-xs">
             <div className="text-gray-500">지역:</div>
-            <div>{selectedProperty.district}</div>
+            <div className="truncate">{selectedProperty.district}</div>
             
             <div className="text-gray-500">면적:</div>
             <div>
               {selectedProperty.size} m² 
-              {Number(selectedProperty.size) > 0 && ` (${(Number(selectedProperty.size) * 0.3025).toFixed(1)} 평)`}
+              {Number(selectedProperty.size) > 0 && ` (${(Number(selectedProperty.size) * 0.3025).toFixed(1)}평)`}
             </div>
             
             <div className="text-gray-500">가격:</div>
@@ -470,7 +470,7 @@ export default function KakaoMap({ singleProperty, zoom = 3 }: KakaoMapProps) {
           
           <Link 
             href={`/properties/${selectedProperty.id}`}
-            className="block w-full bg-primary hover:bg-secondary text-white text-center py-2 rounded transition-colors"
+            className="block w-full bg-primary hover:bg-secondary text-white text-center py-1 rounded text-sm transition-colors"
           >
             상세보기
           </Link>

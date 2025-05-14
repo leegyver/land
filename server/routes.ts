@@ -18,6 +18,7 @@ import { fetchAndSaveNews } from "./news-fetcher";
 import { sendEmail, createInquiryEmailTemplate } from "./mailer";
 import { getRecentTransactions } from "./real-estate-api";
 import { testRealEstateAPI } from "./test-api";
+import { getLatestYouTubeVideos } from "./youtube-fetcher";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // 인증 시스템 설정

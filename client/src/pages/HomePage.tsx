@@ -23,9 +23,49 @@ const HomePage = () => {
   return (
     <>
       <div className="pt-16"> {/* Offset for fixed header */}
-        <HomeMap />
-        <PropertySearch />
-        <FeaturedProperties />
+        {/* 맵과 검색을 오른쪽으로 배치한 새로운 레이아웃 */}
+        <div className="container mx-auto px-4 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* 왼쪽 콘텐츠 영역 */}
+            <div className="order-2 lg:order-1">
+              <div className="p-6 bg-white rounded-lg shadow-md mb-8">
+                <h2 className="text-3xl font-bold mb-4">강화도 부동산 전문</h2>
+                <p className="text-gray-700 mb-6">
+                  강화도 지역 최고의 부동산 중개사무소, 이가이버 공인중개사에서 원하는 매물을 찾아보세요.
+                  강화도 전 지역 토지, 주택, 상가 등 다양한 매물 정보를 제공합니다.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                  <div className="bg-gray-50 p-4 rounded">
+                    <h3 className="font-bold mb-1">20년+</h3>
+                    <p className="text-sm text-gray-600">전문 경력</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded">
+                    <h3 className="font-bold mb-1">300+</h3>
+                    <p className="text-sm text-gray-600">매물 보유</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded">
+                    <h3 className="font-bold mb-1">100%</h3>
+                    <p className="text-sm text-gray-600">고객 만족도</p>
+                  </div>
+                </div>
+              </div>
+              <FeaturedProperties />
+            </div>
+            
+            {/* 오른쪽 지도 및 검색 영역 */}
+            <div className="order-1 lg:order-2">
+              {/* 지도 */}
+              <div className="rounded-lg overflow-hidden shadow-md mb-6">
+                <HomeMap />
+              </div>
+              
+              {/* 검색 폼 */}
+              <div className="rounded-lg overflow-hidden shadow-md">
+                <PropertySearch />
+              </div>
+            </div>
+          </div>
+        </div>
         
         {/* News Section */}
         <section id="news" className="py-16 bg-gray-light">

@@ -47,15 +47,14 @@ const HomePage = () => {
         </div>
         
         {/* News Section */}
-        <section id="news" className="py-16 bg-gray-light">
+        <section id="news" className="py-8 bg-gray-light">
           <div className="container mx-auto px-4">
-            <div className="flex justify-between items-center mb-12">
-              <h2 className="text-3xl font-bold">최신 부동산 뉴스</h2>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">최신 부동산 뉴스</h2>
               <Link href="/news" className="text-primary hover:text-secondary font-medium flex items-center gap-1">
                 모든 뉴스 보기 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
-            
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               {latestNews && latestNews.slice(0, 5).map((news) => (
                 <Card key={news.id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition h-full flex flex-col">

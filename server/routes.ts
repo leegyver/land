@@ -16,6 +16,7 @@ import { setupAuth } from "./auth";
 import { fetchAndSaveNews } from "./news-fetcher";
 // 블로그 포스트 관련 코드 제거됨
 import { sendEmail, createInquiryEmailTemplate } from "./mailer";
+import { getRecentTransactions } from "./real-estate-api";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // 인증 시스템 설정

@@ -427,7 +427,7 @@ export default function KakaoMap({ singleProperty, zoom = 3 }: KakaoMapProps) {
       
       {/* 선택된 매물 정보 패널 - 다중 매물 모드에서만 표시 */}
       {!singleProperty && selectedProperty && (
-        <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 bg-white rounded-lg shadow-lg p-4 z-10">
+        <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 bg-white rounded-lg shadow-lg p-4 z-10 max-h-[90%] overflow-y-auto">
           <button 
             className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
             onClick={() => setSelectedProperty(null)}

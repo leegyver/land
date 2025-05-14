@@ -3,12 +3,12 @@ import PropertySearch from "@/components/home/PropertySearch";
 import FeaturedProperties from "@/components/home/FeaturedProperties";
 import BlogPosts from "@/components/home/BlogPosts";
 // Testimonials 컴포넌트 제거됨
-import ContactForm from "@/components/contact/ContactForm";
+// ContactForm 컴포넌트 제거됨
 import { useQuery } from "@tanstack/react-query";
 import { News } from "@shared/schema";
 import { Link } from "wouter";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { MapPin, Phone, Mail, Clock, Calendar, ArrowRight, Newspaper } from "lucide-react";
+import { Calendar, ArrowRight, Newspaper } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -101,69 +101,7 @@ const HomePage = () => {
         
         {/* Testimonials 섹션 제거됨 */}
         
-        {/* Contact Section */}
-        <section id="contact" className="py-16 bg-gray-light">
-          <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold text-center mb-12">문의하기</h2>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-              <div className="bg-white p-8 rounded-lg shadow-md">
-                <h3 className="text-2xl font-bold mb-6">상담 신청</h3>
-                <ContactForm />
-              </div>
-              
-              <div>
-                <div className="bg-white p-8 rounded-lg shadow-md mb-8">
-                  <h3 className="text-2xl font-bold mb-6">연락처 정보</h3>
-                  
-                  <div className="space-y-4">
-                    <div className="flex items-start">
-                      <MapPin className="text-primary text-xl mt-1 w-8" />
-                      <div>
-                        <h4 className="font-bold">주소</h4>
-                        <p className="text-gray-medium">서울특별시 강남구 테헤란로 123 한국빌딩 5층</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start">
-                      <Phone className="text-primary text-xl mt-1 w-8" />
-                      <div>
-                        <h4 className="font-bold">전화</h4>
-                        <p className="text-gray-medium">02-123-4567</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start">
-                      <Mail className="text-primary text-xl mt-1 w-8" />
-                      <div>
-                        <h4 className="font-bold">이메일</h4>
-                        <p className="text-gray-medium">info@한국부동산.kr</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start">
-                      <Clock className="text-primary text-xl mt-1 w-8" />
-                      <div>
-                        <h4 className="font-bold">영업시간</h4>
-                        <p className="text-gray-medium">월-금: 9:00 - 18:00</p>
-                        <p className="text-gray-medium">토: 9:00 - 15:00 (일요일 휴무)</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Map placeholder */}
-                <div className="bg-white p-1 rounded-lg shadow-md overflow-hidden h-64">
-                  <img 
-                    src="https://images.unsplash.com/photo-1609587312208-cea54be969e7?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1200&h=600" 
-                    alt="서울 강남구 지도" 
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+{/* Contact Section - 제거됨 */}
       </div>
     </>
   );

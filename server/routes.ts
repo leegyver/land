@@ -133,42 +133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Agents
-  app.get("/api/agents", async (req, res) => {
-    try {
-      // 캐시에서 확인
-      const cacheKey = "agents_all";
-      const cachedAgents = memoryCache.get(cacheKey);
-      
-      if (cachedAgents) {
-        return res.json(cachedAgents);
-      }
-      
-      const agents = await storage.getAgents();
-      
-      // 캐시 저장 (10분)
-      memoryCache.set(cacheKey, agents, 10 * 60 * 1000);
-      
-      res.json(agents);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch agents" });
-    }
-  });
-  
-  app.get("/api/agents/:id", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const agent = await storage.getAgent(id);
-      
-      if (!agent) {
-        return res.status(404).json({ message: "Agent not found" });
-      }
-      
-      res.json(agent);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch agent" });
-    }
-  });
+  // Agents API - 제거됨
   
   // Testimonials
   app.get("/api/testimonials", async (req, res) => {

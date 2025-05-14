@@ -31,16 +31,16 @@ const HomePage = () => {
               <FeaturedProperties />
             </div>
             
-            {/* 오른쪽 검색 영역 (1/4 크기) */}
+            {/* 오른쪽 지도 및 검색 영역 (1/4 크기) */}
             <div className="order-1 lg:order-2 lg:col-span-1">
-              {/* 검색 폼 */}
+              {/* 지도 */}
               <div className="rounded-lg overflow-hidden shadow-md mb-6">
-                <PropertySearch />
+                <HomeMap />
               </div>
               
-              {/* 지도 */}
+              {/* 검색 폼 */}
               <div className="rounded-lg overflow-hidden shadow-md">
-                <HomeMap />
+                <PropertySearch />
               </div>
             </div>
           </div>

@@ -427,7 +427,7 @@ export default function KakaoMap({ singleProperty, zoom = 3 }: KakaoMapProps) {
       
       {/* 선택된 매물 정보 패널 - 다중 매물 모드에서만 표시 */}
       {!singleProperty && selectedProperty && (
-        <div className="absolute bottom-16 left-4 right-4 md:left-auto md:right-4 md:w-56 bg-white rounded-lg shadow-lg p-2 z-10 max-h-[250px] overflow-y-auto">
+        <div className="absolute top-4 right-4 md:w-52 bg-white rounded-lg shadow-lg p-2 z-10 max-h-[200px] overflow-y-auto">
           <button 
             className="absolute top-1 right-1 text-gray-400 hover:text-gray-600"
             onClick={() => setSelectedProperty(null)}
@@ -441,33 +441,28 @@ export default function KakaoMap({ singleProperty, zoom = 3 }: KakaoMapProps) {
             </h3>
           </Link>
           
-          <div className="flex flex-wrap gap-1 mb-2">
-            <Badge variant="outline" className="bg-primary/10 text-primary text-xs py-0 h-5">
-              {selectedProperty.type}
-            </Badge>
-            {selectedProperty.dealType && Array.isArray(selectedProperty.dealType) && selectedProperty.dealType.map((type, index) => (
-              <Badge key={index} variant="outline" className="bg-primary/10 text-primary text-xs py-0 h-5">
-                {type}
-              </Badge>
-            ))}
+          <div className="text-xs text-gray-500 mb-1">
+            {selectedProperty.type}, {selectedProperty.dealType && Array.isArray(selectedProperty.dealType) ? selectedProperty.dealType.join('/') : ''}
           </div>
           
-          <div className="grid grid-cols-5 mb-2 text-xs">
-            <div className="text-gray-500 col-span-1">지역</div>
-            <div className="truncate col-span-4">{selectedProperty.district}</div>
+          <div className="flex items-center mb-1">
+            <span className="text-xs text-gray-500 mr-1">가격:</span>
+            <span className="text-xs font-semibold text-primary">
+              {formatPrice(Number(selectedProperty.price) || 0)}
+            </span>
           </div>
-          <div className="grid grid-cols-5 mb-2 text-xs">
-            <div className="text-gray-500 col-span-1">면적</div>
-            <div className="col-span-4">
+          
+          <div className="flex items-center mb-1">
+            <span className="text-xs text-gray-500 mr-1">지역:</span>
+            <span className="text-xs truncate">{selectedProperty.district}</span>
+          </div>
+          
+          <div className="flex items-center mb-1">
+            <span className="text-xs text-gray-500 mr-1">면적:</span>
+            <span className="text-xs">
               {selectedProperty.size}m²
               {Number(selectedProperty.size) > 0 && `(${(Number(selectedProperty.size) * 0.3025).toFixed(1)}평)`}
-            </div>
-          </div>
-          <div className="grid grid-cols-5 mb-2 text-xs">
-            <div className="text-gray-500 col-span-1">가격</div>
-            <div className="font-semibold text-primary col-span-4">
-              {formatPrice(Number(selectedProperty.price) || 0)}
-            </div>
+            </span>
           </div>
           
           <Link 

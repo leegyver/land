@@ -691,6 +691,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "뉴스를 불러오는데 실패했습니다" });
     }
   });
+  
+  // 부동산 실거래가 API 라우트
+  app.get("/api/real-estate/transactions", async (req, res) => {
+    try {
+      // 지역코드 (기본값: 강화군 28710)
+      const regionCode = req.query.regionCode as string || '28710';
+      
+      console.log(`실거래가 데이터 요청: 지역코드=${regionCode}`);
+      const transactions = await getRecentTransactions(regionCode);
+      
+      res.json({
+        success: true,
+        count: transactions.length,
+        data: transactions
+      });
+    } catch (error) {
+      console.error("실거래가 데이터 조회 오류:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "실거래가 데이터를 가져오는 중 오류가 발생했습니다." 
+      });
+    }
+  });
 
   // 최신 뉴스 가져오기
   app.get("/api/news/latest", async (req, res) => {

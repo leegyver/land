@@ -43,7 +43,7 @@ const HomePage = () => {
                 <Card key={news.id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition h-full flex flex-col">
                   <div className="h-40 overflow-hidden">
                     <img 
-                      src={news.imageUrl} 
+                      src={news.imageUrl ?? 'https://via.placeholder.com/400x200?text=뉴스+이미지'} 
                       alt={news.title} 
                       className="w-full h-full object-cover object-center"
                     />

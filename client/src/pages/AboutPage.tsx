@@ -248,7 +248,7 @@ const AboutPage = () => {
           )}
           
           {/* 데이터 로드 완료 표시 */}
-          {transactionsData && (
+          {transactionsData && transactionsData.count > 0 && (
             <div className="flex flex-wrap gap-2 mt-3">
               <Badge variant="outline" className="text-sm bg-primary/5">
                 최근 3개월 데이터
@@ -256,6 +256,16 @@ const AboutPage = () => {
               <Badge variant="outline" className="text-sm bg-primary/5">
                 {transactionsData.count}건의 실거래 내역
               </Badge>
+            </div>
+          )}
+
+          {/* 데이터가 없는 경우 알림 */}
+          {!isLoading && (!transactionsData || transactionsData.count === 0) && (
+            <div className="flex items-center gap-2 mt-3">
+              <Badge variant="outline" className="text-sm bg-yellow-100 text-yellow-800">
+                데이터 로드 대기 중
+              </Badge>
+              <span className="text-sm text-muted-foreground">API 연동이 필요합니다</span>
             </div>
           )}
         </div>
@@ -278,6 +288,30 @@ const AboutPage = () => {
             <div className="h-[70vh] w-full rounded-lg overflow-hidden shadow-lg">
               <div id="real-estate-map" className="w-full h-full"></div>
             </div>
+            
+            {/* 데이터가 없는 경우 안내 메시지 */}
+            {!isLoading && (!transactionsData || transactionsData.count === 0) && (
+              <div className="mt-6 p-6 border border-yellow-200 bg-yellow-50 rounded-lg">
+                <h3 className="text-lg font-bold text-gray-800 mb-2">현재 실거래가 데이터가 없습니다</h3>
+                <p className="text-gray-700 mb-4">공공데이터포털 실거래가 API 연동을 위한 설정이 필요합니다.</p>
+                <div className="bg-white p-4 rounded-md border border-gray-200">
+                  <p className="font-semibold mb-2">API 활성화 절차:</p>
+                  <ol className="list-decimal pl-5 mb-2 space-y-1 text-gray-700">
+                    <li>공공데이터포털(data.go.kr)에서 회원 가입 및 로그인</li>
+                    <li>다음 API 서비스에 대한 활용 신청:
+                      <ul className="list-disc pl-5 mt-1 mb-1">
+                        <li>국토교통부 아파트매매 실거래 자료</li>
+                        <li>국토교통부 단독/다가구 실거래 자료</li>
+                        <li>국토교통부 토지 실거래 자료</li>
+                      </ul>
+                    </li>
+                    <li>마이페이지 &gt; 오픈API &gt; 서비스 관리에서 API 상태 확인</li>
+                    <li>승인 완료 후 발급받은 API 키를 관리자에게 전달</li>
+                  </ol>
+                  <p className="text-sm text-gray-500">* API 승인이 완료되면 실시간 실거래가 데이터를 확인하실 수 있습니다. (승인까지 최대 1-2일 소요)</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>

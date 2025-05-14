@@ -15,12 +15,12 @@ export async function testRealEstateAPI() {
   // 다양한 접근 방식 테스트 - 업데이트된 엔드포인트 및 키
   const tests = [
     {
-      name: '토지 실거래가 API (구 스타일)',
-      url: `http://openapi.molit.go.kr/OpenAPI_ToolInstallPackage/service/rest/RTMSOBJSvc/getRTMSDataSvcLandTrade?serviceKey=${apiKey}&LAWD_CD=28710&DEAL_YMD=202311`
+      name: '토지 실거래가 API (새로운 스타일)',
+      url: `https://api.odcloud.kr/api/RltmTradeInfoLandService/v1/getMTransaction?serviceKey=${apiKey}&page=1&perPage=10&LAWD_CD=28710&DEAL_YMD=202311`
     },
     {
-      name: '아파트 실거래가 API (구 스타일)',
-      url: `http://openapi.molit.go.kr/OpenAPI_ToolInstallPackage/service/rest/RTMSOBJSvc/getRTMSDataSvcAptTradeDev?serviceKey=${apiKey}&LAWD_CD=28710&DEAL_YMD=202311`
+      name: '아파트 실거래가 API (새로운 스타일)',
+      url: `https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail?serviceKey=${apiKey}&page=1&perPage=10`
     },
     {
       name: '단독/다가구 실거래가 API (구 스타일)',

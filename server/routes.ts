@@ -135,15 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Agents API - 제거됨
   
-  // Testimonials
-  app.get("/api/testimonials", async (req, res) => {
-    try {
-      const testimonials = await storage.getTestimonials();
-      res.json(testimonials);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch testimonials" });
-    }
-  });
+  // Testimonials API - 제거됨
   
   // Inquiries
   app.post("/api/inquiries", async (req, res) => {

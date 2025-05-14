@@ -47,10 +47,7 @@ export interface IStorage {
   getInquiry(id: number): Promise<Inquiry | undefined>;
   createInquiry(inquiry: InsertInquiry): Promise<Inquiry>;
   
-  // Testimonial methods
-  getTestimonials(): Promise<Testimonial[]>;
-  getTestimonial(id: number): Promise<Testimonial | undefined>;
-  createTestimonial(testimonial: InsertTestimonial): Promise<Testimonial>;
+  // Testimonial methods - 제거됨
   
   // User methods
   getUser(id: number): Promise<User | undefined>;
@@ -240,26 +237,7 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
   
-  // Testimonial methods
-  async getTestimonials(): Promise<Testimonial[]> {
-    return await db.select().from(testimonials).orderBy(desc(testimonials.createdAt));
-  }
-  
-  async getTestimonial(id: number): Promise<Testimonial | undefined> {
-    const result = await db.select().from(testimonials).where(eq(testimonials.id, id));
-    return result[0];
-  }
-  
-  async createTestimonial(testimonial: InsertTestimonial): Promise<Testimonial> {
-    const result = await db.insert(testimonials)
-      .values({
-        ...testimonial,
-        createdAt: new Date()
-      })
-      .returning();
-    
-    return result[0];
-  }
+  // Testimonial methods - 제거됨
   
   // User methods
   async getUser(id: number): Promise<User | undefined> {

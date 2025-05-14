@@ -2,7 +2,7 @@ import HomeMap from "@/components/home/HomeMap";
 import PropertySearch from "@/components/home/PropertySearch";
 import FeaturedProperties from "@/components/home/FeaturedProperties";
 import BlogPosts from "@/components/home/BlogPosts";
-import Testimonials from "@/components/home/Testimonials";
+// Testimonials 컴포넌트 제거됨
 import ContactForm from "@/components/contact/ContactForm";
 import { useQuery } from "@tanstack/react-query";
 import { News } from "@shared/schema";
@@ -99,7 +99,7 @@ const HomePage = () => {
           </div>
         </section>
         
-        <Testimonials />
+        {/* Testimonials 섹션 제거됨 */}
         
         {/* Contact Section */}
         <section id="contact" className="py-16 bg-gray-light">

@@ -28,22 +28,14 @@ const AboutPage = () => {
       <section className="py-8">
         <div className="container mx-auto px-4">
           {/* 지도 영역 */}
-          <div className="mx-auto max-w-5xl mb-8">
+          <div className="mx-auto max-w-5xl">
             <div className="mb-3 flex items-center">
               <MapIcon className="h-5 w-5 mr-2 text-primary" />
               <h2 className="text-lg font-bold">지도로 실거래가 보기</h2>
             </div>
-            <div className="h-[60vh] w-full rounded-lg overflow-hidden shadow-lg">
+            <div className="h-[70vh] w-full rounded-lg overflow-hidden shadow-lg">
               <KakaoMap />
             </div>
-          </div>
-          
-          {/* 실거래가 정보 영역 */}
-          <div className="mx-auto max-w-5xl bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-xl font-bold mb-4">실거래가 정보</h2>
-            <p className="text-center text-lg py-4">
-              실시간 실거래가 정보 준비 중입니다.
-            </p>
           </div>
         </div>
       </section>

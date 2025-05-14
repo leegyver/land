@@ -2,7 +2,7 @@ import {
   properties, type Property, type InsertProperty,
   // agents 삭제됨
   inquiries, type Inquiry, type InsertInquiry,
-  testimonials, type Testimonial, type InsertTestimonial,
+  // testimonials 삭제됨
   users, type User, type InsertUser,
   news, type News, type InsertNews,
   propertyInquiries, type PropertyInquiry, type InsertPropertyInquiry,

@@ -84,19 +84,7 @@ export const insertInquirySchema = createInsertSchema(inquiries).omit({
   createdAt: true,
 });
 
-// Testimonial schema
-export const testimonials = pgTable("testimonials", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description").notNull(),
-  message: text("message").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const insertTestimonialSchema = createInsertSchema(testimonials).omit({
-  id: true,
-  createdAt: true,
-});
+// Testimonial schema - 제거됨
 
 // User schema for basic login - keeping the original users table
 export const users = pgTable("users", {
@@ -125,8 +113,7 @@ export type InsertProperty = z.infer<typeof insertPropertySchema>;
 export type Inquiry = typeof inquiries.$inferSelect;
 export type InsertInquiry = z.infer<typeof insertInquirySchema>;
 
-export type Testimonial = typeof testimonials.$inferSelect;
-export type InsertTestimonial = z.infer<typeof insertTestimonialSchema>;
+// Testimonial 타입 제거됨
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;

@@ -1095,8 +1095,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const skipCache = req.query.skipCache === 'true';
       const count = parseInt(req.query.count as string) || 5;
       
-      if (!skipCache) {
-        // 캐시에서 먼저 확인
+      // 개발 중에는 항상 최신 데이터를 가져오도록 캐시 비우기
+      memoryCache.delete("naver_blog_posts");
+      
+      if (!skipCache && process.env.NODE_ENV === 'production') {
+        // 프로덕션 환경에서만 캐시 사용
         const cacheKey = "naver_blog_posts";
         const cachedPosts = memoryCache.get(cacheKey);
         

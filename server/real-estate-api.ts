@@ -2,6 +2,9 @@ import fetch from 'node-fetch';
 import { XMLParser } from 'fast-xml-parser';
 import { memoryCache } from './cache';
 
+// 추가 디버깅 옵션 (API 호출 문제 진단용)
+const DEBUG_API_CALLS = true;
+
 // 부동산 실거래가 데이터 타입 정의
 export interface RealEstateTransaction {
   거래금액: string;
@@ -69,8 +72,12 @@ export async function getApartmentTransactions(params: {
     
     const xmlData = await response.text();
     
-    // 디버깅: XML 응답의 일부 출력
-    console.log('API 응답 일부:', xmlData.substring(0, 300));
+    // 디버깅: XML 응답 전체 출력 (문제 진단용)
+    if(DEBUG_API_CALLS) {
+      console.log('API 응답 전체:', xmlData);
+    } else {
+      console.log('API 응답 일부:', xmlData.substring(0, 300));
+    }
     
     // XML 파서 설정
     const parser = new XMLParser({
@@ -304,11 +311,15 @@ export async function getLandTransactions(params: {
   
   try {
     console.log(`토지 실거래 데이터 요청: ${params.LAWD_CD}, ${params.DEAL_YMD}`);
+    console.log('요청 URL:', url);
     
+    // 요청 헤더 및 User-Agent 추가 (CORS 방지)
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'Accept': 'application/xml'
+        'Accept': 'application/xml',
+        'Content-Type': 'application/xml',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
       }
     });
     

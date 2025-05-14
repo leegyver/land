@@ -2,12 +2,12 @@ import KakaoMap from '@/components/map/KakaoMap';
 
 const HomeMap = () => {
   return (
-    <section className="relative">
-      {/* 지도를 전체 화면으로 사용 */}
-      <div className="h-[60vh] w-full">
+    <div className="relative">
+      {/* 지도 높이 조절 */}
+      <div className="h-[50vh] w-full rounded-lg overflow-hidden">
         <KakaoMap />
       </div>
-    </section>
+    </div>
   );
 };
 

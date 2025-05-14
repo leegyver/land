@@ -10,27 +10,29 @@ export async function testRealEstateAPI() {
     return;
   }
 
-  // 다양한 접근 방식 테스트 - 새로운 엔드포인트 추가
+  console.log('새로운 API 키:', apiKey.substring(0, 10) + '...');
+
+  // 다양한 접근 방식 테스트 - 업데이트된 엔드포인트 및 키
   const tests = [
     {
-      name: '새로운 토지 실거래가 엔드포인트 + 인코딩 키',
-      url: `https://apis.data.go.kr/1613000/RTMSDataSvcLandTrade/getLandTradeInfo?serviceKey=${apiKey}&LAWD_CD=28710&DEAL_YMD=202503&numOfRows=10&pageNo=1`
+      name: '새로운 토지 실거래가 API + 인코딩 키',
+      url: `https://apis.data.go.kr/1613000/RTMSDataSvcLandTrade/getLandTrade?serviceKey=${apiKey}&LAWD_CD=28710&DEAL_YMD=202503&numOfRows=10&pageNo=1`
     },
     {
-      name: '새로운 토지 실거래가 엔드포인트 + 디코딩 키',
-      url: `https://apis.data.go.kr/1613000/RTMSDataSvcLandTrade/getLandTradeInfo?serviceKey=${decodeURIComponent(apiKey)}&LAWD_CD=28710&DEAL_YMD=202503&numOfRows=10&pageNo=1`
+      name: '새로운 토지 실거래가 API + 디코딩 키',
+      url: `https://apis.data.go.kr/1613000/RTMSDataSvcLandTrade/getLandTrade?serviceKey=${decodeURIComponent(apiKey)}&LAWD_CD=28710&DEAL_YMD=202503&numOfRows=10&pageNo=1`
     },
     {
-      name: '새로운 아파트 실거래가 엔드포인트 + 인코딩 키',
-      url: `https://apis.data.go.kr/1613000/AptTradeSvc/getAptTradingInfo?serviceKey=${apiKey}&LAWD_CD=28710&DEAL_YMD=202503&numOfRows=10&pageNo=1`
+      name: '토지 실거래가 API (전체 URL) + 인코딩 키',
+      url: `https://apis.data.go.kr/1613000/RTMSDataSvcLandTrade?serviceKey=${apiKey}&LAWD_CD=28710&DEAL_YMD=202503&numOfRows=10&pageNo=1`
     },
     {
-      name: '새로운 아파트 실거래가 엔드포인트 + 디코딩 키',
-      url: `https://apis.data.go.kr/1613000/AptTradeSvc/getAptTradingInfo?serviceKey=${decodeURIComponent(apiKey)}&LAWD_CD=28710&DEAL_YMD=202503&numOfRows=10&pageNo=1`
+      name: '아파트 실거래가 API + 인코딩 키',
+      url: `https://apis.data.go.kr/1613000/AptTradeSvc/getAptTrade?serviceKey=${apiKey}&LAWD_CD=28710&DEAL_YMD=202503&numOfRows=10&pageNo=1`
     },
     {
-      name: '방법 11: 동일 키 다른 API 호출 테스트 (날씨)',
-      url: `http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?serviceKey=${apiKey}&numOfRows=10&pageNo=1&base_date=20210628&base_time=0600&nx=55&ny=127`
+      name: '단독다가구 실거래가 API + 인코딩 키',
+      url: `https://apis.data.go.kr/1613000/TradeService/getSHTrade?serviceKey=${apiKey}&LAWD_CD=28710&DEAL_YMD=202503&numOfRows=10&pageNo=1`
     }
   ];
 

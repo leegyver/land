@@ -48,13 +48,19 @@ export async function sendEmail(
     console.log(`수신자: ${to}`);
     console.log(`제목: ${subject}`);
     
-    // 발신자와 수신자가 동일한 네이버 계정인 경우
-    const fromAddress = process.env.NAVER_EMAIL;
+    // 발신자 이메일 주소 설정 (RFC 5322 형식을 준수)
+    const naverEmail = process.env.NAVER_EMAIL || '';
     
-    // 메일 옵션 설정
+    // 이메일 형식 검증
+    if (!naverEmail.includes('@')) {
+      console.error("발신자 이메일 주소 형식이 올바르지 않습니다:", naverEmail);
+      return false;
+    }
+    
+    // 메일 옵션 설정 (RFC 5322 준수를 위한 형식)
     const mailOptions = {
-      from: `"이가이버부동산" <${fromAddress}>`, // 발신자 표시명 추가
-      to,
+      from: naverEmail, // 단순 이메일 주소만 사용
+      to: to.trim(),
       subject,
       html: htmlContent
     };

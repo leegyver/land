@@ -419,7 +419,6 @@ export class DatabaseStorage implements IStorage {
           type: "아파트",
           price: "950000000",
           address: "서울시 강남구 역삼동 123-45",
-          city: "서울",
           district: "강남구",
           size: "84.12",
           bedrooms: 3,
@@ -433,7 +432,6 @@ export class DatabaseStorage implements IStorage {
           type: "주택",
           price: "1580000000",
           address: "서울시 서초구 방배동 456-78",
-          city: "서울",
           district: "서초구",
           size: "165.3",
           bedrooms: 4,
@@ -447,7 +445,6 @@ export class DatabaseStorage implements IStorage {
           type: "오피스텔",
           price: "320000000",
           address: "서울시 마포구 서교동 789-12",
-          city: "서울",
           district: "마포구",
           size: "45.9",
           bedrooms: 1,
@@ -461,13 +458,11 @@ export class DatabaseStorage implements IStorage {
           type: "아파트",
           price: "1230000000",
           address: "서울시 용산구 한남동 101-23",
-          city: "서울",
           district: "용산구",
           size: "109.5",
           bedrooms: 4,
           bathrooms: 2,
           imageUrl: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500",
-          agentId: createdAgents[3].id,
           featured: true
         },
         {
@@ -476,13 +471,11 @@ export class DatabaseStorage implements IStorage {
           type: "빌라",
           price: "750000000",
           address: "서울시 성북구 성북동 345-67",
-          city: "서울",
           district: "성북구",
           size: "92.7",
           bedrooms: 3,
           bathrooms: 2,
           imageUrl: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500",
-          agentId: createdAgents[1].id,
           featured: true
         },
         {
@@ -491,13 +484,11 @@ export class DatabaseStorage implements IStorage {
           type: "펜트하우스",
           price: "2500000000",
           address: "서울시 송파구 잠실동 678-90",
-          city: "서울",
           district: "송파구",
           size: "198.3",
           bedrooms: 5,
           bathrooms: 3,
           imageUrl: "https://images.unsplash.com/photo-1493809842364-78817add7ffb?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500",
-          agentId: createdAgents[3].id,
           featured: true
         }
       ];

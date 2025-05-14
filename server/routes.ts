@@ -15,6 +15,7 @@ import { memoryCache } from "./cache";
 import { setupAuth } from "./auth";
 import { fetchAndSaveNews } from "./news-fetcher";
 import { fetchNaverBlogPosts, BlogPost } from "./blog-fetcher";
+import { sendEmail, createInquiryEmailTemplate } from "./mailer";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // 인증 시스템 설정
@@ -142,6 +143,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertInquirySchema.parse(req.body);
       const inquiry = await storage.createInquiry(validatedData);
+
+      // 이메일 발송 시도
+      try {
+        // 이메일 템플릿 생성
+        const emailTemplate = createInquiryEmailTemplate({
+          name: validatedData.name,
+          email: validatedData.email,
+          phone: validatedData.phone,
+          message: validatedData.message
+        });
+
+        // 이메일 발송
+        const emailSent = await sendEmail(
+          process.env.NAVER_EMAIL || '9551304@naver.com', // 수신자: 네이버 이메일로 설정
+          `[이가이버부동산 웹사이트] ${validatedData.name}님의 새로운 문의가 등록되었습니다`, 
+          emailTemplate
+        );
+
+        if (emailSent) {
+          console.log(`문의 ID ${inquiry.id}에 대한 알림 이메일 전송 완료`);
+        } else {
+          console.error(`문의 ID ${inquiry.id}에 대한 알림 이메일 전송 실패`);
+        }
+      } catch (emailError) {
+        // 이메일 발송 실패 시 로그 기록만 하고 전체 요청은 실패로 처리하지 않음
+        console.error('문의 알림 이메일 발송 중 오류 발생:', emailError);
+      }
+
       res.status(201).json(inquiry);
     } catch (error) {
       if (error instanceof z.ZodError) {

@@ -427,7 +427,7 @@ export default function KakaoMap({ singleProperty, zoom = 3 }: KakaoMapProps) {
       
       {/* 선택된 매물 정보 패널 - 다중 매물 모드에서만 표시 */}
       {!singleProperty && selectedProperty && (
-        <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-64 bg-white rounded-lg shadow-lg p-3 z-10 max-h-[280px] overflow-y-auto">
+        <div className="absolute bottom-16 left-4 right-4 md:left-auto md:right-4 md:w-56 bg-white rounded-lg shadow-lg p-2 z-10 max-h-[250px] overflow-y-auto">
           <button 
             className="absolute top-1 right-1 text-gray-400 hover:text-gray-600"
             onClick={() => setSelectedProperty(null)}
@@ -452,18 +452,20 @@ export default function KakaoMap({ singleProperty, zoom = 3 }: KakaoMapProps) {
             ))}
           </div>
           
-          <div className="grid grid-cols-2 gap-x-1 gap-y-1 mb-2 text-xs">
-            <div className="text-gray-500">지역:</div>
-            <div className="truncate">{selectedProperty.district}</div>
-            
-            <div className="text-gray-500">면적:</div>
-            <div>
-              {selectedProperty.size} m² 
-              {Number(selectedProperty.size) > 0 && ` (${(Number(selectedProperty.size) * 0.3025).toFixed(1)}평)`}
+          <div className="grid grid-cols-5 mb-2 text-xs">
+            <div className="text-gray-500 col-span-1">지역</div>
+            <div className="truncate col-span-4">{selectedProperty.district}</div>
+          </div>
+          <div className="grid grid-cols-5 mb-2 text-xs">
+            <div className="text-gray-500 col-span-1">면적</div>
+            <div className="col-span-4">
+              {selectedProperty.size}m²
+              {Number(selectedProperty.size) > 0 && `(${(Number(selectedProperty.size) * 0.3025).toFixed(1)}평)`}
             </div>
-            
-            <div className="text-gray-500">가격:</div>
-            <div className="font-semibold text-primary">
+          </div>
+          <div className="grid grid-cols-5 mb-2 text-xs">
+            <div className="text-gray-500 col-span-1">가격</div>
+            <div className="font-semibold text-primary col-span-4">
               {formatPrice(Number(selectedProperty.price) || 0)}
             </div>
           </div>

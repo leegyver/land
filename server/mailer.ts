@@ -7,7 +7,7 @@ const transporter = nodemailer.createTransport({
   secure: true, // true는 포트 465를 사용할 때, false는 다른 포트에서 사용
   auth: {
     user: process.env.NAVER_EMAIL,
-    pass: process.env.NAVER_PASSWORD
+    pass: process.env.NAVER_APP_PASSWORD // 애플리케이션 비밀번호 사용
   },
   debug: true, // 디버깅 모드 활성화
   logger: true // 로깅 활성화
@@ -20,7 +20,7 @@ console.log('SMTP 설정 정보:', {
   secure: true,
   auth: {
     user: process.env.NAVER_EMAIL ? "설정됨" : "미설정",
-    pass: process.env.NAVER_PASSWORD ? "설정됨" : "미설정"
+    pass: process.env.NAVER_APP_PASSWORD ? "설정됨" : "미설정"
   }
 });
 
@@ -33,7 +33,7 @@ export async function sendEmail(
   try {
     console.log("이메일 전송 시도...");
     
-    if (!process.env.NAVER_EMAIL || !process.env.NAVER_PASSWORD) {
+    if (!process.env.NAVER_EMAIL || !process.env.NAVER_APP_PASSWORD) {
       console.error("네이버 메일 인증 정보가 없습니다.");
       return false;
     }

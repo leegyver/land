@@ -20,8 +20,8 @@ const FeaturedProperties = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[...Array(6)].map((_, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            {[...Array(8)].map((_, index) => (
               <div key={index} className="bg-white rounded-lg overflow-hidden shadow-md">
                 <Skeleton className="h-60 w-full" />
                 <div className="p-6">
@@ -68,7 +68,7 @@ const FeaturedProperties = () => {
           </Link>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {properties && properties.map((property) => (
             <PropertyCard key={property.id} property={property} />
           ))}

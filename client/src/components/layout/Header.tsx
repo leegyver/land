@@ -20,7 +20,7 @@ const Header = () => {
   const navItems = [
     { name: "홈", path: "/" },
     { name: "매물", path: "/properties" },
-    { name: "부동산 뉴스", path: "/news" },
+    { name: "부동산뉴스", path: "/news" },
     { name: "회사소개", path: "/about" },
     { name: "문의", path: "/contact" },
   ];

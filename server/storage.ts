@@ -475,28 +475,7 @@ export class DatabaseStorage implements IStorage {
         await this.createProperty(property);
       }
       
-      // 후기 데이터
-      const testimonials: InsertTestimonial[] = [
-        {
-          name: "박서연",
-          description: "강남구 아파트 구매",
-          message: "한국부동산을 통해 꿈에 그리던 집을 찾았습니다. 김지영 중개사님의 친절하고 전문적인 안내 덕분에 복잡한 계약 과정도 너무 수월했어요."
-        },
-        {
-          name: "최준호",
-          description: "마포구 오피스텔 구매",
-          message: "처음 집을 구매하는 과정이라 걱정이 많았는데, 이민호 대표님이 세세하게 조언해주셔서 안심하고 계약할 수 있었습니다. 추천합니다!"
-        },
-        {
-          name: "김미영",
-          description: "서초구 주택 임대",
-          message: "다른 부동산과 달리 투명한 정보 제공과 빠른 답변이 인상적이었습니다. 덕분에 좋은 조건으로 계약할 수 있었어요. 감사합니다!"
-        }
-      ];
-      
-      for (const testimonial of testimonials) {
-        await this.createTestimonial(testimonial);
-      }
+      // 후기 데이터 - 제거됨
       
       // 뉴스 데이터
       const newsItems: InsertNews[] = [

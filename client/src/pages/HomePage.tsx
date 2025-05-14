@@ -1,7 +1,7 @@
 import HomeMap from "@/components/home/HomeMap";
 import PropertySearch from "@/components/home/PropertySearch";
 import FeaturedProperties from "@/components/home/FeaturedProperties";
-// BlogPosts 컴포넌트 제거됨
+import NaverBlogPosts from "@/components/blog/NaverBlogPosts";
 // Testimonials 컴포넌트 제거됨
 // ContactForm 컴포넌트 제거됨
 import { useQuery } from "@tanstack/react-query";
@@ -26,6 +26,7 @@ const HomePage = () => {
         <HomeMap />
         <PropertySearch />
         <FeaturedProperties />
+        <NaverBlogPosts />
         
         {/* News Section */}
         <section id="news" className="py-16 bg-gray-light">

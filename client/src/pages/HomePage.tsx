@@ -50,7 +50,7 @@ const HomePage = () => {
         <section id="news" className="py-4 bg-gray-light">
           <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold">최신 부동산 뉴스</h2>
+              <h2 className="text-2xl font-bold">최신 부동산뉴스</h2>
               <Link href="/news" className="text-primary hover:text-secondary font-medium flex items-center gap-1">
                 모든 뉴스 보기 <ArrowRight className="h-4 w-4" />
               </Link>

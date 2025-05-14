@@ -92,19 +92,19 @@ export default function NewsPage() {
   return (
     <div className="container mx-auto px-4 py-20">
       <Helmet>
-        <title>부동산 뉴스 | 한국부동산</title>
-        <meta name="description" content="강화군과 수도권의 최신 부동산 뉴스와 정보를 확인하세요." />
+        <title>부동산뉴스 | 한국부동산</title>
+        <meta name="description" content="강화군과 수도권의 최신 부동산뉴스와 정보를 확인하세요." />
       </Helmet>
 
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold mb-2">부동산 뉴스</h1>
-        <p className="text-neutral-600">알고 있어야할 강화군, 수도권 부동산 뉴스</p>
+        <h1 className="text-3xl font-bold mb-2">부동산뉴스</h1>
+        <p className="text-neutral-600">알고 있어야할 강화군, 수도권 부동산뉴스</p>
       </div>
 
       <div className="space-y-12">
         {/* 최신 뉴스 (갤러리 형식) */}
         <div>
-          <h2 className="text-2xl font-bold mb-6">최신 부동산 뉴스</h2>
+          <h2 className="text-2xl font-bold mb-6">최신 부동산뉴스</h2>
           
           {isLoadingLatest ? (
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6 animate-pulse">
@@ -170,7 +170,7 @@ export default function NewsPage() {
 
         {/* 전체 뉴스 (게시판 형식) */}
         <div>
-          <h2 className="text-2xl font-bold mb-6">전체 부동산 뉴스</h2>
+          <h2 className="text-2xl font-bold mb-6">전체 부동산뉴스</h2>
           
           {isLoadingAll ? (
             <div className="space-y-2 animate-pulse">

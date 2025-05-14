@@ -17,7 +17,7 @@ export const properties = pgTable("properties", {
   imageUrl: text("image_url").notNull(), // 단일 이미지 URL (하위 호환성 유지)
   imageUrls: text("image_urls").array(), // 다중 이미지 URLs
   featuredImageIndex: integer("featured_image_index"), // 대표 이미지 인덱스
-  agentId: integer("agent_id").notNull(), // 담당 중개사 ID
+  // agentId 필드 제거됨 - 더 이상 사용하지 않음
   featured: boolean("featured").default(false), // 추천 매물 여부
   createdAt: timestamp("created_at").defaultNow(), // 등록일
   
@@ -65,23 +65,7 @@ export const insertPropertySchema = createInsertSchema(properties).omit({
   createdAt: true,
 });
 
-// Agent schema
-export const agents = pgTable("agents", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  title: text("title").notNull(),
-  description: text("description").notNull(),
-  email: text("email").notNull(),
-  phone: text("phone").notNull(),
-  imageUrl: text("image_url").notNull(),
-  specialization: text("specialization").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const insertAgentSchema = createInsertSchema(agents).omit({
-  id: true,
-  createdAt: true,
-});
+// Agent schema - REMOVED
 
 // Inquiry schema
 export const inquiries = pgTable("inquiries", {
@@ -136,8 +120,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export type Property = typeof properties.$inferSelect;
 export type InsertProperty = z.infer<typeof insertPropertySchema>;
 
-export type Agent = typeof agents.$inferSelect;
-export type InsertAgent = z.infer<typeof insertAgentSchema>;
+// Agent types - REMOVED
 
 export type Inquiry = typeof inquiries.$inferSelect;
 export type InsertInquiry = z.infer<typeof insertInquirySchema>;

@@ -1,6 +1,6 @@
 import { 
   properties, type Property, type InsertProperty,
-  agents, type Agent, type InsertAgent,
+  // agents 삭제됨
   inquiries, type Inquiry, type InsertInquiry,
   testimonials, type Testimonial, type InsertTestimonial,
   users, type User, type InsertUser,
@@ -40,12 +40,7 @@ export interface IStorage {
   updateProperty(id: number, property: Partial<InsertProperty>): Promise<Property | undefined>;
   deleteProperty(id: number): Promise<boolean>;
   
-  // Agent methods
-  getAgents(): Promise<Agent[]>;
-  getAgent(id: number): Promise<Agent | undefined>;
-  createAgent(agent: InsertAgent): Promise<Agent>;
-  updateAgent(id: number, agent: Partial<InsertAgent>): Promise<Agent | undefined>;
-  deleteAgent(id: number): Promise<boolean>;
+  // Agent methods - 제거됨
   
   // Inquiry methods
   getInquiries(): Promise<Inquiry[]>;

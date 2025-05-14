@@ -3,7 +3,7 @@ import { ArrowRight, Calendar, Link as LinkIcon, ExternalLink } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatDate } from "@/lib/utils";
+// import { formatDate } from "@/lib/utils"; // Not using this function
 
 export interface BlogPost {
   title: string;

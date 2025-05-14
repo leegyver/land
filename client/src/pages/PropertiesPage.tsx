@@ -7,6 +7,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import PropertyCard from "@/components/property/PropertyCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MapIcon } from "lucide-react";
+import KakaoMap from "@/components/map/KakaoMap";
 import {
   Form,
   FormControl,
@@ -335,7 +337,18 @@ const PropertiesPage = () => {
         </div>
       </div>
       
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-8">
+        {/* Map Section */}
+        <div className="mb-8">
+          <div className="mb-3 flex items-center">
+            <MapIcon className="h-5 w-5 mr-2 text-primary" />
+            <h2 className="text-lg font-bold">지도로 부동산찾기</h2>
+          </div>
+          <div className="h-[40vh] w-full rounded-lg overflow-hidden mb-6">
+            <KakaoMap />
+          </div>
+        </div>
+        
         {/* Properties Results */}
         <div className="mb-6 flex justify-between items-center">
           <h2 className="text-2xl font-bold">

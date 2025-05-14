@@ -58,9 +58,9 @@ const FeaturedProperties = () => {
   }
 
   return (
-    <section id="properties" className="py-8">
+    <section id="properties" className="py-4">
       <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold">추천 매물</h2>
           <Link href="/properties" className="text-primary font-medium hover:text-secondary">
             모든 매물 보기 <span aria-hidden="true">→</span>

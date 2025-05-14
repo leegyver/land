@@ -311,6 +311,11 @@ let morningJobScheduled = false;
 let eveningJobScheduled = false;
 
 export function setupNewsScheduler() {
+  // 사용자 요청에 의해 뉴스 자동 업데이트 비활성화
+  log(`[info] 뉴스 자동 업데이트가 사용자 요청에 의해 비활성화되었습니다`, 'info');
+  
+  // 아래는 비활성화된 코드입니다
+  /*
   function scheduleNextRun() {
     const now = new Date();
     const currentHour = now.getHours();
@@ -373,4 +378,5 @@ export function setupNewsScheduler() {
   
   // 서버 시작 시 즉시 한 번 실행
   fetchAndSaveNews();
+  */
 }

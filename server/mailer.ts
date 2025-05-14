@@ -38,6 +38,12 @@ export async function sendEmail(
       return false;
     }
     
+    // 수신자 이메일 검증
+    if (!to || to.trim() === '') {
+      console.error("수신자 이메일 주소가 비어있습니다.");
+      return false;
+    }
+    
     console.log(`발신자: ${process.env.NAVER_EMAIL}`);
     console.log(`수신자: ${to}`);
     console.log(`제목: ${subject}`);

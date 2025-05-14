@@ -154,9 +154,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: validatedData.message
         });
 
+        // 수신자 이메일 주소를 명시적으로 설정 
+        const recipientEmail = '9551304@naver.com'; // 여기에 원하는 수신자 이메일을 직접 입력
+        console.log(`수신자 이메일 설정: ${recipientEmail}`);
+        
         // 이메일 발송
         const emailSent = await sendEmail(
-          process.env.NAVER_EMAIL || '9551304@naver.com', // 수신자: 네이버 이메일로 설정
+          recipientEmail, 
           `[이가이버부동산 웹사이트] ${validatedData.name}님의 새로운 문의가 등록되었습니다`, 
           emailTemplate
         );

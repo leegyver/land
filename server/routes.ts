@@ -1098,15 +1098,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // 네이버 블로그의 특정 카테고리(11)에서 데이터 가져오기
-      const posts = await fetchNaverBlogPosts("9551304", "11", count);
+      // 여러 카테고리에서 블로그 포스트 가져오기
+      const categories = ["21", "35", "36"]; // 사용자가 지정한 카테고리
+      const allPosts: BlogPost[] = [];
       
-      // 캐시 스킵이 아닐 경우에만 캐시 저장 (30분 동안 유지)
-      if (!skipCache && posts.length > 0) {
-        memoryCache.set("naver_blog_posts", posts, 30 * 60 * 1000);
+      // 각 카테고리에서 포스트 가져오기
+      for (const category of categories) {
+        console.log(`카테고리 ${category}에서 포스트 가져오는 중...`);
+        const categoryPosts = await fetchNaverBlogPosts("9551304", category, count);
+        if (categoryPosts.length > 0) {
+          console.log(`카테고리 ${category}에서 ${categoryPosts.length}개 포스트 발견`);
+          allPosts.push(...categoryPosts);
+        }
       }
       
-      res.json(posts);
+      // 날짜 기준으로 정렬 (최신순)
+      allPosts.sort((a, b) => {
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        return dateB - dateA; // 내림차순(최신순)
+      });
+      
+      // 요청한 개수만큼만 반환
+      const limitedPosts = allPosts.slice(0, count);
+      console.log(`총 ${limitedPosts.length}개 포스트 반환`);
+      
+      // 캐시 스킵이 아닐 경우에만 캐시 저장 (30분 동안 유지)
+      if (!skipCache && limitedPosts.length > 0) {
+        memoryCache.set("naver_blog_posts", limitedPosts, 30 * 60 * 1000);
+      }
+      
+      res.json(limitedPosts);
     } catch (error) {
       console.error("블로그 포스트를 가져오는 중 오류 발생:", error);
       res.status(500).json({ message: "블로그 포스트를 가져오는 중 오류가 발생했습니다." });

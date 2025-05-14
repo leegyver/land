@@ -15,24 +15,28 @@ export async function testRealEstateAPI() {
   // 다양한 접근 방식 테스트 - 업데이트된 엔드포인트 및 키
   const tests = [
     {
-      name: '새로운 토지 실거래가 API + 인코딩 키',
+      name: '토지 실거래가 API (구 스타일)',
+      url: `http://openapi.molit.go.kr/OpenAPI_ToolInstallPackage/service/rest/RTMSOBJSvc/getRTMSDataSvcLandTrade?serviceKey=${apiKey}&LAWD_CD=28710&DEAL_YMD=202311`
+    },
+    {
+      name: '아파트 실거래가 API (구 스타일)',
+      url: `http://openapi.molit.go.kr/OpenAPI_ToolInstallPackage/service/rest/RTMSOBJSvc/getRTMSDataSvcAptTradeDev?serviceKey=${apiKey}&LAWD_CD=28710&DEAL_YMD=202311`
+    },
+    {
+      name: '단독/다가구 실거래가 API (구 스타일)',
+      url: `http://openapi.molit.go.kr:8081/OpenAPI_ToolInstallPackage/service/rest/RTMSOBJSvc/getRTMSDataSvcSHTrade?serviceKey=${apiKey}&LAWD_CD=28710&DEAL_YMD=202311`
+    },
+    {
+      name: '토지 실거래가 API + 인코딩 키 (신 스타일)',
       url: `https://apis.data.go.kr/1613000/RTMSDataSvcLandTrade/getLandTrade?serviceKey=${apiKey}&LAWD_CD=28710&DEAL_YMD=202503&numOfRows=10&pageNo=1`
     },
     {
-      name: '새로운 토지 실거래가 API + 디코딩 키',
-      url: `https://apis.data.go.kr/1613000/RTMSDataSvcLandTrade/getLandTrade?serviceKey=${decodeURIComponent(apiKey)}&LAWD_CD=28710&DEAL_YMD=202503&numOfRows=10&pageNo=1`
-    },
-    {
-      name: '토지 실거래가 API (전체 URL) + 인코딩 키',
-      url: `https://apis.data.go.kr/1613000/RTMSDataSvcLandTrade?serviceKey=${apiKey}&LAWD_CD=28710&DEAL_YMD=202503&numOfRows=10&pageNo=1`
-    },
-    {
-      name: '아파트 실거래가 API + 인코딩 키',
+      name: '아파트 실거래가 API + 인코딩 키 (신 스타일)',
       url: `https://apis.data.go.kr/1613000/AptTradeSvc/getAptTrade?serviceKey=${apiKey}&LAWD_CD=28710&DEAL_YMD=202503&numOfRows=10&pageNo=1`
     },
     {
-      name: '단독다가구 실거래가 API + 인코딩 키',
-      url: `https://apis.data.go.kr/1613000/TradeService/getSHTrade?serviceKey=${apiKey}&LAWD_CD=28710&DEAL_YMD=202503&numOfRows=10&pageNo=1`
+      name: '날씨 API 테스트',
+      url: `http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst?serviceKey=${apiKey}&numOfRows=10&pageNo=1&base_date=20240514&base_time=0600&nx=55&ny=127`
     }
   ];
 

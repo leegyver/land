@@ -35,9 +35,50 @@ export async function fetchNaverBlogPosts(blogId: string, categoryNo: string = '
     // 요청한 수만큼만 처리
     const limitedItems = items.slice(0, count);
     
-    // 블로그 포스트 데이터 추출
+    // 카테고리 번호 확인을 위한 패턴
+    const categoryPattern = /categoryNo=([0-9]+)/;
+    
+    // 블로그 포스트 데이터 추출 및 필터링
+    let filteredItems = limitedItems;
+    
+    // 특정 카테고리 번호가 주어진 경우 해당 카테고리에 속한 항목만 필터링
+    if (categoryNo) {
+      console.log(`카테고리 ${categoryNo}에 속한 포스트만 필터링합니다.`);
+      filteredItems = limitedItems.filter((item: any) => {
+        // 항목의 카테고리 확인
+        let postCategoryNo = '';
+        
+        // 카테고리 번호 확인
+        if (item.guid && item.guid._text) {
+          const match = item.guid._text.match(categoryPattern);
+          if (match && match[1]) postCategoryNo = match[1];
+        }
+        
+        if (item.link && item.link._text && !postCategoryNo) {
+          const match = item.link._text.match(categoryPattern);
+          if (match && match[1]) postCategoryNo = match[1];
+        }
+        
+        // 카테고리 일치 여부 확인
+        const isMatchingCategory = postCategoryNo === categoryNo || item.category?._text === categoryNo;
+        if (!isMatchingCategory) {
+          console.log(`카테고리 불일치 - 포스트: ${item.title._text || ''}, 카테고리: ${postCategoryNo || '알 수 없음'}`);
+        }
+        return isMatchingCategory;
+      });
+      
+      console.log(`필터링 결과: ${filteredItems.length}/${limitedItems.length} 포스트가 선택됨`);
+    }
+    
+    // 카테고리 필터링 후 남은 아이템이 없으면 원본 목록 사용 (일단 안전을 위해)
+    if (filteredItems.length === 0) {
+      console.log(`필터링 후 포스트가
+없어서 원본 목록 사용`);
+      filteredItems = limitedItems;
+    }
+    
     const posts: BlogPost[] = await Promise.all(
-      limitedItems.map(async (item: any) => {
+      filteredItems.map(async (item: any) => {
         const title = item.title._text || item.title._cdata || '';
         
         // item에서 guid 또는 link를 사용하여 URL 구성

@@ -24,8 +24,8 @@ const HomePage = () => {
     <>
       <div className="pt-16"> {/* Offset for fixed header */}
         {/* 맵과 검색을 오른쪽으로 배치한 새로운 레이아웃 */}
-        <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="container mx-auto px-4 py-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* 왼쪽 콘텐츠 영역 - 추천 매물만 표시 (3/4 크기) */}
             <div className="order-2 lg:order-1 lg:col-span-3">
               <FeaturedProperties />
@@ -47,9 +47,9 @@ const HomePage = () => {
         </div>
         
         {/* News Section */}
-        <section id="news" className="py-8 bg-gray-light">
+        <section id="news" className="py-4 bg-gray-light">
           <div className="container mx-auto px-4">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold">최신 부동산 뉴스</h2>
               <Link href="/news" className="text-primary hover:text-secondary font-medium flex items-center gap-1">
                 모든 뉴스 보기 <ArrowRight className="h-4 w-4" />

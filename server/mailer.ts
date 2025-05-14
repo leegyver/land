@@ -49,13 +49,11 @@ export async function sendEmail(
     console.log(`제목: ${subject}`);
     
     // 발신자 이메일 주소 설정 (RFC 5322 형식을 준수)
-    const naverEmail = process.env.NAVER_EMAIL || '';
+    const rawEmail = process.env.NAVER_EMAIL || '';
+    // 완전한 이메일 주소 형식 확인 및 보정
+    const naverEmail = rawEmail.includes('@') ? rawEmail : `${rawEmail}@naver.com`;
     
-    // 이메일 형식 검증
-    if (!naverEmail.includes('@')) {
-      console.error("발신자 이메일 주소 형식이 올바르지 않습니다:", naverEmail);
-      return false;
-    }
+    console.log("보정된 발신자 이메일:", naverEmail);
     
     // 메일 옵션 설정 (RFC 5322 준수를 위한 형식)
     const mailOptions = {

@@ -5,7 +5,7 @@ import BlogPosts from "@/components/home/BlogPosts";
 import Testimonials from "@/components/home/Testimonials";
 import ContactForm from "@/components/contact/ContactForm";
 import { useQuery } from "@tanstack/react-query";
-import { Agent, News } from "@shared/schema";
+import { News } from "@shared/schema";
 import { Link } from "wouter";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { MapPin, Phone, Mail, Clock, Calendar, ArrowRight, Newspaper } from "lucide-react";
@@ -14,9 +14,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
 const HomePage = () => {
-  const { data: agents } = useQuery<Agent[]>({
-    queryKey: ["/api/agents"],
-  });
+  // agents 관련 쿼리 제거됨
   
   const { data: latestNews } = useQuery<News[]>({
     queryKey: ["/api/news/latest"],

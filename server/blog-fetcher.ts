@@ -404,17 +404,15 @@ export async function fetchBlogPostsByCategory(
  * 여러 카테고리의 네이버 블로그 포스트를 가져와 최신순으로 정렬하여 반환합니다.
  * 
  * @param blogId 네이버 블로그 ID (기본값: '9551304')
- * @param categoryNos 조회할 카테고리 번호 배열 (기본값: ['21', '35', '36'])
+ * @param categoryNos 조회할 카테고리 번호 배열 (기본값: ['11'])
  * @param limit 반환할 최대 포스트 수 (기본값: 3)
  * @returns 날짜순으로 정렬된 블로그 포스트 배열
  */
 export async function fetchBlogPosts(
   blogId: string = '9551304',
-  // 명시적으로 세 개의 카테고리를 지정:
-  // - 21: 일상다반사
-  // - 35: 취미생활 
-  // - 36: 세상이야기
-  categoryNos: string[] = ['21', '35', '36'],
+  // 카테고리 변경: 
+  // - 11: 부동산 정보
+  categoryNos: string[] = ['11'],
   limit: number = 3 // 최종적으로 반환할 포스트 수
 ): Promise<BlogPost[]> {
   try {
@@ -983,8 +981,10 @@ async function extractAllPostImages(blogId: string, postId: string): Promise<str
       }
     });
     
-    // 중복 제거
-    const uniqueImages = [...new Set(images)];
+    // 중복 제거 (배열만 사용)
+    const imgSet = new Set<string>();
+    images.forEach(img => imgSet.add(img));
+    const uniqueImages = Array.from(imgSet);
     console.log(`PC 버전에서 ${uniqueImages.length}개 이미지 찾음`);
     
     // 이미지를 찾지 못했으면 모바일 버전 시도
@@ -1014,8 +1014,10 @@ async function extractAllPostImages(blogId: string, postId: string): Promise<str
         }
       });
       
-      // 중복 제거
-      const uniqueMobileImages = [...new Set(mobileImages)];
+      // 중복 제거 (배열만 사용)
+      const mobileImgSet = new Set<string>();
+      mobileImages.forEach(img => mobileImgSet.add(img));
+      const uniqueMobileImages = Array.from(mobileImgSet);
       console.log(`모바일 버전에서 ${uniqueMobileImages.length}개 이미지 찾음`);
       
       return uniqueMobileImages;

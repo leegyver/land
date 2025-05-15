@@ -540,19 +540,51 @@ async function extractPostImage(blogId: string, postId: string): Promise<string>
       const mobileHtml = await mobileResponse.text();
       const $mobile = cheerio.load(mobileHtml);
       
-      // 1-1. OpenGraph 태그에서 이미지 URL 확인
+      // 1-1. OpenGraph 태그에서 이미지 URL 확인 (가장 신뢰할 수 있는 방법)
       const ogImage = $mobile('meta[property="og:image"]').attr('content');
-      if (ogImage && !ogImage.includes('og_default_image')) {
+      
+      // 블로그 기본 이미지가 아닌 경우만 사용 (profile 이미지는 제외)
+      if (ogImage && 
+          !ogImage.includes('og_default_image') && 
+          !ogImage.includes('profile') && 
+          !ogImage.includes('blog_profile') &&
+          !ogImage.includes('pfthumb') &&
+          !ogImage.includes('ssl.pstatic.net/static/blog')) {
         console.log(`모바일 버전 OpenGraph 이미지 발견: ${ogImage}`);
         return ogImage;
       }
       
-      // 1-2. 실제 포스트 컨텐츠에서 이미지 찾기 (프로필 이미지 제외)
+      // 1-2. 포스트 이미지 컨테이너에서 먼저 찾기 (이미지 우선순위: 컨테이너 > 개별 이미지)
+      const imageContainerSelectors = [
+        '.se-mediaArea', '.se-module-image', '.se-img-view',
+        '.se-section-image', '.se_component_image', '.post_image',
+        '.imageslide_item', '.img_container', '.post_ct',
+        '.se-main-container', '.se_view_area'
+      ];
+      
+      for (const selector of imageContainerSelectors) {
+        const container = $mobile(selector).first();
+        if (container.length > 0) {
+          const img = container.find('img').first();
+          const src = img.attr('src') || img.attr('data-src') || '';
+          
+          if (src && 
+              !src.includes('profile') && 
+              !src.includes('icon') && 
+              !src.includes('pfthumb') &&
+              !src.includes('ssl.pstatic.net/static/blog')) {
+            console.log(`모바일 이미지 컨테이너에서 발견: ${src}`);
+            return src;
+          }
+        }
+      }
+      
+      // 1-3. 실제 포스트 컨텐츠에서 이미지 찾기 (프로필 이미지 제외)
       const mobileSelectors = [
         '.se-module-image img', '.se-image img', '.se_component_image img',
         '.se_mediaImage img', '.se-main-container img', '.se_view_area img',
         '.post_ct img:not([src*="profile"])', '.blog_ct img:not([src*="profile"])', 
-        '.detail_view img:not([src*="profile"])',
+        '.detail_view img:not([src*="profile"])', '.se-image-resource',
         'iframe[src*="PostView.nhn"]', 'div[class^="se-"] img:not([src*="profile"])'
       ];
       
@@ -763,11 +795,21 @@ async function extractPostImageFromFullUrl(fullUrl: string): Promise<string> {
   try {
     console.log(`전체 URL로 이미지 추출 시도: ${fullUrl}`);
     
+    // 랜덤 User-Agent 생성 (차단 방지)
+    const userAgents = [
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3 Safari/605.1.15',
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0'
+    ];
+    
+    const randomUserAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
+    
     const response = await fetch(fullUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
+        'User-Agent': randomUserAgent,
         'Accept': 'text/html,application/xhtml+xml,application/xml',
-        'Cache-Control': 'no-cache'
+        'Cache-Control': 'no-cache',
+        'Referer': 'https://blog.naver.com/'
       }
     });
     
@@ -779,11 +821,40 @@ async function extractPostImageFromFullUrl(fullUrl: string): Promise<string> {
     const html = await response.text();
     const $ = cheerio.load(html);
     
-    // OpenGraph 태그 확인
+    // OpenGraph 태그 확인 (더 신뢰할 수 있는 방법)
     const ogImage = $('meta[property="og:image"]').attr('content');
-    if (ogImage) {
+    if (ogImage && 
+        !ogImage.includes('og_default_image') && 
+        !ogImage.includes('profile') && 
+        !ogImage.includes('blog_profile') &&
+        !ogImage.includes('pfthumb') &&
+        !ogImage.includes('ssl.pstatic.net/static/blog')) {
       console.log(`전체 URL에서 OpenGraph 이미지 발견: ${ogImage}`);
       return ogImage;
+    }
+    
+    // 이미지 컨테이너에서 찾기
+    const containerSelectors = [
+      '.se-main-container', '.se-component', '.se-module-image',
+      '.se-section-image', '.post-view', '.post_article',
+      '.post_ct', '.se_view_area'
+    ];
+    
+    for (const selector of containerSelectors) {
+      const container = $(selector).first();
+      if (container.length > 0) {
+        const img = container.find('img').first();
+        const src = img.attr('src') || img.attr('data-src') || '';
+        
+        if (src && 
+            !src.includes('profile') && 
+            !src.includes('icon') && 
+            !src.includes('pfthumb') &&
+            !src.includes('ssl.pstatic.net/static/blog')) {
+          console.log(`PC 이미지 컨테이너에서 발견: ${src}`);
+          return src;
+        }
+      }
     }
     
     // 다양한 선택자로 이미지 찾기

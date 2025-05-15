@@ -5,10 +5,10 @@ const AboutPage = () => {
   return (
     <div className="pt-16"> {/* 상단 메뉴 오프셋 */}
       <Helmet>
-        <title>강화도 실거래가 | 이가이버부동산</title>
+        <title>실거래가(디스코) | 이가이버부동산</title>
         <meta 
           name="description" 
-          content="강화도 지역 부동산 정보를 확인하세요."
+          content="실거래가 정보를 디스코에서 확인하세요."
         />
       </Helmet>
       

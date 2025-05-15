@@ -222,15 +222,17 @@ export default function AdminPage() {
         if (Array.isArray(property.dealType)) {
           return property.dealType.includes(filterDealType);
         } 
-        // PostgreSQL 배열 형식의 문자열인 경우 ("{매매,월세}" 형태)
-        else if (typeof property.dealType === 'string' && property.dealType.startsWith('{') && property.dealType.endsWith('}')) {
-          const dealTypes = property.dealType.substring(1, property.dealType.length - 1).split(',');
-          return dealTypes.includes(filterDealType);
-        }
-        // 일반 문자열인 경우 (매매 형태)
+        // 문자열인 경우
         else if (typeof property.dealType === 'string') {
+          // PostgreSQL 배열 형식의 문자열인 경우 ("{매매,월세}" 형태)
+          if (property.dealType.startsWith('{') && property.dealType.endsWith('}')) {
+            const dealTypes = property.dealType.substring(1, property.dealType.length - 1).split(',');
+            return dealTypes.includes(filterDealType);
+          }
+          // 일반 문자열인 경우
           return property.dealType === filterDealType;
         }
+        // 그 외 타입인 경우
         return false;
       }
       

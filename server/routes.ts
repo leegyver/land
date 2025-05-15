@@ -60,17 +60,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/properties/featured", async (req, res) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
-      const cacheKey = `properties_featured_${limit || 'default'}`;
-      const cachedProperties = memoryCache.get(cacheKey);
       
-      if (cachedProperties) {
-        return res.json(cachedProperties);
-      }
-      
+      // 캐시 비활성화 - 항상 최신 데이터를 가져옴
       const properties = await storage.getFeaturedProperties(limit);
       
-      // 캐시 저장 (5분)
-      memoryCache.set(cacheKey, properties, 5 * 60 * 1000);
+      // 디버깅용 로그 추가
+      console.log(`추천 매물 ${properties.length}개 조회됨:`, 
+                  properties.map(p => `${p.id}:${p.title}(${p.featured ? '추천' : '일반'})`));
       
       res.json(properties);
     } catch (error) {

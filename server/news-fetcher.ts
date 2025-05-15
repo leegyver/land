@@ -29,7 +29,7 @@ const SEARCH_KEYWORDS = [
 ];
 
 // 검색 키워드 검증용 배열 (중복 제거)
-const KEYWORD_CHECK_ARRAY = [...new Set(SEARCH_KEYWORDS)];
+const KEYWORD_CHECK_ARRAY = SEARCH_KEYWORDS;
 
 // 네이버 API 호출 함수
 async function fetchNaverNews(keyword: string) {
@@ -338,11 +338,9 @@ let morningJobScheduled = false;
 let eveningJobScheduled = false;
 
 export function setupNewsScheduler() {
-  // 사용자 요청에 의해 뉴스 자동 업데이트 비활성화
-  log(`[info] 뉴스 자동 업데이트가 사용자 요청에 의해 비활성화되었습니다`, 'info');
+  // 뉴스 자동 업데이트 활성화 (사용자 요청에 따라 수정)
+  log(`[info] 뉴스 자동 업데이트가 활성화되었습니다 (6시, 18시 각 3개씩)`, 'info');
   
-  // 아래는 비활성화된 코드입니다
-  /*
   function scheduleNextRun() {
     const now = new Date();
     const currentHour = now.getHours();
@@ -361,7 +359,7 @@ export function setupNewsScheduler() {
       }, morningDelay);
       
       morningJobScheduled = true;
-      log(`다음 뉴스 업데이트가 오전 6시에 예정되어 있습니다`, 'info');
+      log(`다음 뉴스 업데이트가 오전 6시에 예정되어 있습니다 (최대 3개)`, 'info');
     }
     
     // 오후 6시 작업 스케줄링
@@ -378,7 +376,7 @@ export function setupNewsScheduler() {
       }, eveningDelay);
       
       eveningJobScheduled = true;
-      log(`다음 뉴스 업데이트가 오후 6시에 예정되어 있습니다`, 'info');
+      log(`다음 뉴스 업데이트가 오후 6시에 예정되어 있습니다 (최대 3개)`, 'info');
     }
     
     // 하루가 끝나면 다음날 스케줄링을 위해 재설정
@@ -396,14 +394,15 @@ export function setupNewsScheduler() {
       }, morningDelay);
       
       morningJobScheduled = true;
-      log(`다음 뉴스 업데이트가 내일 오전 6시에 예정되어 있습니다`, 'info');
+      log(`다음 뉴스 업데이트가 내일 오전 6시에 예정되어 있습니다 (최대 3개)`, 'info');
     }
   }
   
   // 초기 스케줄링 시작
   scheduleNextRun();
   
-  // 서버 시작 시 즉시 한 번 실행
-  fetchAndSaveNews();
-  */
+  // 서버 시작 시 즉시 한 번 실행 (테스트용)
+  fetchAndSaveNews()
+    .then(() => log(`초기 뉴스 데이터 수집 완료 (최대 3개)`, 'info'))
+    .catch(err => log(`초기 뉴스 데이터 수집 실패: ${err}`, 'error'));
 }

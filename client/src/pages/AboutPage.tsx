@@ -263,9 +263,9 @@ const AboutPage = () => {
           {!isLoading && (!transactionsData || transactionsData.count === 0) && (
             <div className="flex items-center gap-2 mt-3">
               <Badge variant="outline" className="text-sm bg-yellow-100 text-yellow-800">
-                데이터 로드 대기 중
+                데이터 일시적 이용불가
               </Badge>
-              <span className="text-sm text-muted-foreground">API 연동이 필요합니다</span>
+              <span className="text-sm text-muted-foreground">공공데이터 포털 API가 현재 일시적으로 응답하지 않습니다. 잠시 후 다시 시도해주세요.</span>
             </div>
           )}
         </div>
@@ -282,33 +282,53 @@ const AboutPage = () => {
                 {isError && (
                   <span className="text-destructive">데이터 로드 중 오류가 발생했습니다</span>
                 )}
-                <span>지도에서 마커를 클릭하면 자세한 정보를 확인할 수 있습니다</span>
+                {transactionsData && transactionsData.count > 0 ? (
+                  <span>지도에서 마커를 클릭하면 자세한 정보를 확인할 수 있습니다</span>
+                ) : (
+                  <span>현재 API 서비스 이용 불가로 데이터를 표시할 수 없습니다</span>
+                )}
               </div>
             </div>
-            <div className="h-[70vh] w-full rounded-lg overflow-hidden shadow-lg">
+            <div className="h-[70vh] w-full rounded-lg overflow-hidden shadow-lg relative">
               <div id="real-estate-map" className="w-full h-full"></div>
+              
+              {/* 데이터가 없을 때 오버레이 메시지 표시 */}
+              {!isLoading && (!transactionsData || transactionsData.count === 0) && (
+                <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center p-4">
+                  <div className="bg-white shadow-lg rounded-lg p-6 max-w-md text-center">
+                    <h3 className="text-xl font-semibold mb-2">데이터를 불러올 수 없습니다</h3>
+                    <p className="mb-4 text-muted-foreground">
+                      현재 공공데이터 포털 API가 일시적으로 응답하지 않아 실거래가 데이터를 표시할 수 없습니다.
+                    </p>
+                    <p className="text-sm text-primary">
+                      잠시 후 다시 시도해 주세요.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* 데이터가 없는 경우 안내 메시지 */}
             {!isLoading && (!transactionsData || transactionsData.count === 0) && (
               <div className="mt-6 p-6 border border-yellow-200 bg-yellow-50 rounded-lg">
-                <h3 className="text-lg font-bold text-gray-800 mb-2">현재 실거래가 데이터가 없습니다</h3>
-                <p className="text-gray-700 mb-4">공공데이터포털 실거래가 API 연동을 위한 설정이 필요합니다.</p>
+                <h3 className="text-lg font-semibold mb-2">안내사항</h3>
+                <p className="mb-3">
+                  강화도 실거래가 데이터는 국토교통부 공공데이터 포털로부터 제공받고 있습니다. 현재 서비스 상태가 일시적으로 원활하지 않아 데이터를 표시할 수 없습니다.
+                </p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  • 공공데이터 포털은 서비스 상태에 따라 일시적인 접속 제한이 발생할 수 있습니다.<br />
+                  • 일반적으로 잠시 후 다시 시도하시면 정상적으로 데이터가 표시됩니다.<br />
+                  • 해당 정보는 국토교통부 실거래가 공개시스템을 통해서도 확인하실 수 있습니다.
+                </p>
                 <div className="bg-white p-4 rounded-md border border-gray-200">
-                  <p className="font-semibold mb-2">API 활성화 절차:</p>
-                  <ol className="list-decimal pl-5 mb-2 space-y-1 text-gray-700">
-                    <li>공공데이터포털(data.go.kr)에서 회원 가입 및 로그인</li>
-                    <li>다음 API 서비스에 대한 활용 신청:
-                      <ul className="list-disc pl-5 mt-1 mb-1">
-                        <li>국토교통부 아파트매매 실거래 자료</li>
-                        <li>국토교통부 단독/다가구 실거래 자료</li>
-                        <li>국토교통부 토지 실거래 자료</li>
-                      </ul>
-                    </li>
-                    <li>마이페이지 &gt; 오픈API &gt; 서비스 관리에서 API 상태 확인</li>
-                    <li>승인 완료 후 발급받은 API 키를 관리자에게 전달</li>
-                  </ol>
-                  <p className="text-sm text-gray-500">* API 승인이 완료되면 실시간 실거래가 데이터를 확인하실 수 있습니다. (승인까지 최대 1-2일 소요)</p>
+                  <p className="font-semibold mb-2">서비스 오류 관련 안내:</p>
+                  <ul className="list-disc pl-5 mb-2 space-y-1 text-gray-700">
+                    <li>현재 국토교통부 API 서버가 <span className="text-red-500 font-medium">503 Service Temporarily Unavailable</span> 오류를 반환하고 있습니다.</li>
+                    <li>이는 일시적인 서버 과부하 또는 점검으로 인한 현상일 수 있습니다.</li>
+                    <li>공공데이터 포털 API는 주기적으로 일시적 서비스 중단이 있을 수 있습니다.</li>
+                    <li>대체로 5~10분 내에 복구되지만, 공식 점검의 경우 더 길어질 수 있습니다.</li>
+                  </ul>
+                  <p className="text-sm text-gray-500 mt-2">서비스 이용에 불편을 드려 죄송합니다. 잠시 후 새로고침하시거나 다른 시간에 다시 시도해 주세요.</p>
                 </div>
               </div>
             )}

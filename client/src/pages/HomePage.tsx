@@ -227,6 +227,35 @@ const HomePage = () => {
                           {post.summary}
                         </p>
                       )}
+                      
+                      {/* 포스트 내 이미지들 표시 */}
+                      {post.contentImages && post.contentImages.length > 0 && (
+                        <div className="mt-3">
+                          <p className="text-sm font-medium text-gray-700 mb-2">포스트 이미지</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {post.contentImages.map((imgUrl, idx) => {
+                              // 이미지 URL에서 '?type=w80_blur' 부분을 제거하여 원본 이미지 URL로 변환
+                              const fullSizeImgUrl = imgUrl.replace(/\?type=w\d+_blur$/, '');
+                              
+                              return (
+                                <a 
+                                  key={idx} 
+                                  href={fullSizeImgUrl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="block overflow-hidden rounded border border-gray-200 hover:border-green-300 transition-all"
+                                >
+                                  <img 
+                                    src={fullSizeImgUrl} 
+                                    alt={`블로그 이미지 ${idx + 1}`} 
+                                    className="w-full h-28 object-cover hover:scale-105 transition-transform"
+                                  />
+                                </a>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                     <CardFooter className="p-4 pt-1">
                       <a 

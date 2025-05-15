@@ -16,12 +16,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// 각 부동산 유형별 기본 이미지 임포트
-import landDefaultImage from "@/assets/default-property-images/land.png";
-import houseDefaultImage from "@/assets/default-property-images/house.png";
-import apartmentDefaultImage from "@/assets/default-property-images/apartment.png";
-import oneroomDefaultImage from "@/assets/default-property-images/oneroom.png";
-import commercialDefaultImage from "@/assets/default-property-images/commercial.png";
+// 각 부동산 유형별 기본 이미지 경로 설정 (public 폴더에 있는 이미지)
+const landDefaultImage = "/default-property-images/land.png";
+const houseDefaultImage = "/default-property-images/house.png";
+const apartmentDefaultImage = "/default-property-images/apartment.png";
+const oneroomDefaultImage = "/default-property-images/oneroom.png";
+const commercialDefaultImage = "/default-property-images/commercial.png";
 import {
   Card,
   CardContent,
@@ -362,7 +362,8 @@ function PropertyForm() {
       const submissionData = {
         ...formData,
         // 숫자 필드들 처리
-        agentId: Number(formData.agentId),
+        agentId: Number(formData.agentId) || 4, // 기본값 4 설정 (정현우 중개사)
+        agent_id: Number(formData.agentId) || 4, // DB 컬럼명과 일치하도록 추가
         totalFloors: Number(formData.totalFloors || 0),
         // size는 서버에서 string으로 처리하므로 그대로 전송
         size: formData.size || "0",
@@ -373,14 +374,18 @@ function PropertyForm() {
       
       // 이미지 처리: 이미지가 없을 경우 부동산 유형에 맞는 기본 이미지 설정
       if (!formData.imageUrls || formData.imageUrls.length === 0) {
-        // 부동산 유형에 맞는 기본 이미지 가져오기
-        const defaultImage = getDefaultImageForPropertyType(formData.type);
-        
-        // 기본 이미지를 배열과 단일 이미지 URL에 모두 설정
-        submissionData.imageUrls = [defaultImage];
-        submissionData.imageUrl = defaultImage;
-        
-        console.log(`이미지가 없어 기본 이미지를 적용합니다. 유형: ${formData.type}, 이미지: ${defaultImage}`);
+        try {
+          // 부동산 유형에 맞는 기본 이미지 가져오기
+          const defaultImage = getDefaultImageForPropertyType(formData.type);
+          
+          // 기본 이미지를 배열과 단일 이미지 URL에 모두 설정
+          submissionData.imageUrls = [defaultImage];
+          submissionData.imageUrl = defaultImage;
+          
+          console.log(`이미지가 없어 기본 이미지를 적용합니다. 유형: ${formData.type}, 이미지: ${defaultImage}`);
+        } catch (error) {
+          console.error("기본 이미지 적용 중 오류 발생:", error);
+        }
       }
       // 이미지가 있을 경우 대표 이미지 설정 (이전 버전 호환용)
       else if (formData.imageUrls && formData.imageUrls.length > 0 && featuredImageIndex >= 0) {

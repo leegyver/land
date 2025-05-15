@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { News } from "@shared/schema";
 import { Link } from "wouter";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Calendar, ArrowRight, Newspaper, Youtube, Play } from "lucide-react";
+import { Calendar, ArrowRight, Newspaper, Youtube, Play, BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -22,6 +22,17 @@ interface YouTubeVideo {
   publishedAt?: string;
 }
 
+// 네이버 블로그 포스트 타입 정의
+interface BlogPost {
+  id: string;
+  title: string;
+  link: string;
+  thumbnail: string;
+  publishedAt: string;
+  category: string;
+  summary?: string;
+}
+
 const HomePage = () => {
   // agents 관련 쿼리 제거됨
   
@@ -30,8 +41,14 @@ const HomePage = () => {
     queryKey: ["/api/youtube/latest"],
   });
   
+  // 최신 뉴스 데이터 가져오기
   const { data: latestNews } = useQuery<News[]>({
     queryKey: ["/api/news/latest"],
+  });
+  
+  // 최신 블로그 포스트 데이터 가져오기
+  const { data: latestBlogPosts, isLoading: isBlogPostsLoading } = useQuery<BlogPost[]>({
+    queryKey: ["/api/blog/latest"],
   });
 
   return (
@@ -146,6 +163,88 @@ const HomePage = () => {
                 </a>
               </div>
             )}
+          </div>
+        </section>
+        
+        {/* Blog Posts Section */}
+        <section id="blog" className="py-4 bg-gradient-to-r from-green-50 to-green-100">
+          <div className="container mx-auto px-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold flex items-center">
+                <BookOpen className="h-6 w-6 mr-2 text-green-600" />
+                부동산 블로그
+              </h2>
+              <a 
+                href="https://blog.naver.com/9551304" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-green-600 hover:text-green-700 font-medium flex items-center gap-1"
+              >
+                블로그 방문하기 <ArrowRight className="h-4 w-4" />
+              </a>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {isBlogPostsLoading ? (
+                <div className="col-span-full text-center py-8">
+                  <div className="animate-pulse flex flex-col items-center">
+                    <div className="h-4 bg-slate-200 rounded w-1/3 mb-4"></div>
+                    <div className="h-16 bg-slate-200 rounded w-3/4"></div>
+                  </div>
+                </div>
+              ) : latestBlogPosts && latestBlogPosts.length > 0 ? (
+                latestBlogPosts.slice(0, 3).map((post) => (
+                  <Card key={post.id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition h-full flex flex-col">
+                    <div className="h-40 overflow-hidden">
+                      <img 
+                        src={post.thumbnail || 'https://via.placeholder.com/400x200?text=블로그+이미지'} 
+                        alt={post.title} 
+                        className="w-full h-full object-cover object-center"
+                      />
+                    </div>
+                    <CardContent className="p-4 flex-grow">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200 text-xs">
+                          {post.category}
+                        </Badge>
+                        <span className="text-xs text-gray-500">
+                          {post.publishedAt}
+                        </span>
+                      </div>
+                      <a 
+                        href={post.link} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="block"
+                      >
+                        <h3 className="text-lg font-semibold mb-2 line-clamp-2 hover:text-green-600 transition-colors">
+                          {post.title}
+                        </h3>
+                      </a>
+                      {post.summary && (
+                        <p className="text-sm text-gray-600 line-clamp-2 mb-2">
+                          {post.summary}
+                        </p>
+                      )}
+                    </CardContent>
+                    <CardFooter className="p-4 pt-1">
+                      <a 
+                        href={post.link} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-green-600 hover:text-green-700 text-sm font-medium flex items-center gap-1"
+                      >
+                        자세히 보기 <ArrowRight className="h-3 w-3" />
+                      </a>
+                    </CardFooter>
+                  </Card>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-8">
+                  <p className="text-gray-500">블로그 포스트가 없습니다.</p>
+                </div>
+              )}
+            </div>
           </div>
         </section>
         

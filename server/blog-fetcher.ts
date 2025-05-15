@@ -45,9 +45,10 @@ export async function fetchBlogPostsByCategory(
   try {
     console.log(`네이버 블로그 포스트 요청: blogId=${blogId}, categoryNo=${categoryNo}`);
     
-    // 블로그 카테고리 URL - PC버전과 모바일 버전 모두 시도
-    const pcUrl = `https://blog.naver.com/PostList.naver?blogId=${blogId}&categoryNo=${categoryNo}`;
-    const mobileUrl = `https://m.blog.naver.com/${blogId}?categoryNo=${categoryNo}`;
+    // 블로그 카테고리 URL - PC버전과 모바일 버전 모두 시도 (상위 카테고리 포함)
+    // parentCategoryNo 파라미터를 추가하여 하위 카테고리도 포함하여 검색
+    const pcUrl = `https://blog.naver.com/PostList.naver?blogId=${blogId}&categoryNo=${categoryNo}&parentCategoryNo=${categoryNo}`;
+    const mobileUrl = `https://m.blog.naver.com/${blogId}?categoryNo=${categoryNo}&parentCategoryNo=${categoryNo}`;
     
     // 먼저 PC버전 시도
     let response = await fetch(pcUrl, {
@@ -403,11 +404,9 @@ export async function fetchBlogPostsByCategory(
  */
 export async function fetchBlogPosts(
   blogId: string = '9551304',
-  // 명시적으로 세 개의 카테고리를 지정:
-  // - 21: 일상다반사
-  // - 35: 취미생활 
-  // - 36: 세상이야기
-  categoryNos: string[] = ['21', '35', '36'],
+  // 카테고리를 지정:
+  // - 11: 부동산 최신글 (하위 카테고리 포함)
+  categoryNos: string[] = ['11'],
   limit: number = 5
 ): Promise<BlogPost[]> {
   try {
@@ -799,6 +798,7 @@ async function extractPostImageFromFullUrl(fullUrl: string): Promise<string> {
  */
 function getFallbackImageByCategory(category: string): string {
   const images: {[key: string]: string} = {
+    '부동산 최신글': 'https://postfiles.pstatic.net/MjAyNTA1MTVfNDUg/MDAxNzQ3Mjc5ODEwNTIw.qHs3YM7qoTZ0kSU-XA-HNO3Tb6Y1Q4Y5ukGp5_Y-QTUg.SCWTRIvQFPgjLaT8vU_6XCTEOl7MNjSBtXmM1sGGD6Qg.PNG/house-icon.png?type=w580',
     '일상다반사': 'https://postfiles.pstatic.net/MjAyNTA1MTVfMTcx/MDAxNzQ3Mjc1ODY0OTg0.Y6dMg4MXEH7z76FCzTcLqgC-GYfbzN5zoN6z5_CZ8PAg.XP_G5M7-5HB4LO0YCHbcNnZcf1MEpq0v7Av-XPsGw-8g.PNG/daily-life.png?type=w580',
     '취미생활': 'https://postfiles.pstatic.net/MjAyNTA1MTVfMjMw/MDAxNzQ3Mjc1ODY1MDc5.h8DFsfhT_sEYA41xDUQRPSUQK5FaXO34PJ-Q4Xw9FWUg.bvGY5GnSiP9KoXXOaTg9Nzfk0Xv6ixkK3gOxvAjJxdQg.PNG/hobby.png?type=w580',
     '세상이야기': 'https://postfiles.pstatic.net/MjAyNTA1MTVfNTYg/MDAxNzQ3Mjc1ODY1MTQz.1lTZM1oxLQlxw3nNcyeHvV3CpxrVwZQMg_cN2GlWBJMg.-Bi6JK8-rEdQYK07Y9aE5Y9Zrjra9ZDu8KlUbTsAWJEg.PNG/world-stories.png?type=w580'

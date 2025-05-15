@@ -44,94 +44,295 @@ export async function fetchBlogPostsByCategory(
   try {
     console.log(`네이버 블로그 포스트 요청: blogId=${blogId}, categoryNo=${categoryNo}`);
     
-    // 블로그 카테고리 URL
-    const url = `https://blog.naver.com/PostList.naver?blogId=${blogId}&categoryNo=${categoryNo}`;
+    // 블로그 카테고리 URL - PC버전과 모바일 버전 모두 시도
+    const pcUrl = `https://blog.naver.com/PostList.naver?blogId=${blogId}&categoryNo=${categoryNo}`;
+    const mobileUrl = `https://m.blog.naver.com/${blogId}?categoryNo=${categoryNo}`;
     
-    const response = await fetch(url);
+    // 먼저 PC버전 시도
+    let response = await fetch(pcUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'
+      }
+    });
+    
     if (!response.ok) {
       throw new Error(`블로그 데이터 요청 실패: ${response.status} ${response.statusText}`);
     }
     
-    const html = await response.text();
-    const $ = cheerio.load(html);
+    let html = await response.text();
+    let $ = cheerio.load(html);
+    let posts: BlogPost[] = [];
     
-    const posts: BlogPost[] = [];
+    // PC 버전 파싱 시도 - 다양한 클래스 선택자 시도
+    const postElements = $('.post_item, .lst_item, .se-post-item, .se_post_item, .blog2_post, .blog2_series, .post, .link-post, .list_item');
     
-    // 포스트 목록 추출
-    $('.post_item').each((i, element) => {
-      if (i >= limit) return;
+    if (postElements.length > 0) {
+      console.log(`PC 버전 파싱: ${postElements.length}개 요소 찾음`);
       
-      const postElement = $(element);
-      
-      // 포스트 ID 추출
-      const postIdMatch = postElement.find('.post_link').attr('href')?.match(/logNo=(\d+)/);
-      const postId = postIdMatch ? postIdMatch[1] : `post-${i}`;
-      
-      // 썸네일 추출 - 없으면 기본 이미지 사용
-      let thumbnail = postElement.find('.post-thumbnail img').attr('src') || '';
-      if (!thumbnail) {
-        thumbnail = 'https://ssl.pstatic.net/static/blog/blog_profile_thumbnail_150.png';
-      }
-      
-      // 제목 추출
-      const title = postElement.find('.title_text').text().trim();
-      
-      // 링크 생성
-      const link = `https://blog.naver.com/${blogId}/${postId}`;
-      
-      // 발행일 추출
-      const publishedAt = postElement.find('.date').text().trim() || new Date().toISOString().split('T')[0];
-      
-      // 요약 추출
-      const summary = postElement.find('.post_content').text().trim();
-      
-      posts.push({
-        id: postId,
-        title,
-        link,
-        thumbnail,
-        publishedAt,
-        category: CATEGORY_NAMES[categoryNo] || `카테고리 ${categoryNo}`,
-        summary: summary.length > 100 ? summary.substring(0, 100) + '...' : summary
-      });
-    });
-    
-    // 포스트 추출 실패 시 대체 방법 (더보기 뷰)
-    if (posts.length === 0) {
-      $('.list_wrap .list_item').each((i, element) => {
+      postElements.each((i, element) => {
         if (i >= limit) return;
         
-        const postElement = $(element);
-        
-        // 포스트 ID 추출
-        const postIdMatch = postElement.find('a.link').attr('href')?.match(/logNo=(\d+)/);
-        const postId = postIdMatch ? postIdMatch[1] : `post-${i}`;
-        
-        // 썸네일 추출 - 없으면 기본 이미지 사용
-        let thumbnail = postElement.find('.thumb img').attr('src') || '';
-        if (!thumbnail) {
-          thumbnail = 'https://ssl.pstatic.net/static/blog/blog_profile_thumbnail_150.png';
+        try {
+          const $el = $(element);
+          
+          // 다양한 선택자로 ID 추출 시도
+          let postId = '';
+          const href = $el.find('a').attr('href') || '';
+          const logNoMatch = href.match(/logNo=(\d+)/) || href.match(/(\d{10,})$/);
+          if (logNoMatch && logNoMatch[1]) {
+            postId = logNoMatch[1];
+          } else {
+            postId = $el.attr('data-post-no') || $el.attr('data-entry-id') || `post-${Date.now()}-${i}`;
+          }
+          
+          // 다양한 선택자로 제목 추출 시도
+          let title = '';
+          const titleSelectors = [
+            '.title_text', '.se-title-text', '.se_title_text', 
+            '.title', '.tit', '.se-module-text', '.se_module_text',
+            '.link_title', '.pcol1', '.ell'
+          ];
+          
+          for (const selector of titleSelectors) {
+            const titleEl = $el.find(selector);
+            if (titleEl.length > 0) {
+              title = titleEl.text().trim();
+              if (title) break;
+            }
+          }
+          
+          if (!title) {
+            // 제목을 찾을 수 없으면 다음 항목으로
+            return;
+          }
+          
+          // 링크 생성
+          const link = `https://blog.naver.com/${blogId}/${postId}`;
+          
+          // 썸네일 추출 시도
+          let thumbnail = '';
+          const imgSelectors = [
+            '.post_thumb img', '.se-thumbnail img', '.se_thumbnail img',
+            '.img_thumb img', '.blog2_thumb img', '.photo_wrap img', 
+            '.se-image-resource', '.img img', '.thumb img', 'img.img'
+          ];
+          
+          for (const selector of imgSelectors) {
+            const imgEl = $el.find(selector);
+            if (imgEl.length > 0) {
+              thumbnail = imgEl.attr('src') || imgEl.attr('data-lazy-src') || '';
+              if (thumbnail) break;
+            }
+          }
+          
+          if (!thumbnail) {
+            thumbnail = 'https://ssl.pstatic.net/static/blog/blog_profile_thumbnail_150.png';
+          }
+          
+          // 발행일 추출 시도
+          let publishedAt = '';
+          const dateSelectors = [
+            '.date', '.se-date', '.se_date', '.blog2_date', 
+            '.time', '.date_post', '.date_time', '.post_date'
+          ];
+          
+          for (const selector of dateSelectors) {
+            const dateEl = $el.find(selector);
+            if (dateEl.length > 0) {
+              publishedAt = dateEl.text().trim();
+              if (publishedAt) break;
+            }
+          }
+          
+          // 날짜 포맷 표준화
+          if (!publishedAt) {
+            const today = new Date();
+            publishedAt = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}`;
+          } else {
+            // 날짜 표준화 (YYYY.MM.DD 형식으로)
+            publishedAt = publishedAt.replace(/(\d{4})[년\-\/](\d{1,2})[월\-\/](\d{1,2})[일]?/g, '$1.$2.$3');
+            
+            // 만약 날짜가 형식에 맞지 않으면, 현재 날짜로 대체
+            if (!/^\d{4}\.\d{1,2}\.\d{1,2}/.test(publishedAt)) {
+              const today = new Date();
+              publishedAt = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}`;
+            }
+          }
+          
+          // 요약 추출 시도
+          let summary = '';
+          const summarySelectors = [
+            '.post_content', '.se-text', '.se_text', '.post_text',
+            '.text', '.se-module-text', '.text_passage', '.se-text-paragraph'
+          ];
+          
+          for (const selector of summarySelectors) {
+            const summaryEl = $el.find(selector);
+            if (summaryEl.length > 0) {
+              summary = summaryEl.text().trim();
+              if (summary) {
+                summary = summary.length > 100 ? summary.substring(0, 100) + '...' : summary;
+                break;
+              }
+            }
+          }
+          
+          posts.push({
+            id: postId,
+            title,
+            link,
+            thumbnail,
+            publishedAt,
+            category: CATEGORY_NAMES[categoryNo] || `카테고리 ${categoryNo}`,
+            summary
+          });
+        } catch (err) {
+          console.error(`포스트 파싱 오류 (인덱스 ${i}):`, err);
         }
-        
-        // 제목 추출
-        const title = postElement.find('.title').text().trim();
-        
-        // 링크 생성
-        const link = `https://blog.naver.com/${blogId}/${postId}`;
-        
-        // 발행일 추출
-        const publishedAt = postElement.find('.date').text().trim() || new Date().toISOString().split('T')[0];
-        
-        posts.push({
-          id: postId,
-          title,
-          link,
-          thumbnail,
-          publishedAt,
-          category: CATEGORY_NAMES[categoryNo] || `카테고리 ${categoryNo}`,
-          summary: ''
-        });
       });
+    }
+    
+    // PC 버전으로 파싱 실패시 모바일 버전 시도
+    if (posts.length === 0) {
+      console.log('PC 버전 파싱 실패, 모바일 버전 시도');
+      
+      // 모바일 버전 요청
+      try {
+        response = await fetch(mobileUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1'
+          }
+        });
+        
+        html = await response.text();
+        $ = cheerio.load(html);
+        
+        // 모바일 버전 파싱 - 다양한 선택자 시도
+        const mobilePostElements = $('._itemSection, .list_item, .se_post, .post_item, .se_card, .post, .postlist');
+        
+        console.log(`모바일 버전 파싱: ${mobilePostElements.length}개 요소 찾음`);
+        
+        mobilePostElements.each((i, element) => {
+          if (i >= limit) return;
+          
+          try {
+            const $el = $(element);
+            
+            // 포스트 ID 추출
+            let postId = '';
+            const href = $el.find('a').attr('href') || '';
+            const logNoMatch = href.match(/logNo=(\d+)/) || href.match(/(\d{10,})$/);
+            
+            if (logNoMatch && logNoMatch[1]) {
+              postId = logNoMatch[1];
+            } else {
+              postId = `mobile-post-${Date.now()}-${i}`;
+            }
+            
+            // 제목 추출
+            let title = '';
+            const mobileTitleSelectors = [
+              '.se_title', '.tit_feed', '._itemTitleContainer', 
+              '._feedTitle', '.se-title-text', '.title_link',
+              '.title', '.link_title', '.ell'
+            ];
+            
+            for (const selector of mobileTitleSelectors) {
+              const titleEl = $el.find(selector);
+              if (titleEl.length > 0) {
+                title = titleEl.text().trim();
+                if (title) break;
+              }
+            }
+            
+            if (!title) return; // 제목이 없으면 건너뜀
+            
+            // 링크 생성
+            const link = `https://blog.naver.com/${blogId}/${postId}`;
+            
+            // 썸네일 추출
+            let thumbnail = '';
+            const mobileImgSelectors = [
+              '._thumbnail img', '.img_thumb img', '.img img',
+              '.multi_img', '.se-thumbnail-image', '.img_area img'
+            ];
+            
+            for (const selector of mobileImgSelectors) {
+              const imgEl = $el.find(selector);
+              if (imgEl.length > 0) {
+                thumbnail = imgEl.attr('src') || imgEl.attr('data-src') || '';
+                if (thumbnail) break;
+              }
+            }
+            
+            if (!thumbnail) {
+              thumbnail = 'https://ssl.pstatic.net/static/blog/blog_profile_thumbnail_150.png';
+            }
+            
+            // 발행일 추출
+            let publishedAt = '';
+            const mobileDateSelectors = [
+              '.date_post', '.date_time', '.info_post time',
+              '.date', '.date_info', '.pub_time'
+            ];
+            
+            for (const selector of mobileDateSelectors) {
+              const dateEl = $el.find(selector);
+              if (dateEl.length > 0) {
+                publishedAt = dateEl.text().trim();
+                if (publishedAt) break;
+              }
+            }
+            
+            // 날짜 포맷 표준화
+            if (!publishedAt) {
+              const today = new Date();
+              publishedAt = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}`;
+            } else {
+              // 날짜 표준화 (YYYY.MM.DD 형식으로)
+              publishedAt = publishedAt.replace(/(\d{4})[년\-\/](\d{1,2})[월\-\/](\d{1,2})[일]?/g, '$1.$2.$3');
+              
+              // 만약 날짜가 형식에 맞지 않으면, 현재 날짜로 대체
+              if (!/^\d{4}\.\d{1,2}\.\d{1,2}/.test(publishedAt)) {
+                const today = new Date();
+                publishedAt = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}`;
+              }
+            }
+            
+            // 요약 추출
+            let summary = '';
+            const mobileSummarySelectors = [
+              '.se_textarea', '.text_passage', '.post_text',
+              '.se-text-paragraph', '.text', '.post_ct'
+            ];
+            
+            for (const selector of mobileSummarySelectors) {
+              const summaryEl = $el.find(selector);
+              if (summaryEl.length > 0) {
+                summary = summaryEl.text().trim();
+                if (summary) {
+                  summary = summary.length > 100 ? summary.substring(0, 100) + '...' : summary;
+                  break;
+                }
+              }
+            }
+            
+            posts.push({
+              id: postId,
+              title,
+              link,
+              thumbnail,
+              publishedAt,
+              category: CATEGORY_NAMES[categoryNo] || `카테고리 ${categoryNo}`,
+              summary
+            });
+          } catch (err) {
+            console.error(`모바일 포스트 파싱 오류 (인덱스 ${i}):`, err);
+          }
+        });
+      } catch (err) {
+        console.error('모바일 버전 요청 오류:', err);
+      }
     }
     
     console.log(`네이버 블로그 포스트 ${posts.length}개 추출 성공, 카테고리: ${CATEGORY_NAMES[categoryNo] || categoryNo}`);
@@ -239,41 +440,46 @@ export async function fetchBlogPosts(
 }
 
 // 블로그 컨텐츠 캐시
+// 카테고리별로 별도의 캐시 유지
 let blogCache: {
-  posts: BlogPost[];
-  lastFetched: number;
-} = {
-  posts: [],
-  lastFetched: 0
-};
+  [cacheKey: string]: {
+    posts: BlogPost[];
+    expires: number;
+  }
+} = {};
 
 // 캐시 유효 시간 (1시간)
 const CACHE_TTL = 60 * 60 * 1000;
 
 /**
  * 캐싱을 활용하여 네이버 블로그 포스트 목록 가져오기
+ * 각 카테고리 조합별로 별도 캐싱 적용
  */
 export async function getLatestBlogPosts(
   blogId: string = '9551304',
   categoryNos: string[] = ['21', '35', '36'],
   limit: number = 5
 ): Promise<BlogPost[]> {
+  // 캐시키 생성 (블로그ID, 카테고리, 제한 수 기준)
+  const cacheKey = `${blogId}_${categoryNos.sort().join('_')}_${limit}`;
   const now = Date.now();
   
   // 캐시가 유효한지 확인
-  if (blogCache.posts.length > 0 && now - blogCache.lastFetched < CACHE_TTL) {
-    console.log('캐시된 블로그 포스트 정보 반환');
-    return blogCache.posts.slice(0, limit);
+  if (blogCache[cacheKey] && blogCache[cacheKey].expires > now) {
+    console.log(`캐시된 블로그 포스트 정보 반환 (키: ${cacheKey})`);
+    return blogCache[cacheKey].posts;
   }
+  
+  console.log(`블로그 데이터 새로 요청 (키: ${cacheKey})`);
   
   // 새로운 데이터 가져오기
   const posts = await fetchBlogPosts(blogId, categoryNos, limit);
   
   // 캐시 업데이트
   if (posts.length > 0) {
-    blogCache = {
+    blogCache[cacheKey] = {
       posts,
-      lastFetched: now
+      expires: now + CACHE_TTL
     };
   }
   

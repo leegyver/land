@@ -21,7 +21,7 @@ const Header = () => {
     { name: "홈", path: "/" },
     { name: "매물", path: "/properties" },
     { name: "부동산뉴스", path: "/news" },
-    { name: "강화도 실거래가", path: "/about" },
+    { name: "실거래가(디스코)", path: "/about" },
     { name: "문의", path: "/contact" },
   ];
   

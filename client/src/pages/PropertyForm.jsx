@@ -15,13 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-// 각 부동산 유형별 기본 이미지 경로 설정 (public 폴더에 있는 이미지)
-const landDefaultImage = "/default-property-images/land.png";
-const houseDefaultImage = "/default-property-images/house.png";
-const apartmentDefaultImage = "/default-property-images/apartment.png";
-const oneroomDefaultImage = "/default-property-images/oneroom.png";
-const commercialDefaultImage = "/default-property-images/commercial.png";
 import {
   Card,
   CardContent,
@@ -35,6 +28,13 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+
+// 각 부동산 유형별 기본 이미지 경로 설정 (public 폴더에 있는 이미지)
+const landDefaultImage = "/default-property-images/land.png";
+const houseDefaultImage = "/default-property-images/house.png";
+const apartmentDefaultImage = "/default-property-images/apartment.png";
+const oneroomDefaultImage = "/default-property-images/oneroom.png";
+const commercialDefaultImage = "/default-property-images/commercial.png";
 
 function PropertyForm() {
   const { user } = useAuth();

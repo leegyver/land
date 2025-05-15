@@ -730,7 +730,7 @@ export default function AdminPage() {
                                 <Eye className="h-4 w-4" />
                               </a>
                               <a 
-                                href={`/admin/properties/${property.id}/edit`} 
+                                href={`/admin/properties/edit/${property.id}`} 
                                 className="p-2 text-gray-500 hover:text-primary"
                                 title="수정"
                               >

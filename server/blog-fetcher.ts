@@ -12,7 +12,6 @@ export interface BlogPost {
   publishedAt: string;
   category: string;
   summary?: string;
-  contentImages?: string[]; // 포스트 내부의 모든 이미지 URL 배열
 }
 
 /**
@@ -23,10 +22,11 @@ interface CategoryMapping {
 }
 
 // 카테고리 ID를 사람이 읽을 수 있는 이름으로 매핑
-// 지정된 카테고리: 11(부동산 정보)
-// 기존 카테고리 (삭제됨): 21(일상다반사), 35(취미생활), 36(세상이야기)
+// 지정된 카테고리: 21(일상다반사), 35(취미생활), 36(세상이야기)
 const CATEGORY_NAMES: CategoryMapping = {
-  '11': '부동산 정보'
+  '21': '일상다반사',
+  '35': '취미생활',
+  '36': '세상이야기'
 };
 
 /**
@@ -39,7 +39,7 @@ const CATEGORY_NAMES: CategoryMapping = {
 export async function fetchBlogPostsByCategory(
   blogId: string,
   categoryNo: string,
-  limit: number = 10 // 카테고리별 10개로 충분히 증가
+  limit: number = 5
 ): Promise<BlogPost[]> {
   try {
     console.log(`네이버 블로그 포스트 요청: blogId=${blogId}, categoryNo=${categoryNo}`);
@@ -63,16 +63,14 @@ export async function fetchBlogPostsByCategory(
     let $ = cheerio.load(html);
     let posts: BlogPost[] = [];
     
-    // 추출된 포스트 카운트 변수 (함수 전체에서 사용)
-    let extractedCount = 0;
-    
-    // PC 버전 파싱 시도 - 다양한 클래스 선택자 시도 (카테고리별 충분한 포스트 가져오기)
-    const postElements = $('.post_item, .lst_item, .se-post-item, .se_post_item, .blog2_post, .blog2_series, .post, .link-post, .list_item, .blog .item');
+    // PC 버전 파싱 시도 - 다양한 클래스 선택자 시도
+    const postElements = $('.post_item, .lst_item, .se-post-item, .se_post_item, .blog2_post, .blog2_series, .post, .link-post, .list_item');
     
     if (postElements.length > 0) {
-      console.log(`PC 버전 파싱: ${postElements.length}개 요소 찾음 (최대 ${limit}개 가져올 예정)`);
+      console.log(`PC 버전 파싱: ${postElements.length}개 요소 찾음`);
+      
       postElements.each((i, element) => {
-        if (extractedCount >= limit) return false; // 충분한 수의 포스트를 가져왔으면 중단
+        if (i >= limit) return;
         
         try {
           const $el = $(element);
@@ -215,8 +213,6 @@ export async function fetchBlogPostsByCategory(
             }
           }
           
-          extractedCount++; // 성공적으로 추출한 포스트 카운트 증가
-          console.log(`네이버 블로그 포스트 추출 성공 (${extractedCount}/${limit}), 카테고리: ${CATEGORY_NAMES[categoryNo] || categoryNo}`);
           posts.push({
             id: postId,
             title,
@@ -250,10 +246,10 @@ export async function fetchBlogPostsByCategory(
         // 모바일 버전 파싱 - 다양한 선택자 시도
         const mobilePostElements = $('._itemSection, .list_item, .se_post, .post_item, .se_card, .post, .postlist');
         
-        console.log(`모바일 버전 파싱: ${mobilePostElements.length}개 요소 찾음 (최대 ${limit}개 가져올 예정)`);
+        console.log(`모바일 버전 파싱: ${mobilePostElements.length}개 요소 찾음`);
         
         mobilePostElements.each((i, element) => {
-          if (extractedCount >= limit) return false; // 충분한 수의 포스트를 가져왔으면 중단
+          if (i >= limit) return;
           
           try {
             const $el = $(element);
@@ -370,8 +366,6 @@ export async function fetchBlogPostsByCategory(
               }
             }
             
-            extractedCount++; // 모바일 버전에서 추출한 포스트 카운트 증가
-            console.log(`네이버 블로그 포스트 추출 성공 (${extractedCount}/${limit}), 카테고리: ${CATEGORY_NAMES[categoryNo] || categoryNo} (모바일)`);
             posts.push({
               id: postId,
               title,
@@ -399,60 +393,35 @@ export async function fetchBlogPostsByCategory(
   }
 }
 
-
 /**
- * 여러 카테고리의 네이버 블로그 포스트를 가져와 최신순으로 정렬하여 반환합니다.
- * 
- * @param blogId 네이버 블로그 ID (기본값: '9551304')
- * @param categoryNos 조회할 카테고리 번호 배열 (기본값: ['11'])
- * @param limit 반환할 최대 포스트 수 (기본값: 3)
- * @returns 날짜순으로 정렬된 블로그 포스트 배열
+ * 여러 카테고리에서 네이버 블로그 포스트를 가져와 합칩니다.
+ * @param blogId 네이버 블로그 ID
+ * @param categoryNos 카테고리 번호 배열
+ * @param limit 카테고리별 최대 포스트 수
+ * @returns 블로그 포스트 배열
  */
 export async function fetchBlogPosts(
   blogId: string = '9551304',
-  // 카테고리 변경: 
-  // - 11: 부동산 정보
-  categoryNos: string[] = ['11'],
-  limit: number = 3 // 최종적으로 반환할 포스트 수
+  // 명시적으로 세 개의 카테고리를 지정:
+  // - 21: 일상다반사
+  // - 35: 취미생활 
+  // - 36: 세상이야기
+  categoryNos: string[] = ['21', '35', '36'],
+  limit: number = 5
 ): Promise<BlogPost[]> {
   try {
-    console.log(`네이버 블로그 포스트 요청 시작: ${categoryNos.length}개 카테고리, 최대 ${limit}개 포스트`);
-    
-    // 카테고리별로 여러 개의 포스트를 가져오도록 변경 (날짜순 정렬 후 선별하기 위함)
-    const eachCategoryLimit = 10; // 각 카테고리별로 10개씩 가져와서 최신 글 추출 (충분한 숫자)
-    
-    // 각 카테고리별로 병렬 요청 (비동기 처리)
+    // 각 카테고리별로 병렬 요청
     const postsPromises = categoryNos.map(categoryNo => 
-      fetchBlogPostsByCategory(blogId, categoryNo, eachCategoryLimit)
+      fetchBlogPostsByCategory(blogId, categoryNo, limit)
     );
     
-    // 모든 카테고리 요청을 병렬로 처리하여 결과 반환
     const postsArrays = await Promise.all(postsPromises);
-    console.log(`카테고리별 포스트 수: ${postsArrays.map(arr => arr.length).join(', ')}`);
     
     // 모든 포스트를 하나의 배열로 합치기
     const allPosts = postsArrays.flat();
-    console.log(`전체 포스트 수 (중복 포함): ${allPosts.length}개`);
-    
-    // 중복 포스트 제거 (같은 ID의 포스트는 하나만 유지)
-    const uniquePosts: BlogPost[] = [];
-    const seenIds = new Set<string>();
-    
-    for (const post of allPosts) {
-      if (!seenIds.has(post.id)) {
-        uniquePosts.push(post);
-        seenIds.add(post.id);
-      }
-    }
-    
-    console.log(`중복 제거 후 포스트 수: ${uniquePosts.length}개`);
     
     // 날짜 기준으로 최신순 정렬 (날짜 포맷이 YYYY.MM.DD 형식인 경우)
-    uniquePosts.sort((a, b) => {
-      // 날짜가 없는 경우 처리
-      if (!a.publishedAt) return 1;
-      if (!b.publishedAt) return -1;
-      
+    allPosts.sort((a, b) => {
       // 날짜 문자열을 비교하여 정렬 (내림차순)
       return b.publishedAt.localeCompare(a.publishedAt);
     });
@@ -511,15 +480,8 @@ export async function fetchBlogPosts(
       ];
     }
     
-    // 정렬된 포스트 중 최신 N개만 반환
-    const result = uniquePosts.slice(0, limit);
-    console.log(`최종 반환 포스트 수: ${result.length}개 (카테고리 분포: ${result.map(p => p.category).join(', ')})`);
-    
-    // 날짜 분포도 확인
-    const dates = result.map(p => p.publishedAt);
-    console.log(`날짜 분포: ${dates.join(', ')}`);
-    
-    return result;
+    // 최대 포스트 수 제한
+    return allPosts.slice(0, limit);
   } catch (error) {
     console.error('네이버 블로그 포스트 통합 오류:', error);
     return [];
@@ -554,51 +516,19 @@ async function extractPostImage(blogId: string, postId: string): Promise<string>
       const mobileHtml = await mobileResponse.text();
       const $mobile = cheerio.load(mobileHtml);
       
-      // 1-1. OpenGraph 태그에서 이미지 URL 확인 (가장 신뢰할 수 있는 방법)
+      // 1-1. OpenGraph 태그에서 이미지 URL 확인
       const ogImage = $mobile('meta[property="og:image"]').attr('content');
-      
-      // 블로그 기본 이미지가 아닌 경우만 사용 (profile 이미지는 제외)
-      if (ogImage && 
-          !ogImage.includes('og_default_image') && 
-          !ogImage.includes('profile') && 
-          !ogImage.includes('blog_profile') &&
-          !ogImage.includes('pfthumb') &&
-          !ogImage.includes('ssl.pstatic.net/static/blog')) {
+      if (ogImage && !ogImage.includes('og_default_image')) {
         console.log(`모바일 버전 OpenGraph 이미지 발견: ${ogImage}`);
         return ogImage;
       }
       
-      // 1-2. 포스트 이미지 컨테이너에서 먼저 찾기 (이미지 우선순위: 컨테이너 > 개별 이미지)
-      const imageContainerSelectors = [
-        '.se-mediaArea', '.se-module-image', '.se-img-view',
-        '.se-section-image', '.se_component_image', '.post_image',
-        '.imageslide_item', '.img_container', '.post_ct',
-        '.se-main-container', '.se_view_area'
-      ];
-      
-      for (const selector of imageContainerSelectors) {
-        const container = $mobile(selector).first();
-        if (container.length > 0) {
-          const img = container.find('img').first();
-          const src = img.attr('src') || img.attr('data-src') || '';
-          
-          if (src && 
-              !src.includes('profile') && 
-              !src.includes('icon') && 
-              !src.includes('pfthumb') &&
-              !src.includes('ssl.pstatic.net/static/blog')) {
-            console.log(`모바일 이미지 컨테이너에서 발견: ${src}`);
-            return src;
-          }
-        }
-      }
-      
-      // 1-3. 실제 포스트 컨텐츠에서 이미지 찾기 (프로필 이미지 제외)
+      // 1-2. 실제 포스트 컨텐츠에서 이미지 찾기 (프로필 이미지 제외)
       const mobileSelectors = [
         '.se-module-image img', '.se-image img', '.se_component_image img',
         '.se_mediaImage img', '.se-main-container img', '.se_view_area img',
         '.post_ct img:not([src*="profile"])', '.blog_ct img:not([src*="profile"])', 
-        '.detail_view img:not([src*="profile"])', '.se-image-resource',
+        '.detail_view img:not([src*="profile"])',
         'iframe[src*="PostView.nhn"]', 'div[class^="se-"] img:not([src*="profile"])'
       ];
       
@@ -809,21 +739,11 @@ async function extractPostImageFromFullUrl(fullUrl: string): Promise<string> {
   try {
     console.log(`전체 URL로 이미지 추출 시도: ${fullUrl}`);
     
-    // 랜덤 User-Agent 생성 (차단 방지)
-    const userAgents = [
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3 Safari/605.1.15',
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/113.0'
-    ];
-    
-    const randomUserAgent = userAgents[Math.floor(Math.random() * userAgents.length)];
-    
     const response = await fetch(fullUrl, {
       headers: {
-        'User-Agent': randomUserAgent,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml',
-        'Cache-Control': 'no-cache',
-        'Referer': 'https://blog.naver.com/'
+        'Cache-Control': 'no-cache'
       }
     });
     
@@ -835,40 +755,11 @@ async function extractPostImageFromFullUrl(fullUrl: string): Promise<string> {
     const html = await response.text();
     const $ = cheerio.load(html);
     
-    // OpenGraph 태그 확인 (더 신뢰할 수 있는 방법)
+    // OpenGraph 태그 확인
     const ogImage = $('meta[property="og:image"]').attr('content');
-    if (ogImage && 
-        !ogImage.includes('og_default_image') && 
-        !ogImage.includes('profile') && 
-        !ogImage.includes('blog_profile') &&
-        !ogImage.includes('pfthumb') &&
-        !ogImage.includes('ssl.pstatic.net/static/blog')) {
+    if (ogImage) {
       console.log(`전체 URL에서 OpenGraph 이미지 발견: ${ogImage}`);
       return ogImage;
-    }
-    
-    // 이미지 컨테이너에서 찾기
-    const containerSelectors = [
-      '.se-main-container', '.se-component', '.se-module-image',
-      '.se-section-image', '.post-view', '.post_article',
-      '.post_ct', '.se_view_area'
-    ];
-    
-    for (const selector of containerSelectors) {
-      const container = $(selector).first();
-      if (container.length > 0) {
-        const img = container.find('img').first();
-        const src = img.attr('src') || img.attr('data-src') || '';
-        
-        if (src && 
-            !src.includes('profile') && 
-            !src.includes('icon') && 
-            !src.includes('pfthumb') &&
-            !src.includes('ssl.pstatic.net/static/blog')) {
-          console.log(`PC 이미지 컨테이너에서 발견: ${src}`);
-          return src;
-        }
-      }
     }
     
     // 다양한 선택자로 이미지 찾기
@@ -903,176 +794,16 @@ async function extractPostImageFromFullUrl(fullUrl: string): Promise<string> {
 }
 
 /**
- * 카테고리별 대체 이미지를 제공합니다.
- * 카테고리가 없거나 매칭되지 않는 경우 기본 부동산 이미지를 반환합니다.
- * 
- * @param category 카테고리 이름
- * @returns 카테고리에 맞는 대체 이미지 URL
+ * 카테고리에 따라 대체 이미지를 반환합니다.
  */
 function getFallbackImageByCategory(category: string): string {
-  // 카테고리별 맞춤 이미지 매핑
   const images: {[key: string]: string} = {
-    // 네이버 블로그 카테고리별 이미지
-    '부동산 정보': 'https://postfiles.pstatic.net/MjAyNTA1MTVfMTUw/MDAxNzQ3Mjc3OTg5MTUw.eSH0pGR9MtdJwooN3AxKxjlI4ZeID9PKRMdK_7F0AkMg.ZXlXFd9G5zhTa-Kw4GFU6BhqYnNHBPB3jZfr88pCF7Mg.PNG/property-info.png?type=w580',
-    
-    // 기타 부동산 관련 카테고리 이미지 (추가될 수 있음)
-    '매물 정보': 'https://postfiles.pstatic.net/MjAyNTA1MTVfMTUw/MDAxNzQ3Mjc3OTg5MTUw.eSH0pGR9MtdJwooN3AxKxjlI4ZeID9PKRMdK_7F0AkMg.ZXlXFd9G5zhTa-Kw4GFU6BhqYnNHBPB3jZfr88pCF7Mg.PNG/property-info.png?type=w580',
-    '부동산 소식': 'https://postfiles.pstatic.net/MjAyNTA1MTVfMTI0/MDAxNzQ3Mjc3OTg5MTk3.8Qr-9XbiBLZGwRGvZjmVJhNgZvTy-BQbKbcLc2m1TtQg.6SCPeFdxvGzHCvvppC1vgjw6q6Ue7y4XODSBQhV4c_sg.PNG/real-estate-news.png?type=w580',
-    '인테리어/시공': 'https://postfiles.pstatic.net/MjAyNTA1MTVfMjk2/MDAxNzQ3Mjc3OTg5MjQ4.pGMdnIPKJlcHXycKC4URpT9ZBgNF-0oQwUq9tM9BXTYg.h3HgO0o3z1fF5ZJk2c6qtSAQlS1_nN7pZ0OTIVYu4nUg.PNG/interior-design.png?type=w580'
+    '일상다반사': 'https://postfiles.pstatic.net/MjAyNTA1MTVfMTcx/MDAxNzQ3Mjc1ODY0OTg0.Y6dMg4MXEH7z76FCzTcLqgC-GYfbzN5zoN6z5_CZ8PAg.XP_G5M7-5HB4LO0YCHbcNnZcf1MEpq0v7Av-XPsGw-8g.PNG/daily-life.png?type=w580',
+    '취미생활': 'https://postfiles.pstatic.net/MjAyNTA1MTVfMjMw/MDAxNzQ3Mjc1ODY1MDc5.h8DFsfhT_sEYA41xDUQRPSUQK5FaXO34PJ-Q4Xw9FWUg.bvGY5GnSiP9KoXXOaTg9Nzfk0Xv6ixkK3gOxvAjJxdQg.PNG/hobby.png?type=w580',
+    '세상이야기': 'https://postfiles.pstatic.net/MjAyNTA1MTVfNTYg/MDAxNzQ3Mjc1ODY1MTQz.1lTZM1oxLQlxw3nNcyeHvV3CpxrVwZQMg_cN2GlWBJMg.-Bi6JK8-rEdQYK07Y9aE5Y9Zrjra9ZDu8KlUbTsAWJEg.PNG/world-stories.png?type=w580'
   };
   
-  // 카테고리별 이미지가 있으면 반환, 없으면 기본 부동산 이미지 반환
-  if (images[category]) {
-    return images[category];
-  }
-  
-  // 기본 부동산 이미지 (카테고리 없는 경우)
-  return 'https://postfiles.pstatic.net/MjAyNTA1MTVfMjgx/MDAxNzQ3Mjc3OTg5MDYw.jgJEKjxUKr16ZGQ8N0TkYMtj__DixdQoBQUcBZMrQRwg.vvXR0U1tLwGJwYK7GGxdwbxCYY3A6rj_x8T2JkaMPEQg.PNG/real-estate-default.png?type=w580';
-}
-
-/**
- * 블로그 포스트에서 모든 이미지 URL을 추출합니다.
- * @param blogId 네이버 블로그 ID
- * @param postId 포스트 ID
- * @returns 포스트 내 모든 이미지 URL 배열
- */
-async function extractAllPostImages(blogId: string, postId: string): Promise<string[]> {
-  try {
-    console.log(`포스트 내 모든 이미지 추출 시도 (PC): https://blog.naver.com/${blogId}/${postId}`);
-    const imgSet = new Set<string>();
-    
-    // 1. PC 버전 이미지 추출 시도
-    try {
-      const pcUrl = `https://blog.naver.com/${blogId}/${postId}`;
-      const response = await fetch(pcUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'
-        }
-      });
-      
-      if (response.ok) {
-        const html = await response.text();
-        const $ = cheerio.load(html);
-        
-        // PC버전 블로그의 모든 가능한 이미지 선택자
-        const pcSelectors = [
-          '.se-module-image img.se-image-resource',
-          '.se-image-resource',
-          '.se-inline-image-resource',
-          '#postViewArea img',
-          '.se-main-container img',
-          '.post-view img',
-          '.post_content img',
-          'img.se-image-resource',
-          '.se_component_image img',
-          '.se_documentImage img',
-          '.post_img img',
-          '.img_attachedfile img',
-          '.u_blogDetail img',
-          '.post_ct img',
-          '.post-area img',
-          '.se-image-container img'
-        ];
-        
-        // 모든 선택자에 대해 이미지 추출
-        pcSelectors.forEach(selector => {
-          $(selector).each((_, el) => {
-            const src = $(el).attr('src');
-            if (src && 
-                !src.includes('profile') && 
-                !src.includes('og_default_image') &&
-                !src.includes('pfthumb')) {
-              // 썸네일 URL을 원본 URL로 변환
-              const fullSizeSrc = src.replace(/\?type=.*$/, '');
-              imgSet.add(fullSizeSrc);
-            }
-          });
-        });
-        
-        // 오픈그래프 이미지 추출
-        const ogImage = $('meta[property="og:image"]').attr('content');
-        if (ogImage && 
-            !ogImage.includes('profile') && 
-            !ogImage.includes('og_default_image') &&
-            !ogImage.includes('pfthumb')) {
-          imgSet.add(ogImage);
-        }
-      }
-    } catch (pcError) {
-      console.error(`PC 버전 이미지 추출 오류:`, pcError);
-    }
-    
-    // 2. 모바일 버전 이미지 추출 시도 (PC 버전 성공 여부에 관계없이 항상 시도)
-    try {
-      console.log(`모바일 버전에서 이미지 추출 시도: https://m.blog.naver.com/${blogId}/${postId}`);
-      
-      const mobileUrl = `https://m.blog.naver.com/${blogId}/${postId}`;
-      const mobileResponse = await fetch(mobileUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1'
-        }
-      });
-      
-      if (mobileResponse.ok) {
-        const mobileHtml = await mobileResponse.text();
-        const $mobile = cheerio.load(mobileHtml);
-        
-        // 모바일 버전 블로그의 모든 가능한 이미지 선택자
-        const mobileSelectors = [
-          '.se-module-image img',
-          '.se-image img',
-          '.post_body img',
-          '.post-view img',
-          '.se_component_image img',
-          '.se_documentImage img',
-          '.se-media-resource',
-          '.img_attachedfile img',
-          '.u_blogDetail img',
-          '.post_ct img',
-          '.post-area img',
-          '.post_container img',
-          '.post_content img',
-          '.se-image-container img'
-        ];
-        
-        // 모든 선택자에 대해 이미지 추출
-        mobileSelectors.forEach(selector => {
-          $mobile(selector).each((_, el) => {
-            const src = $mobile(el).attr('src');
-            if (src && 
-                !src.includes('profile') && 
-                !src.includes('og_default_image') &&
-                !src.includes('pfthumb')) {
-              // 썸네일 URL을 원본 URL로 변환
-              const fullSizeSrc = src.replace(/\?type=.*$/, '');
-              imgSet.add(fullSizeSrc);
-            }
-          });
-        });
-        
-        // 오픈그래프 이미지 추출
-        const mobileOgImage = $mobile('meta[property="og:image"]').attr('content');
-        if (mobileOgImage && 
-            !mobileOgImage.includes('profile') && 
-            !mobileOgImage.includes('og_default_image') &&
-            !mobileOgImage.includes('pfthumb')) {
-          imgSet.add(mobileOgImage);
-        }
-      }
-    } catch (mobileError) {
-      console.error(`모바일 버전 이미지 추출 오류:`, mobileError);
-    }
-    
-    // 최종 결과 
-    const uniqueImages = Array.from(imgSet);
-    console.log(`총 ${uniqueImages.length}개 이미지 추출됨`);
-    
-    // 이미지가 없으면 썸네일 이미지라도 추가 (이미 extract 함수로 썸네일을 설정했으므로 여기서는 건너뜀)
-    return uniqueImages;
-  } catch (error) {
-    console.error(`포스트 이미지 추출 오류 (${blogId}/${postId}):`, error);
-    return [];
-  }
+  return images[category] || 'https://ssl.pstatic.net/static/blog/blog_profile_thumbnail_150.png';
 }
 
 /**
@@ -1084,40 +815,36 @@ async function enrichPostsWithImages(posts: BlogPost[]): Promise<BlogPost[]> {
   const enrichedPosts = [];
   
   for (const post of posts) {
+    // 이미 유효한 이미지가 있고 기본 이미지나 프로필 이미지가 아닌 경우 건너뜀
+    if (post.thumbnail && 
+        !post.thumbnail.includes('blog_profile_thumbnail_150.png') &&
+        !post.thumbnail.includes('profile') &&
+        !post.thumbnail.includes('pfthumb') &&
+        !post.thumbnail.includes('og_default_image')) {
+      enrichedPosts.push(post);
+      continue;
+    }
+    
     // 블로그 ID와 포스트 ID 추출
     const blogId = post.link.split('/')[3]; // URL 형식에서 블로그 ID 추출
     const postId = post.id; // 이미 포스트 ID를 저장하고 있음
     
+    // 포스트 상세 페이지에서 이미지 추출
     try {
-      // 대표 이미지 설정 (이미 유효한 이미지가 있는지 확인)
-      let thumbnailUrl = post.thumbnail;
-      if (!thumbnailUrl || 
-          thumbnailUrl.includes('blog_profile_thumbnail_150.png') ||
-          thumbnailUrl.includes('profile') || 
-          thumbnailUrl.includes('pfthumb') ||
-          thumbnailUrl.includes('og_default_image')) {
-        // 대표 이미지가 없거나 기본 이미지인 경우, 새로 추출
-        thumbnailUrl = await extractPostImage(blogId, postId);
-        
-        // 여전히 기본 이미지이거나 프로필 이미지인 경우 대체 이미지 사용
-        if (thumbnailUrl.includes('blog_profile_thumbnail_150.png') || 
-            thumbnailUrl.includes('profile') || 
-            thumbnailUrl.includes('pfthumb') ||
-            thumbnailUrl.includes('og_default_image')) {
-          thumbnailUrl = getFallbackImageByCategory(post.category);
-          console.log(`카테고리 기반 대체 이미지 사용: ${post.category} -> ${thumbnailUrl}`);
-        }
-      }
+      let imageUrl = await extractPostImage(blogId, postId);
       
-      // 포스트 내 모든 이미지 추출
-      console.log(`포스트 내 모든 이미지 추출 시작: ${postId}`);
-      const contentImages = await extractAllPostImages(blogId, postId);
-      console.log(`총 ${contentImages.length}개 이미지 추출됨`);
+      // 이미지가 여전히 기본 이미지이거나 프로필 이미지인 경우 대체 이미지 사용
+      if (imageUrl.includes('blog_profile_thumbnail_150.png') || 
+          imageUrl.includes('profile') || 
+          imageUrl.includes('pfthumb') ||
+          imageUrl.includes('og_default_image')) {
+        imageUrl = getFallbackImageByCategory(post.category);
+        console.log(`카테고리 기반 대체 이미지 사용: ${post.category} -> ${imageUrl}`);
+      }
       
       enrichedPosts.push({
         ...post,
-        thumbnail: thumbnailUrl,
-        contentImages: contentImages
+        thumbnail: imageUrl
       });
     } catch (error) {
       console.error(`포스트 이미지 업데이트 오류 (${post.id}):`, error);
@@ -1125,8 +852,7 @@ async function enrichPostsWithImages(posts: BlogPost[]): Promise<BlogPost[]> {
       const fallbackImage = getFallbackImageByCategory(post.category);
       enrichedPosts.push({
         ...post,
-        thumbnail: fallbackImage,
-        contentImages: []
+        thumbnail: fallbackImage
       });
     }
   }
@@ -1149,28 +875,15 @@ const CACHE_TTL = 60 * 60 * 1000;
 /**
  * 캐싱을 활용하여 네이버 블로그 포스트 목록 가져오기
  * 각 카테고리 조합별로 별도 캐싱 적용
- * 
- * @param blogId 네이버 블로그 ID (기본값: '9551304')
- * @param categoryNos 카테고리 번호 배열 (기본값: ['11'])
- * @param limit 최종적으로 반환할 포스트 수 (기본값: 3)
- * @param forceRefresh 캐시를 강제로 새로고침할지 여부 (기본값: false)
- * @returns 블로그 포스트 배열
  */
 export async function getLatestBlogPosts(
   blogId: string = '9551304',
-  categoryNos: string[] = ['11'],
-  limit: number = 3,
-  forceRefresh: boolean = false
+  categoryNos: string[] = ['21', '35', '36'],
+  limit: number = 5
 ): Promise<BlogPost[]> {
   // 캐시키 생성 (블로그ID, 카테고리, 제한 수 기준)
   const cacheKey = `${blogId}_${categoryNos.sort().join('_')}_${limit}`;
   const now = Date.now();
-  
-  // 캐시 강제 초기화 요청인 경우
-  if (forceRefresh) {
-    console.log(`블로그 캐시 강제 초기화 (키: ${cacheKey})`);
-    delete blogCache[cacheKey];
-  }
   
   // 캐시가 유효한지 확인
   if (blogCache[cacheKey] && blogCache[cacheKey].expires > now) {
@@ -1180,33 +893,20 @@ export async function getLatestBlogPosts(
   
   console.log(`블로그 데이터 새로 요청 (키: ${cacheKey})`);
   
-  try {
-    // 새로운 데이터 가져오기
-    const posts = await fetchBlogPosts(blogId, categoryNos, limit);
-    
-    // 포스트 상세 페이지에서 이미지 정보 강화
-    console.log(`블로그 포스트 이미지 정보 강화 중... (${posts.length}개)`);
-    const enrichedPosts = await enrichPostsWithImages(posts);
-    
-    // 캐시 업데이트
-    if (enrichedPosts.length > 0) {
-      blogCache[cacheKey] = {
-        posts: enrichedPosts,
-        expires: now + CACHE_TTL
-      };
-    }
-    
-    return enrichedPosts;
-  } catch (error) {
-    console.error('블로그 데이터 요청 오류:', error);
-    
-    // 오류 발생 시 기존 캐시 반환 (비어있지 않은 경우)
-    if (blogCache[cacheKey] && blogCache[cacheKey].posts.length > 0) {
-      console.log('오류 발생으로 기존 캐시 데이터 반환');
-      return blogCache[cacheKey].posts;
-    }
-    
-    // 캐시도 없는 경우 빈 배열 반환
-    return [];
+  // 새로운 데이터 가져오기
+  const posts = await fetchBlogPosts(blogId, categoryNos, limit);
+  
+  // 포스트 상세 페이지에서 이미지 정보 강화
+  console.log(`블로그 포스트 이미지 정보 강화 중... (${posts.length}개)`);
+  const enrichedPosts = await enrichPostsWithImages(posts);
+  
+  // 캐시 업데이트
+  if (enrichedPosts.length > 0) {
+    blogCache[cacheKey] = {
+      posts: enrichedPosts,
+      expires: now + CACHE_TTL
+    };
   }
+  
+  return enrichedPosts;
 }

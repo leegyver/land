@@ -1003,15 +1003,28 @@ const CACHE_TTL = 60 * 60 * 1000;
 /**
  * 캐싱을 활용하여 네이버 블로그 포스트 목록 가져오기
  * 각 카테고리 조합별로 별도 캐싱 적용
+ * 
+ * @param blogId 네이버 블로그 ID (기본값: '9551304')
+ * @param categoryNos 카테고리 번호 배열 (기본값: ['21', '35', '36'])
+ * @param limit 최종적으로 반환할 포스트 수 (기본값: 3)
+ * @param forceRefresh 캐시를 강제로 새로고침할지 여부 (기본값: false)
+ * @returns 블로그 포스트 배열
  */
 export async function getLatestBlogPosts(
   blogId: string = '9551304',
   categoryNos: string[] = ['21', '35', '36'],
-  limit: number = 5
+  limit: number = 3,
+  forceRefresh: boolean = false
 ): Promise<BlogPost[]> {
   // 캐시키 생성 (블로그ID, 카테고리, 제한 수 기준)
   const cacheKey = `${blogId}_${categoryNos.sort().join('_')}_${limit}`;
   const now = Date.now();
+  
+  // 캐시 강제 초기화 요청인 경우
+  if (forceRefresh) {
+    console.log(`블로그 캐시 강제 초기화 (키: ${cacheKey})`);
+    delete blogCache[cacheKey];
+  }
   
   // 캐시가 유효한지 확인
   if (blogCache[cacheKey] && blogCache[cacheKey].expires > now) {
@@ -1021,20 +1034,33 @@ export async function getLatestBlogPosts(
   
   console.log(`블로그 데이터 새로 요청 (키: ${cacheKey})`);
   
-  // 새로운 데이터 가져오기
-  const posts = await fetchBlogPosts(blogId, categoryNos, limit);
-  
-  // 포스트 상세 페이지에서 이미지 정보 강화
-  console.log(`블로그 포스트 이미지 정보 강화 중... (${posts.length}개)`);
-  const enrichedPosts = await enrichPostsWithImages(posts);
-  
-  // 캐시 업데이트
-  if (enrichedPosts.length > 0) {
-    blogCache[cacheKey] = {
-      posts: enrichedPosts,
-      expires: now + CACHE_TTL
-    };
+  try {
+    // 새로운 데이터 가져오기
+    const posts = await fetchBlogPosts(blogId, categoryNos, limit);
+    
+    // 포스트 상세 페이지에서 이미지 정보 강화
+    console.log(`블로그 포스트 이미지 정보 강화 중... (${posts.length}개)`);
+    const enrichedPosts = await enrichPostsWithImages(posts);
+    
+    // 캐시 업데이트
+    if (enrichedPosts.length > 0) {
+      blogCache[cacheKey] = {
+        posts: enrichedPosts,
+        expires: now + CACHE_TTL
+      };
+    }
+    
+    return enrichedPosts;
+  } catch (error) {
+    console.error('블로그 데이터 요청 오류:', error);
+    
+    // 오류 발생 시 기존 캐시 반환 (비어있지 않은 경우)
+    if (blogCache[cacheKey] && blogCache[cacheKey].posts.length > 0) {
+      console.log('오류 발생으로 기존 캐시 데이터 반환');
+      return blogCache[cacheKey].posts;
+    }
+    
+    // 캐시도 없는 경우 빈 배열 반환
+    return [];
   }
-  
-  return enrichedPosts;
 }

@@ -770,12 +770,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 3; // 기본값 3으로 변경
       const blogId = req.query.blogId as string || '9551304';
       // 네이버 블로그 카테고리:
+      // - 0: 모든 글 (하위 카테고리 포함)
       // - 11: 블로그 최신글 (메인 카테고리)
       // - 21: 일상다반사 
       // - 36: 세상이야기
       const categories = req.query.categories
                         ? (req.query.categories as string).split(',')
-                        : ['11', '21', '36'];
+                        : ['0', '11', '21', '36'];
       
       // 캐시를 강제로 초기화하는 쿼리 파라미터 추가
       const refresh = req.query.refresh === 'true';

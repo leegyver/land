@@ -106,6 +106,19 @@ export async function fetchBlogPostsByCategory(
             return;
           }
           
+          // 제목 정리: 첫 번째 줄이나 첫 번째 문장만 사용
+          if (title.includes('\n')) {
+            title = title.split('\n')[0].trim();
+          } else if (title.includes('..')) {
+            // 점 두 개 이상을 기준으로 분리하기
+            title = title.split('..')[0].trim();
+          }
+          
+          // 제목이 너무 길면 적절한 길이로 자르기 (약 50자)
+          if (title.length > 50) {
+            title = title.substring(0, 50) + '...';
+          }
+          
           // 링크 생성
           const link = `https://blog.naver.com/${blogId}/${postId}`;
           
@@ -246,6 +259,19 @@ export async function fetchBlogPostsByCategory(
             }
             
             if (!title) return; // 제목이 없으면 건너뜀
+            
+            // 제목 정리: 첫 번째 줄이나 첫 번째 문장만 사용
+            if (title.includes('\n')) {
+              title = title.split('\n')[0].trim();
+            } else if (title.includes('..')) {
+              // 점 두 개 이상을 기준으로 분리하기
+              title = title.split('..')[0].trim();
+            }
+            
+            // 제목이 너무 길면 적절한 길이로 자르기 (약 50자)
+            if (title.length > 50) {
+              title = title.substring(0, 50) + '...';
+            }
             
             // 링크 생성
             const link = `https://blog.naver.com/${blogId}/${postId}`;
@@ -680,7 +706,7 @@ async function extractPostImageFromFullUrl(fullUrl: string): Promise<string> {
  * 카테고리에 따라 대체 이미지를 반환합니다.
  */
 function getFallbackImageByCategory(category: string): string {
-  const images = {
+  const images: {[key: string]: string} = {
     '일상다반사': 'https://postfiles.pstatic.net/MjAyNTA1MTVfMTcx/MDAxNzQ3Mjc1ODY0OTg0.Y6dMg4MXEH7z76FCzTcLqgC-GYfbzN5zoN6z5_CZ8PAg.XP_G5M7-5HB4LO0YCHbcNnZcf1MEpq0v7Av-XPsGw-8g.PNG/daily-life.png?type=w580',
     '취미생활': 'https://postfiles.pstatic.net/MjAyNTA1MTVfMjMw/MDAxNzQ3Mjc1ODY1MDc5.h8DFsfhT_sEYA41xDUQRPSUQK5FaXO34PJ-Q4Xw9FWUg.bvGY5GnSiP9KoXXOaTg9Nzfk0Xv6ixkK3gOxvAjJxdQg.PNG/hobby.png?type=w580',
     '세상이야기': 'https://postfiles.pstatic.net/MjAyNTA1MTVfNTYg/MDAxNzQ3Mjc1ODY1MTQz.1lTZM1oxLQlxw3nNcyeHvV3CpxrVwZQMg_cN2GlWBJMg.-Bi6JK8-rEdQYK07Y9aE5Y9Zrjra9ZDu8KlUbTsAWJEg.PNG/world-stories.png?type=w580'
@@ -745,7 +771,7 @@ async function enrichPostsWithImages(posts: BlogPost[]): Promise<BlogPost[]> {
 
 // 블로그 컨텐츠 캐시
 // 카테고리별로 별도의 캐시 유지
-let blogCache: {
+export let blogCache: {
   [cacheKey: string]: {
     posts: BlogPost[];
     expires: number;

@@ -12,6 +12,7 @@ export interface BlogPost {
   publishedAt: string;
   category: string;
   summary?: string;
+  contentImages?: string[]; // 포스트 내부의 모든 이미지 URL 배열
 }
 
 /**

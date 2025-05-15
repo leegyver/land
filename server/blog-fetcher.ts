@@ -252,9 +252,6 @@ export async function fetchBlogPostsByCategory(
         
         console.log(`모바일 버전 파싱: ${mobilePostElements.length}개 요소 찾음 (최대 ${limit}개 가져올 예정)`);
         
-        // extractedCount 변수 재설정
-        extractedCount = posts.length;
-        
         mobilePostElements.each((i, element) => {
           if (extractedCount >= limit) return false; // 충분한 수의 포스트를 가져왔으면 중단
           

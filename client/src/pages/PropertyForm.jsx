@@ -242,6 +242,8 @@ function PropertyForm() {
             const { imageUrl, ...restData } = data;
             setFormData({
               ...restData,
+              // 필수 필드 데이터 보완
+              agentId: data.agentId || 4, // 기본값 4 (정현우 중개사)
               dealType: data.dealType || ["매매"],
               imageUrls: data.imageUrls || [],
               elevator: Boolean(data.elevator),

@@ -13,7 +13,7 @@ import {
 } from "@shared/schema";
 import { memoryCache } from "./cache";
 import { setupAuth } from "./auth";
-import { fetchAndSaveNews } from "./news-fetcher";
+import { fetchAndSaveNews, setupNewsScheduler } from "./news-fetcher";
 import { sendEmail, createInquiryEmailTemplate } from "./mailer";
 import { getRecentTransactions } from "./real-estate-api";
 import { testRealEstateAPI } from "./test-api";
@@ -1200,6 +1200,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // 블로그 포스트 관련 API 제거됨
+  
+  // 뉴스 자동 업데이트 스케줄러 실행 (사용자 요청에 따라 활성화)
+  setupNewsScheduler();
   
   const httpServer = createServer(app);
   return httpServer;

@@ -795,10 +795,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(cachedPosts);
       }
       
-      // 네이버 블로그에서 최신 포스트 가져오기
-      const posts = await getLatestBlogPosts(blogId, categories, limit);
+      // 네이버 블로그에서 최신 포스트 가져오기 (refresh 파라미터 전달)
+      const posts = await getLatestBlogPosts(blogId, categories, limit, refresh);
       
-      // 캐시에 저장 (1시간)
+      // API 자체 캐시에도 저장 (1시간)
+      // 참고: getLatestBlogPosts 내부에서도 자체 캐싱을 수행합니다
       memoryCache.set(cacheKey, posts, 60 * 60 * 1000);
       
       res.json(posts);

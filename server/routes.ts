@@ -748,7 +748,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // 강화도부동산 유튜브 채널에서 최신 영상 가져오기
-      const channelUrl = "https://www.youtube.com/@%EA%B0%95%ED%99%94%EB%8F%84%EB%B6%80%EB%8F%99%EC%82%B0/featured";
+      const channelUrl = "https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA";
       const videos = await getLatestYouTubeVideos(channelUrl, limit);
       
       // 캐시에 저장 (6시간)

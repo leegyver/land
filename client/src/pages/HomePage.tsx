@@ -69,7 +69,7 @@ const HomePage = () => {
                 강화도부동산 최신 영상
               </h2>
               <a 
-                href="https://www.youtube.com/@%EA%B0%95%ED%99%94%EB%8F%84%EB%B6%80%EB%8F%99%EC%82%B0/featured" 
+                href="https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-red-600 hover:text-red-700 font-medium flex items-center gap-1"
@@ -132,7 +132,7 @@ const HomePage = () => {
               <div className="bg-white rounded-lg p-4 shadow text-center">
                 <p className="text-gray-medium">현재 유튜브 영상을 불러올 수 없습니다. 나중에 다시 시도해주세요.</p>
                 <a 
-                  href="https://www.youtube.com/@%EA%B0%95%ED%99%94%EB%8F%84%EB%B6%80%EB%8F%99%EC%82%B0/featured" 
+                  href="https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-red-600 hover:text-red-700 font-medium inline-flex items-center gap-1 mt-2"

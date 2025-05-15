@@ -1,5 +1,4 @@
 import fetch from 'node-fetch';
-import * as cheerio from 'cheerio';
 
 export interface YouTubeVideo {
   id: string;
@@ -10,8 +9,95 @@ export interface YouTubeVideo {
 }
 
 /**
+ * 유튜브 채널 URL에서 채널 ID를 추출합니다.
+ * @param channelUrl 유튜브 채널 URL
+ * @returns 채널 ID
+ */
+function extractChannelId(channelUrl: string): string {
+  // 채널 URL에서 ID 추출 (예: https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA)
+  const match = channelUrl.match(/channel\/([^/?]+)/);
+  if (match && match[1]) {
+    return match[1];
+  }
+  
+  // 기본값 반환
+  return 'UCCG3_JlKhgalqhict7tKkbA'; // 행복부동산 채널 ID
+}
+
+/**
+ * YouTube API를 사용하여 특정 채널의 최신 영상을 가져옵니다.
+ * @param channelId 유튜브 채널 ID (e.g., "UCCG3_JlKhgalqhict7tKkbA")
+ * @param limit 가져올 영상 수량
+ * @returns 유튜브 영상 정보 배열
+ */
+export async function fetchLatestYouTubeVideosWithAPI(channelId: string, limit: number = 5): Promise<YouTubeVideo[]> {
+  try {
+    // YouTube API 키 확인
+    const apiKey = process.env.YOUTUBE_API_KEY;
+    if (!apiKey) {
+      throw new Error('YouTube API 키가 설정되지 않았습니다');
+    }
+
+    console.log(`YouTube API를 사용하여 채널 정보 요청: ${channelId}`);
+    
+    // 채널의 업로드 재생목록 ID 가져오기
+    const channelResponse = await fetch(
+      `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${channelId}&key=${apiKey}`
+    );
+    
+    if (!channelResponse.ok) {
+      throw new Error(`채널 정보 요청 실패: ${channelResponse.status} ${channelResponse.statusText}`);
+    }
+    
+    const channelData = await channelResponse.json();
+    
+    if (!channelData.items || channelData.items.length === 0) {
+      throw new Error('채널 정보를 찾을 수 없습니다');
+    }
+    
+    const uploadsPlaylistId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
+    console.log(`채널 업로드 재생목록 ID: ${uploadsPlaylistId}`);
+    
+    // 재생목록에서 최신 동영상 가져오기
+    const playlistResponse = await fetch(
+      `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=${limit}&playlistId=${uploadsPlaylistId}&key=${apiKey}`
+    );
+    
+    if (!playlistResponse.ok) {
+      throw new Error(`재생목록 요청 실패: ${playlistResponse.status} ${playlistResponse.statusText}`);
+    }
+    
+    const playlistData = await playlistResponse.json();
+    
+    if (!playlistData.items) {
+      console.log('재생목록에서 영상을 찾을 수 없습니다.');
+      return [];
+    }
+    
+    console.log(`재생목록에서 ${playlistData.items.length}개의 영상 정보를 가져왔습니다.`);
+    
+    // 동영상 정보 매핑
+    const videos = playlistData.items.map((item: any) => ({
+      id: item.snippet.resourceId.videoId,
+      title: item.snippet.title,
+      thumbnail: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url,
+      url: `https://www.youtube.com/watch?v=${item.snippet.resourceId.videoId}`,
+      publishedAt: item.snippet.publishedAt
+    }));
+    
+    console.log('YouTube API에서 영상 정보 가져오기 성공');
+    return videos;
+    
+  } catch (error) {
+    console.error('YouTube API 요청 오류:', error);
+    throw error;
+  }
+}
+
+/**
  * 유튜브 채널의 최신 영상 목록을 가져옵니다.
- * @param channelUrl 유튜브 채널 URL (e.g., https://www.youtube.com/@username/featured)
+ * API 키가 없거나 오류 발생 시 대체 데이터를 반환합니다.
+ * @param channelUrl 유튜브 채널 URL (e.g., https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA)
  * @param limit 가져올 영상 수량
  * @returns 유튜브 영상 정보 배열
  */
@@ -19,88 +105,93 @@ export async function fetchLatestYouTubeVideos(channelUrl: string, limit: number
   try {
     console.log(`유튜브 채널 정보 요청: ${channelUrl}`);
     
-    // 특정 채널 ID 확인
-    // https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA
-    if (channelUrl.includes('UCCG3_JlKhgalqhict7tKkbA')) {
-      // 행복 부동산 유튜브 채널의 최신 동영상 데이터 (updated 2025-05-15)
-      console.log('행복부동산 YouTube 채널의 최신 영상 데이터를 사용합니다.');
+    // 채널 ID 추출
+    const channelId = extractChannelId(channelUrl);
+    console.log(`추출된 채널 ID: ${channelId}`);
+    
+    // YouTube API로 데이터 가져오기 시도
+    try {
+      return await fetchLatestYouTubeVideosWithAPI(channelId, limit);
+    } catch (apiError) {
+      console.error('YouTube API 요청 실패, 대체 데이터 사용:', apiError);
       
+      // API 실패 시 대체 데이터 제공
+      if (channelId === 'UCCG3_JlKhgalqhict7tKkbA') {
+        // 행복 부동산 유튜브 채널의 최신 동영상 데이터 (대체 데이터)
+        console.log('행복부동산 YouTube 채널의 대체 데이터를 사용합니다.');
+        
+        const videos: YouTubeVideo[] = [
+          {
+            id: 'Kh-CoR26mAk',
+            title: '무엇을 보고 매입한 땅인데..이렇게...',
+            thumbnail: 'https://i.ytimg.com/vi/Kh-CoR26mAk/hqdefault.jpg',
+            url: 'https://www.youtube.com/watch?v=Kh-CoR26mAk'
+          },
+          {
+            id: 'lIMCvP9De8w',
+            title: '강화도 마니산 아래 힐링 할수 있는 전망좋은집',
+            thumbnail: 'https://i.ytimg.com/vi/lIMCvP9De8w/hqdefault.jpg',
+            url: 'https://www.youtube.com/watch?v=lIMCvP9De8w'
+          },
+          {
+            id: '3dJUkIVx42U',
+            title: '강화 천문 금송 전남권공간-강화부동산',
+            thumbnail: 'https://i.ytimg.com/vi/3dJUkIVx42U/hqdefault.jpg',
+            url: 'https://www.youtube.com/watch?v=3dJUkIVx42U'
+          },
+          {
+            id: 'wTxCLSPAktI',
+            title: '강화 마니산 중턱 전원주택 50평형 넘는 단독주택',
+            thumbnail: 'https://i.ytimg.com/vi/wTxCLSPAktI/hqdefault.jpg',
+            url: 'https://www.youtube.com/watch?v=wTxCLSPAktI'
+          },
+          {
+            id: 'tlcv9i9m5CU',
+            title: '벤츠가 바퀴가 거의 없는 주책이야...뻘이 많다',
+            thumbnail: 'https://i.ytimg.com/vi/tlcv9i9m5CU/hqdefault.jpg',
+            url: 'https://www.youtube.com/watch?v=tlcv9i9m5CU'
+          }
+        ];
+        
+        return videos.slice(0, limit);
+      }
+
+      // 기타 채널의 대체 데이터
       const videos: YouTubeVideo[] = [
         {
-          id: 'Kh-CoR26mAk',
-          title: '무엇을 보고 매입한 땅인데..이렇게...',
-          thumbnail: 'https://i.ytimg.com/vi/Kh-CoR26mAk/hqdefault.jpg',
-          url: 'https://www.youtube.com/watch?v=Kh-CoR26mAk'
+          id: 'Vjqm9G9VN7s',
+          title: '강화버스투어 강화한옥마을-우리집한옥스테이',
+          thumbnail: 'https://i.ytimg.com/vi/Vjqm9G9VN7s/hqdefault.jpg',
+          url: 'https://www.youtube.com/watch?v=Vjqm9G9VN7s'
         },
         {
-          id: 'lIMCvP9De8w',
-          title: '강화도 마니산 아래 힐링 할수 있는 전망좋은집',
-          thumbnail: 'https://i.ytimg.com/vi/lIMCvP9De8w/hqdefault.jpg',
-          url: 'https://www.youtube.com/watch?v=lIMCvP9De8w'
+          id: 'nJvPvjZ6hcE',
+          title: '현대아이파크 인근 단독주택 바로 보시죠',
+          thumbnail: 'https://i.ytimg.com/vi/nJvPvjZ6hcE/hqdefault.jpg',
+          url: 'https://www.youtube.com/watch?v=nJvPvjZ6hcE'
         },
         {
-          id: '3dJUkIVx42U',
-          title: '강화 천문 금송 전남권공간-강화부동산',
-          thumbnail: 'https://i.ytimg.com/vi/3dJUkIVx42U/hqdefault.jpg',
-          url: 'https://www.youtube.com/watch?v=3dJUkIVx42U'
+          id: 'FQy2PGG2IEY',
+          title: '강화 전원주택 전세 바로 보시죠',
+          thumbnail: 'https://i.ytimg.com/vi/FQy2PGG2IEY/hqdefault.jpg',
+          url: 'https://www.youtube.com/watch?v=FQy2PGG2IEY'
         },
         {
-          id: 'wTxCLSPAktI',
-          title: '강화 마니산 중턱 전원주택 50평형 넘는 단독주택',
-          thumbnail: 'https://i.ytimg.com/vi/wTxCLSPAktI/hqdefault.jpg',
-          url: 'https://www.youtube.com/watch?v=wTxCLSPAktI'
+          id: 'uF6DUZEdFtA',
+          title: '강화에서 서울 한강이 보이는 타운하우스 "강화 브리드원"',
+          thumbnail: 'https://i.ytimg.com/vi/uF6DUZEdFtA/hqdefault.jpg',
+          url: 'https://www.youtube.com/watch?v=uF6DUZEdFtA'
         },
         {
-          id: 'tlcv9i9m5CU',
-          title: '벤츠가 바퀴가 거의 없는 주책이야...뻘이 많다',
-          thumbnail: 'https://i.ytimg.com/vi/tlcv9i9m5CU/hqdefault.jpg',
-          url: 'https://www.youtube.com/watch?v=tlcv9i9m5CU'
+          id: 'cJ-OQ4j5-5c',
+          title: '장화리 효정마을 전원주택단지 "이웃과 함께 사는 기쁨"',
+          thumbnail: 'https://i.ytimg.com/vi/cJ-OQ4j5-5c/hqdefault.jpg',
+          url: 'https://www.youtube.com/watch?v=cJ-OQ4j5-5c'
         }
       ];
       
       return videos.slice(0, limit);
     }
-    
-    // 기본 채널 데이터 (이전 코드와의 호환성 유지)
-    console.log('기본 YouTube 채널 영상 데이터를 사용합니다.');
-    
-    const videos: YouTubeVideo[] = [
-      {
-        id: 'Vjqm9G9VN7s',
-        title: '강화버스투어 강화한옥마을-우리집한옥스테이',
-        thumbnail: 'https://i.ytimg.com/vi/Vjqm9G9VN7s/hqdefault.jpg',
-        url: 'https://www.youtube.com/watch?v=Vjqm9G9VN7s'
-      },
-      {
-        id: 'nJvPvjZ6hcE',
-        title: '현대아이파크 인근 단독주택 바로 보시죠',
-        thumbnail: 'https://i.ytimg.com/vi/nJvPvjZ6hcE/hqdefault.jpg',
-        url: 'https://www.youtube.com/watch?v=nJvPvjZ6hcE'
-      },
-      {
-        id: 'FQy2PGG2IEY',
-        title: '강화 전원주택 전세 바로 보시죠',
-        thumbnail: 'https://i.ytimg.com/vi/FQy2PGG2IEY/hqdefault.jpg',
-        url: 'https://www.youtube.com/watch?v=FQy2PGG2IEY'
-      },
-      {
-        id: 'uF6DUZEdFtA',
-        title: '강화에서 서울 한강이 보이는 타운하우스 "강화 브리드원"',
-        thumbnail: 'https://i.ytimg.com/vi/uF6DUZEdFtA/hqdefault.jpg',
-        url: 'https://www.youtube.com/watch?v=uF6DUZEdFtA'
-      },
-      {
-        id: 'cJ-OQ4j5-5c',
-        title: '장화리 효정마을 전원주택단지 "이웃과 함께 사는 기쁨"',
-        thumbnail: 'https://i.ytimg.com/vi/cJ-OQ4j5-5c/hqdefault.jpg',
-        url: 'https://www.youtube.com/watch?v=cJ-OQ4j5-5c'
-      }
-    ];
-    
-    console.log(`유튜브 영상 ${videos.length}개 정보 가져오기 완료`);
-    
-    // 최대 개수 제한
-    return videos.slice(0, limit);
     
   } catch (error) {
     console.error('유튜브 영상 가져오기 오류:', error);

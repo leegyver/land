@@ -442,8 +442,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // 필수 필드에 대한 기본값 처리
           city: req.body.city || "인천", // city 필드에 기본값 설정
           size: req.body.size !== undefined ? String(req.body.size) : "0", // size를 문자열로 변환
-          // agentId 처리 - 필수 필드이므로 기본값 설정
-          agentId: req.body.agentId || 4, // 기본값은 4 (정현우 중개사)
+          // agentId 처리 - 필수 필드이므로 기본값 설정 (database에서는 agent_id로 저장됨)
+          agentId: req.body.agentId || req.body.agent_id || 4, // 기본값은 4 (정현우 중개사)
           supplyArea: req.body.supplyArea === "" ? null : req.body.supplyArea,
           privateArea: req.body.privateArea === "" ? null : req.body.privateArea,
           floor: req.body.floor === "" ? null : req.body.floor, 

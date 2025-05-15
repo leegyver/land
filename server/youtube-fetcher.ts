@@ -22,10 +22,22 @@ export async function fetchLatestYouTubeVideos(channelUrl: string, limit: number
     // 특정 채널 ID 확인
     // https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA
     if (channelUrl.includes('UCCG3_JlKhgalqhict7tKkbA')) {
-      // 행복 부동산 유튜브 채널의 실제 최신 동영상 데이터
-      console.log('행복부동산 YouTube 채널의 실제 영상 데이터를 사용합니다.');
+      // 행복 부동산 유튜브 채널의 최신 동영상 데이터 (updated 2025-05-15)
+      console.log('행복부동산 YouTube 채널의 최신 영상 데이터를 사용합니다.');
       
       const videos: YouTubeVideo[] = [
+        {
+          id: 'Kh-CoR26mAk',
+          title: '무엇을 보고 매입한 땅인데..이렇게...',
+          thumbnail: 'https://i.ytimg.com/vi/Kh-CoR26mAk/hqdefault.jpg',
+          url: 'https://www.youtube.com/watch?v=Kh-CoR26mAk'
+        },
+        {
+          id: 'lIMCvP9De8w',
+          title: '강화도 마니산 아래 힐링 할수 있는 전망좋은집',
+          thumbnail: 'https://i.ytimg.com/vi/lIMCvP9De8w/hqdefault.jpg',
+          url: 'https://www.youtube.com/watch?v=lIMCvP9De8w'
+        },
         {
           id: '3dJUkIVx42U',
           title: '강화 천문 금송 전남권공간-강화부동산',
@@ -43,18 +55,6 @@ export async function fetchLatestYouTubeVideos(channelUrl: string, limit: number
           title: '벤츠가 바퀴가 거의 없는 주책이야...뻘이 많다',
           thumbnail: 'https://i.ytimg.com/vi/tlcv9i9m5CU/hqdefault.jpg',
           url: 'https://www.youtube.com/watch?v=tlcv9i9m5CU'
-        },
-        {
-          id: 'E5BrJkVKfSY',
-          title: '강화 마니산 중턱 전망좋은집 구경합니다',
-          thumbnail: 'https://i.ytimg.com/vi/E5BrJkVKfSY/hqdefault.jpg',
-          url: 'https://www.youtube.com/watch?v=E5BrJkVKfSY'
-        },
-        {
-          id: 'bXJJHsyxEz8',
-          title: '부동산 사무실 이전 및 바베큐 파티',
-          thumbnail: 'https://i.ytimg.com/vi/bXJJHsyxEz8/hqdefault.jpg',
-          url: 'https://www.youtube.com/watch?v=bXJJHsyxEz8'
         }
       ];
       

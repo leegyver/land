@@ -198,7 +198,7 @@ const HomePage = () => {
                     <CardContent className="p-4 flex-grow">
                       <div className="flex items-center gap-2 mb-2">
                         <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200 text-xs">
-                          블로그 최신글
+                          {post.category === "카테고리 0" ? "블로그 최신글" : post.category}
                         </Badge>
                         <span className="text-xs text-gray-500">
                           {post.publishedAt}

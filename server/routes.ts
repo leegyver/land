@@ -763,6 +763,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // 네이버 블로그 최신 글 가져오기
+  app.get("/api/blog/latest", async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
+      const blogId = req.query.blogId as string || '9551304';
+      const categories = req.query.categories
+                        ? (req.query.categories as string).split(',')
+                        : ['21', '35', '36'];
+      
+      // 캐시에서 확인
+      const cacheKey = `blog_latest_${blogId}_${categories.join('_')}_${limit}`;
+      const cachedPosts = memoryCache.get(cacheKey);
+      
+      if (cachedPosts) {
+        return res.json(cachedPosts);
+      }
+      
+      // 네이버 블로그에서 최신 포스트 가져오기
+      const posts = await getLatestBlogPosts(blogId, categories, limit);
+      
+      // 캐시에 저장 (1시간)
+      memoryCache.set(cacheKey, posts, 60 * 60 * 1000);
+      
+      res.json(posts);
+    } catch (error) {
+      console.error("블로그 포스트 가져오기 오류:", error);
+      res.status(500).json({
+        message: "최신 블로그 포스트를 불러오는데 실패했습니다",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
 
   // 최신 뉴스 가져오기
   app.get("/api/news/latest", async (req, res) => {

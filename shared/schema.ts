@@ -17,7 +17,7 @@ export const properties = pgTable("properties", {
   imageUrl: text("image_url").notNull(), // 단일 이미지 URL (하위 호환성 유지)
   imageUrls: text("image_urls").array(), // 다중 이미지 URLs
   featuredImageIndex: integer("featured_image_index"), // 대표 이미지 인덱스
-  // agentId 필드 제거됨 - 더 이상 사용하지 않음
+  agentId: integer("agent_id").notNull(), // 매물 담당 중개사 ID
   featured: boolean("featured").default(false), // 추천 매물 여부
   createdAt: timestamp("created_at").defaultNow(), // 등록일
   

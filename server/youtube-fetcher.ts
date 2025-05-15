@@ -6,7 +6,7 @@ import fetch from 'node-fetch';
 export interface YouTubeVideo {
   id: string;
   title: string;
-  thumbnail: string;
+  thumbnail: string;  // 썸네일 URL (항상 문자열, 없는 경우 기본 이미지 URL 사용)
   url: string;
   publishedAt?: string;
 }
@@ -112,13 +112,20 @@ export async function fetchLatestYouTubeVideosWithAPI(channelId: string, limit: 
     console.log(`재생목록에서 ${playlistData.items.length}개의 영상 정보를 가져왔습니다.`);
     
     // 동영상 정보 매핑
-    const videos = playlistData.items.map(item => ({
-      id: item.snippet.resourceId.videoId,
-      title: item.snippet.title,
-      thumbnail: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url,
-      url: `https://www.youtube.com/watch?v=${item.snippet.resourceId.videoId}`,
-      publishedAt: item.snippet.publishedAt
-    }));
+    const videos = playlistData.items.map(item => {
+      // 썸네일 URL 기본값 설정 (API에서 반환하지 않는 경우 대체 이미지 사용)
+      const thumbnailUrl = item.snippet.thumbnails.high?.url || 
+                           item.snippet.thumbnails.default?.url || 
+                           `https://i.ytimg.com/vi/${item.snippet.resourceId.videoId}/hqdefault.jpg`;
+                           
+      return {
+        id: item.snippet.resourceId.videoId,
+        title: item.snippet.title,
+        thumbnail: thumbnailUrl,
+        url: `https://www.youtube.com/watch?v=${item.snippet.resourceId.videoId}`,
+        publishedAt: item.snippet.publishedAt
+      };
+    });
     
     console.log('YouTube API에서 영상 정보 가져오기 성공');
     return videos;

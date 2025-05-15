@@ -404,10 +404,12 @@ export async function fetchBlogPostsByCategory(
  */
 export async function fetchBlogPosts(
   blogId: string = '9551304',
-  // 카테고리를 지정:
+  // 여러 카테고리를 지정하여 더 많은 포스트를 가져오도록 함:
   // - 11: 블로그 최신글 (하위 카테고리 포함)
-  categoryNos: string[] = ['11'],
-  limit: number = 10 // 더 많은 포스트를 가져오도록 증가
+  // - 21: 일상다반사
+  // - 36: 세상이야기
+  categoryNos: string[] = ['11', '21', '36'],
+  limit: number = 5 // 각 카테고리별 포스트 제한 수
 ): Promise<BlogPost[]> {
   try {
     // 각 카테고리별로 병렬 요청
@@ -420,14 +422,21 @@ export async function fetchBlogPosts(
     // 모든 포스트를 하나의 배열로 합치기
     const allPosts = postsArrays.flat();
     
+    // 더미 데이터 필터링 ("아직 작성된 글이 없습니다." 제목의 게시물 제거)
+    const filteredPosts = allPosts.filter(post => {
+      return post.title !== "아직 작성된 글이 없습니다." && 
+             !post.id.startsWith("post-") &&
+             post.title.trim() !== "";
+    });
+    
     // 날짜 기준으로 최신순 정렬 (날짜 포맷이 YYYY.MM.DD 형식인 경우)
-    allPosts.sort((a, b) => {
+    filteredPosts.sort((a, b) => {
       // 날짜 문자열을 비교하여 정렬 (내림차순)
       return b.publishedAt.localeCompare(a.publishedAt);
     });
     
     // 실제 데이터 추출에 실패한 경우, 대표적인 테스트 데이터를 제공
-    if (allPosts.length === 0) {
+    if (filteredPosts.length === 0) {
       console.log('블로그 데이터 추출 실패, 테스트 데이터 사용');
       
       // 테스트 데이터 (개발용)
@@ -481,7 +490,7 @@ export async function fetchBlogPosts(
     }
     
     // 최대 포스트 수 제한
-    return allPosts.slice(0, limit);
+    return filteredPosts.slice(0, limit);
   } catch (error) {
     console.error('네이버 블로그 포스트 통합 오류:', error);
     return [];

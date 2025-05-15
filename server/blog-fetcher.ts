@@ -407,12 +407,15 @@ export async function fetchBlogPosts(
   // - 35: 취미생활 
   // - 36: 세상이야기
   categoryNos: string[] = ['21', '35', '36'],
-  limit: number = 5
+  limit: number = 3 // 기본값을 3개로 변경
 ): Promise<BlogPost[]> {
   try {
+    // 카테고리별로 여러 개의 포스트를 가져오도록 변경 (날짜순 정렬 후 선별하기 위함)
+    const eachCategoryLimit = 3; // 각 카테고리별 가져올 포스트 수
+    
     // 각 카테고리별로 병렬 요청
     const postsPromises = categoryNos.map(categoryNo => 
-      fetchBlogPostsByCategory(blogId, categoryNo, limit)
+      fetchBlogPostsByCategory(blogId, categoryNo, eachCategoryLimit)
     );
     
     const postsArrays = await Promise.all(postsPromises);
@@ -420,8 +423,23 @@ export async function fetchBlogPosts(
     // 모든 포스트를 하나의 배열로 합치기
     const allPosts = postsArrays.flat();
     
+    // 중복 포스트 제거 (같은 ID의 포스트는 하나만 유지)
+    const uniquePosts: BlogPost[] = [];
+    const seenIds = new Set<string>();
+    
+    for (const post of allPosts) {
+      if (!seenIds.has(post.id)) {
+        uniquePosts.push(post);
+        seenIds.add(post.id);
+      }
+    }
+    
     // 날짜 기준으로 최신순 정렬 (날짜 포맷이 YYYY.MM.DD 형식인 경우)
-    allPosts.sort((a, b) => {
+    uniquePosts.sort((a, b) => {
+      // 날짜가 없는 경우 처리
+      if (!a.publishedAt) return 1;
+      if (!b.publishedAt) return -1;
+      
       // 날짜 문자열을 비교하여 정렬 (내림차순)
       return b.publishedAt.localeCompare(a.publishedAt);
     });
@@ -480,8 +498,8 @@ export async function fetchBlogPosts(
       ];
     }
     
-    // 최대 포스트 수 제한
-    return allPosts.slice(0, limit);
+    // 정렬된 포스트 중 최신 N개만 반환
+    return uniquePosts.slice(0, limit);
   } catch (error) {
     console.error('네이버 블로그 포스트 통합 오류:', error);
     return [];

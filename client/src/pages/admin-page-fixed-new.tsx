@@ -56,12 +56,12 @@ export default function AdminPage() {
   const [filterDistrict, setFilterDistrict] = useState<string>("all");
   const [filterDealType, setFilterDealType] = useState<string>("all");
   
-  // 필터 옵션 - DB에 있는 실제 필드값 적용
+  // 필터 옵션 - 요청받은 카테고리로 업데이트
   const propertyTypes = [
-    { value: "아파트", label: "아파트" },
-    { value: "아파트연립다세대", label: "아파트연립다세대" },
+    { value: "토지", label: "토지" },
     { value: "주택", label: "주택" },
-    { value: "오피스텔", label: "오피스텔" },
+    { value: "아파트연립다세대", label: "아파트연립다세대" },
+    { value: "원투룸", label: "원투룸" },
     { value: "상가공장창고펜션", label: "상가공장창고펜션" },
   ];
   
@@ -175,9 +175,9 @@ export default function AdminPage() {
     { value: "기타지역", label: "기타지역" }
   ];
   
-  // 기존 배열 (참고용)
-  const oldPropertyTypes = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
-  const oldDealTypes = ["매매", "전세", "월세", "단기임대", "완료", "보류중"];
+  // 최신 부동산 유형 및 거래 유형 배열
+  const propertyTypeArray = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
+  const dealTypeArray = ["매매", "전세", "월세", "단기임대", "완료", "보류중"];
   
   // 데이터 로드
   const { 

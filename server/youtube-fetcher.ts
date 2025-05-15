@@ -1,11 +1,46 @@
 import fetch from 'node-fetch';
 
+/**
+ * YouTube 비디오 정보 인터페이스
+ */
 export interface YouTubeVideo {
   id: string;
   title: string;
   thumbnail: string;
   url: string;
   publishedAt?: string;
+}
+
+/**
+ * YouTube 채널 응답 인터페이스
+ */
+interface YouTubeChannelResponse {
+  items: {
+    contentDetails: {
+      relatedPlaylists: {
+        uploads: string;
+      };
+    };
+  }[];
+}
+
+/**
+ * YouTube 재생목록 응답 인터페이스
+ */
+interface YouTubePlaylistResponse {
+  items: {
+    snippet: {
+      resourceId: {
+        videoId: string;
+      };
+      title: string;
+      thumbnails: {
+        high?: { url: string; };
+        default?: { url: string; };
+      };
+      publishedAt: string;
+    };
+  }[];
 }
 
 /**
@@ -21,7 +56,7 @@ function extractChannelId(channelUrl: string): string {
   }
   
   // 기본값 반환
-  return 'UCCG3_JlKhgalqhict7tKkbA'; // 행복부동산 채널 ID
+  return 'UCCG3_JlKhgalqhict7tKkbA'; // 이가이버 유튜브 채널 ID
 }
 
 /**
@@ -49,7 +84,7 @@ export async function fetchLatestYouTubeVideosWithAPI(channelId: string, limit: 
       throw new Error(`채널 정보 요청 실패: ${channelResponse.status} ${channelResponse.statusText}`);
     }
     
-    const channelData = await channelResponse.json();
+    const channelData = await channelResponse.json() as any;
     
     if (!channelData.items || channelData.items.length === 0) {
       throw new Error('채널 정보를 찾을 수 없습니다');
@@ -67,7 +102,7 @@ export async function fetchLatestYouTubeVideosWithAPI(channelId: string, limit: 
       throw new Error(`재생목록 요청 실패: ${playlistResponse.status} ${playlistResponse.statusText}`);
     }
     
-    const playlistData = await playlistResponse.json();
+    const playlistData = await playlistResponse.json() as any;
     
     if (!playlistData.items) {
       console.log('재생목록에서 영상을 찾을 수 없습니다.');
@@ -117,8 +152,8 @@ export async function fetchLatestYouTubeVideos(channelUrl: string, limit: number
       
       // API 실패 시 대체 데이터 제공
       if (channelId === 'UCCG3_JlKhgalqhict7tKkbA') {
-        // 행복 부동산 유튜브 채널의 최신 동영상 데이터 (대체 데이터)
-        console.log('행복부동산 YouTube 채널의 대체 데이터를 사용합니다.');
+        // 이가이버 유튜브 채널의 최신 동영상 데이터 (대체 데이터)
+        console.log('이가이버 유튜브 채널의 대체 데이터를 사용합니다.');
         
         const videos: YouTubeVideo[] = [
           {

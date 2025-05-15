@@ -106,17 +106,40 @@ export async function fetchBlogPostsByCategory(
             return;
           }
           
-          // 제목 정리: 첫 번째 줄이나 첫 번째 문장만 사용
+          // 제목 정리: 여러 가지 구분자로 정리
+          // 1. 첫 번째 줄만 사용
           if (title.includes('\n')) {
             title = title.split('\n')[0].trim();
-          } else if (title.includes('..')) {
-            // 점 두 개 이상을 기준으로 분리하기
+          }
+          
+          // 2. 물음표 연속 구분
+          if (title.includes('??')) {
+            title = title.split('??')[0].trim() + '?';
+          } else if (title.includes('? ')) {
+            title = title.split('? ')[0].trim() + '?';
+          }
+          
+          // 3. 점 두 개 이상 구분
+          if (title.includes('..')) {
             title = title.split('..')[0].trim();
           }
           
-          // 제목이 너무 길면 적절한 길이로 자르기 (약 50자)
-          if (title.length > 50) {
-            title = title.substring(0, 50) + '...';
+          // 4. 특수 패턴 제거 (강화도 부동산 관련 반복 패턴)
+          const patterns = [
+            '강화도 부동산', '부동산', '공인중개사', '중개사', '매물'
+          ];
+          
+          for (const pattern of patterns) {
+            const index = title.indexOf(pattern);
+            if (index > 10) { // 첫 단어가 아닌 경우에만
+              title = title.substring(0, index).trim();
+              break;
+            }
+          }
+          
+          // 5. 제목이 너무 길면 적절한 길이로 자르기 (약 30자)
+          if (title.length > 30) {
+            title = title.substring(0, 30) + '...';
           }
           
           // 링크 생성
@@ -603,32 +626,100 @@ async function extractImageFromIframe(iframeSrc: string): Promise<string> {
     
     const response = await fetch(fullIframeSrc, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
       }
     });
     
     if (!response.ok) {
+      console.error(`iframe 요청 실패: ${response.status} ${response.statusText}`);
       return '';
     }
     
     const html = await response.text();
     const $ = cheerio.load(html);
     
-    // iframe 내 이미지 찾기
-    const selectors = [
-      'div[class^="se-"] img', '.se-image img', '.post_ct img',
-      '.se_view_area img', '.se-main-container img'
+    // 1. 먼저 OpenGraph 이미지 확인 (가장 신뢰할 수 있음)
+    const ogImage = $('meta[property="og:image"]').attr('content');
+    if (ogImage && !ogImage.includes('og_default_image') && !ogImage.includes('profile')) {
+      console.log(`OpenGraph 이미지 발견: ${ogImage}`);
+      return ogImage;
+    }
+    
+    // 2. 대표 이미지 검색 (네이버 블로그 특화)
+    const representImgSelectors = [
+      '.se-module-image img[id^="img_"]', 
+      '.se-main-container img[id^="img_"]',
+      '.viewArea img.se-image-resource',
+      '.post_ct img:first-of-type'
     ];
+    
+    for (const selector of representImgSelectors) {
+      const img = $(selector).first();
+      if (img.length > 0) {
+        const src = img.attr('src') || img.attr('data-src') || '';
+        if (src && !src.includes('ssl.pstatic.net/static/blog') && 
+            !src.includes('default') && !src.includes('profile')) {
+          console.log(`대표 이미지 발견: ${src}`);
+          return src;
+        }
+      }
+    }
+    
+    // 3. 일반 이미지 검색
+    const selectors = [
+      '.se-module-image img', '.se-image img', '.post_ct img',
+      '.se_view_area img', '.se-main-container img',
+      '.se_publishArea img', '.se_component img',
+      'div[class^="se-"] img', '.post-view img'
+    ];
+    
+    // 이미지 크기 기준 정렬을 위한 배열
+    const imageArray: {src: string, size: number}[] = [];
     
     for (const selector of selectors) {
       const images = $(selector);
       if (images.length > 0) {
-        for (let i = 0; i < images.length; i++) {
-          const src = images.eq(i).attr('src') || images.eq(i).attr('data-src') || '';
-          if (src && !src.includes('ssl.pstatic.net/static/blog') && !src.includes('default')) {
-            return src;
+        for (let i = 0; i < Math.min(images.length, 10); i++) { // 최대 10개까지만
+          const img = images.eq(i);
+          const src = img.attr('src') || img.attr('data-src') || '';
+          
+          if (src && 
+              !src.includes('ssl.pstatic.net/static/blog') && 
+              !src.includes('default') && 
+              !src.includes('profile') &&
+              !src.includes('pfthumb')) {
+            
+            // 이미지 크기 가져오기
+            const width = parseInt(img.attr('width') || '0', 10);
+            const height = parseInt(img.attr('height') || '0', 10);
+            const size = width * height || 0;
+            
+            imageArray.push({src, size});
           }
         }
+      }
+    }
+    
+    // 이미지 크기 기준 내림차순 정렬
+    imageArray.sort((a, b) => b.size - a.size);
+    
+    // 가장 큰 이미지 반환
+    if (imageArray.length > 0) {
+      console.log(`큰 이미지 발견: ${imageArray[0].src}`);
+      return imageArray[0].src;
+    }
+    
+    // 4. 아무 이미지도 못 찾은 경우 첫 번째 이미지 시도
+    const firstImg = $('img').first();
+    if (firstImg.length > 0) {
+      const src = firstImg.attr('src') || '';
+      if (src && !src.includes('profile') && !src.includes('default')) {
+        console.log(`첫 번째 이미지 발견: ${src}`);
+        return src;
       }
     }
     

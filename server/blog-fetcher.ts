@@ -439,6 +439,95 @@ export async function fetchBlogPosts(
   }
 }
 
+/**
+ * 포스트 상세 페이지에서 실제 이미지를 추출합니다.
+ * @param postUrl 블로그 포스트 URL
+ * @returns 이미지 URL 문자열
+ */
+async function extractPostImage(postUrl: string): Promise<string> {
+  try {
+    const response = await fetch(postUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`포스트 상세페이지 요청 실패: ${response.status}`);
+    }
+    
+    const html = await response.text();
+    const $ = cheerio.load(html);
+    
+    // 포스트 내용에서 이미지 찾기 (다양한 선택자 시도)
+    const imageSelectors = [
+      '.se-image img', '.se-imageStrip img', '.se-module-image img',
+      '.se_image img', '.se_imageStrip img', '.se_module_image img',
+      '.post-view img', '.post_article img', '.entry-content img',
+      '.post_content img', '.se-main-container img', '.se_component img',
+      '.view img', '.blog_content img', '.blogview_content img',
+      'img.se-image-resource'
+    ];
+    
+    let imageUrl = '';
+    
+    // 다양한 선택자로 이미지 찾기
+    for (const selector of imageSelectors) {
+      const image = $(selector).first();
+      if (image.length > 0) {
+        imageUrl = image.attr('src') || image.attr('data-src') || image.attr('data-lazy-src') || '';
+        if (imageUrl) break;
+      }
+    }
+    
+    // 이미지를 찾지 못했다면 og:image 메타 태그 확인
+    if (!imageUrl) {
+      const ogImage = $('meta[property="og:image"]').attr('content');
+      if (ogImage) {
+        imageUrl = ogImage;
+      }
+    }
+    
+    // 이미지를 찾지 못했다면 기본 프로필 이미지 반환
+    return imageUrl || 'https://ssl.pstatic.net/static/blog/blog_profile_thumbnail_150.png';
+    
+  } catch (error) {
+    console.error(`포스트 이미지 추출 오류 (${postUrl}):`, error);
+    return 'https://ssl.pstatic.net/static/blog/blog_profile_thumbnail_150.png';
+  }
+}
+
+/**
+ * 모든 포스트에 대해 상세 이미지를 가져옵니다.
+ * @param posts 블로그 포스트 배열
+ * @returns 이미지가 업데이트된 포스트 배열
+ */
+async function enrichPostsWithImages(posts: BlogPost[]): Promise<BlogPost[]> {
+  const enrichedPosts = [];
+  
+  for (const post of posts) {
+    // 이미 유효한 이미지가 있고 기본 이미지가 아닌 경우 건너뜀
+    if (post.thumbnail && !post.thumbnail.includes('blog_profile_thumbnail_150.png')) {
+      enrichedPosts.push(post);
+      continue;
+    }
+    
+    // 포스트 상세 페이지에서 이미지 추출
+    try {
+      const imageUrl = await extractPostImage(post.link);
+      enrichedPosts.push({
+        ...post,
+        thumbnail: imageUrl
+      });
+    } catch (error) {
+      console.error(`포스트 이미지 업데이트 오류 (${post.id}):`, error);
+      enrichedPosts.push(post);
+    }
+  }
+  
+  return enrichedPosts;
+}
+
 // 블로그 컨텐츠 캐시
 // 카테고리별로 별도의 캐시 유지
 let blogCache: {
@@ -475,13 +564,17 @@ export async function getLatestBlogPosts(
   // 새로운 데이터 가져오기
   const posts = await fetchBlogPosts(blogId, categoryNos, limit);
   
+  // 포스트 상세 페이지에서 이미지 정보 강화
+  console.log(`블로그 포스트 이미지 정보 강화 중... (${posts.length}개)`);
+  const enrichedPosts = await enrichPostsWithImages(posts);
+  
   // 캐시 업데이트
-  if (posts.length > 0) {
+  if (enrichedPosts.length > 0) {
     blogCache[cacheKey] = {
-      posts,
+      posts: enrichedPosts,
       expires: now + CACHE_TTL
     };
   }
   
-  return posts;
+  return enrichedPosts;
 }

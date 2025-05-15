@@ -18,19 +18,18 @@ const REAL_ESTATE_IMAGES = [
   'https://images.unsplash.com/photo-1602941525421-8f8b81d3edbb?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500'
 ];
 
-// 검색 키워드 목록
+// 검색 키워드 목록 (사용자 요청에 따라 업데이트)
 const SEARCH_KEYWORDS = [
   '강화군',
-  '강화군 부동산',
-  '강화도 부동산',
-  '인천 부동산',
-  '강화군 개발',
-  '강화도 투자',
-  '인천 재개발',
-  '강화도 아파트',
-  '인천 아파트',
-  '강화군 부동산 정책'
+  '부동산',
+  '정책',
+  '인천',
+  '개발',
+  '강화도'
 ];
+
+// 검색 키워드 검증용 배열 (중복 제거)
+const KEYWORD_CHECK_ARRAY = [...new Set(SEARCH_KEYWORDS)];
 
 // 네이버 API 호출 함수
 async function fetchNaverNews(keyword: string) {
@@ -265,40 +264,68 @@ export async function fetchAndSaveNews() {
     index === self.findIndex(t => stripHtmlTags(t.title) === stripHtmlTags(item.title))
   );
 
-  // 강화군 관련 뉴스 필터링
-  const ganghwaNewsItems = uniqueNewsItems.filter(item => {
+  // 키워드 개수 확인 함수
+  function countKeywordsInText(text: string): number {
+    let count = 0;
+    for (const keyword of KEYWORD_CHECK_ARRAY) {
+      if (text.includes(keyword.toLowerCase())) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  // 두 개 이상의 키워드가 포함된 뉴스 필터링
+  const relevantNewsItems = uniqueNewsItems.filter(item => {
     const title = stripHtmlTags(item.title).toLowerCase();
     const description = stripHtmlTags(item.description).toLowerCase();
-    return title.includes('강화군') || description.includes('강화군') || 
-           title.includes('강화도') || description.includes('강화도');
+    const combinedText = `${title} ${description}`.toLowerCase();
+    
+    // 두 개 이상의 키워드가 포함된 뉴스만 선택
+    const keywordCount = countKeywordsInText(combinedText);
+    return keywordCount >= 2;
   });
 
-  // 강화군 관련 뉴스 최신순 정렬
-  ganghwaNewsItems.sort((a, b) => 
+  // 중복 단어 제목 필터링 (3개 이상 동일 단어가 있는 뉴스는 한 개만 선택)
+  const duplicateWordGroups: { [key: string]: any[] } = {};
+  const filteredNewsItems: any[] = [];
+
+  for (const item of relevantNewsItems) {
+    const title = stripHtmlTags(item.title);
+    // 제목에 중복 단어가 3개 이상 있는지 확인
+    if (hasTooManyRepeatedWords(title)) {
+      // 중복 단어 그룹에 추가 (그룹화를 위한 간단한 해시 키 생성)
+      const hashKey = title.slice(0, 10).toLowerCase().replace(/\s+/g, '');
+      if (!duplicateWordGroups[hashKey]) {
+        duplicateWordGroups[hashKey] = [];
+      }
+      duplicateWordGroups[hashKey].push(item);
+    } else {
+      // 중복 단어가 없으면 바로 추가
+      filteredNewsItems.push(item);
+    }
+  }
+
+  // 각 중복 그룹에서 가장 최신 뉴스 하나만 선택
+  for (const key in duplicateWordGroups) {
+    if (duplicateWordGroups[key].length > 0) {
+      // 날짜 기준 정렬
+      duplicateWordGroups[key].sort((a, b) => 
+        new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
+      );
+      // 그룹당 하나만 추가
+      filteredNewsItems.push(duplicateWordGroups[key][0]);
+      console.log(`중복 그룹(${key})에서 1개 뉴스만 선택함: ${stripHtmlTags(duplicateWordGroups[key][0].title)}`);
+    }
+  }
+
+  // 최종 뉴스 목록을 날짜 기준으로 정렬
+  filteredNewsItems.sort((a, b) => 
     new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
   );
   
-  // 강화군 관련 뉴스 최대 3개 선택
-  const ganghwaTopNews = ganghwaNewsItems.slice(0, 3);
-  
-  // 나머지 뉴스 (강화군 관련 제외)
-  const otherNewsItems = uniqueNewsItems.filter(item => {
-    const title = stripHtmlTags(item.title).toLowerCase();
-    const description = stripHtmlTags(item.description).toLowerCase();
-    return !(title.includes('강화군') || description.includes('강화군') || 
-             title.includes('강화도') || description.includes('강화도'));
-  });
-  
-  // 나머지 뉴스 최신순 정렬
-  otherNewsItems.sort((a, b) => 
-    new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
-  );
-  
-  // 나머지 뉴스에서 최대 3개 선택
-  const otherTopNews = otherNewsItems.slice(0, 3);
-  
-  // 두 그룹 합치기 (강화군 관련 뉴스 우선)
-  const newsToSave = [...ganghwaTopNews, ...otherTopNews];
+  // 최대 3개의 뉴스만 선택 (스케줄에 따라)
+  const newsToSave = filteredNewsItems.slice(0, 3);
   
   // 저장
   await saveNewsToDatabase(newsToSave);

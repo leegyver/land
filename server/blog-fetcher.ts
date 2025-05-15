@@ -440,9 +440,10 @@ export async function fetchBlogPosts(
 }
 
 /**
- * 포스트의 대표 이미지 URL을 공개 API를 통해 추출합니다.
- * 네이버 블로그 포스트 ID에서 모바일 공유 URL을 생성하고,
- * OpenGraph 태그의 이미지를 추출하는 방법을 사용합니다.
+ * 포스트의 대표 이미지 URL을 여러 방법으로 추출합니다.
+ * 1. 직접 포스트 페이지 액세스 (모바일 및 PC 버전)
+ * 2. 포스트 모바일 버전 iframe 내용 분석
+ * 3. OpenGraph 태그 활용
  * 
  * @param blogId 네이버 블로그 ID
  * @param postId 포스트 ID
@@ -450,66 +451,165 @@ export async function fetchBlogPosts(
  */
 async function extractPostImage(blogId: string, postId: string): Promise<string> {
   try {
-    // 모바일 공유 URL 사용 (OpenGraph 태그 접근이 더 용이함)
+    // 1. 모바일 버전 시도 (더 빠른 로딩, 심플한 구조)
     const mobileUrl = `https://m.blog.naver.com/${blogId}/${postId}`;
-    console.log(`포스트 이미지 추출 시도: ${mobileUrl}`);
+    console.log(`포스트 이미지 추출 시도 (모바일): ${mobileUrl}`);
     
-    const response = await fetch(mobileUrl, {
+    const mobileResponse = await fetch(mobileUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1',
         'Accept': 'text/html,application/xhtml+xml,application/xml',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
+        'Cache-Control': 'no-cache'
       }
     });
     
-    if (!response.ok) {
-      console.error(`모바일 공유 URL 요청 실패: ${response.status} ${response.statusText}`);
-      // 전체 URL 형식으로 시도
-      const fullUrl = `https://blog.naver.com/${blogId}/${postId}`;
-      return await extractPostImageFromFullUrl(fullUrl);
-    }
-    
-    const html = await response.text();
-    const $ = cheerio.load(html);
-    
-    // OpenGraph 이미지 태그 확인 (가장 신뢰할 수 있는 방법)
-    const ogImage = $('meta[property="og:image"]').attr('content');
-    if (ogImage) {
-      console.log(`OpenGraph 이미지 발견: ${ogImage}`);
-      return ogImage;
-    }
-    
-    // 대표 이미지 찾기 (다양한 모바일 선택자)
-    const mobileImageSelectors = [
-      '.se_mediaImage img', '.se-image img', 
-      '.se-section img', 'meta[name="twitter:image"]',
-      '.detail_view img', '.post_ct img'
-    ];
-    
-    for (const selector of mobileImageSelectors) {
-      const imgElem = $(selector).first();
-      if (imgElem.length > 0) {
-        let imgUrl = '';
-        if (selector.includes('meta')) {
-          imgUrl = imgElem.attr('content') || '';
-        } else {
-          imgUrl = imgElem.attr('src') || imgElem.attr('data-src') || '';
+    if (mobileResponse.ok) {
+      const mobileHtml = await mobileResponse.text();
+      const $mobile = cheerio.load(mobileHtml);
+      
+      // 1-1. OpenGraph 태그에서 이미지 URL 확인
+      const ogImage = $mobile('meta[property="og:image"]').attr('content');
+      if (ogImage && !ogImage.includes('og_default_image')) {
+        console.log(`모바일 버전 OpenGraph 이미지 발견: ${ogImage}`);
+        return ogImage;
+      }
+      
+      // 1-2. 실제 포스트 컨텐츠에서 이미지 찾기 (프로필 이미지 제외)
+      const mobileSelectors = [
+        '.se-module-image img', '.se-image img', '.se_component_image img',
+        '.se_mediaImage img', '.se-main-container img', '.se_view_area img',
+        '.post_ct img:not([src*="profile"])', '.blog_ct img:not([src*="profile"])', 
+        '.detail_view img:not([src*="profile"])',
+        'iframe[src*="PostView.nhn"]', 'div[class^="se-"] img:not([src*="profile"])'
+      ];
+      
+      for (const selector of mobileSelectors) {
+        // iframe인 경우 처리
+        if (selector.includes('iframe')) {
+          const iframe = $mobile(selector).first();
+          if (iframe.length > 0) {
+            const iframeSrc = iframe.attr('src');
+            if (iframeSrc) {
+              const iframeImage = await extractImageFromIframe(iframeSrc);
+              if (iframeImage && !iframeImage.includes('og_default_image')) {
+                console.log(`iframe 내 이미지 발견: ${iframeImage}`);
+                return iframeImage;
+              }
+            }
+          }
+          continue;
         }
         
-        if (imgUrl) {
-          console.log(`선택자 ${selector}로 이미지 발견: ${imgUrl}`);
-          return imgUrl;
+        const images = $mobile(selector);
+        if (images.length > 0) {
+          // 첫 번째 이미지 시도
+          const firstImage = images.first();
+          const imgSrc = firstImage.attr('src') || firstImage.attr('data-src') || '';
+          
+          if (imgSrc && 
+              !imgSrc.includes('ssl.pstatic.net/static/blog') && 
+              !imgSrc.includes('default') &&
+              !imgSrc.includes('profile') &&
+              !imgSrc.includes('pfthumb')) {
+            console.log(`모바일 이미지 발견 (${selector}): ${imgSrc}`);
+            return imgSrc;
+          }
+          
+          // 첫 번째 이미지가 없으면, 다른 이미지들도 확인
+          for (let i = 0; i < images.length; i++) {
+            const img = images.eq(i);
+            const src = img.attr('src') || img.attr('data-src') || '';
+            
+            if (src && 
+                !src.includes('ssl.pstatic.net/static/blog') && 
+                !src.includes('default') &&
+                !src.includes('profile') &&
+                !src.includes('pfthumb')) {
+              console.log(`모바일 이미지 발견 (${selector} 인덱스 ${i}): ${src}`);
+              return src;
+            }
+          }
+        }
+      }
+      
+      // 1-3. 임베디드 스크립트 데이터에서 이미지 찾기
+      const scriptContent = $mobile('script:contains("inJsonObject")').html();
+      if (scriptContent) {
+        const jsonMatch = scriptContent.match(/var\s+inJsonObject\s*=\s*([^;]+);/);
+        if (jsonMatch && jsonMatch[1]) {
+          try {
+            const jsonData = JSON.parse(jsonMatch[1]);
+            if (jsonData.mainEntityOfPage && jsonData.mainEntityOfPage.image) {
+              const jsonImage = jsonData.mainEntityOfPage.image;
+              console.log(`스크립트 데이터에서 이미지 발견: ${jsonImage}`);
+              return jsonImage;
+            }
+          } catch (e) {
+            console.error('JSON 파싱 실패:', e);
+          }
         }
       }
     }
     
-    // 대안 방법으로 전체 URL 형식 시도
+    // 2. PC 버전 시도 (더 상세한 정보, 하지만 로딩이 더 느림)
+    console.log('모바일 버전에서 이미지를 찾지 못함, PC 버전 시도');
     return await extractPostImageFromFullUrl(`https://blog.naver.com/${blogId}/${postId}`);
     
   } catch (error) {
     console.error(`포스트 이미지 추출 오류 (${blogId}/${postId}):`, error);
     return 'https://ssl.pstatic.net/static/blog/blog_profile_thumbnail_150.png';
+  }
+}
+
+/**
+ * iframe에서 이미지 URL을 추출합니다.
+ * @param iframeSrc iframe 소스 URL
+ * @returns 이미지 URL 또는 빈 문자열
+ */
+async function extractImageFromIframe(iframeSrc: string): Promise<string> {
+  try {
+    // iframe URL이 상대 경로인 경우 처리
+    const fullIframeSrc = iframeSrc.startsWith('http') 
+      ? iframeSrc 
+      : `https://blog.naver.com${iframeSrc.startsWith('/') ? '' : '/'}${iframeSrc}`;
+      
+    console.log(`iframe 내용 검색: ${fullIframeSrc}`);
+    
+    const response = await fetch(fullIframeSrc, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1'
+      }
+    });
+    
+    if (!response.ok) {
+      return '';
+    }
+    
+    const html = await response.text();
+    const $ = cheerio.load(html);
+    
+    // iframe 내 이미지 찾기
+    const selectors = [
+      'div[class^="se-"] img', '.se-image img', '.post_ct img',
+      '.se_view_area img', '.se-main-container img'
+    ];
+    
+    for (const selector of selectors) {
+      const images = $(selector);
+      if (images.length > 0) {
+        for (let i = 0; i < images.length; i++) {
+          const src = images.eq(i).attr('src') || images.eq(i).attr('data-src') || '';
+          if (src && !src.includes('ssl.pstatic.net/static/blog') && !src.includes('default')) {
+            return src;
+          }
+        }
+      }
+    }
+    
+    return '';
+  } catch (error) {
+    console.error('iframe 이미지 추출 오류:', error);
+    return '';
   }
 }
 
@@ -577,6 +677,19 @@ async function extractPostImageFromFullUrl(fullUrl: string): Promise<string> {
 }
 
 /**
+ * 카테고리에 따라 대체 이미지를 반환합니다.
+ */
+function getFallbackImageByCategory(category: string): string {
+  const images = {
+    '일상다반사': 'https://postfiles.pstatic.net/MjAyNTA1MTVfMTcx/MDAxNzQ3Mjc1ODY0OTg0.Y6dMg4MXEH7z76FCzTcLqgC-GYfbzN5zoN6z5_CZ8PAg.XP_G5M7-5HB4LO0YCHbcNnZcf1MEpq0v7Av-XPsGw-8g.PNG/daily-life.png?type=w580',
+    '취미생활': 'https://postfiles.pstatic.net/MjAyNTA1MTVfMjMw/MDAxNzQ3Mjc1ODY1MDc5.h8DFsfhT_sEYA41xDUQRPSUQK5FaXO34PJ-Q4Xw9FWUg.bvGY5GnSiP9KoXXOaTg9Nzfk0Xv6ixkK3gOxvAjJxdQg.PNG/hobby.png?type=w580',
+    '세상이야기': 'https://postfiles.pstatic.net/MjAyNTA1MTVfNTYg/MDAxNzQ3Mjc1ODY1MTQz.1lTZM1oxLQlxw3nNcyeHvV3CpxrVwZQMg_cN2GlWBJMg.-Bi6JK8-rEdQYK07Y9aE5Y9Zrjra9ZDu8KlUbTsAWJEg.PNG/world-stories.png?type=w580'
+  };
+  
+  return images[category] || 'https://ssl.pstatic.net/static/blog/blog_profile_thumbnail_150.png';
+}
+
+/**
  * 모든 포스트에 대해 상세 이미지를 가져옵니다.
  * @param posts 블로그 포스트 배열
  * @returns 이미지가 업데이트된 포스트 배열
@@ -585,8 +698,12 @@ async function enrichPostsWithImages(posts: BlogPost[]): Promise<BlogPost[]> {
   const enrichedPosts = [];
   
   for (const post of posts) {
-    // 이미 유효한 이미지가 있고 기본 이미지가 아닌 경우 건너뜀
-    if (post.thumbnail && !post.thumbnail.includes('blog_profile_thumbnail_150.png')) {
+    // 이미 유효한 이미지가 있고 기본 이미지나 프로필 이미지가 아닌 경우 건너뜀
+    if (post.thumbnail && 
+        !post.thumbnail.includes('blog_profile_thumbnail_150.png') &&
+        !post.thumbnail.includes('profile') &&
+        !post.thumbnail.includes('pfthumb') &&
+        !post.thumbnail.includes('og_default_image')) {
       enrichedPosts.push(post);
       continue;
     }
@@ -597,14 +714,29 @@ async function enrichPostsWithImages(posts: BlogPost[]): Promise<BlogPost[]> {
     
     // 포스트 상세 페이지에서 이미지 추출
     try {
-      const imageUrl = await extractPostImage(blogId, postId);
+      let imageUrl = await extractPostImage(blogId, postId);
+      
+      // 이미지가 여전히 기본 이미지이거나 프로필 이미지인 경우 대체 이미지 사용
+      if (imageUrl.includes('blog_profile_thumbnail_150.png') || 
+          imageUrl.includes('profile') || 
+          imageUrl.includes('pfthumb') ||
+          imageUrl.includes('og_default_image')) {
+        imageUrl = getFallbackImageByCategory(post.category);
+        console.log(`카테고리 기반 대체 이미지 사용: ${post.category} -> ${imageUrl}`);
+      }
+      
       enrichedPosts.push({
         ...post,
         thumbnail: imageUrl
       });
     } catch (error) {
       console.error(`포스트 이미지 업데이트 오류 (${post.id}):`, error);
-      enrichedPosts.push(post);
+      // 오류 발생 시 카테고리 기반 대체 이미지 사용
+      const fallbackImage = getFallbackImageByCategory(post.category);
+      enrichedPosts.push({
+        ...post,
+        thumbnail: fallbackImage
+      });
     }
   }
   

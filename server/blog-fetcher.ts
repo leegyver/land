@@ -440,59 +440,138 @@ export async function fetchBlogPosts(
 }
 
 /**
- * 포스트 상세 페이지에서 실제 이미지를 추출합니다.
- * @param postUrl 블로그 포스트 URL
+ * 포스트의 대표 이미지 URL을 공개 API를 통해 추출합니다.
+ * 네이버 블로그 포스트 ID에서 모바일 공유 URL을 생성하고,
+ * OpenGraph 태그의 이미지를 추출하는 방법을 사용합니다.
+ * 
+ * @param blogId 네이버 블로그 ID
+ * @param postId 포스트 ID
  * @returns 이미지 URL 문자열
  */
-async function extractPostImage(postUrl: string): Promise<string> {
+async function extractPostImage(blogId: string, postId: string): Promise<string> {
   try {
-    const response = await fetch(postUrl, {
+    // 모바일 공유 URL 사용 (OpenGraph 태그 접근이 더 용이함)
+    const mobileUrl = `https://m.blog.naver.com/${blogId}/${postId}`;
+    console.log(`포스트 이미지 추출 시도: ${mobileUrl}`);
+    
+    const response = await fetch(mobileUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1',
+        'Accept': 'text/html,application/xhtml+xml,application/xml',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
       }
     });
     
     if (!response.ok) {
-      throw new Error(`포스트 상세페이지 요청 실패: ${response.status}`);
+      console.error(`모바일 공유 URL 요청 실패: ${response.status} ${response.statusText}`);
+      // 전체 URL 형식으로 시도
+      const fullUrl = `https://blog.naver.com/${blogId}/${postId}`;
+      return await extractPostImageFromFullUrl(fullUrl);
     }
     
     const html = await response.text();
     const $ = cheerio.load(html);
     
-    // 포스트 내용에서 이미지 찾기 (다양한 선택자 시도)
-    const imageSelectors = [
+    // OpenGraph 이미지 태그 확인 (가장 신뢰할 수 있는 방법)
+    const ogImage = $('meta[property="og:image"]').attr('content');
+    if (ogImage) {
+      console.log(`OpenGraph 이미지 발견: ${ogImage}`);
+      return ogImage;
+    }
+    
+    // 대표 이미지 찾기 (다양한 모바일 선택자)
+    const mobileImageSelectors = [
+      '.se_mediaImage img', '.se-image img', 
+      '.se-section img', 'meta[name="twitter:image"]',
+      '.detail_view img', '.post_ct img'
+    ];
+    
+    for (const selector of mobileImageSelectors) {
+      const imgElem = $(selector).first();
+      if (imgElem.length > 0) {
+        let imgUrl = '';
+        if (selector.includes('meta')) {
+          imgUrl = imgElem.attr('content') || '';
+        } else {
+          imgUrl = imgElem.attr('src') || imgElem.attr('data-src') || '';
+        }
+        
+        if (imgUrl) {
+          console.log(`선택자 ${selector}로 이미지 발견: ${imgUrl}`);
+          return imgUrl;
+        }
+      }
+    }
+    
+    // 대안 방법으로 전체 URL 형식 시도
+    return await extractPostImageFromFullUrl(`https://blog.naver.com/${blogId}/${postId}`);
+    
+  } catch (error) {
+    console.error(`포스트 이미지 추출 오류 (${blogId}/${postId}):`, error);
+    return 'https://ssl.pstatic.net/static/blog/blog_profile_thumbnail_150.png';
+  }
+}
+
+/**
+ * 전체 URL에서 포스트 이미지를 추출하는 백업 함수
+ * @param fullUrl 블로그 전체 URL
+ * @returns 이미지 URL 문자열
+ */
+async function extractPostImageFromFullUrl(fullUrl: string): Promise<string> {
+  try {
+    console.log(`전체 URL로 이미지 추출 시도: ${fullUrl}`);
+    
+    const response = await fetch(fullUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml',
+        'Cache-Control': 'no-cache'
+      }
+    });
+    
+    if (!response.ok) {
+      console.error(`URL 요청 실패: ${response.status} ${response.statusText}`);
+      return 'https://ssl.pstatic.net/static/blog/blog_profile_thumbnail_150.png';
+    }
+    
+    const html = await response.text();
+    const $ = cheerio.load(html);
+    
+    // OpenGraph 태그 확인
+    const ogImage = $('meta[property="og:image"]').attr('content');
+    if (ogImage) {
+      console.log(`전체 URL에서 OpenGraph 이미지 발견: ${ogImage}`);
+      return ogImage;
+    }
+    
+    // 다양한 선택자로 이미지 찾기
+    const pcImageSelectors = [
       '.se-image img', '.se-imageStrip img', '.se-module-image img',
       '.se_image img', '.se_imageStrip img', '.se_module_image img',
       '.post-view img', '.post_article img', '.entry-content img',
       '.post_content img', '.se-main-container img', '.se_component img',
       '.view img', '.blog_content img', '.blogview_content img',
-      'img.se-image-resource'
+      'img.se-image-resource', '.post_title + div img'
     ];
     
-    let imageUrl = '';
-    
-    // 다양한 선택자로 이미지 찾기
-    for (const selector of imageSelectors) {
-      const image = $(selector).first();
-      if (image.length > 0) {
-        imageUrl = image.attr('src') || image.attr('data-src') || image.attr('data-lazy-src') || '';
-        if (imageUrl) break;
+    for (const selector of pcImageSelectors) {
+      const imgElem = $(selector).first();
+      if (imgElem.length > 0) {
+        const imgUrl = imgElem.attr('src') || imgElem.attr('data-src') || '';
+        if (imgUrl) {
+          console.log(`전체 URL에서 선택자 ${selector}로 이미지 발견: ${imgUrl}`);
+          return imgUrl;
+        }
       }
     }
     
-    // 이미지를 찾지 못했다면 og:image 메타 태그 확인
-    if (!imageUrl) {
-      const ogImage = $('meta[property="og:image"]').attr('content');
-      if (ogImage) {
-        imageUrl = ogImage;
-      }
-    }
-    
-    // 이미지를 찾지 못했다면 기본 프로필 이미지 반환
-    return imageUrl || 'https://ssl.pstatic.net/static/blog/blog_profile_thumbnail_150.png';
+    // 어떤 이미지도 찾지 못한 경우
+    console.log('이미지를 찾지 못했습니다. 기본 이미지 반환');
+    return 'https://ssl.pstatic.net/static/blog/blog_profile_thumbnail_150.png';
     
   } catch (error) {
-    console.error(`포스트 이미지 추출 오류 (${postUrl}):`, error);
+    console.error(`전체 URL 이미지 추출 오류 (${fullUrl}):`, error);
     return 'https://ssl.pstatic.net/static/blog/blog_profile_thumbnail_150.png';
   }
 }
@@ -512,9 +591,13 @@ async function enrichPostsWithImages(posts: BlogPost[]): Promise<BlogPost[]> {
       continue;
     }
     
+    // 블로그 ID와 포스트 ID 추출
+    const blogId = post.link.split('/')[3]; // URL 형식에서 블로그 ID 추출
+    const postId = post.id; // 이미 포스트 ID를 저장하고 있음
+    
     // 포스트 상세 페이지에서 이미지 추출
     try {
-      const imageUrl = await extractPostImage(post.link);
+      const imageUrl = await extractPostImage(blogId, postId);
       enrichedPosts.push({
         ...post,
         thumbnail: imageUrl

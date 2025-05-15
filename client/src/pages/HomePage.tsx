@@ -195,17 +195,10 @@ const HomePage = () => {
               ) : latestBlogPosts && latestBlogPosts.length > 0 ? (
                 latestBlogPosts.slice(0, 3).map((post) => (
                   <Card key={post.id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition h-full flex flex-col">
-                    <div className="h-40 overflow-hidden">
-                      <img 
-                        src={post.thumbnail || 'https://via.placeholder.com/400x200?text=블로그+이미지'} 
-                        alt={post.title} 
-                        className="w-full h-full object-cover object-center"
-                      />
-                    </div>
                     <CardContent className="p-4 flex-grow">
                       <div className="flex items-center gap-2 mb-2">
                         <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200 text-xs">
-                          {post.category}
+                          부동산 최신글
                         </Badge>
                         <span className="text-xs text-gray-500">
                           {post.publishedAt}
@@ -217,15 +210,10 @@ const HomePage = () => {
                         rel="noopener noreferrer"
                         className="block"
                       >
-                        <h3 className="text-lg font-semibold mb-2 line-clamp-2 hover:text-green-600 transition-colors">
+                        <h3 className="text-lg font-semibold mb-3 hover:text-green-600 transition-colors">
                           {post.title}
                         </h3>
                       </a>
-                      {post.summary && (
-                        <p className="text-sm text-gray-600 line-clamp-2 mb-2">
-                          {post.summary}
-                        </p>
-                      )}
                     </CardContent>
                     <CardFooter className="p-4 pt-1">
                       <a 

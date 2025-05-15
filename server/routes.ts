@@ -734,6 +734,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 최신 유튜브 영상 가져오기
+  app.get("/api/youtube/latest", async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
+      
+      // 캐시에서 확인
+      const cacheKey = `youtube_latest_${limit}`;
+      const cachedVideos = memoryCache.get(cacheKey);
+      
+      if (cachedVideos) {
+        return res.json(cachedVideos);
+      }
+      
+      // 강화도부동산 유튜브 채널에서 최신 영상 가져오기
+      const channelUrl = "https://www.youtube.com/@%EA%B0%95%ED%99%94%EB%8F%84%EB%B6%80%EB%8F%99%EC%82%B0/featured";
+      const videos = await getLatestYouTubeVideos(channelUrl, limit);
+      
+      // 캐시에 저장 (6시간)
+      memoryCache.set(cacheKey, videos, 6 * 60 * 60 * 1000);
+      
+      res.json(videos);
+    } catch (error) {
+      console.error("유튜브 영상 가져오기 오류:", error);
+      res.status(500).json({ 
+        message: "최신 유튜브 영상을 불러오는데 실패했습니다",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // 최신 뉴스 가져오기
   app.get("/api/news/latest", async (req, res) => {
     try {

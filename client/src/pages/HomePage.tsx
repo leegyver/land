@@ -8,13 +8,27 @@ import { useQuery } from "@tanstack/react-query";
 import { News } from "@shared/schema";
 import { Link } from "wouter";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Calendar, ArrowRight, Newspaper } from "lucide-react";
+import { Calendar, ArrowRight, Newspaper, Youtube, Play } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
+// 유튜브 비디오 타입 정의
+interface YouTubeVideo {
+  id: string;
+  title: string;
+  thumbnail: string;
+  url: string;
+  publishedAt?: string;
+}
+
 const HomePage = () => {
   // agents 관련 쿼리 제거됨
+  
+  // 최신 유튜브 영상 데이터 가져오기
+  const { data: latestVideos, isLoading: isVideosLoading } = useQuery<YouTubeVideo[]>({
+    queryKey: ["/api/youtube/latest"],
+  });
   
   const { data: latestNews } = useQuery<News[]>({
     queryKey: ["/api/news/latest"],
@@ -45,6 +59,90 @@ const HomePage = () => {
             </div>
           </div>
         </div>
+        
+        {/* YouTube Videos Section */}
+        <section id="youtube" className="py-4 bg-gradient-to-r from-red-50 to-red-100">
+          <div className="container mx-auto px-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold flex items-center">
+                <Youtube className="h-6 w-6 mr-2 text-red-600" />
+                강화도부동산 최신 영상
+              </h2>
+              <a 
+                href="https://www.youtube.com/@%EA%B0%95%ED%99%94%EB%8F%84%EB%B6%80%EB%8F%99%EC%82%B0/featured" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-red-600 hover:text-red-700 font-medium flex items-center gap-1"
+              >
+                유튜브 채널 방문하기 <ArrowRight className="h-4 w-4" />
+              </a>
+            </div>
+            
+            {isVideosLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                {[...Array(5)].map((_, i) => (
+                  <Card key={i} className="bg-white rounded-lg overflow-hidden shadow-md h-full flex flex-col animate-pulse">
+                    <div className="h-40 bg-gray-200" />
+                    <CardContent className="p-4 flex-grow">
+                      <div className="h-4 bg-gray-200 rounded-md mb-2 w-1/3"></div>
+                      <div className="h-4 bg-gray-200 rounded-md mb-2 w-full"></div>
+                      <div className="h-4 bg-gray-200 rounded-md w-2/3"></div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : latestVideos && latestVideos.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                {latestVideos.slice(0, 5).map((video) => (
+                  <Card key={video.id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition h-full flex flex-col">
+                    <div className="h-40 overflow-hidden relative group">
+                      <img 
+                        src={video.thumbnail} 
+                        alt={video.title} 
+                        className="w-full h-full object-cover object-center"
+                      />
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 flex items-center justify-center transition-all duration-300">
+                        <div className="w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transform scale-50 group-hover:scale-100 transition-all duration-300">
+                          <Play className="h-6 w-6" />
+                        </div>
+                      </div>
+                    </div>
+                    <CardContent className="p-4 flex-grow">
+                      <a 
+                        href={video.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="block"
+                      >
+                        <h3 className="text-base font-bold mb-2 line-clamp-2 hover:text-red-600 transition-colors">
+                          {video.title}
+                        </h3>
+                      </a>
+                    </CardContent>
+                    <CardFooter className="p-4 pt-0">
+                      <div className="flex items-center text-xs text-gray-medium">
+                        <Youtube className="h-3 w-3 mr-1 text-red-600" />
+                        강화도부동산
+                      </div>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg p-4 shadow text-center">
+                <p className="text-gray-medium">현재 유튜브 영상을 불러올 수 없습니다. 나중에 다시 시도해주세요.</p>
+                <a 
+                  href="https://www.youtube.com/@%EA%B0%95%ED%99%94%EB%8F%84%EB%B6%80%EB%8F%99%EC%82%B0/featured" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-red-600 hover:text-red-700 font-medium inline-flex items-center gap-1 mt-2"
+                >
+                  유튜브에서 직접 보기 <ArrowRight className="h-4 w-4" />
+                </a>
+              </div>
+            )}
+          </div>
+        </section>
         
         {/* News Section */}
         <section id="news" className="py-4 bg-gray-light">

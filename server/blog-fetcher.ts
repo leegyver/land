@@ -63,13 +63,14 @@ export async function fetchBlogPostsByCategory(
     let $ = cheerio.load(html);
     let posts: BlogPost[] = [];
     
+    // 추출된 포스트 카운트 변수 (함수 전체에서 사용)
+    let extractedCount = 0;
+    
     // PC 버전 파싱 시도 - 다양한 클래스 선택자 시도 (카테고리별 충분한 포스트 가져오기)
     const postElements = $('.post_item, .lst_item, .se-post-item, .se_post_item, .blog2_post, .blog2_series, .post, .link-post, .list_item, .blog .item');
     
     if (postElements.length > 0) {
       console.log(`PC 버전 파싱: ${postElements.length}개 요소 찾음 (최대 ${limit}개 가져올 예정)`);
-      
-      let extractedCount = 0;
       postElements.each((i, element) => {
         if (extractedCount >= limit) return false; // 충분한 수의 포스트를 가져왔으면 중단
         
@@ -214,6 +215,8 @@ export async function fetchBlogPostsByCategory(
             }
           }
           
+          extractedCount++; // 성공적으로 추출한 포스트 카운트 증가
+          console.log(`네이버 블로그 포스트 추출 성공 (${extractedCount}/${limit}), 카테고리: ${CATEGORY_NAMES[categoryNo] || categoryNo}`);
           posts.push({
             id: postId,
             title,
@@ -247,10 +250,13 @@ export async function fetchBlogPostsByCategory(
         // 모바일 버전 파싱 - 다양한 선택자 시도
         const mobilePostElements = $('._itemSection, .list_item, .se_post, .post_item, .se_card, .post, .postlist');
         
-        console.log(`모바일 버전 파싱: ${mobilePostElements.length}개 요소 찾음`);
+        console.log(`모바일 버전 파싱: ${mobilePostElements.length}개 요소 찾음 (최대 ${limit}개 가져올 예정)`);
+        
+        // extractedCount 변수 재설정
+        extractedCount = posts.length;
         
         mobilePostElements.each((i, element) => {
-          if (i >= limit) return;
+          if (extractedCount >= limit) return false; // 충분한 수의 포스트를 가져왔으면 중단
           
           try {
             const $el = $(element);
@@ -367,6 +373,8 @@ export async function fetchBlogPostsByCategory(
               }
             }
             
+            extractedCount++; // 모바일 버전에서 추출한 포스트 카운트 증가
+            console.log(`네이버 블로그 포스트 추출 성공 (${extractedCount}/${limit}), 카테고리: ${CATEGORY_NAMES[categoryNo] || categoryNo} (모바일)`);
             posts.push({
               id: postId,
               title,

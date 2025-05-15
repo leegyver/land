@@ -39,7 +39,7 @@ const CATEGORY_NAMES: CategoryMapping = {
 export async function fetchBlogPostsByCategory(
   blogId: string,
   categoryNo: string,
-  limit: number = 5
+  limit: number = 10 // 카테고리별 10개로 증가
 ): Promise<BlogPost[]> {
   try {
     console.log(`네이버 블로그 포스트 요청: blogId=${blogId}, categoryNo=${categoryNo}`);
@@ -63,14 +63,15 @@ export async function fetchBlogPostsByCategory(
     let $ = cheerio.load(html);
     let posts: BlogPost[] = [];
     
-    // PC 버전 파싱 시도 - 다양한 클래스 선택자 시도
-    const postElements = $('.post_item, .lst_item, .se-post-item, .se_post_item, .blog2_post, .blog2_series, .post, .link-post, .list_item');
+    // PC 버전 파싱 시도 - 다양한 클래스 선택자 시도 (카테고리별 충분한 포스트 가져오기)
+    const postElements = $('.post_item, .lst_item, .se-post-item, .se_post_item, .blog2_post, .blog2_series, .post, .link-post, .list_item, .blog .item');
     
     if (postElements.length > 0) {
-      console.log(`PC 버전 파싱: ${postElements.length}개 요소 찾음`);
+      console.log(`PC 버전 파싱: ${postElements.length}개 요소 찾음 (최대 ${limit}개 가져올 예정)`);
       
+      let extractedCount = 0;
       postElements.each((i, element) => {
-        if (i >= limit) return;
+        if (extractedCount >= limit) return false; // 충분한 수의 포스트를 가져왔으면 중단
         
         try {
           const $el = $(element);
@@ -411,7 +412,7 @@ export async function fetchBlogPosts(
 ): Promise<BlogPost[]> {
   try {
     // 카테고리별로 여러 개의 포스트를 가져오도록 변경 (날짜순 정렬 후 선별하기 위함)
-    const eachCategoryLimit = 3; // 각 카테고리별 가져올 포스트 수
+    const eachCategoryLimit = 10; // 각 카테고리별로 10개씩 가져와서 최신 글 추출
     
     // 각 카테고리별로 병렬 요청
     const postsPromises = categoryNos.map(categoryNo => 

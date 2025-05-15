@@ -46,9 +46,16 @@ export async function fetchBlogPostsByCategory(
     console.log(`네이버 블로그 포스트 요청: blogId=${blogId}, categoryNo=${categoryNo}`);
     
     // 블로그 카테고리 URL - PC버전과 모바일 버전 모두 시도 (상위 카테고리 포함)
-    // parentCategoryNo 파라미터를 추가하여 하위 카테고리도 포함하여 검색
-    const pcUrl = `https://blog.naver.com/PostList.naver?blogId=${blogId}&categoryNo=${categoryNo}&parentCategoryNo=${categoryNo}`;
-    const mobileUrl = `https://m.blog.naver.com/${blogId}?categoryNo=${categoryNo}&parentCategoryNo=${categoryNo}`;
+    // 하위 카테고리를 포함하는 방식으로 URL 구성
+    // 1. categoryNo=0&parentCategoryNo=카테고리 - 특정 상위 카테고리의 모든 하위 카테고리 포함
+    // 2. categoryNo=카테고리 - 특정 카테고리만 조회
+    const pcUrl = categoryNo === '0' 
+      ? `https://blog.naver.com/PostList.naver?blogId=${blogId}&categoryNo=0&parentCategoryNo=11` 
+      : `https://blog.naver.com/PostList.naver?blogId=${blogId}&categoryNo=${categoryNo}`;
+    
+    const mobileUrl = categoryNo === '0'
+      ? `https://m.blog.naver.com/${blogId}?categoryNo=0&parentCategoryNo=11`
+      : `https://m.blog.naver.com/${blogId}?categoryNo=${categoryNo}`;
     
     // 먼저 PC버전 시도
     let response = await fetch(pcUrl, {
@@ -422,11 +429,23 @@ export async function fetchBlogPosts(
     // 모든 포스트를 하나의 배열로 합치기
     const allPosts = postsArrays.flat();
     
-    // 더미 데이터 필터링 ("아직 작성된 글이 없습니다." 제목의 게시물 제거)
+    // 더미 데이터 필터링 및 중복 제거
+    const uniquePostIds = new Set<string>();
     const filteredPosts = allPosts.filter(post => {
-      return post.title !== "아직 작성된 글이 없습니다." && 
-             !post.id.startsWith("post-") &&
-             post.title.trim() !== "";
+      // 필터링 조건 - 더미 데이터 제거
+      const isValid = post.title !== "아직 작성된 글이 없습니다." && 
+                      !post.id.startsWith("post-") &&
+                      post.title.trim() !== "";
+      
+      // 중복 제거
+      if (isValid) {
+        if (uniquePostIds.has(post.id)) {
+          return false; // 이미 있는 ID는 제외
+        }
+        uniquePostIds.add(post.id);
+        return true;
+      }
+      return false;
     });
     
     // 날짜 기준으로 최신순 정렬 (날짜 포맷이 YYYY.MM.DD 형식인 경우)

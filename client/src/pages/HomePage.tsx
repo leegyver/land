@@ -172,7 +172,7 @@ const HomePage = () => {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold flex items-center">
                 <BookOpen className="h-6 w-6 mr-2 text-green-600" />
-                부동산 블로그
+                이가이버 블로그 포럼
               </h2>
               <a 
                 href="https://blog.naver.com/9551304" 
@@ -180,7 +180,7 @@ const HomePage = () => {
                 rel="noopener noreferrer"
                 className="text-green-600 hover:text-green-700 font-medium flex items-center gap-1"
               >
-                블로그 방문하기 <ArrowRight className="h-4 w-4" />
+                포럼 방문하기 <ArrowRight className="h-4 w-4" />
               </a>
             </div>
             
@@ -198,7 +198,7 @@ const HomePage = () => {
                     <CardContent className="p-4 flex-grow">
                       <div className="flex items-center gap-2 mb-2">
                         <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200 text-xs">
-                          부동산 최신글
+                          블로그 최신글
                         </Badge>
                         <span className="text-xs text-gray-500">
                           {post.publishedAt}

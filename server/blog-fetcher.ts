@@ -22,9 +22,9 @@ interface CategoryMapping {
 }
 
 // 카테고리 ID를 사람이 읽을 수 있는 이름으로 매핑
-// 지정된 카테고리: 11(부동산 최신글)
+// 지정된 카테고리: 11(블로그 최신글)
 const CATEGORY_NAMES: CategoryMapping = {
-  '11': '부동산 최신글',
+  '11': '블로그 최신글',
   '21': '일상다반사',
   '35': '취미생활',
   '36': '세상이야기'
@@ -405,9 +405,9 @@ export async function fetchBlogPostsByCategory(
 export async function fetchBlogPosts(
   blogId: string = '9551304',
   // 카테고리를 지정:
-  // - 11: 부동산 최신글 (하위 카테고리 포함)
+  // - 11: 블로그 최신글 (하위 카테고리 포함)
   categoryNos: string[] = ['11'],
-  limit: number = 5
+  limit: number = 10 // 더 많은 포스트를 가져오도록 증가
 ): Promise<BlogPost[]> {
   try {
     // 각 카테고리별로 병렬 요청
@@ -798,7 +798,7 @@ async function extractPostImageFromFullUrl(fullUrl: string): Promise<string> {
  */
 function getFallbackImageByCategory(category: string): string {
   const images: {[key: string]: string} = {
-    '부동산 최신글': 'https://postfiles.pstatic.net/MjAyNTA1MTVfNDUg/MDAxNzQ3Mjc5ODEwNTIw.qHs3YM7qoTZ0kSU-XA-HNO3Tb6Y1Q4Y5ukGp5_Y-QTUg.SCWTRIvQFPgjLaT8vU_6XCTEOl7MNjSBtXmM1sGGD6Qg.PNG/house-icon.png?type=w580',
+    '블로그 최신글': 'https://postfiles.pstatic.net/MjAyNTA1MTVfNDUg/MDAxNzQ3Mjc5ODEwNTIw.qHs3YM7qoTZ0kSU-XA-HNO3Tb6Y1Q4Y5ukGp5_Y-QTUg.SCWTRIvQFPgjLaT8vU_6XCTEOl7MNjSBtXmM1sGGD6Qg.PNG/house-icon.png?type=w580',
     '일상다반사': 'https://postfiles.pstatic.net/MjAyNTA1MTVfMTcx/MDAxNzQ3Mjc1ODY0OTg0.Y6dMg4MXEH7z76FCzTcLqgC-GYfbzN5zoN6z5_CZ8PAg.XP_G5M7-5HB4LO0YCHbcNnZcf1MEpq0v7Av-XPsGw-8g.PNG/daily-life.png?type=w580',
     '취미생활': 'https://postfiles.pstatic.net/MjAyNTA1MTVfMjMw/MDAxNzQ3Mjc1ODY1MDc5.h8DFsfhT_sEYA41xDUQRPSUQK5FaXO34PJ-Q4Xw9FWUg.bvGY5GnSiP9KoXXOaTg9Nzfk0Xv6ixkK3gOxvAjJxdQg.PNG/hobby.png?type=w580',
     '세상이야기': 'https://postfiles.pstatic.net/MjAyNTA1MTVfNTYg/MDAxNzQ3Mjc1ODY1MTQz.1lTZM1oxLQlxw3nNcyeHvV3CpxrVwZQMg_cN2GlWBJMg.-Bi6JK8-rEdQYK07Y9aE5Y9Zrjra9ZDu8KlUbTsAWJEg.PNG/world-stories.png?type=w580'

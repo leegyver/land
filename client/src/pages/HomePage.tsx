@@ -31,6 +31,7 @@ interface BlogPost {
   publishedAt: string;
   category: string;
   summary?: string;
+  contentImages?: string[]; // 포스트 내의 모든 이미지 URL 배열
 }
 
 const HomePage = () => {

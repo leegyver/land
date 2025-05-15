@@ -3,7 +3,7 @@ import { storage } from './storage';
 import { db } from './db';
 import { news } from '@shared/schema';
 import { log } from './vite';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import * as cheerio from 'cheerio';
 
 const SEARCH_ENDPOINT = "https://openapi.naver.com/v1/search/news.json";
@@ -90,10 +90,31 @@ function stripHtmlTags(html: string): string {
   return text;
 }
 
-// 중복 체크 함수
+// 중복 체크 함수 - 정확한 제목 매칭
 async function isNewsAlreadyExists(title: string): Promise<boolean> {
   const existingNews = await db.select().from(news).where(eq(news.title, title));
   return existingNews.length > 0;
+}
+
+// 유사 제목으로 중복 체크 함수 (제목에 특정 키워드가 공통으로 포함된 경우)
+async function isSimilarNewsExists(title: string): Promise<boolean> {
+  // 제목에서 주요 키워드 추출 (3글자 이상의 단어만)
+  const words = title.split(/\s+/).filter(word => word.length >= 3);
+  
+  // 각 단어로 검색해서 매칭되는 뉴스가 있는지 확인
+  for (const word of words) {
+    if (word.length >= 4) { // 4글자 이상 키워드만 체크
+      const query = `%${word}%`;
+      const similarNews = await db.select().from(news).where(sql`${news.title} LIKE ${query}`);
+      
+      if (similarNews.length > 0) {
+        console.log(`유사 뉴스 발견: "${title}" 와 "${similarNews[0].title}" (공통 키워드: ${word})`);
+        return true;
+      }
+    }
+  }
+  
+  return false;
 }
 
 // 제목에 동일한 단어가 3개 이상 사용되었는지 확인
@@ -169,16 +190,36 @@ async function extractImageFromNews(url: string): Promise<string | null> {
   }
 }
 
-// 뉴스 저장 함수
-async function saveNewsToDatabase(newsItems: any[]) {
+// 뉴스 저장 함수 (강화된 중복 체크)
+async function saveNewsToDatabase(newsItems: any[]): Promise<number> {
+  let savedCount = 0;
+  const processedTitles = new Set<string>(); // 현재 처리 과정에서의 중복 제거용
+  
   for (const item of newsItems) {
     try {
       const cleanTitle = stripHtmlTags(item.title);
       const cleanDesc = stripHtmlTags(item.description);
       
-      // 중복 체크
+      // 이미 이번 배치에서 처리한 제목인지 확인 (동일 세션 내 중복 방지)
+      if (processedTitles.has(cleanTitle)) {
+        console.log(`세션 내 중복 제목 무시: "${cleanTitle}"`);
+        continue;
+      }
+      
+      // 현재 처리 목록에 추가
+      processedTitles.add(cleanTitle);
+      
+      // DB에 동일한 제목이 있는지 확인
       const exists = await isNewsAlreadyExists(cleanTitle);
       if (exists) {
+        console.log(`기존 뉴스 중복 무시: "${cleanTitle}"`);
+        continue;
+      }
+      
+      // 유사한 뉴스가 이미 있는지 확인 (키워드 기반)
+      const similarExists = await isSimilarNewsExists(cleanTitle);
+      if (similarExists) {
+        console.log(`유사 뉴스 중복 무시: "${cleanTitle}"`);
         continue;
       }
       
@@ -212,10 +253,19 @@ async function saveNewsToDatabase(newsItems: any[]) {
       });
       
       log(`새로운 뉴스 저장됨: ${cleanTitle}`, 'info');
+      savedCount++;
+      
+      // 최대 3개까지만 저장
+      if (savedCount >= 3) {
+        log(`최대 저장 개수(3개)에 도달하여 중단합니다.`, 'info');
+        break;
+      }
     } catch (error) {
       log(`뉴스 저장 오류: ${error}`, 'error');
     }
   }
+  
+  return savedCount;
 }
 
 // 기존 뉴스에서 중복 단어가 많은 항목 필터링
@@ -245,6 +295,8 @@ async function filterExistingNewsByRepeatedWords() {
 
 // 메인 실행 함수
 export async function fetchAndSaveNews() {
+  log(`뉴스 수집 시작: ${new Date().toLocaleString()}`, 'info');
+  
   // 기존 뉴스 필터링 (중복 단어가 많은 항목)
   await filterExistingNewsByRepeatedWords();
   
@@ -252,6 +304,7 @@ export async function fetchAndSaveNews() {
 
   // 각 키워드별로 검색 실행
   for (const keyword of SEARCH_KEYWORDS) {
+    log(`키워드로 뉴스 검색: "${keyword}"`, 'info');
     const newsItems = await fetchNaverNews(keyword);
     allNewsItems = [...allNewsItems, ...newsItems];
     
@@ -259,16 +312,27 @@ export async function fetchAndSaveNews() {
     await new Promise(resolve => setTimeout(resolve, 500));
   }
 
-  // 중복 제거
-  const uniqueNewsItems = allNewsItems.filter((item, index, self) =>
-    index === self.findIndex(t => stripHtmlTags(t.title) === stripHtmlTags(item.title))
-  );
+  log(`총 ${allNewsItems.length}개의 뉴스 항목 수집됨`, 'info');
+
+  // 중복 제거 (제목 기준)
+  const titleSet = new Set<string>();
+  const uniqueNewsItems: any[] = [];
+
+  for (const item of allNewsItems) {
+    const title = stripHtmlTags(item.title);
+    if (!titleSet.has(title)) {
+      titleSet.add(title);
+      uniqueNewsItems.push(item);
+    }
+  }
+
+  log(`중복 제거 후 ${uniqueNewsItems.length}개 뉴스 항목 남음`, 'info');
 
   // 키워드 개수 확인 함수
   function countKeywordsInText(text: string): number {
     let count = 0;
     for (const keyword of KEYWORD_CHECK_ARRAY) {
-      if (text.includes(keyword.toLowerCase())) {
+      if (text.toLowerCase().includes(keyword.toLowerCase())) {
         count++;
       }
     }
@@ -279,14 +343,22 @@ export async function fetchAndSaveNews() {
   const relevantNewsItems = uniqueNewsItems.filter(item => {
     const title = stripHtmlTags(item.title).toLowerCase();
     const description = stripHtmlTags(item.description).toLowerCase();
-    const combinedText = `${title} ${description}`.toLowerCase();
+    const combinedText = `${title} ${description}`;
     
     // 두 개 이상의 키워드가 포함된 뉴스만 선택
     const keywordCount = countKeywordsInText(combinedText);
-    return keywordCount >= 2;
+    const isRelevant = keywordCount >= 2;
+    
+    if (isRelevant) {
+      log(`관련 뉴스 발견 (${keywordCount}개 키워드 포함): "${title}"`, 'info');
+    }
+    
+    return isRelevant;
   });
 
-  // 중복 단어 제목 필터링 (3개 이상 동일 단어가 있는 뉴스는 한 개만 선택)
+  log(`관련성 필터링 후 ${relevantNewsItems.length}개 뉴스 항목 남음`, 'info');
+
+  // 중복 단어 제목 필터링 - 그룹화
   const duplicateWordGroups: { [key: string]: any[] } = {};
   const filteredNewsItems: any[] = [];
 
@@ -300,6 +372,7 @@ export async function fetchAndSaveNews() {
         duplicateWordGroups[hashKey] = [];
       }
       duplicateWordGroups[hashKey].push(item);
+      log(`중복 단어 그룹에 추가: "${title}" (그룹: ${hashKey})`, 'info');
     } else {
       // 중복 단어가 없으면 바로 추가
       filteredNewsItems.push(item);
@@ -315,22 +388,24 @@ export async function fetchAndSaveNews() {
       );
       // 그룹당 하나만 추가
       filteredNewsItems.push(duplicateWordGroups[key][0]);
-      console.log(`중복 그룹(${key})에서 1개 뉴스만 선택함: ${stripHtmlTags(duplicateWordGroups[key][0].title)}`);
+      log(`중복 그룹(${key})에서 1개 뉴스만 선택함: ${stripHtmlTags(duplicateWordGroups[key][0].title)}`, 'info');
     }
   }
+
+  log(`중복 단어 필터링 후 ${filteredNewsItems.length}개 뉴스 항목 남음`, 'info');
 
   // 최종 뉴스 목록을 날짜 기준으로 정렬
   filteredNewsItems.sort((a, b) => 
     new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime()
   );
   
-  // 최대 3개의 뉴스만 선택 (스케줄에 따라)
-  const newsToSave = filteredNewsItems.slice(0, 3);
+  // 저장 (saveNewsToDatabase 함수는 자체적으로 최대 3개만 저장)
+  const savedCount = await saveNewsToDatabase(filteredNewsItems);
   
-  // 저장
-  await saveNewsToDatabase(newsToSave);
+  log(`뉴스 수집 완료: ${savedCount}개 저장됨`, 'info');
   
-  return newsToSave;
+  // 최대 3개의 뉴스만 반환
+  return filteredNewsItems.slice(0, 3);
 }
 
 // 스케줄러 설정

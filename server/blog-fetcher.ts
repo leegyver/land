@@ -399,12 +399,14 @@ export async function fetchBlogPostsByCategory(
   }
 }
 
+
 /**
- * 여러 카테고리에서 네이버 블로그 포스트를 가져와 합칩니다.
- * @param blogId 네이버 블로그 ID
- * @param categoryNos 카테고리 번호 배열
- * @param limit 카테고리별 최대 포스트 수
- * @returns 블로그 포스트 배열
+ * 여러 카테고리의 네이버 블로그 포스트를 가져와 최신순으로 정렬하여 반환합니다.
+ * 
+ * @param blogId 네이버 블로그 ID (기본값: '9551304')
+ * @param categoryNos 조회할 카테고리 번호 배열 (기본값: ['21', '35', '36'])
+ * @param limit 반환할 최대 포스트 수 (기본값: 3)
+ * @returns 날짜순으로 정렬된 블로그 포스트 배열
  */
 export async function fetchBlogPosts(
   blogId: string = '9551304',
@@ -413,21 +415,26 @@ export async function fetchBlogPosts(
   // - 35: 취미생활 
   // - 36: 세상이야기
   categoryNos: string[] = ['21', '35', '36'],
-  limit: number = 3 // 기본값을 3개로 변경
+  limit: number = 3 // 최종적으로 반환할 포스트 수
 ): Promise<BlogPost[]> {
   try {
-    // 카테고리별로 여러 개의 포스트를 가져오도록 변경 (날짜순 정렬 후 선별하기 위함)
-    const eachCategoryLimit = 10; // 각 카테고리별로 10개씩 가져와서 최신 글 추출
+    console.log(`네이버 블로그 포스트 요청 시작: ${categoryNos.length}개 카테고리, 최대 ${limit}개 포스트`);
     
-    // 각 카테고리별로 병렬 요청
+    // 카테고리별로 여러 개의 포스트를 가져오도록 변경 (날짜순 정렬 후 선별하기 위함)
+    const eachCategoryLimit = 10; // 각 카테고리별로 10개씩 가져와서 최신 글 추출 (충분한 숫자)
+    
+    // 각 카테고리별로 병렬 요청 (비동기 처리)
     const postsPromises = categoryNos.map(categoryNo => 
       fetchBlogPostsByCategory(blogId, categoryNo, eachCategoryLimit)
     );
     
+    // 모든 카테고리 요청을 병렬로 처리하여 결과 반환
     const postsArrays = await Promise.all(postsPromises);
+    console.log(`카테고리별 포스트 수: ${postsArrays.map(arr => arr.length).join(', ')}`);
     
     // 모든 포스트를 하나의 배열로 합치기
     const allPosts = postsArrays.flat();
+    console.log(`전체 포스트 수 (중복 포함): ${allPosts.length}개`);
     
     // 중복 포스트 제거 (같은 ID의 포스트는 하나만 유지)
     const uniquePosts: BlogPost[] = [];
@@ -439,6 +446,8 @@ export async function fetchBlogPosts(
         seenIds.add(post.id);
       }
     }
+    
+    console.log(`중복 제거 후 포스트 수: ${uniquePosts.length}개`);
     
     // 날짜 기준으로 최신순 정렬 (날짜 포맷이 YYYY.MM.DD 형식인 경우)
     uniquePosts.sort((a, b) => {
@@ -505,7 +514,14 @@ export async function fetchBlogPosts(
     }
     
     // 정렬된 포스트 중 최신 N개만 반환
-    return uniquePosts.slice(0, limit);
+    const result = uniquePosts.slice(0, limit);
+    console.log(`최종 반환 포스트 수: ${result.length}개 (카테고리 분포: ${result.map(p => p.category).join(', ')})`);
+    
+    // 날짜 분포도 확인
+    const dates = result.map(p => p.publishedAt);
+    console.log(`날짜 분포: ${dates.join(', ')}`);
+    
+    return result;
   } catch (error) {
     console.error('네이버 블로그 포스트 통합 오류:', error);
     return [];
@@ -889,16 +905,33 @@ async function extractPostImageFromFullUrl(fullUrl: string): Promise<string> {
 }
 
 /**
- * 카테고리에 따라 대체 이미지를 반환합니다.
+ * 카테고리별 대체 이미지를 제공합니다.
+ * 카테고리가 없거나 매칭되지 않는 경우 기본 부동산 이미지를 반환합니다.
+ * 
+ * @param category 카테고리 이름
+ * @returns 카테고리에 맞는 대체 이미지 URL
  */
 function getFallbackImageByCategory(category: string): string {
+  // 카테고리별 맞춤 이미지 매핑
   const images: {[key: string]: string} = {
+    // 네이버 블로그 카테고리별 이미지
     '일상다반사': 'https://postfiles.pstatic.net/MjAyNTA1MTVfMTcx/MDAxNzQ3Mjc1ODY0OTg0.Y6dMg4MXEH7z76FCzTcLqgC-GYfbzN5zoN6z5_CZ8PAg.XP_G5M7-5HB4LO0YCHbcNnZcf1MEpq0v7Av-XPsGw-8g.PNG/daily-life.png?type=w580',
     '취미생활': 'https://postfiles.pstatic.net/MjAyNTA1MTVfMjMw/MDAxNzQ3Mjc1ODY1MDc5.h8DFsfhT_sEYA41xDUQRPSUQK5FaXO34PJ-Q4Xw9FWUg.bvGY5GnSiP9KoXXOaTg9Nzfk0Xv6ixkK3gOxvAjJxdQg.PNG/hobby.png?type=w580',
-    '세상이야기': 'https://postfiles.pstatic.net/MjAyNTA1MTVfNTYg/MDAxNzQ3Mjc1ODY1MTQz.1lTZM1oxLQlxw3nNcyeHvV3CpxrVwZQMg_cN2GlWBJMg.-Bi6JK8-rEdQYK07Y9aE5Y9Zrjra9ZDu8KlUbTsAWJEg.PNG/world-stories.png?type=w580'
+    '세상이야기': 'https://postfiles.pstatic.net/MjAyNTA1MTVfNTYg/MDAxNzQ3Mjc1ODY1MTQz.1lTZM1oxLQlxw3nNcyeHvV3CpxrVwZQMg_cN2GlWBJMg.-Bi6JK8-rEdQYK07Y9aE5Y9Zrjra9ZDu8KlUbTsAWJEg.PNG/world-stories.png?type=w580',
+    
+    // 기타 부동산 관련 카테고리 이미지 (추가될 수 있음)
+    '매물 정보': 'https://postfiles.pstatic.net/MjAyNTA1MTVfMTUw/MDAxNzQ3Mjc3OTg5MTUw.eSH0pGR9MtdJwooN3AxKxjlI4ZeID9PKRMdK_7F0AkMg.ZXlXFd9G5zhTa-Kw4GFU6BhqYnNHBPB3jZfr88pCF7Mg.PNG/property-info.png?type=w580',
+    '부동산 소식': 'https://postfiles.pstatic.net/MjAyNTA1MTVfMTI0/MDAxNzQ3Mjc3OTg5MTk3.8Qr-9XbiBLZGwRGvZjmVJhNgZvTy-BQbKbcLc2m1TtQg.6SCPeFdxvGzHCvvppC1vgjw6q6Ue7y4XODSBQhV4c_sg.PNG/real-estate-news.png?type=w580',
+    '인테리어/시공': 'https://postfiles.pstatic.net/MjAyNTA1MTVfMjk2/MDAxNzQ3Mjc3OTg5MjQ4.pGMdnIPKJlcHXycKC4URpT9ZBgNF-0oQwUq9tM9BXTYg.h3HgO0o3z1fF5ZJk2c6qtSAQlS1_nN7pZ0OTIVYu4nUg.PNG/interior-design.png?type=w580'
   };
   
-  return images[category] || 'https://ssl.pstatic.net/static/blog/blog_profile_thumbnail_150.png';
+  // 카테고리별 이미지가 있으면 반환, 없으면 기본 부동산 이미지 반환
+  if (images[category]) {
+    return images[category];
+  }
+  
+  // 기본 부동산 이미지 (카테고리 없는 경우)
+  return 'https://postfiles.pstatic.net/MjAyNTA1MTVfMjgx/MDAxNzQ3Mjc3OTg5MDYw.jgJEKjxUKr16ZGQ8N0TkYMtj__DixdQoBQUcBZMrQRwg.vvXR0U1tLwGJwYK7GGxdwbxCYY3A6rj_x8T2JkaMPEQg.PNG/real-estate-default.png?type=w580';
 }
 
 /**

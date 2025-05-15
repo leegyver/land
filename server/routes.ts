@@ -767,7 +767,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // 네이버 블로그 최신 글 가져오기
   app.get("/api/blog/latest", async (req, res) => {
     try {
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 3; // 기본값 3으로 변경
       const blogId = req.query.blogId as string || '9551304';
       // 네이버 블로그 카테고리:
       // - 21: 일상다반사
@@ -777,8 +777,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
                         ? (req.query.categories as string).split(',')
                         : ['21', '35', '36'];
       
+      // 캐시를 강제로 초기화하는 쿼리 파라미터 추가
+      const refresh = req.query.refresh === 'true';
+      
       // 캐시에서 확인
       const cacheKey = `blog_latest_${blogId}_${categories.join('_')}_${limit}`;
+      
+      // 캐시 초기화 요청이면 캐시 삭제
+      if (refresh) {
+        console.log(`블로그 캐시 강제 초기화 (키: ${cacheKey})`);
+        memoryCache.delete(cacheKey);
+      }
+      
       const cachedPosts = memoryCache.get(cacheKey);
       
       if (cachedPosts) {

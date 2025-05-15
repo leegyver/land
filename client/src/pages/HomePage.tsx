@@ -66,7 +66,7 @@ const HomePage = () => {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold flex items-center">
                 <Youtube className="h-6 w-6 mr-2 text-red-600" />
-                행복부동산 최신 영상
+                이가이버 유튜브 최신 영상
               </h2>
               <a 
                 href="https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA" 
@@ -122,7 +122,7 @@ const HomePage = () => {
                     <CardFooter className="p-4 pt-0">
                       <div className="flex items-center text-xs text-gray-medium">
                         <Youtube className="h-3 w-3 mr-1 text-red-600" />
-                        행복부동산
+                        이가이버 유튜브
                       </div>
                     </CardFooter>
                   </Card>

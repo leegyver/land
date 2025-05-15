@@ -198,7 +198,7 @@ export default function AdminPage() {
     queryFn: getQueryFn({ on401: "throw" })
   });
   
-  // 부동산 필터링 함수
+  // 간소화된 부동산 필터링 함수
   const filterProperties = (props: Property[]) => {
     if (!props) return [];
     
@@ -216,24 +216,22 @@ export default function AdminPage() {
         return false;
       }
       
-      // 거래유형 필터
+      // 거래유형 필터 - 간소화된 로직으로 타입 오류 회피
       if (filterDealType && filterDealType !== 'all' && property.dealType) {
-        // 배열인 경우
-        if (Array.isArray(property.dealType)) {
-          return property.dealType.includes(filterDealType);
-        } 
-        // 문자열인 경우
-        else if (typeof property.dealType === 'string') {
-          // PostgreSQL 배열 형식의 문자열인 경우 ("{매매,월세}" 형태)
-          if (property.dealType.startsWith('{') && property.dealType.endsWith('}')) {
-            const dealTypes = property.dealType.substring(1, property.dealType.length - 1).split(',');
-            return dealTypes.includes(filterDealType);
-          }
-          // 일반 문자열인 경우
-          return property.dealType === filterDealType;
+        // 배열 케이스만 처리
+        try {
+          // JSON 문자열인 경우 파싱 시도
+          const dealTypesArray = Array.isArray(property.dealType) 
+            ? property.dealType
+            : (typeof property.dealType === 'string' && property.dealType.includes(','))
+              ? property.dealType.replace('{', '').replace('}', '').split(',')
+              : [property.dealType.toString()];
+              
+          return dealTypesArray.some(type => type.includes(filterDealType));
+        } catch (e) {
+          console.error("딜 타입 필터링 오류:", e, property.dealType);
+          return false;
         }
-        // 그 외 타입인 경우
-        return false;
       }
       
       return true;

@@ -15,6 +15,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+// 각 부동산 유형별 기본 이미지 임포트
+import landDefaultImage from "@/assets/default-property-images/land.png";
+import houseDefaultImage from "@/assets/default-property-images/house.png";
+import apartmentDefaultImage from "@/assets/default-property-images/apartment.png";
+import oneroomDefaultImage from "@/assets/default-property-images/oneroom.png";
+import commercialDefaultImage from "@/assets/default-property-images/commercial.png";
 import {
   Card,
   CardContent,
@@ -41,6 +48,20 @@ function PropertyForm() {
   // 거래 유형 정의
   const dealTypeOptions = ["매매", "전세", "월세", "완료", "보류중"];
   const propertyTypeOptions = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
+  
+  // 부동산 유형별 기본 이미지 매핑
+  const defaultPropertyImages = {
+    '토지': landDefaultImage,
+    '주택': houseDefaultImage,
+    '아파트연립다세대': apartmentDefaultImage,
+    '원투룸': oneroomDefaultImage,
+    '상가공장창고펜션': commercialDefaultImage
+  };
+  
+  // 부동산 유형에 맞는 기본 이미지 가져오기
+  const getDefaultImageForPropertyType = (type) => {
+    return defaultPropertyImages[type] || defaultPropertyImages['주택']; // 기본값은 주택 이미지
+  };
   
   // 통합된 지역 목록 (읍면동리)
   const allLocations = [
@@ -350,8 +371,19 @@ function PropertyForm() {
         featuredImageIndex: featuredImageIndex
       };
       
+      // 이미지 처리: 이미지가 없을 경우 부동산 유형에 맞는 기본 이미지 설정
+      if (!formData.imageUrls || formData.imageUrls.length === 0) {
+        // 부동산 유형에 맞는 기본 이미지 가져오기
+        const defaultImage = getDefaultImageForPropertyType(formData.type);
+        
+        // 기본 이미지를 배열과 단일 이미지 URL에 모두 설정
+        submissionData.imageUrls = [defaultImage];
+        submissionData.imageUrl = defaultImage;
+        
+        console.log(`이미지가 없어 기본 이미지를 적용합니다. 유형: ${formData.type}, 이미지: ${defaultImage}`);
+      }
       // 이미지가 있을 경우 대표 이미지 설정 (이전 버전 호환용)
-      if (formData.imageUrls && formData.imageUrls.length > 0 && featuredImageIndex >= 0) {
+      else if (formData.imageUrls && formData.imageUrls.length > 0 && featuredImageIndex >= 0) {
         submissionData.imageUrl = formData.imageUrls[featuredImageIndex] || formData.imageUrls[0];
       }
       

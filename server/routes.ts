@@ -769,6 +769,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
       const blogId = req.query.blogId as string || '9551304';
+      // 네이버 블로그 카테고리:
+      // - 21: 부동산 소식
+      // - 35: 매물 정보
+      // - 36: 인테리어/시공
       const categories = req.query.categories
                         ? (req.query.categories as string).split(',')
                         : ['21', '35', '36'];

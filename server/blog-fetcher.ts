@@ -22,6 +22,7 @@ interface CategoryMapping {
 }
 
 // 카테고리 ID를 사람이 읽을 수 있는 이름으로 매핑
+// 지정된 카테고리: 21(부동산 소식), 35(매물 정보), 36(인테리어/시공)
 const CATEGORY_NAMES: CategoryMapping = {
   '21': '부동산 소식',
   '35': '매물 정보',
@@ -151,6 +152,10 @@ export async function fetchBlogPostsByCategory(
  */
 export async function fetchBlogPosts(
   blogId: string = '9551304',
+  // 명시적으로 세 개의 카테고리를 지정:
+  // - 21: 부동산 소식
+  // - 35: 매물 정보 
+  // - 36: 인테리어/시공
   categoryNos: string[] = ['21', '35', '36'],
   limit: number = 5
 ): Promise<BlogPost[]> {

@@ -14,10 +14,10 @@ import {
 import { memoryCache } from "./cache";
 import { setupAuth } from "./auth";
 import { fetchAndSaveNews } from "./news-fetcher";
-// 블로그 포스트 관련 코드 제거됨
 import { sendEmail, createInquiryEmailTemplate } from "./mailer";
 import { getRecentTransactions } from "./real-estate-api";
 import { testRealEstateAPI } from "./test-api";
+import { getLatestBlogPosts } from "./blog-fetcher";
 import { getLatestYouTubeVideos } from "./youtube-fetcher";
 
 export async function registerRoutes(app: Express): Promise<Server> {

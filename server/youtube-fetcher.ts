@@ -84,7 +84,7 @@ export async function fetchLatestYouTubeVideosWithAPI(channelId: string, limit: 
       throw new Error(`채널 정보 요청 실패: ${channelResponse.status} ${channelResponse.statusText}`);
     }
     
-    const channelData = await channelResponse.json() as any;
+    const channelData = await channelResponse.json() as YouTubeChannelResponse;
     
     if (!channelData.items || channelData.items.length === 0) {
       throw new Error('채널 정보를 찾을 수 없습니다');
@@ -102,7 +102,7 @@ export async function fetchLatestYouTubeVideosWithAPI(channelId: string, limit: 
       throw new Error(`재생목록 요청 실패: ${playlistResponse.status} ${playlistResponse.statusText}`);
     }
     
-    const playlistData = await playlistResponse.json() as any;
+    const playlistData = await playlistResponse.json() as YouTubePlaylistResponse;
     
     if (!playlistData.items) {
       console.log('재생목록에서 영상을 찾을 수 없습니다.');
@@ -112,7 +112,7 @@ export async function fetchLatestYouTubeVideosWithAPI(channelId: string, limit: 
     console.log(`재생목록에서 ${playlistData.items.length}개의 영상 정보를 가져왔습니다.`);
     
     // 동영상 정보 매핑
-    const videos = playlistData.items.map((item: any) => ({
+    const videos = playlistData.items.map(item => ({
       id: item.snippet.resourceId.videoId,
       title: item.snippet.title,
       thumbnail: item.snippet.thumbnails.high?.url || item.snippet.thumbnails.default?.url,

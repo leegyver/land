@@ -3,7 +3,7 @@ import { storage } from './storage';
 import { db } from './db';
 import { news } from '@shared/schema';
 import { log } from './vite';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, like } from 'drizzle-orm';
 import * as cheerio from 'cheerio';
 
 const SEARCH_ENDPOINT = "https://openapi.naver.com/v1/search/news.json";
@@ -96,23 +96,70 @@ async function isNewsAlreadyExists(title: string): Promise<boolean> {
   return existingNews.length > 0;
 }
 
+// 전역 중복 방지 집합 (서버 실행 동안 유지)
+const globalProcessedTitles = new Set<string>();
+const globalProcessedLinks = new Set<string>();
+const globalSimilaritySet = new Map<string, string[]>(); // 키워드 -> 관련 제목 목록
+
 // 유사 제목으로 중복 체크 함수 (제목에 특정 키워드가 공통으로 포함된 경우)
 async function isSimilarNewsExists(title: string): Promise<boolean> {
-  // 제목에서 주요 키워드 추출 (3글자 이상의 단어만)
-  const words = title.split(/\s+/).filter(word => word.length >= 3);
+  // 제목에서 특수문자 제거 및 소문자 변환
+  const normalizedTitle = title.toLowerCase().replace(/[^\w\s가-힣]/g, '');
   
-  // 각 단어로 검색해서 매칭되는 뉴스가 있는지 확인
+  // 정규화된 제목이 이미 처리된 적이 있는지 확인
+  if (globalProcessedTitles.has(normalizedTitle)) {
+    log(`전역 캐시에서 중복 제목 발견: "${title}"`, 'info');
+    return true;
+  }
+  
+  // 제목에서 주요 키워드 추출 (3글자 이상의 단어만)
+  const words = normalizedTitle.split(/\s+/).filter(word => word.length >= 3);
+  
+  // 이미 유사성 검사를 한 키워드들과 비교
+  // Map.entries()를 Array로 변환하여 호환성 문제 해결
+  const entries = Array.from(globalSimilaritySet.entries());
+  for (let i = 0; i < entries.length; i++) {
+    const [keyword, titles] = entries[i];
+    // 제목에 키워드가 포함되어 있거나, 키워드가 제목에 포함되어 있는 경우
+    if (normalizedTitle.includes(keyword) || words.some(word => keyword.includes(word))) {
+      log(`유사 키워드 캐시 발견: "${title}" -> 키워드 "${keyword}"`, 'info');
+      return true;
+    }
+  }
+  
+  // 데이터베이스에서 유사한 뉴스 검색
   for (const word of words) {
     if (word.length >= 4) { // 4글자 이상 키워드만 체크
-      const query = `%${word}%`;
-      const similarNews = await db.select().from(news).where(sql`${news.title} LIKE ${query}`);
+      // 키워드를 일관성 있게 처리
+      const normalizedWord = word.toLowerCase().trim();
+      
+      // 이미 처리된 키워드인지 확인
+      if (globalSimilaritySet.has(normalizedWord)) {
+        log(`키워드 캐시 히트: "${normalizedWord}" (제목: ${title})`, 'info');
+        return true;
+      }
+      
+      // 데이터베이스에서 유사 뉴스 검색
+      const query = `%${normalizedWord}%`;
+      const similarNews = await db.select().from(news).where(like(news.title, query));
       
       if (similarNews.length > 0) {
-        console.log(`유사 뉴스 발견: "${title}" 와 "${similarNews[0].title}" (공통 키워드: ${word})`);
+        // 키워드와 관련된 제목들을 캐시에 저장
+        if (!globalSimilaritySet.has(normalizedWord)) {
+          globalSimilaritySet.set(normalizedWord, []);
+        }
+        
+        // 관련 제목 추가
+        globalSimilaritySet.get(normalizedWord)?.push(normalizedTitle);
+        
+        log(`DB 유사 뉴스 발견: "${title}" 와 "${similarNews[0].title}" (공통 키워드: ${normalizedWord})`, 'info');
         return true;
       }
     }
   }
+  
+  // 유사 뉴스가 없으면 정규화된 제목을 캐시에 추가
+  globalProcessedTitles.add(normalizedTitle);
   
   return false;
 }
@@ -193,39 +240,61 @@ async function extractImageFromNews(url: string): Promise<string | null> {
 // 뉴스 저장 함수 (강화된 중복 체크)
 async function saveNewsToDatabase(newsItems: any[]): Promise<number> {
   let savedCount = 0;
-  const processedTitles = new Set<string>(); // 현재 처리 과정에서의 중복 제거용
+  const sessionProcessedTitles = new Set<string>(); // 현재 처리 과정에서의 중복 제거용
+  const sessionProcessedLinks = new Set<string>(); // 현재 처리 과정에서의 링크 중복 제거용
   
-  for (const item of newsItems) {
+  // 독립적인 배열로 복사하고 섞기 (랜덤성 추가)
+  const shuffledItems = [...newsItems].sort(() => Math.random() - 0.5);
+  
+  for (const item of shuffledItems) {
     try {
       const cleanTitle = stripHtmlTags(item.title);
       const cleanDesc = stripHtmlTags(item.description);
+      const sourceLink = item.originallink || item.link;
+      const normalizedLink = sourceLink.replace(/\/$/, ''); // 끝에 슬래시 제거
       
-      // 이미 이번 배치에서 처리한 제목인지 확인 (동일 세션 내 중복 방지)
-      if (processedTitles.has(cleanTitle)) {
-        console.log(`세션 내 중복 제목 무시: "${cleanTitle}"`);
+      // 이미 이번 세션에서 처리한 제목인지 확인
+      if (sessionProcessedTitles.has(cleanTitle)) {
+        log(`세션 내 중복 제목 무시: "${cleanTitle}"`, 'info');
         continue;
       }
       
-      // 현재 처리 목록에 추가
-      processedTitles.add(cleanTitle);
+      // 이미 이번 세션에서 처리한 링크인지 확인
+      if (sessionProcessedLinks.has(normalizedLink)) {
+        log(`세션 내 중복 링크 무시: "${normalizedLink}"`, 'info');
+        continue;
+      }
+      
+      // 글로벌 캐시에 이미 처리된 링크인지 확인
+      if (globalProcessedLinks.has(normalizedLink)) {
+        log(`전역 캐시에서 중복 링크 발견: "${normalizedLink}"`, 'info');
+        continue;
+      }
+      
+      // 현재 세션 처리 목록에 추가
+      sessionProcessedTitles.add(cleanTitle);
+      sessionProcessedLinks.add(normalizedLink);
+      
+      // 글로벌 캐시에도 추가
+      globalProcessedLinks.add(normalizedLink);
       
       // DB에 동일한 제목이 있는지 확인
       const exists = await isNewsAlreadyExists(cleanTitle);
       if (exists) {
-        console.log(`기존 뉴스 중복 무시: "${cleanTitle}"`);
+        log(`기존 뉴스 중복 무시: "${cleanTitle}"`, 'info');
         continue;
       }
       
       // 유사한 뉴스가 이미 있는지 확인 (키워드 기반)
       const similarExists = await isSimilarNewsExists(cleanTitle);
       if (similarExists) {
-        console.log(`유사 뉴스 중복 무시: "${cleanTitle}"`);
+        log(`유사 뉴스 중복 무시: "${cleanTitle}"`, 'info');
         continue;
       }
       
       // 제목에 단어 중복 체크 (동일한 단어가 3번 이상 반복되면 필터링)
       if (hasTooManyRepeatedWords(cleanTitle)) {
-        console.log(`단어 중복 필터링: "${cleanTitle}"`);
+        log(`단어 중복 필터링: "${cleanTitle}"`, 'info');
         continue;
       }
 
@@ -238,30 +307,36 @@ async function saveNewsToDatabase(newsItems: any[]): Promise<number> {
         imageUrl = REAL_ESTATE_IMAGES[randomImageIndex];
       }
       
-      // 뉴스 저장
-      await storage.createNews({
-        title: cleanTitle,
-        summary: cleanDesc,
-        description: cleanDesc,
-        content: `${cleanDesc}\n\n원본 기사: ${item.link}`,
-        source: new URL(item.originallink || item.link).hostname,
-        sourceUrl: item.originallink || item.link,
-        url: item.link,
-        imageUrl: imageUrl,
-        category: '인천 부동산',
-        isPinned: false
-      });
-      
-      log(`새로운 뉴스 저장됨: ${cleanTitle}`, 'info');
-      savedCount++;
-      
-      // 최대 3개까지만 저장
-      if (savedCount >= 3) {
-        log(`최대 저장 개수(3개)에 도달하여 중단합니다.`, 'info');
-        break;
+      try {
+        // 뉴스 저장
+        await storage.createNews({
+          title: cleanTitle,
+          summary: cleanDesc,
+          description: cleanDesc,
+          content: `${cleanDesc}\n\n원본 기사: ${item.link}`,
+          source: new URL(sourceLink).hostname,
+          sourceUrl: sourceLink,
+          url: item.link,
+          imageUrl: imageUrl,
+          category: '인천 부동산',
+          isPinned: false
+        });
+        
+        log(`새로운 뉴스 저장됨: ${cleanTitle}`, 'info');
+        savedCount++;
+        
+        // 최대 3개까지만 저장
+        if (savedCount >= 3) {
+          log(`최대 저장 개수(3개)에 도달하여 중단합니다.`, 'info');
+          break;
+        }
+      } catch (dbError) {
+        // 데이터베이스 저장 오류 시 다음 항목으로 넘어감
+        log(`뉴스 DB 저장 오류 (${cleanTitle}): ${dbError}`, 'error');
+        continue;
       }
     } catch (error) {
-      log(`뉴스 저장 오류: ${error}`, 'error');
+      log(`뉴스 처리 오류: ${error}`, 'error');
     }
   }
   

@@ -22,11 +22,10 @@ interface CategoryMapping {
 }
 
 // 카테고리 ID를 사람이 읽을 수 있는 이름으로 매핑
-// 지정된 카테고리: 21(일상다반사), 35(취미생활), 36(세상이야기)
+// 지정된 카테고리: 11(부동산 정보)
+// 기존 카테고리 (삭제됨): 21(일상다반사), 35(취미생활), 36(세상이야기)
 const CATEGORY_NAMES: CategoryMapping = {
-  '21': '일상다반사',
-  '35': '취미생활',
-  '36': '세상이야기'
+  '11': '부동산 정보'
 };
 
 /**
@@ -915,9 +914,7 @@ function getFallbackImageByCategory(category: string): string {
   // 카테고리별 맞춤 이미지 매핑
   const images: {[key: string]: string} = {
     // 네이버 블로그 카테고리별 이미지
-    '일상다반사': 'https://postfiles.pstatic.net/MjAyNTA1MTVfMTcx/MDAxNzQ3Mjc1ODY0OTg0.Y6dMg4MXEH7z76FCzTcLqgC-GYfbzN5zoN6z5_CZ8PAg.XP_G5M7-5HB4LO0YCHbcNnZcf1MEpq0v7Av-XPsGw-8g.PNG/daily-life.png?type=w580',
-    '취미생활': 'https://postfiles.pstatic.net/MjAyNTA1MTVfMjMw/MDAxNzQ3Mjc1ODY1MDc5.h8DFsfhT_sEYA41xDUQRPSUQK5FaXO34PJ-Q4Xw9FWUg.bvGY5GnSiP9KoXXOaTg9Nzfk0Xv6ixkK3gOxvAjJxdQg.PNG/hobby.png?type=w580',
-    '세상이야기': 'https://postfiles.pstatic.net/MjAyNTA1MTVfNTYg/MDAxNzQ3Mjc1ODY1MTQz.1lTZM1oxLQlxw3nNcyeHvV3CpxrVwZQMg_cN2GlWBJMg.-Bi6JK8-rEdQYK07Y9aE5Y9Zrjra9ZDu8KlUbTsAWJEg.PNG/world-stories.png?type=w580',
+    '부동산 정보': 'https://postfiles.pstatic.net/MjAyNTA1MTVfMTUw/MDAxNzQ3Mjc3OTg5MTUw.eSH0pGR9MtdJwooN3AxKxjlI4ZeID9PKRMdK_7F0AkMg.ZXlXFd9G5zhTa-Kw4GFU6BhqYnNHBPB3jZfr88pCF7Mg.PNG/property-info.png?type=w580',
     
     // 기타 부동산 관련 카테고리 이미지 (추가될 수 있음)
     '매물 정보': 'https://postfiles.pstatic.net/MjAyNTA1MTVfMTUw/MDAxNzQ3Mjc3OTg5MTUw.eSH0pGR9MtdJwooN3AxKxjlI4ZeID9PKRMdK_7F0AkMg.ZXlXFd9G5zhTa-Kw4GFU6BhqYnNHBPB3jZfr88pCF7Mg.PNG/property-info.png?type=w580',
@@ -1005,14 +1002,14 @@ const CACHE_TTL = 60 * 60 * 1000;
  * 각 카테고리 조합별로 별도 캐싱 적용
  * 
  * @param blogId 네이버 블로그 ID (기본값: '9551304')
- * @param categoryNos 카테고리 번호 배열 (기본값: ['21', '35', '36'])
+ * @param categoryNos 카테고리 번호 배열 (기본값: ['11'])
  * @param limit 최종적으로 반환할 포스트 수 (기본값: 3)
  * @param forceRefresh 캐시를 강제로 새로고침할지 여부 (기본값: false)
  * @returns 블로그 포스트 배열
  */
 export async function getLatestBlogPosts(
   blogId: string = '9551304',
-  categoryNos: string[] = ['21', '35', '36'],
+  categoryNos: string[] = ['11'],
   limit: number = 3,
   forceRefresh: boolean = false
 ): Promise<BlogPost[]> {

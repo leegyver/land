@@ -933,6 +933,102 @@ function getFallbackImageByCategory(category: string): string {
 }
 
 /**
+ * 블로그 포스트에서 모든 이미지 URL을 추출합니다.
+ * @param blogId 네이버 블로그 ID
+ * @param postId 포스트 ID
+ * @returns 포스트 내 모든 이미지 URL 배열
+ */
+async function extractAllPostImages(blogId: string, postId: string): Promise<string[]> {
+  try {
+    console.log(`포스트 내 모든 이미지 추출 시도 (PC): https://blog.naver.com/${blogId}/${postId}`);
+    
+    // PC 버전 URL로 접근
+    const pcUrl = `https://blog.naver.com/${blogId}/${postId}`;
+    const response = await fetch(pcUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP 오류: ${response.status}`);
+    }
+    
+    const html = await response.text();
+    const $ = cheerio.load(html);
+    const images: string[] = [];
+    
+    // 다양한 이미지 선택자 시도
+    // 1. 스마트에디터2 이미지
+    $('.se-module-image img.se-image-resource').each((_, el) => {
+      const src = $(el).attr('src');
+      if (src && !src.includes('profile') && !src.includes('og_default_image')) {
+        images.push(src);
+      }
+    });
+    
+    // 2. 일반 이미지 태그 (컨텐츠 영역)
+    $('#postViewArea img, .se-main-container img').each((_, el) => {
+      const src = $(el).attr('src');
+      if (src && !src.includes('profile') && !src.includes('og_default_image')) {
+        images.push(src);
+      }
+    });
+    
+    // 3. 구버전 블로그 이미지
+    $('.post-view img, .post_content img').each((_, el) => {
+      const src = $(el).attr('src');
+      if (src && !src.includes('profile') && !src.includes('og_default_image')) {
+        images.push(src);
+      }
+    });
+    
+    // 중복 제거
+    const uniqueImages = [...new Set(images)];
+    console.log(`PC 버전에서 ${uniqueImages.length}개 이미지 찾음`);
+    
+    // 이미지를 찾지 못했으면 모바일 버전 시도
+    if (uniqueImages.length === 0) {
+      console.log(`모바일 버전에서 이미지 추출 시도: https://m.blog.naver.com/${blogId}/${postId}`);
+      
+      const mobileUrl = `https://m.blog.naver.com/${blogId}/${postId}`;
+      const mobileResponse = await fetch(mobileUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1'
+        }
+      });
+      
+      if (!mobileResponse.ok) {
+        throw new Error(`모바일 HTTP 오류: ${mobileResponse.status}`);
+      }
+      
+      const mobileHtml = await mobileResponse.text();
+      const $mobile = cheerio.load(mobileHtml);
+      const mobileImages: string[] = [];
+      
+      // 모바일 이미지 선택자 시도
+      $mobile('.se-module-image img, .se-image img, .post_body img').each((_, el) => {
+        const src = $mobile(el).attr('src');
+        if (src && !src.includes('profile') && !src.includes('og_default_image')) {
+          mobileImages.push(src);
+        }
+      });
+      
+      // 중복 제거
+      const uniqueMobileImages = [...new Set(mobileImages)];
+      console.log(`모바일 버전에서 ${uniqueMobileImages.length}개 이미지 찾음`);
+      
+      return uniqueMobileImages;
+    }
+    
+    return uniqueImages;
+  } catch (error) {
+    console.error(`포스트 이미지 추출 오류 (${blogId}/${postId}):`, error);
+    return [];
+  }
+}
+
+/**
  * 모든 포스트에 대해 상세 이미지를 가져옵니다.
  * @param posts 블로그 포스트 배열
  * @returns 이미지가 업데이트된 포스트 배열
@@ -941,36 +1037,40 @@ async function enrichPostsWithImages(posts: BlogPost[]): Promise<BlogPost[]> {
   const enrichedPosts = [];
   
   for (const post of posts) {
-    // 이미 유효한 이미지가 있고 기본 이미지나 프로필 이미지가 아닌 경우 건너뜀
-    if (post.thumbnail && 
-        !post.thumbnail.includes('blog_profile_thumbnail_150.png') &&
-        !post.thumbnail.includes('profile') &&
-        !post.thumbnail.includes('pfthumb') &&
-        !post.thumbnail.includes('og_default_image')) {
-      enrichedPosts.push(post);
-      continue;
-    }
-    
     // 블로그 ID와 포스트 ID 추출
     const blogId = post.link.split('/')[3]; // URL 형식에서 블로그 ID 추출
     const postId = post.id; // 이미 포스트 ID를 저장하고 있음
     
-    // 포스트 상세 페이지에서 이미지 추출
     try {
-      let imageUrl = await extractPostImage(blogId, postId);
-      
-      // 이미지가 여전히 기본 이미지이거나 프로필 이미지인 경우 대체 이미지 사용
-      if (imageUrl.includes('blog_profile_thumbnail_150.png') || 
-          imageUrl.includes('profile') || 
-          imageUrl.includes('pfthumb') ||
-          imageUrl.includes('og_default_image')) {
-        imageUrl = getFallbackImageByCategory(post.category);
-        console.log(`카테고리 기반 대체 이미지 사용: ${post.category} -> ${imageUrl}`);
+      // 대표 이미지 설정 (이미 유효한 이미지가 있는지 확인)
+      let thumbnailUrl = post.thumbnail;
+      if (!thumbnailUrl || 
+          thumbnailUrl.includes('blog_profile_thumbnail_150.png') ||
+          thumbnailUrl.includes('profile') || 
+          thumbnailUrl.includes('pfthumb') ||
+          thumbnailUrl.includes('og_default_image')) {
+        // 대표 이미지가 없거나 기본 이미지인 경우, 새로 추출
+        thumbnailUrl = await extractPostImage(blogId, postId);
+        
+        // 여전히 기본 이미지이거나 프로필 이미지인 경우 대체 이미지 사용
+        if (thumbnailUrl.includes('blog_profile_thumbnail_150.png') || 
+            thumbnailUrl.includes('profile') || 
+            thumbnailUrl.includes('pfthumb') ||
+            thumbnailUrl.includes('og_default_image')) {
+          thumbnailUrl = getFallbackImageByCategory(post.category);
+          console.log(`카테고리 기반 대체 이미지 사용: ${post.category} -> ${thumbnailUrl}`);
+        }
       }
+      
+      // 포스트 내 모든 이미지 추출
+      console.log(`포스트 내 모든 이미지 추출 시작: ${postId}`);
+      const contentImages = await extractAllPostImages(blogId, postId);
+      console.log(`총 ${contentImages.length}개 이미지 추출됨`);
       
       enrichedPosts.push({
         ...post,
-        thumbnail: imageUrl
+        thumbnail: thumbnailUrl,
+        contentImages: contentImages
       });
     } catch (error) {
       console.error(`포스트 이미지 업데이트 오류 (${post.id}):`, error);
@@ -978,7 +1078,8 @@ async function enrichPostsWithImages(posts: BlogPost[]): Promise<BlogPost[]> {
       const fallbackImage = getFallbackImageByCategory(post.category);
       enrichedPosts.push({
         ...post,
-        thumbnail: fallbackImage
+        thumbnail: fallbackImage,
+        contentImages: []
       });
     }
   }

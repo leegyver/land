@@ -48,7 +48,7 @@ const HomePage = () => {
   
   // 최신 블로그 포스트 데이터 가져오기
   const { data: latestBlogPosts, isLoading: isBlogPostsLoading } = useQuery<BlogPost[]>({
-    queryKey: ["/api/blog/latest"],
+    queryKey: ["/api/blog/latest?refresh=true"], // 캐시 강제 초기화 옵션 추가
   });
 
   return (

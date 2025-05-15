@@ -39,7 +39,7 @@ const CATEGORY_NAMES: CategoryMapping = {
 export async function fetchBlogPostsByCategory(
   blogId: string,
   categoryNo: string,
-  limit: number = 10 // 카테고리별 10개로 증가
+  limit: number = 10 // 카테고리별 10개로 충분히 증가
 ): Promise<BlogPost[]> {
   try {
     console.log(`네이버 블로그 포스트 요청: blogId=${blogId}, categoryNo=${categoryNo}`);
@@ -939,56 +939,71 @@ function getFallbackImageByCategory(category: string): string {
 async function extractAllPostImages(blogId: string, postId: string): Promise<string[]> {
   try {
     console.log(`포스트 내 모든 이미지 추출 시도 (PC): https://blog.naver.com/${blogId}/${postId}`);
+    const imgSet = new Set<string>();
     
-    // PC 버전 URL로 접근
-    const pcUrl = `https://blog.naver.com/${blogId}/${postId}`;
-    const response = await fetch(pcUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'
+    // 1. PC 버전 이미지 추출 시도
+    try {
+      const pcUrl = `https://blog.naver.com/${blogId}/${postId}`;
+      const response = await fetch(pcUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'
+        }
+      });
+      
+      if (response.ok) {
+        const html = await response.text();
+        const $ = cheerio.load(html);
+        
+        // PC버전 블로그의 모든 가능한 이미지 선택자
+        const pcSelectors = [
+          '.se-module-image img.se-image-resource',
+          '.se-image-resource',
+          '.se-inline-image-resource',
+          '#postViewArea img',
+          '.se-main-container img',
+          '.post-view img',
+          '.post_content img',
+          'img.se-image-resource',
+          '.se_component_image img',
+          '.se_documentImage img',
+          '.post_img img',
+          '.img_attachedfile img',
+          '.u_blogDetail img',
+          '.post_ct img',
+          '.post-area img',
+          '.se-image-container img'
+        ];
+        
+        // 모든 선택자에 대해 이미지 추출
+        pcSelectors.forEach(selector => {
+          $(selector).each((_, el) => {
+            const src = $(el).attr('src');
+            if (src && 
+                !src.includes('profile') && 
+                !src.includes('og_default_image') &&
+                !src.includes('pfthumb')) {
+              // 썸네일 URL을 원본 URL로 변환
+              const fullSizeSrc = src.replace(/\?type=.*$/, '');
+              imgSet.add(fullSizeSrc);
+            }
+          });
+        });
+        
+        // 오픈그래프 이미지 추출
+        const ogImage = $('meta[property="og:image"]').attr('content');
+        if (ogImage && 
+            !ogImage.includes('profile') && 
+            !ogImage.includes('og_default_image') &&
+            !ogImage.includes('pfthumb')) {
+          imgSet.add(ogImage);
+        }
       }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP 오류: ${response.status}`);
+    } catch (pcError) {
+      console.error(`PC 버전 이미지 추출 오류:`, pcError);
     }
     
-    const html = await response.text();
-    const $ = cheerio.load(html);
-    const images: string[] = [];
-    
-    // 다양한 이미지 선택자 시도
-    // 1. 스마트에디터2 이미지
-    $('.se-module-image img.se-image-resource').each((_, el) => {
-      const src = $(el).attr('src');
-      if (src && !src.includes('profile') && !src.includes('og_default_image')) {
-        images.push(src);
-      }
-    });
-    
-    // 2. 일반 이미지 태그 (컨텐츠 영역)
-    $('#postViewArea img, .se-main-container img').each((_, el) => {
-      const src = $(el).attr('src');
-      if (src && !src.includes('profile') && !src.includes('og_default_image')) {
-        images.push(src);
-      }
-    });
-    
-    // 3. 구버전 블로그 이미지
-    $('.post-view img, .post_content img').each((_, el) => {
-      const src = $(el).attr('src');
-      if (src && !src.includes('profile') && !src.includes('og_default_image')) {
-        images.push(src);
-      }
-    });
-    
-    // 중복 제거 (배열만 사용)
-    const imgSet = new Set<string>();
-    images.forEach(img => imgSet.add(img));
-    const uniqueImages = Array.from(imgSet);
-    console.log(`PC 버전에서 ${uniqueImages.length}개 이미지 찾음`);
-    
-    // 이미지를 찾지 못했으면 모바일 버전 시도
-    if (uniqueImages.length === 0) {
+    // 2. 모바일 버전 이미지 추출 시도 (PC 버전 성공 여부에 관계없이 항상 시도)
+    try {
       console.log(`모바일 버전에서 이미지 추출 시도: https://m.blog.naver.com/${blogId}/${postId}`);
       
       const mobileUrl = `https://m.blog.naver.com/${blogId}/${postId}`;
@@ -998,31 +1013,61 @@ async function extractAllPostImages(blogId: string, postId: string): Promise<str
         }
       });
       
-      if (!mobileResponse.ok) {
-        throw new Error(`모바일 HTTP 오류: ${mobileResponse.status}`);
-      }
-      
-      const mobileHtml = await mobileResponse.text();
-      const $mobile = cheerio.load(mobileHtml);
-      const mobileImages: string[] = [];
-      
-      // 모바일 이미지 선택자 시도
-      $mobile('.se-module-image img, .se-image img, .post_body img').each((_, el) => {
-        const src = $mobile(el).attr('src');
-        if (src && !src.includes('profile') && !src.includes('og_default_image')) {
-          mobileImages.push(src);
+      if (mobileResponse.ok) {
+        const mobileHtml = await mobileResponse.text();
+        const $mobile = cheerio.load(mobileHtml);
+        
+        // 모바일 버전 블로그의 모든 가능한 이미지 선택자
+        const mobileSelectors = [
+          '.se-module-image img',
+          '.se-image img',
+          '.post_body img',
+          '.post-view img',
+          '.se_component_image img',
+          '.se_documentImage img',
+          '.se-media-resource',
+          '.img_attachedfile img',
+          '.u_blogDetail img',
+          '.post_ct img',
+          '.post-area img',
+          '.post_container img',
+          '.post_content img',
+          '.se-image-container img'
+        ];
+        
+        // 모든 선택자에 대해 이미지 추출
+        mobileSelectors.forEach(selector => {
+          $mobile(selector).each((_, el) => {
+            const src = $mobile(el).attr('src');
+            if (src && 
+                !src.includes('profile') && 
+                !src.includes('og_default_image') &&
+                !src.includes('pfthumb')) {
+              // 썸네일 URL을 원본 URL로 변환
+              const fullSizeSrc = src.replace(/\?type=.*$/, '');
+              imgSet.add(fullSizeSrc);
+            }
+          });
+        });
+        
+        // 오픈그래프 이미지 추출
+        const mobileOgImage = $mobile('meta[property="og:image"]').attr('content');
+        if (mobileOgImage && 
+            !mobileOgImage.includes('profile') && 
+            !mobileOgImage.includes('og_default_image') &&
+            !mobileOgImage.includes('pfthumb')) {
+          imgSet.add(mobileOgImage);
         }
-      });
-      
-      // 중복 제거 (배열만 사용)
-      const mobileImgSet = new Set<string>();
-      mobileImages.forEach(img => mobileImgSet.add(img));
-      const uniqueMobileImages = Array.from(mobileImgSet);
-      console.log(`모바일 버전에서 ${uniqueMobileImages.length}개 이미지 찾음`);
-      
-      return uniqueMobileImages;
+      }
+    } catch (mobileError) {
+      console.error(`모바일 버전 이미지 추출 오류:`, mobileError);
     }
     
+    // 최종 결과 
+    const uniqueImages = Array.from(imgSet);
+    console.log(`총 ${uniqueImages.length}개 이미지 추출됨`);
+    
+    // 이미지가 없으면 썸네일 이미지라도 추가 (이미 extract 함수로 썸네일을 설정했으므로 여기서는 건너뜀)
     return uniqueImages;
   } catch (error) {
     console.error(`포스트 이미지 추출 오류 (${blogId}/${postId}):`, error);

@@ -1002,6 +1002,12 @@ export default function AdminPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* 스프레드시트에서 데이터 가져오기 모달 */}
+      <ImportFromSheetModal 
+        isOpen={isImportModalOpen} 
+        onClose={() => setIsImportModalOpen(false)} 
+      />
     </div>
   );
 }

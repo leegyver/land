@@ -242,7 +242,11 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
         ]
       });
       
-      console.log("카카오 공유 요청 성공");
+      console.log("카카오 공유 요청 성공", {
+        siteName: companyName,
+        title: `[이가이버 부동산] ${property.title}`,
+        imageUrl: 'https://www.ganghwa.go.kr/images/kr/sub/sub0305_img01.jpg'
+      });
     } catch (error) {
       console.error("카카오 공유 중 오류 발생:", error);
       

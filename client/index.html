@@ -3,12 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <!-- 기본 메타태그 설정 (소셜 공유용) -->
+    <meta property="og:site_name" content="이가이버 부동산" />
+    <meta property="og:title" content="이가이버 부동산" />
+    <meta property="og:description" content="강화도 부동산 중개 서비스" />
+    <meta property="og:image" content="https://www.ganghwa.go.kr/images/kr/sub/sub0305_img01.jpg" />
     <!-- 카카오 SDK 로드 -->
     <script src="https://developers.kakao.com/sdk/js/kakao.js"></script>
     <script>
       window.Kakao = window.Kakao || {};
       // 사용할 앱의 JavaScript 키를 설정
       window.kakaoKey = "2f6ff1b2e516329499e3e785899159e9";
+      // 사이트 이름 전역 설정
+      window.siteName = "이가이버 부동산";
     </script>
     <!-- 카카오 지도 API -->
     <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=2f6ff1b2e516329499e3e785899159e9&libraries=services"></script>

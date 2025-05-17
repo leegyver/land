@@ -1203,7 +1203,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // 블로그 포스트 관련 API 제거됨
   
   // 구글 스프레드시트에서 부동산 데이터 가져오기 API
-  import { importPropertiesFromSheet } from './sheet-importer';
   
   app.post("/api/admin/import-from-sheet", async (req, res) => {
     try {

@@ -217,34 +217,31 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
       const currentUrl = window.location.href;
       console.log("현재 URL:", currentUrl);
       
-      // Share SDK 2.0+ 직접 사용 - 단순화된 버전으로 시도
-      try {
-        window.Kakao.Link.sendDefault({
-          objectType: 'feed',
-          content: {
-            title: `[${siteName}] ${property.title}`,
-            description: `${property.district} 위치 - ${property.type} - ${formatPrice(property.price)}`,
-            imageUrl: imageUrl,
+      // 윈도우에 설정된 전역 사이트 이름 사용
+      const globalSiteName = (window as any).siteName || siteName;
+      
+      // 보다 단순화된 템플릿 적용
+      (window as any).Kakao.Share.sendDefault({
+        objectType: 'feed',
+        content: {
+          title: `[${globalSiteName}] ${property.title}`,
+          description: `${property.district} ${property.type} - ${formatPrice(property.price)}`,
+          imageUrl: siteConfig.defaultImageUrl,
+          link: {
+            mobileWebUrl: window.location.href,
+            webUrl: window.location.href
+          }
+        },
+        buttons: [
+          {
+            title: '매물 확인하기',
             link: {
               mobileWebUrl: window.location.href,
               webUrl: window.location.href
             }
           }
-        });
-      } catch (linkError) {
-        // Link API가 없으면 Share API 시도 (v2)
-        window.Kakao.Share.sendDefault({
-          objectType: 'feed',
-          content: {
-            title: `[${siteName}] ${property.title}`,
-            description: `${property.district} 위치 - ${property.type} - ${formatPrice(property.price)}`,
-            imageUrl: imageUrl,
-            link: {
-              webUrl: window.location.href,
-              mobileWebUrl: window.location.href,
-            },
-          }
-        });
+        ]
+      });
       }
       
       console.log("카카오 공유 요청 성공");

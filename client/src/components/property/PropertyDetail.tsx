@@ -165,13 +165,18 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
   };
   
   // 카카오톡 공유 기능 핸들러
-  const handleShareClick = () => {
+  const handleShareClick = async () => {
     if (!property) {
       console.error("매물 정보가 없습니다");
       return;
     }
     
     try {
+      // 사이트 설정 정보 가져오기
+      const siteConfigResponse = await fetch('/api/site/config');
+      const siteConfig = await siteConfigResponse.json();
+      const siteName = siteConfig.siteName || "이가이버 부동산"; // 기본값 설정
+      
       // 현재 표시된 이미지 정보 및 기타 디버깅 정보 추출
       const currentImage = Array.isArray(images) && images.length > 0 ? images[currentImageIndex] : null;
       
@@ -180,6 +185,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
         kakaoInitialized: window.Kakao ? window.Kakao.isInitialized() : false,
         propertyTitle: property.title,
         currentImageUrl: currentImage,
+        siteName: siteName
       });
       
       if (!window.Kakao) {
@@ -216,7 +222,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
       window.Kakao.Share.sendDefault({
         objectType: 'feed',
         content: {
-          title: `[이가이버 부동산] ${property.title}`,
+          title: `[${siteName}] ${property.title}`,
           description: `${property.district} 위치 - ${property.type} - ${formatPrice(property.price)}`,
           imageUrl: imageUrl,
           link: {

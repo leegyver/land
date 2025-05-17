@@ -21,9 +21,21 @@ import { getLatestBlogPosts } from "./blog-fetcher";
 import { getLatestYouTubeVideos } from "./youtube-fetcher";
 import { importPropertiesFromSheet } from "./sheet-importer";
 
+// 사이트 설정 (필요시 환경변수나 설정 파일로 이동 가능)
+const siteConfig = {
+  siteName: "이가이버 부동산",
+  siteDescription: "강화도 부동산 중개 서비스",
+  siteContactEmail: "contact@ganghwaestate.com"
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // 인증 시스템 설정
   setupAuth(app);
+  
+  // 사이트 설정 API
+  app.get('/api/site/config', (req, res) => {
+    res.json(siteConfig);
+  });
   
   // API ROUTES
   

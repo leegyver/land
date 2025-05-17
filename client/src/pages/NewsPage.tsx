@@ -92,7 +92,7 @@ export default function NewsPage() {
   return (
     <div className="container mx-auto px-4 py-20">
       <Helmet>
-        <title>부동산뉴스 | 한국부동산</title>
+        <title>부동산뉴스 | 이가이버 부동산</title>
         <meta name="description" content="강화군과 수도권의 최신 부동산뉴스와 정보를 확인하세요." />
       </Helmet>
 

@@ -253,7 +253,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
       
       // 오류 발생 시 항상 클립보드 복사로 대체
       try {
-        const shareText = `[한국부동산] ${property.title}\n${property.district} 위치 - ${property.type} - ${formatPrice(property.price)}\n${window.location.href}`;
+        const shareText = `[이가이버 부동산] ${property.title}\n${property.district} 위치 - ${property.type} - ${formatPrice(property.price)}\n${window.location.href}`;
         
         navigator.clipboard.writeText(shareText)
           .then(() => {

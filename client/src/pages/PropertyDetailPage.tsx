@@ -16,22 +16,22 @@ const PropertyDetailPage = () => {
     <div className="pt-16"> {/* Offset for fixed header */}
       <Helmet>
         <title>
-          {property ? `${property.title} | 한국부동산` : "매물 상세 | 한국부동산"}
+          {property ? `${property.title} | 이가이버 부동산` : "매물 상세 | 이가이버 부동산"}
         </title>
         <meta 
           name="description" 
           content={property ? 
-            `${property.description.substring(0, 150)}... - 한국부동산에서 ${property.type} 매물을 확인하세요.` : 
-            "한국부동산의 프리미엄 매물 상세 정보를 확인하세요. 아파트, 주택, 빌라, 오피스텔 등 다양한 매물 정보 제공."
+            `${property.description.substring(0, 150)}... - 이가이버 부동산에서 ${property.type} 매물을 확인하세요.` : 
+            "이가이버 부동산의 프리미엄 매물 상세 정보를 확인하세요. 아파트, 주택, 빌라, 오피스텔 등 다양한 매물 정보 제공."
           }
         />
-        <meta property="og:title" content={property ? `${property.title} | 한국부동산` : "매물 상세 | 한국부동산"} />
+        <meta property="og:title" content={property ? `${property.title} | 이가이버 부동산` : "매물 상세 | 이가이버 부동산"} />
         <meta property="og:type" content="website" />
         <meta 
           property="og:description" 
           content={property ? 
-            `${property.description.substring(0, 150)}... - 한국부동산에서 ${property.type} 매물을 확인하세요.` : 
-            "한국부동산의 프리미엄 매물 상세 정보를 확인하세요. 아파트, 주택, 빌라, 오피스텔 등 다양한 매물 정보 제공."
+            `${property.description.substring(0, 150)}... - 이가이버 부동산에서 ${property.type} 매물을 확인하세요.` : 
+            "이가이버 부동산의 프리미엄 매물 상세 정보를 확인하세요. 아파트, 주택, 빌라, 오피스텔 등 다양한 매물 정보 제공."
           }
         />
         {property && <meta property="og:image" content={

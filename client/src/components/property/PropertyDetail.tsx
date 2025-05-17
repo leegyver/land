@@ -216,7 +216,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
       window.Kakao.Share.sendDefault({
         objectType: 'feed',
         content: {
-          title: `[한국부동산] ${property.title}`,
+          title: `[이가이버 부동산] ${property.title}`,
           description: `${property.district} 위치 - ${property.type} - ${formatPrice(property.price)}`,
           imageUrl: imageUrl,
           link: {

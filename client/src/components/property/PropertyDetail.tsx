@@ -216,16 +216,16 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
       const currentUrl = window.location.href;
       console.log("현재 URL:", currentUrl);
       
-      // 윈도우에 설정된 전역 사이트 이름 사용
-      const globalSiteName = (window as any).siteName || siteName;
+      // 하드코딩으로 이름 지정 (카카오 캐싱 문제 해결용)
+      const companyName = "이가이버 부동산";
       
-      // 보다 단순화된 템플릿 적용
+      // 더 간단한 템플릿 사용
       window.Kakao.Share.sendDefault({
         objectType: 'feed',
         content: {
-          title: `[${globalSiteName}] ${property.title}`,
+          title: `[이가이버 부동산] ${property.title}`,
           description: `${property.district} ${property.type} - ${formatPrice(property.price)}`,
-          imageUrl: imageUrl,
+          imageUrl: 'https://www.ganghwa.go.kr/images/kr/sub/sub0305_img01.jpg',
           link: {
             mobileWebUrl: currentUrl,
             webUrl: currentUrl

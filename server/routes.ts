@@ -436,6 +436,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           bathrooms: req.body.bathrooms !== undefined ? req.body.bathrooms : 0,
           // 이미지 URL 필드 처리
           imageUrls: Array.isArray(req.body.imageUrls) ? req.body.imageUrls : [],
+          // dealType 처리 - 배열로 변환
+          dealType: Array.isArray(req.body.dealType) ? req.body.dealType : 
+                    (req.body.dealType ? [req.body.dealType] : ['매매']),
           // 필수 필드에 대한 기본값 처리
           city: req.body.city || "인천", // city 필드에 기본값 설정
           size: req.body.size !== undefined ? String(req.body.size) : "0", // size를 문자열로 변환

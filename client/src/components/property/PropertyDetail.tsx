@@ -15,15 +15,13 @@ import {
   ChevronRight
 } from "lucide-react";
 import { siteConfig } from "@/config/siteConfig";
-// 사이트 이름을 포함한 통합 타입 선언
+// 타입 문제를 위한 전역 선언
 declare global {
   interface Window {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Kakao?: any;
+    kakao: any;
+    Kakao: any;
     kakaoKey?: string;
     kakaoMapLoaded?: boolean;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    kakao?: any;
     siteName?: string;
   }
 }

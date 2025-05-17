@@ -6,7 +6,8 @@ import { getQueryFn, apiRequest } from "@/lib/queryClient";
 import { Property, News, User } from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Loader2, Trash2, RefreshCw, Edit, Plus, Eye } from "lucide-react";
+import { Loader2, Trash2, RefreshCw, Edit, Plus, Eye, FileSpreadsheet } from "lucide-react";
+import { ImportFromSheetModal } from "@/components/admin/ImportFromSheetModal";
 import { 
   Table, 
   TableBody, 
@@ -55,6 +56,9 @@ export default function AdminPage() {
   const [filterType, setFilterType] = useState<string>("all");
   const [filterDistrict, setFilterDistrict] = useState<string>("all");
   const [filterDealType, setFilterDealType] = useState<string>("all");
+  
+  // 스프레드시트 가져오기 모달 상태
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   
   // 필터 옵션 - 요청받은 카테고리로 업데이트
   const propertyTypes = [
@@ -548,6 +552,14 @@ export default function AdminPage() {
                     선택 삭제 ({selectedProperties.length})
                   </Button>
                 )}
+                <Button 
+                  variant="outline" 
+                  className="border-blue-500 text-blue-500 hover:bg-blue-50 mr-2"
+                  onClick={() => setIsImportModalOpen(true)}
+                >
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  스프레드시트에서 가져오기
+                </Button>
                 <a 
                   href="/admin/properties/new"
                   className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md inline-flex items-center"

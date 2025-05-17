@@ -65,7 +65,8 @@ export async function importPropertiesFromSheet(
           imageUrl: row[11] || getDefaultImageForPropertyType(mapPropertyType(row[2] || '')),
           imageUrls: row[12] ? JSON.parse(row[12]) : [row[11] || getDefaultImageForPropertyType(mapPropertyType(row[2] || ''))],
           featured: row[13]?.toLowerCase() === 'true' || false,
-          status: row[14] || '판매중',
+          // status 필드는 스키마에 없어 주석 처리
+          // status: row[14] || '판매중',
           transactionType: row[15] || '매매',
           yearBuilt: row[16] ? String(parseInt(row[16]) || '') : null,
           deposit: row[17] ? String(parseFloat(row[17]) || '') : null,

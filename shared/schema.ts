@@ -2,7 +2,7 @@ import { pgTable, text, serial, integer, boolean, numeric, timestamp, varchar, j
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Property schema - Matched to existing database structure
+// Property schema - Matched to form structure
 export const properties = pgTable("properties", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
@@ -10,6 +10,7 @@ export const properties = pgTable("properties", {
   type: text("type").notNull(), // 토지, 주택, 아파트연립다세대, 원투룸, 상가공장창고펜션
   price: numeric("price").notNull(), // 매매가
   address: text("address").notNull(), // 주소
+  city: text("city").default("인천"), // 도시 (폼에서 기본값 "인천")
   district: text("district").notNull(), // 읍면동리 (ex: 강화읍 갑곳리, 강화읍 관청리, 강화군외 등)
   size: numeric("size").notNull(), // 면적(㎡)
   bedrooms: integer("bedrooms").notNull(), // 방 개수
@@ -46,7 +47,7 @@ export const properties = pgTable("properties", {
   maintenanceFee: numeric("maintenance_fee"), // 관리비
   
   // 연락처 정보
-  ownerName: text("owner_name"), // a소유자
+  ownerName: text("owner_name"), // 소유자
   ownerPhone: text("owner_phone"), // 소유자 전화
   tenantName: text("tenant_name"), // 임차인
   tenantPhone: text("tenant_phone"), // 임차인 전화
@@ -56,7 +57,6 @@ export const properties = pgTable("properties", {
   // 추가 정보
   specialNote: text("special_note"), // 특이사항
   coListing: boolean("co_listing").default(false), // 공동중개
-  propertyDescription: text("property_description"), // 매물설명
   privateNote: text("private_note"), // 비공개메모
 });
 

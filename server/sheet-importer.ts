@@ -178,5 +178,5 @@ function getDefaultImageForPropertyType(type: string): string {
     '상가공장창고펜션': '/attached_assets/상가펜션-001.png'
   };
 
-  return imageMap[type] || '/assets/주택-001.png';
+  return imageMap[type] || '/attached_assets/주택-001.png';
 }

@@ -39,6 +39,10 @@ export const properties = pgTable("properties", {
   heatingSystem: text("heating_system"), // 난방방식
   approvalDate: text("approval_date"), // 사용승인
   
+  // 토지 정보
+  landType: text("land_type"), // 지목 (전,답,임,대,목,잡,창,도,장,학,주,염,과,철,제,천,구,유,양,수,공원,체,원,종,사,묘,광)
+  zoneType: text("zone_type"), // 용도지역 (제1종전용주거,제2종전용주거,제1종일반주거,제2종일반주거,제3종일반주거,준주거,중심상업,일반상업,근린상업,유통상업,전용공업,일반공업,준공업,보전녹지,생산녹지,자연녹지,계획관리,보전관리,생산관리,농업보호,농업진흥,농림지역,자연환경보전)
+  
   // 금액 정보
   dealType: text("deal_type").array(), // 거래종류 (매매, 전세, 월세, 완료, 보류중) - 다중선택
   deposit: numeric("deposit"), // 전세금/보증금

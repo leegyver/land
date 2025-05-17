@@ -19,6 +19,7 @@ import { getRecentTransactions } from "./real-estate-api";
 import { testRealEstateAPI } from "./test-api";
 import { getLatestBlogPosts } from "./blog-fetcher";
 import { getLatestYouTubeVideos } from "./youtube-fetcher";
+import { importPropertiesFromSheet } from "./sheet-importer";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // 인증 시스템 설정
@@ -1200,6 +1201,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // 블로그 포스트 관련 API 제거됨
+  
+  // 구글 스프레드시트에서 부동산 데이터 가져오기 API
+  import { importPropertiesFromSheet } from './sheet-importer';
+  
+  app.post("/api/admin/import-from-sheet", async (req, res) => {
+    try {
+      // 관리자 인증 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ success: false, message: "인증이 필요합니다" });
+      }
+      
+      const user = req.user as Express.User;
+      if (user.role !== "admin") {
+        return res.status(403).json({ success: false, message: "관리자 권한이 필요합니다." });
+      }
+      
+      const { spreadsheetId, apiKey, range } = req.body;
+      
+      if (!spreadsheetId || !apiKey) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "스프레드시트 ID와 API 키가 필요합니다." 
+        });
+      }
+      
+      // 구글 스프레드시트에서 데이터 가져오기
+      const result = await importPropertiesFromSheet(
+        spreadsheetId,
+        apiKey,
+        range || 'Sheet1!A2:Z'
+      );
+      
+      // 캐시 초기화 (새 매물이 추가되었으므로)
+      memoryCache.deleteByPrefix("properties_");
+      
+      res.json(result);
+    } catch (error) {
+      console.error('구글 시트 임포트 오류:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: "데이터 가져오기 중 오류가 발생했습니다.", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
   
   // 뉴스 자동 업데이트 스케줄러 실행 (사용자 요청에 따라 활성화)
   setupNewsScheduler();

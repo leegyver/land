@@ -74,44 +74,48 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
       {/* 왼쪽: 폼 */}
-      <div className="flex flex-col items-center justify-center w-full lg:w-1/2 p-8">
+      <div className="flex flex-col items-center justify-center w-full lg:w-1/2 p-6 md:p-12">
         <div className="w-full max-w-md">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold">부동산 포털 사이트</h1>
-            <Button variant="ghost" onClick={() => setLocation("/")} className="flex items-center gap-2">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-800 bg-clip-text text-transparent">이가이버 부동산</h1>
+            <Button variant="outline" onClick={() => setLocation("/")} className="flex items-center gap-2 rounded-full">
               <Home size={16} />
               홈으로
             </Button>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">로그인</TabsTrigger>
-              <TabsTrigger value="register">회원가입</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 mb-6 rounded-lg p-1 bg-gray-100">
+              <TabsTrigger value="login" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm">로그인</TabsTrigger>
+              <TabsTrigger value="register" className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm">회원가입</TabsTrigger>
             </TabsList>
 
             {/* 로그인 폼 */}
             <TabsContent value="login">
-              <Card>
-                <CardHeader>
-                  <CardTitle>로그인</CardTitle>
+              <Card className="border-none shadow-lg">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-2xl font-bold">로그인</CardTitle>
                   <CardDescription>
                     계정 정보를 입력하여 로그인하세요.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Form {...loginForm}>
-                    <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                    <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-5">
                       <FormField
                         control={loginForm.control}
                         name="username"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>사용자 이름</FormLabel>
+                            <FormLabel className="text-base">사용자 이름</FormLabel>
                             <FormControl>
-                              <Input placeholder="사용자 이름" {...field} />
+                              <Input 
+                                placeholder="사용자 이름" 
+                                {...field} 
+                                className="h-11 rounded-lg" 
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -122,9 +126,14 @@ export default function AuthPage() {
                         name="password"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>비밀번호</FormLabel>
+                            <FormLabel className="text-base">비밀번호</FormLabel>
                             <FormControl>
-                              <Input type="password" placeholder="비밀번호" {...field} />
+                              <Input 
+                                type="password" 
+                                placeholder="비밀번호" 
+                                {...field} 
+                                className="h-11 rounded-lg" 
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -132,17 +141,17 @@ export default function AuthPage() {
                       />
                       <Button
                         type="submit"
-                        className="w-full"
+                        className="w-full h-11 text-base rounded-lg bg-gradient-to-r from-blue-600 to-indigo-800 hover:from-blue-700 hover:to-indigo-900 transition-all"
                         disabled={loginMutation.isPending}
                       >
                         {loginMutation.isPending ? (
                           <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                             로그인 중...
                           </>
                         ) : (
                           <>
-                            <LogIn className="mr-2 h-4 w-4" />
+                            <LogIn className="mr-2 h-5 w-5" />
                             로그인
                           </>
                         )}
@@ -150,10 +159,10 @@ export default function AuthPage() {
                     </form>
                   </Form>
                 </CardContent>
-                <CardFooter className="flex flex-col">
+                <CardFooter className="flex flex-col pt-0">
                   <p className="text-sm text-muted-foreground">
                     계정이 없으신가요?{" "}
-                    <Button variant="link" className="p-0" onClick={() => setActiveTab("register")}>
+                    <Button variant="link" className="p-0 text-blue-600" onClick={() => setActiveTab("register")}>
                       회원가입
                     </Button>
                   </p>
@@ -163,87 +172,89 @@ export default function AuthPage() {
 
             {/* 회원가입 폼 */}
             <TabsContent value="register">
-              <Card>
-                <CardHeader>
-                  <CardTitle>회원가입</CardTitle>
+              <Card className="border-none shadow-lg">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-2xl font-bold">회원가입</CardTitle>
                   <CardDescription>
-                    새 계정을 만들어 부동산 포털 서비스를 이용하세요.
+                    새 계정을 만들어 이가이버 부동산 서비스를 이용하세요.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Form {...registerForm}>
                     <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                      <FormField
-                        control={registerForm.control}
-                        name="username"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>사용자 이름</FormLabel>
-                            <FormControl>
-                              <Input placeholder="사용자 이름" {...field} />
-                            </FormControl>
-                            <FormDescription>
-                              3자 이상의 사용자 이름을 입력하세요.
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={registerForm.control}
-                        name="password"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>비밀번호</FormLabel>
-                            <FormControl>
-                              <Input type="password" placeholder="비밀번호" {...field} />
-                            </FormControl>
-                            <FormDescription>
-                              6자 이상의 비밀번호를 설정하세요.
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={registerForm.control}
-                        name="confirmPassword"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>비밀번호 확인</FormLabel>
-                            <FormControl>
-                              <Input type="password" placeholder="비밀번호 확인" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={registerForm.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>이메일</FormLabel>
-                            <FormControl>
-                              <Input placeholder="example@email.com" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={registerForm.control}
-                        name="phone"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>연락처</FormLabel>
-                            <FormControl>
-                              <Input placeholder="010-1234-5678" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <FormField
+                          control={registerForm.control}
+                          name="username"
+                          render={({ field }) => (
+                            <FormItem className="md:col-span-2">
+                              <FormLabel className="text-base">사용자 이름</FormLabel>
+                              <FormControl>
+                                <Input placeholder="사용자 이름" {...field} className="h-11 rounded-lg" />
+                              </FormControl>
+                              <FormDescription>
+                                3자 이상의 사용자 이름을 입력하세요.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={registerForm.control}
+                          name="password"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-base">비밀번호</FormLabel>
+                              <FormControl>
+                                <Input type="password" placeholder="비밀번호" {...field} className="h-11 rounded-lg" />
+                              </FormControl>
+                              <FormDescription>
+                                6자 이상의 비밀번호를 설정하세요.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={registerForm.control}
+                          name="confirmPassword"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-base">비밀번호 확인</FormLabel>
+                              <FormControl>
+                                <Input type="password" placeholder="비밀번호 확인" {...field} className="h-11 rounded-lg" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={registerForm.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem className="md:col-span-2">
+                              <FormLabel className="text-base">이메일</FormLabel>
+                              <FormControl>
+                                <Input placeholder="example@email.com" {...field} className="h-11 rounded-lg" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={registerForm.control}
+                          name="phone"
+                          render={({ field }) => (
+                            <FormItem className="md:col-span-2">
+                              <FormLabel className="text-base">연락처</FormLabel>
+                              <FormControl>
+                                <Input placeholder="010-1234-5678" {...field} className="h-11 rounded-lg" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                       <FormField
                         control={registerForm.control}
                         name="role"
@@ -257,17 +268,17 @@ export default function AuthPage() {
                       />
                       <Button
                         type="submit"
-                        className="w-full"
+                        className="w-full h-11 text-base rounded-lg mt-4 bg-gradient-to-r from-blue-600 to-indigo-800 hover:from-blue-700 hover:to-indigo-900 transition-all"
                         disabled={registerMutation.isPending}
                       >
                         {registerMutation.isPending ? (
                           <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                             회원가입 중...
                           </>
                         ) : (
                           <>
-                            <UserPlus className="mr-2 h-4 w-4" />
+                            <UserPlus className="mr-2 h-5 w-5" />
                             회원가입
                           </>
                         )}
@@ -275,10 +286,10 @@ export default function AuthPage() {
                     </form>
                   </Form>
                 </CardContent>
-                <CardFooter className="flex flex-col">
+                <CardFooter className="flex flex-col pt-0">
                   <p className="text-sm text-muted-foreground">
                     이미 계정이 있으신가요?{" "}
-                    <Button variant="link" className="p-0" onClick={() => setActiveTab("login")}>
+                    <Button variant="link" className="p-0 text-blue-600" onClick={() => setActiveTab("login")}>
                       로그인
                     </Button>
                   </p>
@@ -290,15 +301,22 @@ export default function AuthPage() {
       </div>
 
       {/* 오른쪽: 히어로 섹션 */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-r from-blue-600 to-indigo-800 text-white p-12 flex-col justify-center">
-        <div className="max-w-xl">
-          <h2 className="text-4xl font-bold mb-6">부동산 포털에 오신 것을 환영합니다</h2>
-          <p className="text-lg mb-8">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-700 to-indigo-900 text-white p-12 flex-col justify-center relative overflow-hidden">
+        {/* 배경 패턴 효과 */}
+        <div className="absolute top-0 left-0 w-full h-full opacity-10">
+          <div className="absolute w-96 h-96 rounded-full bg-white/20 -top-10 -right-10"></div>
+          <div className="absolute w-96 h-96 rounded-full bg-white/20 bottom-0 left-1/4"></div>
+          <div className="absolute w-60 h-60 rounded-full bg-white/20 top-1/3 left-10"></div>
+        </div>
+        
+        <div className="max-w-xl relative z-10">
+          <h2 className="text-4xl font-bold mb-6 leading-tight">이가이버 부동산과 함께<br />당신의 꿈의 집을 찾으세요</h2>
+          <p className="text-lg mb-10 text-blue-100">
             회원가입을 통해 다양한 부동산 정보를 확인하고, 관심 매물을 저장하거나 부동산 중개사와 상담 예약을 할 수 있습니다.
           </p>
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex items-start">
-              <div className="bg-white/20 rounded-full p-2 mr-4">
+              <div className="bg-white/20 rounded-full p-2 mr-4 backdrop-blur-sm">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-6 w-6"
@@ -315,12 +333,12 @@ export default function AuthPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-xl">다양한 매물 정보</h3>
-                <p>아파트, 주택, 오피스텔 등 다양한 부동산 매물 정보를 확인하세요.</p>
+                <h3 className="font-semibold text-xl text-white">다양한 매물 정보</h3>
+                <p className="text-blue-100">아파트, 주택, 오피스텔 등 다양한 부동산 매물 정보를 확인하세요.</p>
               </div>
             </div>
             <div className="flex items-start">
-              <div className="bg-white/20 rounded-full p-2 mr-4">
+              <div className="bg-white/20 rounded-full p-2 mr-4 backdrop-blur-sm">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-6 w-6"
@@ -337,12 +355,12 @@ export default function AuthPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-xl">전문 중개사 상담</h3>
-                <p>지역별 전문 부동산 중개사와 상담하여 최적의 매물을 찾아보세요.</p>
+                <h3 className="font-semibold text-xl text-white">전문 중개사 상담</h3>
+                <p className="text-blue-100">지역별 전문 부동산 중개사와 상담하여 최적의 매물을 찾아보세요.</p>
               </div>
             </div>
             <div className="flex items-start">
-              <div className="bg-white/20 rounded-full p-2 mr-4">
+              <div className="bg-white/20 rounded-full p-2 mr-4 backdrop-blur-sm">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-6 w-6"
@@ -359,8 +377,8 @@ export default function AuthPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold text-xl">실시간 알림 서비스</h3>
-                <p>관심 지역의 새로운 매물이 등록되면 실시간으로 알림을 받아보세요.</p>
+                <h3 className="font-semibold text-xl text-white">실시간 알림 서비스</h3>
+                <p className="text-blue-100">관심 지역의 새로운 매물이 등록되면 실시간으로 알림을 받아보세요.</p>
               </div>
             </div>
           </div>

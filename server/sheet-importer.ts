@@ -171,11 +171,11 @@ function mapPropertyType(type: string): string {
 // 속성 유형에 따른 기본 이미지 URL 반환 함수
 function getDefaultImageForPropertyType(type: string): string {
   const imageMap: Record<string, string> = {
-    '토지': '/assets/토지-001.png',
-    '주택': '/assets/주택-001.png',
-    '아파트연립다세대': '/assets/아파트-001.png',
-    '원투룸': '/assets/원룸-001.png',
-    '상가공장창고펜션': '/assets/상가펜션-001.png'
+    '토지': '/attached_assets/토지-001.png',
+    '주택': '/attached_assets/주택-001.png',
+    '아파트연립다세대': '/attached_assets/아파트-001.png',
+    '원투룸': '/attached_assets/원룸-001.png',
+    '상가공장창고펜션': '/attached_assets/상가펜션-001.png'
   };
 
   return imageMap[type] || '/assets/주택-001.png';

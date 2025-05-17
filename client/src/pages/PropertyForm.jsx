@@ -187,8 +187,8 @@ function PropertyForm() {
     city: "인천", // city 필드에 기본값 지정
     district: "기타지역", // 기본값 설정
     size: "",
-    bedrooms: 1,
-    bathrooms: 1,
+    bedrooms: 0,
+    bathrooms: 0,
     imageUrls: [], // 다중 이미지 저장용 배열
     agentId: 4, // 기본 에이전트 ID 설정 (정현우 중개사)
     featured: false,
@@ -592,30 +592,33 @@ function PropertyForm() {
                     />
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="bedrooms">방 개수</Label>
-                      <Input
-                        id="bedrooms"
-                        name="bedrooms"
-                        type="number"
-                        min="0"
-                        value={formData.bedrooms}
-                        onChange={handleChange}
-                      />
+                  {/* 부동산 유형이 '토지'가 아닐 때만 방 개수와 화장실 개수 필드 표시 */}
+                  {formData.type !== '토지' && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="bedrooms">방 개수</Label>
+                        <Input
+                          id="bedrooms"
+                          name="bedrooms"
+                          type="number"
+                          min="0"
+                          value={formData.bedrooms}
+                          onChange={handleChange}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="bathrooms">화장실 개수</Label>
+                        <Input
+                          id="bathrooms"
+                          name="bathrooms"
+                          type="number"
+                          min="0"
+                          value={formData.bathrooms}
+                          onChange={handleChange}
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="bathrooms">화장실 개수</Label>
-                      <Input
-                        id="bathrooms"
-                        name="bathrooms"
-                        type="number"
-                        min="0"
-                        value={formData.bathrooms}
-                        onChange={handleChange}
-                      />
-                    </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
               

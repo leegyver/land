@@ -69,7 +69,7 @@ export default function NewsDetailPage() {
   return (
     <div className="container mx-auto px-4 py-20">
       <Helmet>
-        <title>{news.title} | 부동산뉴스 | 한국부동산</title>
+        <title>{news.title} | 부동산뉴스 | 이가이버 부동산</title>
         <meta name="description" content={news.description} />
       </Helmet>
 

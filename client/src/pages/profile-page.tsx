@@ -150,7 +150,7 @@ export default function ProfilePage() {
   return (
     <div className="container mx-auto px-4 py-24 max-w-4xl">
       <Helmet>
-        <title>내 프로필 | 한국부동산</title>
+        <title>내 프로필 | 이가이버 부동산</title>
         <meta name="description" content="회원 정보 관리, 비밀번호 변경 등 계정 설정을 할 수 있습니다." />
       </Helmet>
 

@@ -12,21 +12,21 @@ const AgentsPage = () => {
   return (
     <div className="pt-16"> {/* Offset for fixed header */}
       <Helmet>
-        <title>중개사 소개 | 한국부동산</title>
+        <title>중개사 소개 | 이가이버 부동산</title>
         <meta 
           name="description" 
-          content="한국부동산의 전문 중개사를 소개합니다. 각 지역과 부동산 유형별 전문가들이 최상의 서비스를 제공합니다."
+          content="이가이버 부동산의 전문 중개사를 소개합니다. 각 지역과 부동산 유형별 전문가들이 최상의 서비스를 제공합니다."
         />
-        <meta property="og:title" content="중개사 소개 | 한국부동산" />
+        <meta property="og:title" content="중개사 소개 | 이가이버 부동산" />
         <meta property="og:type" content="website" />
-        <meta property="og:description" content="한국부동산의 전문 중개사를 소개합니다. 각 지역과 부동산 유형별 전문가들이 최상의 서비스를 제공합니다." />
+        <meta property="og:description" content="이가이버 부동산의 전문 중개사를 소개합니다. 각 지역과 부동산 유형별 전문가들이 최상의 서비스를 제공합니다." />
       </Helmet>
 
       <div className="bg-primary/10 py-12">
         <div className="container mx-auto px-4">
           <h1 className="text-3xl font-bold">중개사 소개</h1>
           <p className="text-gray-medium mt-2">
-            각 분야의 전문성을 갖춘 한국부동산의 중개사들을 소개합니다.
+            각 분야의 전문성을 갖춘 이가이버 부동산의 중개사들을 소개합니다.
           </p>
         </div>
       </div>

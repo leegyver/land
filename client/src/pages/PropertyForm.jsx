@@ -1040,7 +1040,7 @@ function PropertyForm() {
                         <SelectValue placeholder="지목 선택" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">선택 안함</SelectItem>
+                        <SelectItem value="선택 안함">선택 안함</SelectItem>
                         {landTypeOptions.map(option => (
                           <SelectItem key={option} value={option}>{option}</SelectItem>
                         ))}
@@ -1058,7 +1058,7 @@ function PropertyForm() {
                         <SelectValue placeholder="용도지역 선택" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">선택 안함</SelectItem>
+                        <SelectItem value="선택 안함">선택 안함</SelectItem>
                         {zoneTypeOptions.map(option => (
                           <SelectItem key={option} value={option}>{option}</SelectItem>
                         ))}

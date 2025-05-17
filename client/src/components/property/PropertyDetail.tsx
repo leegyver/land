@@ -218,32 +218,35 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
       const currentUrl = window.location.href;
       console.log("현재 URL:", currentUrl);
       
-      // Share SDK 2.0+ 직접 사용
-      window.Kakao.Share.sendDefault({
-        objectType: 'feed',
-        content: {
-          title: `[${siteName}] ${property.title}`,
-          description: `${property.district} 위치 - ${property.type} - ${formatPrice(property.price)}`,
-          imageUrl: imageUrl,
-          link: {
-            webUrl: currentUrl,
-            mobileWebUrl: currentUrl,
-          },
-        },
-        buttons: [
-          {
-            title: '매물 확인하기',
+      // Share SDK 2.0+ 직접 사용 - 단순화된 버전으로 시도
+      try {
+        window.Kakao.Link.sendDefault({
+          objectType: 'feed',
+          content: {
+            title: `[${siteName}] ${property.title}`,
+            description: `${property.district} 위치 - ${property.type} - ${formatPrice(property.price)}`,
+            imageUrl: imageUrl,
             link: {
-              webUrl: currentUrl,
-              mobileWebUrl: currentUrl,
+              mobileWebUrl: window.location.href,
+              webUrl: window.location.href
+            }
+          }
+        });
+      } catch (linkError) {
+        // Link API가 없으면 Share API 시도 (v2)
+        window.Kakao.Share.sendDefault({
+          objectType: 'feed',
+          content: {
+            title: `[${siteName}] ${property.title}`,
+            description: `${property.district} 위치 - ${property.type} - ${formatPrice(property.price)}`,
+            imageUrl: imageUrl,
+            link: {
+              webUrl: window.location.href,
+              mobileWebUrl: window.location.href,
             },
-          },
-        ],
-        // 성공 콜백
-        serverCallbackArgs: {
-          property_id: propertyId
-        }
-      });
+          }
+        });
+      }
       
       console.log("카카오 공유 요청 성공");
       

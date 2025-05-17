@@ -124,14 +124,17 @@ export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalPr
                 value={range}
                 onChange={(e) => setRange(e.target.value)}
                 className="col-span-3"
-                placeholder="Sheet1!A2:Z"
+                placeholder="Sheet1!A2:AN"
               />
             </div>
             
             <div className="col-span-4">
               <DialogDescription className="text-xs">
                 <p className="mt-2 font-semibold">시트 포맷 안내:</p>
-                <p>열 구성: A:제목, B:설명, C:유형, D:가격, E:주소, F:지역, G:면적, H:침실수, I:욕실수, J:층수, K:총층수, L:이미지URL</p>
+                <p>A:제목, B:설명, C:유형, D:가격, E:주소, F:지역, G:면적, H:침실수, I:욕실수, J:층수, K:총층수, L:이미지URL, M:이미지URLs, N:추천매물</p>
+                <p>O:거래유형, P:건축년도, Q:보증금, R:월세, S:관리비, T:지목, U:용도지역, V:건물명, W:동호수, X:공급면적, Y:전용면적, Z:평형</p>
+                <p>AA:방향, AB:승강기(true/false), AC:주차대수, AD:난방방식, AE:사용승인일, AF:소유자, AG:소유자전화, AH:임차인, AI:임차인전화</p>
+                <p>AJ:의뢰인, AK:의뢰인전화, AL:특이사항, AM:공동중개(true/false), AN:비공개메모</p>
                 <p>
                   유형은 다음 중 하나여야 합니다: 토지, 주택, 아파트연립다세대, 원투룸, 상가공장창고펜션
                 </p>

@@ -1229,7 +1229,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await importPropertiesFromSheet(
         spreadsheetId,
         apiKey,
-        range || 'Sheet1!A2:Z'
+        range || 'Sheet1!A2:AN'
       );
       
       // 캐시 초기화 (새 매물이 추가되었으므로)

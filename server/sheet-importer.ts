@@ -7,7 +7,7 @@ import { log } from './vite';
 export async function importPropertiesFromSheet(
   spreadsheetId: string,
   apiKey: string,
-  range: string = 'Sheet1!A2:Z'
+  range: string = 'Sheet1!A2:AN'
 ): Promise<{
   success: boolean;
   count?: number;

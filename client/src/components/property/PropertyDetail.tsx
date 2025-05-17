@@ -15,15 +15,16 @@ import {
   ChevronRight
 } from "lucide-react";
 import { siteConfig } from "@/config/siteConfig";
-
-// Kakao SDK 타입 선언
+// 사이트 이름을 포함한 통합 타입 선언
 declare global {
   interface Window {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Kakao?: any;
     kakaoKey?: string;
     kakaoMapLoaded?: boolean;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     kakao?: any;
+    siteName?: string;
   }
 }
 import { useAuth } from "@/hooks/use-auth";
@@ -221,35 +222,33 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
       const globalSiteName = (window as any).siteName || siteName;
       
       // 보다 단순화된 템플릿 적용
-      (window as any).Kakao.Share.sendDefault({
+      window.Kakao.Share.sendDefault({
         objectType: 'feed',
         content: {
           title: `[${globalSiteName}] ${property.title}`,
           description: `${property.district} ${property.type} - ${formatPrice(property.price)}`,
-          imageUrl: siteConfig.defaultImageUrl,
+          imageUrl: imageUrl,
           link: {
-            mobileWebUrl: window.location.href,
-            webUrl: window.location.href
+            mobileWebUrl: currentUrl,
+            webUrl: currentUrl
           }
         },
         buttons: [
           {
             title: '매물 확인하기',
             link: {
-              mobileWebUrl: window.location.href,
-              webUrl: window.location.href
+              mobileWebUrl: currentUrl,
+              webUrl: currentUrl
             }
           }
         ]
       });
-      }
       
       console.log("카카오 공유 요청 성공");
-      
     } catch (error) {
       console.error("카카오 공유 중 오류 발생:", error);
       
-      // 사용자에게 오류 내용 알림
+      // 사용자에게 오류 내용 알림 (한번만 표시)
       toast({
         title: "카카오 공유 실패",
         description: "클립보드에 정보를 복사합니다",

@@ -48,8 +48,13 @@ export async function importPropertiesFromSheet(
           continue;
         }
 
-        // 시트 열 매핑 (적절히 조정 필요)
-        // 예시 매핑: A:제목, B:설명, C:유형, D:가격, E:주소, F:지역, G:면적, H:침실수, I:욕실수, J:층수, K:총층수, L:이미지URL
+        // 시트 열 매핑 (확장된 버전)
+        // A:제목, B:설명, C:유형, D:가격, E:주소, F:지역, G:면적, H:침실수, I:욕실수,
+        // J:층수, K:총층수, L:이미지URL, M:이미지URLs, N:추천매물, O:거래유형, P:건축년도,
+        // Q:보증금, R:월세, S:관리비, T:지목, U:용도지역, V:건물명, W:동호수, X:공급면적,
+        // Y:전용면적, Z:평형, AA:방향, AB:승강기유무, AC:주차대수, AD:난방방식, AE:사용승인일,
+        // AF:소유자, AG:소유자전화, AH:임차인, AI:임차인전화, AJ:의뢰인, AK:의뢰인전화,
+        // AL:특이사항, AM:공동중개유무, AN:비공개메모
         const propertyData: Partial<InsertProperty> = {
           title: row[0] || '',
           description: row[1] || '',
@@ -65,14 +70,33 @@ export async function importPropertiesFromSheet(
           imageUrl: row[11] || getDefaultImageForPropertyType(mapPropertyType(row[2] || '')),
           imageUrls: row[12] ? JSON.parse(row[12]) : [row[11] || getDefaultImageForPropertyType(mapPropertyType(row[2] || ''))],
           featured: row[13]?.toLowerCase() === 'true' || false,
-          // status 필드는 스키마에 없어 주석 처리
-          // status: row[14] || '판매중',
-          transactionType: row[15] || '매매',
-          yearBuilt: row[16] ? String(parseInt(row[16]) || '') : null,
-          deposit: row[17] ? String(parseFloat(row[17]) || '') : null,
-          monthlyRent: row[18] ? String(parseFloat(row[18]) || '') : null,
-          maintenanceFee: row[19] ? String(parseFloat(row[19]) || '') : null,
-          agentId: 4, // 기본 중개사 ID
+          dealType: row[14] ? [row[14]] : ['매매'], // O열: 거래유형
+          yearBuilt: row[15] || null, // P열: 건축년도
+          deposit: row[16] || null, // Q열: 보증금
+          monthlyRent: row[17] || null, // R열: 월세
+          maintenanceFee: row[18] || null, // S열: 관리비
+          landType: row[19] || null, // T열: 지목
+          zoneType: row[20] || null, // U열: 용도지역
+          buildingName: row[21] || null, // V열: 건물명
+          unitNumber: row[22] || null, // W열: 동호수
+          supplyArea: row[23] || null, // X열: 공급면적
+          privateArea: row[24] || null, // Y열: 전용면적
+          areaSize: row[25] || null, // Z열: 평형
+          direction: row[26] || null, // AA열: 방향
+          elevator: row[27]?.toLowerCase() === 'true' || false, // AB열: 승강기유무
+          parking: row[28] || null, // AC열: 주차대수
+          heatingSystem: row[29] || null, // AD열: 난방방식
+          approvalDate: row[30] || null, // AE열: 사용승인일
+          ownerName: row[31] || null, // AF열: 소유자
+          ownerPhone: row[32] || null, // AG열: 소유자전화
+          tenantName: row[33] || null, // AH열: 임차인
+          tenantPhone: row[34] || null, // AI열: 임차인전화
+          clientName: row[35] || null, // AJ열: 의뢰인
+          clientPhone: row[36] || null, // AK열: 의뢰인전화
+          specialNote: row[37] || null, // AL열: 특이사항
+          coListing: row[38]?.toLowerCase() === 'true' || false, // AM열: 공동중개유무
+          privateNote: row[39] || null, // AN열: 비공개메모
+          agentId: 4 // 기본 중개사 ID
         };
 
         // 필수 필드 검증

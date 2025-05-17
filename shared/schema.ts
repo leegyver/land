@@ -56,6 +56,7 @@ export const properties = pgTable("properties", {
   // 추가 정보
   specialNote: text("special_note"), // 특이사항
   coListing: boolean("co_listing").default(false), // 공동중개
+  propertyDescription: text("property_description"), // 매물설명 (기존 DB 호환용)
   privateNote: text("private_note"), // 비공개메모
 });
 

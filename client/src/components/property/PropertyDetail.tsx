@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
+import { siteConfig } from "@/config/siteConfig";
 
 // Kakao SDK 타입 선언
 declare global {
@@ -172,10 +173,8 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
     }
     
     try {
-      // 사이트 설정 정보 가져오기
-      const siteConfigResponse = await fetch('/api/site/config');
-      const siteConfig = await siteConfigResponse.json();
-      const siteName = siteConfig.siteName || "이가이버 부동산"; // 기본값 설정
+      // 사이트 설정 정보 직접 가져오기 (설정 파일에서)
+      const siteName = siteConfig.siteName;
       
       // 현재 표시된 이미지 정보 및 기타 디버깅 정보 추출
       const currentImage = Array.isArray(images) && images.length > 0 ? images[currentImageIndex] : null;
@@ -210,7 +209,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
       
       // 대표 이미지 대신 고정 이미지 URL 사용 (base64 데이터 URL은 카카오에서 제대로 처리되지 않음)
       // 실제 배포 시에는 서버에 이미지를 올려두고 해당 URL을 사용하는 것이 좋음
-      const imageUrl = 'https://www.ganghwa.go.kr/images/kr/sub/sub0305_img01.jpg';
+      const imageUrl = siteConfig.defaultImageUrl;
       
       console.log("카카오 공유 이미지 URL:", imageUrl);
       
@@ -262,7 +261,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
       
       // 오류 발생 시 항상 클립보드 복사로 대체
       try {
-        const shareText = `[이가이버 부동산] ${property.title}\n${property.district} 위치 - ${property.type} - ${formatPrice(property.price)}\n${window.location.href}`;
+        const shareText = `[${siteConfig.siteName}] ${property.title}\n${property.district} 위치 - ${property.type} - ${formatPrice(property.price)}\n${window.location.href}`;
         
         navigator.clipboard.writeText(shareText)
           .then(() => {

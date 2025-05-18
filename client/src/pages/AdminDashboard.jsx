@@ -437,32 +437,32 @@ function AdminDashboard() {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[80px]">번호</TableHead>
-                        <TableHead>사용자명</TableHead>
-                        <TableHead>전화번호</TableHead>
-                        <TableHead>이메일</TableHead>
-                        <TableHead>권한</TableHead>
-                        <TableHead className="w-[80px] text-right">작업</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr>
+                        <th className="text-left p-3 border-b w-[10%]">번호</th>
+                        <th className="text-left p-3 border-b w-[20%]">사용자명</th>
+                        <th className="text-left p-3 border-b w-[20%]">전화번호</th>
+                        <th className="text-left p-3 border-b w-[20%]">이메일</th>
+                        <th className="text-left p-3 border-b w-[20%]">권한</th>
+                        <th className="text-right p-3 border-b w-[10%]">작업</th>
+                      </tr>
+                    </thead>
+                    <tbody>
                       {!adminUsers || adminUsers.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center py-4">
+                        <tr>
+                          <td colSpan={6} className="text-center p-4">
                             등록된 사용자가 없습니다.
-                          </TableCell>
-                        </TableRow>
+                          </td>
+                        </tr>
                       ) : (
                         adminUsers.map((userData) => (
-                          <TableRow key={userData.id} className="hover:bg-gray-50">
-                            <TableCell>{userData.id}</TableCell>
-                            <TableCell className="font-medium">{userData.username}</TableCell>
-                            <TableCell>{userData.phone || '전화번호 없음'}</TableCell>
-                            <TableCell>{userData.email || '-'}</TableCell>
-                            <TableCell>
+                          <tr key={userData.id} className="hover:bg-gray-50">
+                            <td className="p-3 border-b">{userData.id}</td>
+                            <td className="p-3 border-b font-medium">{userData.username}</td>
+                            <td className="p-3 border-b">{userData.phone ? userData.phone : '전화번호 없음'}</td>
+                            <td className="p-3 border-b">{userData.email || '-'}</td>
+                            <td className="p-3 border-b">
                               <span className={`px-2 py-1 rounded-full text-xs ${
                                 userData.role === 'admin' 
                                   ? 'bg-purple-100 text-purple-800' 
@@ -470,8 +470,8 @@ function AdminDashboard() {
                               }`}>
                                 {userData.role === 'admin' ? '관리자' : '일반사용자'}
                               </span>
-                            </TableCell>
-                            <TableCell className="text-right">
+                            </td>
+                            <td className="p-3 border-b text-right">
                               <Button 
                                 variant="destructive" 
                                 size="sm"
@@ -484,12 +484,12 @@ function AdminDashboard() {
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
-                            </TableCell>
-                          </TableRow>
+                            </td>
+                          </tr>
                         ))
                       )}
-                    </TableBody>
-                  </Table>
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>

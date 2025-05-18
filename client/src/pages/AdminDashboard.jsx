@@ -20,7 +20,7 @@ import {
   DialogFooter,
   DialogTrigger 
 } from "@/components/ui/dialog";
-import UserTable from "@/components/admin/UserTable";
+import SimpleUserTable from "@/components/admin/SimpleUserTable";
 
 // 간소화된 관리자 대시보드 - 데이터 표시 및 삭제 기능만 제공
 function AdminDashboard() {
@@ -476,106 +476,9 @@ function AdminDashboard() {
         {user?.role === "admin" && (
           <TabsContent value="users">
             <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">사용자 관리</h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => loadData()}
-                  className="flex items-center gap-1"
-                >
-                  <RefreshCw className="h-4 w-4" /> 새로고침
-                </Button>
-              </div>
-              
-              {loading.users ? (
-                <div className="flex justify-center py-10">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">번호</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">사용자명</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">전화번호</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">이메일</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">권한</th>
-                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">작업</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {!adminUsers || adminUsers.length === 0 ? (
-                        <tr>
-                          <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
-                            등록된 사용자가 없습니다.
-                          </td>
-                        </tr>
-                      ) : (
-                        adminUsers.map((user, index) => {
-                          // 디버깅 출력
-                          console.log(`렌더링 중인 사용자: ID=${user.id}, 이름=${user.username}, 전화번호=${user.phone}`);
-                          
-                          // 하드코딩 전화번호
-                          let phoneNumber = "전화번호 없음";
-                          if (user.id === 1) phoneNumber = "010-4787-3120";
-                          if (user.id === 3) phoneNumber = "01047873120";
-                          if (user.id === 4) phoneNumber = "미제공";
-                          
-                          return (
-                            <tr 
-                              key={user.id} 
-                              className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                            >
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {user.id}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                {user.username}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {user.id === 1 ? "010-4787-3120" : 
-                                 user.id === 3 ? "01047873120" : 
-                                 user.id === 4 ? "미제공" : 
-                                 user.phone || "전화번호 없음"}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {user.email || "-"}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span 
-                                  className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                    user.role === "admin" 
-                                      ? "bg-purple-100 text-purple-800"
-                                      : "bg-blue-100 text-blue-800"
-                                  }`}
-                                >
-                                  {user.role === "admin" ? "관리자" : "일반사용자"}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <Button 
-                                  variant="destructive" 
-                                  size="sm"
-                                  disabled={user.id === 1}
-                                  onClick={() => {
-                                    if (user.id !== 1) {
-                                      openDeleteDialog("user", user.id, user.username);
-                                    }
-                                  }}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              <SimpleUserTable 
+                onDeleteUser={(userId, username) => openDeleteDialog("user", userId, username)}
+              />
             </div>
           </TabsContent>
         )}

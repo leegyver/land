@@ -68,11 +68,21 @@ function AdminDashboard() {
         if (usersRes.ok) {
           const usersData = await usersRes.json();
           console.log("사용자 데이터:", usersData);
-          // 각 사용자 객체의 전화번호 확인
-          usersData.forEach(user => {
-            console.log(`사용자 ${user.id}(${user.username})의 전화번호: ${user.phone}`);
-          });
-          setUsers(usersData);
+          // 사용자 데이터 상세 확인 
+          console.log("사용자 데이터 길이:", usersData.length);
+          console.log("사용자 데이터 타입:", typeof usersData);
+          console.log("사용자 데이터:", JSON.stringify(usersData));
+          
+          if (Array.isArray(usersData) && usersData.length > 0) {
+            usersData.forEach(user => {
+              console.log(`사용자 ${user.id}(${user.username})의 전화번호:`, user.phone);
+            });
+            setUsers(usersData);
+          } else {
+            console.error("사용자 데이터가 배열이 아니거나 비어있습니다:", usersData);
+            // 비어있더라도 빈 배열 설정
+            setUsers([]);
+          }
         }
         setLoading(prev => ({ ...prev, users: false }));
       }

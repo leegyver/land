@@ -427,7 +427,7 @@ function AdminDashboard() {
           </TabsContent>
         )}
         
-        {/* UserManagementTable 컴포넌트 - 관리자 대시보드 내부에 정의 */}
+        {/* 새로 작성한 UserManagementTable 컴포넌트 */}
         {function UserManagementTable({ loading, adminUsers, openDeleteDialog }) {
           if (loading) {
             return (
@@ -437,20 +437,20 @@ function AdminDashboard() {
             );
           }
           
-          // 콘솔 로그로 사용자 데이터 확인
-          console.log("UserManagementTable - adminUsers:", adminUsers);
+          console.log("새로 작성된 사용자 관리 컴포넌트");
+          console.log("adminUsers 데이터:", adminUsers);
           
           return (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>번호</TableHead>
+                    <TableHead className="w-[80px]">번호</TableHead>
                     <TableHead>사용자명</TableHead>
-                    <TableHead>전화번호</TableHead>
+                    <TableHead>전화번호</TableHead> {/* 이메일 앞에 배치 */}
                     <TableHead>이메일</TableHead>
                     <TableHead>권한</TableHead>
-                    <TableHead>작업</TableHead>
+                    <TableHead className="w-[80px] text-right">작업</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -461,46 +461,37 @@ function AdminDashboard() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    adminUsers.map((userData) => {
-                      console.log("Rendering user:", userData);
-                      return (
-                        <TableRow key={userData.id}>
-                          <TableCell>{userData.id}</TableCell>
-                          <TableCell className="font-medium">{userData.username}</TableCell>
-                          <TableCell>
-                            {userData && userData.phone && userData.phone.trim() !== '' 
-                              ? userData.phone 
-                              : '전화번호 없음'}
-                          </TableCell>
-                          <TableCell>{userData.email || '-'}</TableCell>
-                          <TableCell>
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              userData.role === 'admin' 
-                                ? 'bg-purple-100 text-purple-800' 
-                                : 'bg-blue-100 text-blue-800'
-                            }`}>
-                              {userData.role === 'admin' ? '관리자' : '일반사용자'}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex space-x-2">
-                              <Button 
-                                variant="destructive" 
-                                size="sm"
-                                disabled={userData.id === 1} // 관리자 계정 삭제 방지
-                                onClick={() => {
-                                  if (userData.id !== 1) {
-                                    openDeleteDialog("user", userData.id, userData.username)
-                                  }
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
+                    adminUsers.map((user) => (
+                      <TableRow key={user.id} className="hover:bg-gray-50">
+                        <TableCell>{user.id}</TableCell>
+                        <TableCell className="font-medium">{user.username}</TableCell>
+                        <TableCell>{user.phone || '전화번호 없음'}</TableCell> {/* 이메일 앞에 배치 */}
+                        <TableCell>{user.email || '-'}</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            user.role === 'admin' 
+                              ? 'bg-purple-100 text-purple-800' 
+                              : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {user.role === 'admin' ? '관리자' : '일반사용자'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            disabled={user.id === 1} // 관리자 계정 삭제 방지
+                            onClick={() => {
+                              if (user.id !== 1) {
+                                openDeleteDialog("user", user.id, user.username)
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
                   )}
                 </TableBody>
               </Table>

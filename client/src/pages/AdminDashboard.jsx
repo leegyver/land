@@ -100,24 +100,26 @@ function AdminDashboard() {
             const data = await response.json();
             
             // 디버깅 출력
-            console.log("사용자 데이터 로드 성공 - 데이터:", data);
+            console.log("사용자 데이터 로드 성공 - 데이터:", JSON.stringify(data, null, 2));
             
             if (Array.isArray(data) && data.length > 0) {
-              // 테스트용 출력 - 각 사용자의 전화번호 필드 확인
-              data.forEach(user => {
-                console.log(`사용자 ID ${user.id}, 이름: ${user.username}, 전화번호: ${user.phone}`);
-              });
+              // 사용자 데이터 모든 필드 확인
+              for (const user of data) {
+                console.log(`사용자 ID ${user.id} 정보:`, user);
+                console.log(`사용자 필드 목록:`, Object.keys(user));
+                console.log(`전화번호 필드 존재 여부:`, 'phone' in user);
+                console.log(`전화번호 값:`, user.phone);
+              }
               
-              // 임시 테스트 데이터 (실제론 서버에서 받은 데이터 사용)
-              const userData = [
-                ...data,
-                // 만약 필요하다면 임시 테스트 데이터 추가
-              ];
+              // 회원가입 시 연락처 필드와 매핑
+              const userData = data.map(user => ({
+                ...user,
+                // phone 필드가 없으면 다른 연락처 필드를 시도
+                phone: user.phone || user.phoneNumber || user.tel || user.mobile || user.contact || '-'
+              }));
               
               setAdminUsers(userData);
-              setUsers([]); // 혼동 방지를 위해 지우기
-              
-              console.log("관리자 페이지에 설정된 사용자 데이터:", userData);
+              console.log("변환 후 사용자 데이터:", userData);
             } else {
               console.warn("사용자 데이터가 없거나 형식이 잘못됨:", data);
               setAdminUsers([]);

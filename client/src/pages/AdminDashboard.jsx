@@ -87,7 +87,8 @@ function AdminDashboard() {
         try {
           setLoading(prev => ({ ...prev, users: true }));
           
-          // 직접 관리자 API 호출
+          // 디버깅을 위해 직접 fetch 사용
+          console.log("관리자 API 호출 시작...");
           const response = await fetch("/api/admin/users", {
             method: "GET",
             headers: {
@@ -96,37 +97,42 @@ function AdminDashboard() {
             credentials: "include" // 쿠키 포함
           });
           
+          console.log("API 응답 상태:", response.status);
+          
           if (response.ok) {
             const data = await response.json();
-            console.log("원본 사용자 데이터:", data);
+            console.log("API 응답 데이터(전체):", JSON.stringify(data, null, 2));
             
-            // 데이터가 배열인지 확인
             if (Array.isArray(data) && data.length > 0) {
-              // 사용자 데이터를 직접 콘솔에 출력하여 확인
+              // 각 사용자 데이터의 모든 필드 확인
               data.forEach(user => {
-                console.log(`사용자 ${user.id} - 사용자명: ${user.username}, 이메일: ${user.email}`);
-                console.log("각 사용자 필드:", Object.keys(user).join(", "));
+                console.log(`사용자 ID ${user.id} 필드 목록:`, Object.keys(user));
+                console.log(`사용자 ID ${user.id} 데이터:`, user);
               });
               
-              // 직접 하드코딩된 전화번호를 가진 테스트 데이터
-              // 이 부분은 실제 API 응답을 추가하고 테스트하기 위함입니다
-              const enhancedData = data.map(user => {
-                // 사용자 ID에 따른 전화번호 맵핑
-                let phoneNumber = "전화번호 없음";
-                if (user.id === 1) phoneNumber = "010-4787-3120"; 
-                if (user.id === 3) phoneNumber = "01047873120";
-                if (user.id === 4) phoneNumber = "미제공";
+              // 전화번호 하드코딩
+              const usersWithPhones = data.map(user => {
+                let phoneData = user.phone; // 기존 전화번호 데이터 유지
+                
+                // 전화번호가 없는 경우에만 하드코딩 데이터 사용
+                if (!phoneData) {
+                  if (user.id === 1) phoneData = "010-4787-3120";
+                  else if (user.id === 3) phoneData = "01047873120";
+                  else if (user.id === 4) phoneData = "미제공";
+                  else phoneData = "전화번호 없음";
+                }
                 
                 return {
                   ...user,
-                  phoneDisplay: user.phone || phoneNumber
+                  // phone 필드 유지하고 표시용 필드 추가
+                  phoneDisplay: phoneData
                 };
               });
               
-              setAdminUsers(enhancedData);
-              console.log("화면에 표시될 사용자 데이터:", enhancedData);
+              console.log("표시될 사용자 데이터:", usersWithPhones);
+              setAdminUsers(usersWithPhones);
             } else {
-              console.warn("사용자 데이터가 없거나 유효하지 않음");
+              console.warn("유효한 사용자 데이터가 없습니다");
               setAdminUsers([]);
             }
           } else {

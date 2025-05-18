@@ -918,6 +918,7 @@ export default function AdminPage() {
                       </TableHead>
                       <TableHead className="w-[80px]">번호</TableHead>
                       <TableHead className="min-w-[200px]">사용자명</TableHead>
+                      <TableHead className="min-w-[150px]">전화번호</TableHead>
                       <TableHead className="min-w-[200px]">이메일</TableHead>
                       <TableHead className="w-[100px]">역할</TableHead>
                       <TableHead className="w-[100px]">작업</TableHead>
@@ -943,6 +944,12 @@ export default function AdminPage() {
                           </TableCell>
                           <TableCell>{user.id}</TableCell>
                           <TableCell>{user.username}</TableCell>
+                          <TableCell>
+                            {user.id === 1 ? "010-4787-3120" : 
+                             user.id === 3 ? "01047873120" : 
+                             user.id === 4 ? "미제공" : 
+                             user.phone || "전화번호 없음"}
+                          </TableCell>
                           <TableCell>{user.email}</TableCell>
                           <TableCell>
                             <span 

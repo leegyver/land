@@ -412,6 +412,7 @@ function AdminDashboard() {
                         <TableHead>번호</TableHead>
                         <TableHead>사용자명</TableHead>
                         <TableHead>이메일</TableHead>
+                        <TableHead>전화번호</TableHead>
                         <TableHead>권한</TableHead>
                         <TableHead>작업</TableHead>
                       </TableRow>
@@ -419,7 +420,7 @@ function AdminDashboard() {
                     <TableBody>
                       {users.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={5} className="text-center py-4">
+                          <TableCell colSpan={6} className="text-center py-4">
                             등록된 사용자가 없습니다.
                           </TableCell>
                         </TableRow>
@@ -429,6 +430,7 @@ function AdminDashboard() {
                             <TableCell>{user.id}</TableCell>
                             <TableCell className="font-medium">{user.username}</TableCell>
                             <TableCell>{user.email || '-'}</TableCell>
+                            <TableCell>{user.phone || '-'}</TableCell>
                             <TableCell>
                               <span className={`px-2 py-1 rounded-full text-xs ${
                                 user.role === 'admin' 

@@ -68,6 +68,10 @@ function AdminDashboard() {
         if (usersRes.ok) {
           const usersData = await usersRes.json();
           console.log("사용자 데이터:", usersData);
+          // 각 사용자 객체의 전화번호 확인
+          usersData.forEach(user => {
+            console.log(`사용자 ${user.id}(${user.username})의 전화번호: ${user.phone}`);
+          });
           setUsers(usersData);
         }
         setLoading(prev => ({ ...prev, users: false }));

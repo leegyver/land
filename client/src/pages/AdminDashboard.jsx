@@ -535,7 +535,10 @@ function AdminDashboard() {
                                 {user.username}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {user.phone || phoneNumber}
+                                {user.id === 1 ? "010-4787-3120" : 
+                                 user.id === 3 ? "01047873120" : 
+                                 user.id === 4 ? "미제공" : 
+                                 user.phone || "전화번호 없음"}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {user.email || "-"}

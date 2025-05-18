@@ -28,7 +28,26 @@ function AdminDashboard() {
   const [properties, setProperties] = useState([]);
   const [news, setNews] = useState([]);
   const [users, setUsers] = useState([]);
-  const [adminUsers, setAdminUsers] = useState([]); // 관리자 페이지에서 보여줄 사용자 목록
+  const [adminUsers, setAdminUsers] = useState([]);
+  
+  // API 응답 디버그 - 전역 함수
+  window.logAdminUserData = function() {
+    fetch("/api/admin/users", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include"
+    })
+    .then(res => res.json())
+    .then(data => {
+      console.log("관리자 API 응답:", data);
+      data.forEach(user => {
+        console.log(`사용자 ID: ${user.id}, 이름: ${user.username}, 전화번호: ${user.phone || "없음"}`);
+      });
+    })
+    .catch(err => console.error("API 오류:", err));
+  }; // 관리자 페이지에서 보여줄 사용자 목록
   const [loading, setLoading] = useState({
     properties: true,
     news: true,

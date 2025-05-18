@@ -1,5 +1,7 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
+import { Strategy as NaverStrategy } from "passport-naver";
+import { Strategy as KakaoStrategy } from "passport-kakao";
 import express, { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
@@ -48,6 +50,7 @@ export function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // 로컬 로그인 전략
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       const user = await storage.getUserByUsername(username);
@@ -58,6 +61,83 @@ export function setupAuth(app: Express) {
       }
     }),
   );
+  
+  // 네이버 로그인 전략
+  if (process.env.NAVER_CLIENT_ID && process.env.NAVER_CLIENT_SECRET) {
+    passport.use(
+      new NaverStrategy(
+        {
+          clientID: process.env.NAVER_CLIENT_ID,
+          clientSecret: process.env.NAVER_CLIENT_SECRET,
+          callbackURL: "/api/auth/naver/callback",
+        },
+        async (accessToken, refreshToken, profile, done) => {
+          try {
+            // 네이버 ID를 사용자 이름으로 사용
+            const naverId = profile.id;
+            let user = await storage.getUserByUsername(`naver_${naverId}`);
+            
+            if (!user) {
+              // 신규 사용자 등록
+              const newUser = {
+                username: `naver_${naverId}`,
+                password: await hashPassword(randomBytes(16).toString("hex")), // 임의의 비밀번호
+                email: profile.emails?.[0]?.value || "",
+                phone: profile._json?.mobile || "",
+                role: "user",
+                provider: "naver",
+                providerId: naverId,
+              };
+              
+              user = await storage.createUser(newUser);
+            }
+            
+            return done(null, user);
+          } catch (error) {
+            return done(error as Error);
+          }
+        }
+      )
+    );
+  }
+  
+  // 카카오 로그인 전략
+  if (process.env.KAKAO_API_KEY) {
+    passport.use(
+      new KakaoStrategy(
+        {
+          clientID: process.env.KAKAO_API_KEY,
+          callbackURL: "/api/auth/kakao/callback",
+        },
+        async (accessToken, refreshToken, profile, done) => {
+          try {
+            // 카카오 ID를 사용자 이름으로 사용
+            const kakaoId = profile.id;
+            let user = await storage.getUserByUsername(`kakao_${kakaoId}`);
+            
+            if (!user) {
+              // 신규 사용자 등록
+              const newUser = {
+                username: `kakao_${kakaoId}`,
+                password: await hashPassword(randomBytes(16).toString("hex")), // 임의의 비밀번호
+                email: profile._json?.kakao_account?.email || "",
+                phone: "",
+                role: "user",
+                provider: "kakao",
+                providerId: kakaoId,
+              };
+              
+              user = await storage.createUser(newUser);
+            }
+            
+            return done(null, user);
+          } catch (error) {
+            return done(error as Error);
+          }
+        }
+      )
+    );
+  }
 
   passport.serializeUser((user, done) => done(null, user.id));
   passport.deserializeUser(async (id: number, done) => {

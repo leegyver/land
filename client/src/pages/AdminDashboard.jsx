@@ -67,6 +67,7 @@ function AdminDashboard() {
         const usersRes = await fetch("/api/admin/users");
         if (usersRes.ok) {
           const usersData = await usersRes.json();
+          console.log("사용자 데이터:", usersData);
           setUsers(usersData);
         }
         setLoading(prev => ({ ...prev, users: false }));

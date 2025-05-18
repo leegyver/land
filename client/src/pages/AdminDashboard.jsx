@@ -20,6 +20,7 @@ import {
   DialogFooter,
   DialogTrigger 
 } from "@/components/ui/dialog";
+import UserManagementTable from "@/components/admin/UserManagementTable";
 
 // 간소화된 관리자 대시보드 - 데이터 표시 및 삭제 기능만 제공
 function AdminDashboard() {
@@ -459,76 +460,13 @@ function AdminDashboard() {
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold">사용자 관리</h2>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => loadData()}
-                  className="flex items-center gap-1"
-                >
-                  <RefreshCw className="h-4 w-4" /> 새로고침
-                </Button>
               </div>
               
-              {loading.users ? (
-                <div className="flex justify-center py-10">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <div className="min-w-full">
-                    <div className="border rounded-md">
-                      <div className="grid grid-cols-6 border-b px-4 py-3 bg-gray-50">
-                        <div className="text-sm font-medium text-gray-700">번호</div>
-                        <div className="text-sm font-medium text-gray-700">사용자명</div>
-                        <div className="text-sm font-medium text-gray-700">전화번호</div>
-                        <div className="text-sm font-medium text-gray-700">이메일</div>
-                        <div className="text-sm font-medium text-gray-700">권한</div>
-                        <div className="text-sm font-medium text-gray-700 text-right">작업</div>
-                      </div>
-                      
-                      {!adminUsers || adminUsers.length === 0 ? (
-                        <div className="col-span-6 text-center py-4 px-4 text-gray-500">
-                          등록된 사용자가 없습니다.
-                        </div>
-                      ) : (
-                        adminUsers.map((userData) => (
-                          <div key={userData.id} className="grid grid-cols-6 border-b px-4 py-3 hover:bg-gray-50">
-                            <div className="text-sm text-gray-800">{userData.id}</div>
-                            <div className="text-sm font-medium text-gray-800">{userData.username}</div>
-                            <div className="text-sm text-gray-800">
-                              {userData.phone || '전화번호 없음'}
-                            </div>
-                            <div className="text-sm text-gray-800">{userData.email || '-'}</div>
-                            <div>
-                              <span className={`inline-flex px-2 py-1 rounded-full text-xs ${
-                                userData.role === 'admin' 
-                                  ? 'bg-purple-100 text-purple-800' 
-                                  : 'bg-blue-100 text-blue-800'
-                              }`}>
-                                {userData.role === 'admin' ? '관리자' : '일반사용자'}
-                              </span>
-                            </div>
-                            <div className="text-right">
-                              <Button 
-                                variant="destructive" 
-                                size="sm"
-                                disabled={userData.id === 1}
-                                onClick={() => {
-                                  if (userData.id !== 1) {
-                                    openDeleteDialog("user", userData.id, userData.username)
-                                  }
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
+              <UserManagementTable 
+                onDeleteClick={(userId, username) => 
+                  openDeleteDialog("user", userId, username)
+                } 
+              />
             </div>
           </TabsContent>
         )}

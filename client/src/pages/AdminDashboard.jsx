@@ -468,7 +468,11 @@ function AdminDashboard() {
                           <TableCell>{userData.id}</TableCell>
                           <TableCell className="font-medium">{userData.username}</TableCell>
                           <TableCell>{userData.email || '-'}</TableCell>
-                          <TableCell>{userData.phone || '전화번호 없음'}</TableCell>
+                          <TableCell>
+                            {userData && userData.phone && userData.phone.trim() !== '' 
+                              ? userData.phone 
+                              : '전화번호 없음'}
+                          </TableCell>
                           <TableCell>
                             <span className={`px-2 py-1 rounded-full text-xs ${
                               userData.role === 'admin' 

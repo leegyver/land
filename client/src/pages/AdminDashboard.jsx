@@ -28,6 +28,7 @@ function AdminDashboard() {
   const [properties, setProperties] = useState([]);
   const [news, setNews] = useState([]);
   const [users, setUsers] = useState([]);
+  const [adminUsers, setAdminUsers] = useState([]);
   const [loading, setLoading] = useState({
     properties: true,
     news: true,
@@ -74,14 +75,15 @@ function AdminDashboard() {
           console.log("사용자 데이터:", JSON.stringify(usersData));
           
           if (Array.isArray(usersData) && usersData.length > 0) {
-            usersData.forEach(user => {
-              console.log(`사용자 ${user.id}(${user.username})의 전화번호:`, user.phone);
+            usersData.forEach(userData => {
+              console.log(`사용자 ${userData.id}(${userData.username})의 전화번호:`, userData.phone);
             });
-            setUsers(usersData);
+            // 사용자 상태 변수 이름이 로그인한 사용자(user)와 충돌하므로 adminUsers로 설정
+            setAdminUsers(usersData);
           } else {
             console.error("사용자 데이터가 배열이 아니거나 비어있습니다:", usersData);
             // 비어있더라도 빈 배열 설정
-            setUsers([]);
+            setAdminUsers([]);
           }
         }
         setLoading(prev => ({ ...prev, users: false }));
@@ -433,26 +435,26 @@ function AdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {users.length === 0 ? (
+                      {adminUsers.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={6} className="text-center py-4">
                             등록된 사용자가 없습니다.
                           </TableCell>
                         </TableRow>
                       ) : (
-                        users.map((user) => (
-                          <TableRow key={user.id}>
-                            <TableCell>{user.id}</TableCell>
-                            <TableCell className="font-medium">{user.username}</TableCell>
-                            <TableCell>{user.email || '-'}</TableCell>
-                            <TableCell>{typeof user.phone === 'string' && user.phone !== '' ? user.phone : '전화번호 없음'}</TableCell>
+                        adminUsers.map((adminUser) => (
+                          <TableRow key={adminUser.id}>
+                            <TableCell>{adminUser.id}</TableCell>
+                            <TableCell className="font-medium">{adminUser.username}</TableCell>
+                            <TableCell>{adminUser.email || '-'}</TableCell>
+                            <TableCell>{typeof adminUser.phone === 'string' && adminUser.phone !== '' ? adminUser.phone : '전화번호 없음'}</TableCell>
                             <TableCell>
                               <span className={`px-2 py-1 rounded-full text-xs ${
-                                user.role === 'admin' 
+                                adminUser.role === 'admin' 
                                   ? 'bg-purple-100 text-purple-800' 
                                   : 'bg-blue-100 text-blue-800'
                               }`}>
-                                {user.role === 'admin' ? '관리자' : '일반사용자'}
+                                {adminUser.role === 'admin' ? '관리자' : '일반사용자'}
                               </span>
                             </TableCell>
                             <TableCell>
@@ -460,10 +462,10 @@ function AdminDashboard() {
                                 <Button 
                                   variant="destructive" 
                                   size="sm"
-                                  disabled={user.id === 1} // 관리자 계정 삭제 방지
+                                  disabled={adminUser.id === 1} // 관리자 계정 삭제 방지
                                   onClick={() => {
-                                    if (user.id !== 1) {
-                                      openDeleteDialog("user", user.id, user.username)
+                                    if (adminUser.id !== 1) {
+                                      openDeleteDialog("user", adminUser.id, adminUser.username)
                                     }
                                   }}
                                 >

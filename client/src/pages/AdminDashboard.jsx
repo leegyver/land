@@ -478,59 +478,64 @@ function AdminDashboard() {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <div className="rounded-md border overflow-hidden">
-                    <div className="flex items-center bg-gray-50 h-12 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <div className="w-16 pl-6">번호</div>
-                      <div className="flex-1 pl-4">사용자명</div>
-                      <div className="flex-1 pl-4">전화번호</div>
-                      <div className="flex-1 pl-4">이메일</div>
-                      <div className="w-32 pl-4">권한</div>
-                      <div className="w-24 text-right pr-4">작업</div>
-                    </div>
-                    
-                    {adminUsers && adminUsers.length > 0 ? (
-                      adminUsers.map((userData) => {
-                        console.log(`사용자 데이터 렌더링: ID=${userData.id}, 사용자명=${userData.username}, 전화번호=${userData.phone}`);
-                        return (
-                          <div key={userData.id} className="flex items-center h-16 border-t border-gray-200 hover:bg-gray-50">
-                            <div className="w-16 pl-6 text-sm text-gray-500">{userData.id}</div>
-                            <div className="flex-1 pl-4 text-sm font-medium text-gray-900">{userData.username}</div>
-                            <div className="flex-1 pl-4 text-sm text-gray-700">
-                              {userData.phone || "전화번호 없음"}
-                            </div>
-                            <div className="flex-1 pl-4 text-sm text-gray-700">{userData.email || "-"}</div>
-                            <div className="w-32 pl-4">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                userData.role === "admin" 
-                                  ? "bg-purple-100 text-purple-800" 
-                                  : "bg-blue-100 text-blue-800"
-                              }`}>
-                                {userData.role === "admin" ? "관리자" : "일반사용자"}
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">번호</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">사용자명</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">전화번호</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">이메일</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">권한</th>
+                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">작업</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {!adminUsers || adminUsers.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                            등록된 사용자가 없습니다.
+                          </td>
+                        </tr>
+                      ) : (
+                        adminUsers.map((user, index) => (
+                          <tr 
+                            key={user.id} 
+                            className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.id}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.username}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.phone || "-"}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email || "-"}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span 
+                                className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                  user.role === "admin" 
+                                    ? "bg-purple-100 text-purple-800"
+                                    : "bg-blue-100 text-blue-800"
+                                }`}
+                              >
+                                {user.role === "admin" ? "관리자" : "일반사용자"}
                               </span>
-                            </div>
-                            <div className="w-24 text-right pr-4">
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                               <Button 
                                 variant="destructive" 
                                 size="sm"
-                                disabled={userData.id === 1}
+                                disabled={user.id === 1}
                                 onClick={() => {
-                                  if (userData.id !== 1) {
-                                    openDeleteDialog("user", userData.id, userData.username);
+                                  if (user.id !== 1) {
+                                    openDeleteDialog("user", user.id, user.username);
                                   }
                                 }}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
-                            </div>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="flex items-center justify-center h-32 text-sm text-gray-500">
-                        등록된 사용자가 없습니다.
-                      </div>
-                    )}
-                  </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>

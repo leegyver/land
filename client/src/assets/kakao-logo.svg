@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100px" height="100px" viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>kakao-logo</title>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="kakao-logo" fill="#000000" fill-rule="nonzero">
+            <path d="M50,0 C22.386,0 0,17.909 0,40 C0,53.139 8.689,64.753 21.906,72.13 C21.074,75.592 17.396,89.504 17.067,90.773 C16.654,92.449 17.894,92.437 18.655,91.936 C19.244,91.548 36.108,80.04 41.89,76.306 C44.558,76.768 47.288,77 50,77 C77.614,77 100,59.091 100,37 C100,14.909 77.614,0 50,0 Z" id="Path"></path>
+        </g>
+    </g>
+</svg>

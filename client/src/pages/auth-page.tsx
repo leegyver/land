@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth, registerSchema } from "@/hooks/use-auth";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -17,7 +17,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, UserPlus, LogIn, Home } from "lucide-react";
+import { Loader2, UserPlus, LogIn, Home, AlertCircle } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
+// SVG 로고 가져오기
+import kakaoLogo from "../assets/kakao-logo.svg";
+import naverLogo from "../assets/naver-logo.svg";
 
 // 로그인 폼 스키마
 const loginSchema = z.object({
@@ -32,6 +38,24 @@ export default function AuthPage() {
   const [activeTab, setActiveTab] = useState<string>("login");
   const { user, loginMutation, registerMutation } = useAuth();
   const [, setLocation] = useLocation();
+  const search = useSearch();
+  
+  // URL에서 에러 파라미터 확인
+  const [error, setError] = useState<string | null>(null);
+  
+  useEffect(() => {
+    // URL 에러 파라미터 확인
+    const params = new URLSearchParams(search);
+    const errorParam = params.get("error");
+    
+    if (errorParam === "naver_login_failed") {
+      setError("네이버 로그인에 실패했습니다. 다시 시도해주세요.");
+    } else if (errorParam === "kakao_login_failed") {
+      setError("카카오 로그인에 실패했습니다. 다시 시도해주세요.");
+    } else {
+      setError(null);
+    }
+  }, [search]);
 
   // 로그인 폼
   const loginForm = useForm<LoginFormValues>({
@@ -102,6 +126,14 @@ export default function AuthPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
+                  {/* 오류 메시지 표시 */}
+                  {error && (
+                    <Alert variant="destructive" className="mb-4">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+                  
                   <Form {...loginForm}>
                     <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-5">
                       <FormField
@@ -156,6 +188,40 @@ export default function AuthPage() {
                           </>
                         )}
                       </Button>
+                      
+                      {/* 소셜 로그인 구분선 */}
+                      <div className="relative my-6">
+                        <div className="absolute inset-0 flex items-center">
+                          <Separator className="w-full" />
+                        </div>
+                        <div className="relative flex justify-center">
+                          <span className="bg-white px-4 text-sm text-gray-500">소셜 계정으로 로그인</span>
+                        </div>
+                      </div>
+                      
+                      {/* 소셜 로그인 버튼 */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <a href="/api/auth/kakao" className="w-full">
+                          <Button
+                            variant="outline"
+                            type="button"
+                            className="w-full h-11 text-base rounded-lg hover:bg-yellow-50 border-[#FEE500] bg-[#FEE500]"
+                          >
+                            <img src={kakaoLogo} alt="Kakao" className="w-5 h-5 mr-2" />
+                            카카오 로그인
+                          </Button>
+                        </a>
+                        <a href="/api/auth/naver" className="w-full">
+                          <Button
+                            variant="outline"
+                            type="button"
+                            className="w-full h-11 text-base rounded-lg text-white hover:bg-green-600 border-[#03C75A] bg-[#03C75A]"
+                          >
+                            <img src={naverLogo} alt="Naver" className="w-5 h-5 mr-2" />
+                            네이버 로그인
+                          </Button>
+                        </a>
+                      </div>
                     </form>
                   </Form>
                 </CardContent>

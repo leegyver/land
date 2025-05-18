@@ -336,4 +336,34 @@ export function setupAuth(app: Express) {
       next(error);
     }
   });
+  
+  // 네이버 로그인 라우트
+  app.get('/api/auth/naver', passport.authenticate('naver'));
+  
+  // 네이버 로그인 콜백 라우트
+  app.get(
+    '/api/auth/naver/callback',
+    passport.authenticate('naver', {
+      failureRedirect: '/auth?error=naver_login_failed',
+    }),
+    (req, res) => {
+      // 성공 시 홈페이지로 리다이렉트
+      res.redirect('/');
+    }
+  );
+  
+  // 카카오 로그인 라우트
+  app.get('/api/auth/kakao', passport.authenticate('kakao'));
+  
+  // 카카오 로그인 콜백 라우트
+  app.get(
+    '/api/auth/kakao/callback',
+    passport.authenticate('kakao', {
+      failureRedirect: '/auth?error=kakao_login_failed',
+    }),
+    (req, res) => {
+      // 성공 시 홈페이지로 리다이렉트
+      res.redirect('/');
+    }
+  );
 }

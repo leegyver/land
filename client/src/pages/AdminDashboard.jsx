@@ -447,8 +447,8 @@ function AdminDashboard() {
                   <TableRow>
                     <TableHead>번호</TableHead>
                     <TableHead>사용자명</TableHead>
-                    <TableHead>이메일</TableHead>
                     <TableHead>전화번호</TableHead>
+                    <TableHead>이메일</TableHead>
                     <TableHead>권한</TableHead>
                     <TableHead>작업</TableHead>
                   </TableRow>
@@ -467,12 +467,12 @@ function AdminDashboard() {
                         <TableRow key={userData.id}>
                           <TableCell>{userData.id}</TableCell>
                           <TableCell className="font-medium">{userData.username}</TableCell>
-                          <TableCell>{userData.email || '-'}</TableCell>
                           <TableCell>
                             {userData && userData.phone && userData.phone.trim() !== '' 
                               ? userData.phone 
                               : '전화번호 없음'}
                           </TableCell>
+                          <TableCell>{userData.email || '-'}</TableCell>
                           <TableCell>
                             <span className={`px-2 py-1 rounded-full text-xs ${
                               userData.role === 'admin' 

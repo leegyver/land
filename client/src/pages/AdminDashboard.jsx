@@ -64,29 +64,43 @@ function AdminDashboard() {
 
       // 사용자 정보 로드 (관리자만)
       if (user?.role === "admin") {
-        setLoading(prev => ({ ...prev, users: true }));
-        const usersRes = await fetch("/api/admin/users");
-        if (usersRes.ok) {
-          const usersData = await usersRes.json();
-          console.log("사용자 데이터:", usersData);
-          // 사용자 데이터 상세 확인 
-          console.log("사용자 데이터 길이:", usersData.length);
-          console.log("사용자 데이터 타입:", typeof usersData);
-          console.log("사용자 데이터:", JSON.stringify(usersData));
+        try {
+          setLoading(prev => ({ ...prev, users: true }));
+          const usersRes = await fetch("/api/admin/users");
           
-          if (Array.isArray(usersData) && usersData.length > 0) {
-            usersData.forEach(userData => {
-              console.log(`사용자 ${userData.id}(${userData.username})의 전화번호:`, userData.phone);
-            });
-            // 사용자 상태 변수 이름이 로그인한 사용자(user)와 충돌하므로 adminUsers로 설정
-            setAdminUsers(usersData);
+          if (usersRes.ok) {
+            const usersData = await usersRes.json();
+            console.log("=== 사용자 데이터 로드 성공 ===");
+            console.log("사용자 데이터:", JSON.stringify(usersData, null, 2));
+            
+            // 데이터가 배열인지 확인
+            if (Array.isArray(usersData)) {
+              // 사용자 목록을 adminUsers state에 설정
+              setAdminUsers(usersData);
+            } else {
+              console.error("서버에서 반환된 데이터가 배열이 아닙니다:", usersData);
+              setAdminUsers([]);
+            }
           } else {
-            console.error("사용자 데이터가 배열이 아니거나 비어있습니다:", usersData);
-            // 비어있더라도 빈 배열 설정
+            console.error("사용자 데이터 로드 실패:", usersRes.status);
+            toast({
+              title: "사용자 데이터 로드 실패",
+              description: "관리자 권한이 필요합니다.",
+              variant: "destructive"
+            });
             setAdminUsers([]);
           }
+        } catch (error) {
+          console.error("사용자 데이터 로드 중 에러:", error);
+          toast({
+            title: "사용자 데이터 로드 실패",
+            description: "서버 오류가 발생했습니다.",
+            variant: "destructive"
+          });
+          setAdminUsers([]);
+        } finally {
+          setLoading(prev => ({ ...prev, users: false }));
         }
-        setLoading(prev => ({ ...prev, users: false }));
       }
     } catch (error) {
       console.error("데이터 로드 중 오류:", error);

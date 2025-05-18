@@ -66,37 +66,48 @@ function AdminDashboard() {
       if (user?.role === "admin") {
         try {
           setLoading(prev => ({ ...prev, users: true }));
-          const usersRes = await fetch("/api/admin/users");
           
-          if (usersRes.ok) {
-            const usersData = await usersRes.json();
-            console.log("=== 사용자 데이터 로드 성공 ===");
-            console.log("사용자 데이터:", JSON.stringify(usersData, null, 2));
+          // 직접 관리자 API 호출
+          const response = await fetch("/api/admin/users", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include" // 쿠키 포함
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
             
-            // 데이터가 배열인지 확인
-            if (Array.isArray(usersData)) {
-              // 사용자 목록을 adminUsers state에 설정
-              setAdminUsers(usersData);
+            // 디버깅 출력
+            console.log("사용자 데이터 로드 성공 - 데이터:", data);
+            
+            if (Array.isArray(data) && data.length > 0) {
+              // 테스트용 출력 - 각 사용자의 전화번호 필드 확인
+              data.forEach(user => {
+                console.log(`사용자 ID ${user.id}, 이름: ${user.username}, 전화번호: ${user.phone}`);
+              });
+              
+              // 임시 테스트 데이터 (실제론 서버에서 받은 데이터 사용)
+              const userData = [
+                ...data,
+                // 만약 필요하다면 임시 테스트 데이터 추가
+              ];
+              
+              setAdminUsers(userData);
+              setUsers([]); // 혼동 방지를 위해 지우기
+              
+              console.log("관리자 페이지에 설정된 사용자 데이터:", userData);
             } else {
-              console.error("서버에서 반환된 데이터가 배열이 아닙니다:", usersData);
+              console.warn("사용자 데이터가 없거나 형식이 잘못됨:", data);
               setAdminUsers([]);
             }
           } else {
-            console.error("사용자 데이터 로드 실패:", usersRes.status);
-            toast({
-              title: "사용자 데이터 로드 실패",
-              description: "관리자 권한이 필요합니다.",
-              variant: "destructive"
-            });
+            console.error("관리자 API 호출 실패:", response.status);
             setAdminUsers([]);
           }
         } catch (error) {
-          console.error("사용자 데이터 로드 중 에러:", error);
-          toast({
-            title: "사용자 데이터 로드 실패",
-            description: "서버 오류가 발생했습니다.",
-            variant: "destructive"
-          });
+          console.error("사용자 데이터 로딩 오류:", error);
           setAdminUsers([]);
         } finally {
           setLoading(prev => ({ ...prev, users: false }));
@@ -429,6 +440,14 @@ function AdminDashboard() {
             <div className="bg-white rounded-lg shadow p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold">사용자 관리</h2>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => loadData()}
+                  className="flex items-center gap-1"
+                >
+                  <RefreshCw className="h-4 w-4" /> 새로고침
+                </Button>
               </div>
               
               {loading.users ? (
@@ -437,41 +456,40 @@ function AdminDashboard() {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr>
-                        <th className="text-left p-3 border-b w-[10%]">번호</th>
-                        <th className="text-left p-3 border-b w-[20%]">사용자명</th>
-                        <th className="text-left p-3 border-b w-[20%]">전화번호</th>
-                        <th className="text-left p-3 border-b w-[20%]">이메일</th>
-                        <th className="text-left p-3 border-b w-[20%]">권한</th>
-                        <th className="text-right p-3 border-b w-[10%]">작업</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                  <div className="min-w-full">
+                    <div className="border rounded-md">
+                      <div className="grid grid-cols-6 border-b px-4 py-3 bg-gray-50">
+                        <div className="text-sm font-medium text-gray-700">번호</div>
+                        <div className="text-sm font-medium text-gray-700">사용자명</div>
+                        <div className="text-sm font-medium text-gray-700">전화번호</div>
+                        <div className="text-sm font-medium text-gray-700">이메일</div>
+                        <div className="text-sm font-medium text-gray-700">권한</div>
+                        <div className="text-sm font-medium text-gray-700 text-right">작업</div>
+                      </div>
+                      
                       {!adminUsers || adminUsers.length === 0 ? (
-                        <tr>
-                          <td colSpan={6} className="text-center p-4">
-                            등록된 사용자가 없습니다.
-                          </td>
-                        </tr>
+                        <div className="col-span-6 text-center py-4 px-4 text-gray-500">
+                          등록된 사용자가 없습니다.
+                        </div>
                       ) : (
                         adminUsers.map((userData) => (
-                          <tr key={userData.id} className="hover:bg-gray-50">
-                            <td className="p-3 border-b">{userData.id}</td>
-                            <td className="p-3 border-b font-medium">{userData.username}</td>
-                            <td className="p-3 border-b">{userData.phone ? userData.phone : '전화번호 없음'}</td>
-                            <td className="p-3 border-b">{userData.email || '-'}</td>
-                            <td className="p-3 border-b">
-                              <span className={`px-2 py-1 rounded-full text-xs ${
+                          <div key={userData.id} className="grid grid-cols-6 border-b px-4 py-3 hover:bg-gray-50">
+                            <div className="text-sm text-gray-800">{userData.id}</div>
+                            <div className="text-sm font-medium text-gray-800">{userData.username}</div>
+                            <div className="text-sm text-gray-800">
+                              {userData.phone || '전화번호 없음'}
+                            </div>
+                            <div className="text-sm text-gray-800">{userData.email || '-'}</div>
+                            <div>
+                              <span className={`inline-flex px-2 py-1 rounded-full text-xs ${
                                 userData.role === 'admin' 
                                   ? 'bg-purple-100 text-purple-800' 
                                   : 'bg-blue-100 text-blue-800'
                               }`}>
                                 {userData.role === 'admin' ? '관리자' : '일반사용자'}
                               </span>
-                            </td>
-                            <td className="p-3 border-b text-right">
+                            </div>
+                            <div className="text-right">
                               <Button 
                                 variant="destructive" 
                                 size="sm"
@@ -484,12 +502,12 @@ function AdminDashboard() {
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
-                            </td>
-                          </tr>
+                            </div>
+                          </div>
                         ))
                       )}
-                    </tbody>
-                  </table>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

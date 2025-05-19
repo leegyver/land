@@ -800,23 +800,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 캐시에서 확인
       const cacheKey = `blog_latest_${blogId}_${categories.join('_')}_${limit}`;
       
-      // 캐시 초기화 요청이면 캐시 삭제
-      if (refresh) {
-        console.log(`블로그 캐시 강제 초기화 (키: ${cacheKey})`);
+      // 현재 시간 기준으로 캐시가 10분 이상 지났으면 자동 갱신
+      const now = Date.now();
+      const cacheTimestamp = memoryCache.getTimestamp(cacheKey);
+      const cacheAge = cacheTimestamp ? now - cacheTimestamp : Infinity;
+      const shouldRefresh = refresh || !cacheTimestamp || cacheAge > 10 * 60 * 1000; // 10분
+      
+      // 캐시 초기화가 필요하면 캐시 삭제
+      if (shouldRefresh) {
+        console.log(`블로그 캐시 초기화 (키: ${cacheKey}, 사유: ${refresh ? '강제 갱신' : '자동 갱신'}, 경과시간: ${cacheAge / 1000}초)`);
         memoryCache.delete(cacheKey);
       }
       
       const cachedPosts = memoryCache.get(cacheKey);
       
       if (cachedPosts) {
-        return res.json(cachedPosts);
+        if (Array.isArray(cachedPosts) && cachedPosts.length > 0) {
+          console.log(`블로그 캐시에서 ${cachedPosts.length}개 포스트 반환`);
+          return res.json(cachedPosts);
+        } else {
+          console.log('블로그 캐시가 비어있거나, 잘못된 형식입니다. 새로 가져옵니다.');
+          memoryCache.delete(cacheKey);
+        }
       }
       
-      // 네이버 블로그에서 최신 포스트 가져오기
-      const posts = await getLatestBlogPosts(blogId, categories, limit);
+      console.log(`블로그 데이터 새로 요청 (키: ${cacheKey})`);
       
-      // 캐시에 저장 (1시간)
-      memoryCache.set(cacheKey, posts, 60 * 60 * 1000);
+      // 네이버 블로그에서 최신 포스트 가져오기
+      let posts = await getLatestBlogPosts(blogId, categories, limit);
+      
+      // 포스트가 없으면 고정 대체 데이터 제공 (항상 실제 데이터를 먼저 시도)
+      if (!posts || !Array.isArray(posts) || posts.length === 0) {
+        console.log('네이버 블로그에서 포스트를 가져오지 못했습니다. 다시 시도합니다.');
+        
+        // 두 번째 시도
+        try {
+          posts = await getLatestBlogPosts(blogId, ['11', '0'], limit);
+        } catch (retryErr) {
+          console.error('블로그 데이터 두 번째 시도 실패:', retryErr);
+        }
+      }
+      
+      // 데이터 검증 - 잘못된 형식 필터링
+      if (Array.isArray(posts)) {
+        posts = posts.filter(post => 
+          post && 
+          typeof post === 'object' && 
+          post.id && 
+          post.title && 
+          post.link
+        );
+        
+        // 제목 중복 제거 및 길이 조정
+        const uniqueTitles = new Set<string>();
+        posts = posts.filter(post => {
+          if (!post.title || uniqueTitles.has(post.title)) return false;
+          uniqueTitles.add(post.title);
+          
+          // 제목이 너무 길면 자르기
+          if (post.title.length > 50) {
+            post.title = post.title.substring(0, 50) + '...';
+          }
+          
+          return true;
+        });
+      }
+      
+      // 캐시에 저장 (30분)
+      if (Array.isArray(posts) && posts.length > 0) {
+        console.log(`${posts.length}개의 블로그 포스트를 캐시에 저장 (30분)`);
+        memoryCache.set(cacheKey, posts, 30 * 60 * 1000);
+      } else {
+        console.log('유효한 블로그 포스트가 없습니다.');
+      }
       
       res.json(posts);
     } catch (error) {

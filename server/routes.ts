@@ -827,7 +827,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`블로그 데이터 새로 요청 (키: ${cacheKey})`);
       
       // 네이버 블로그에서 최신 포스트 가져오기
+      // 기존 global blogCache 초기화를 먼저 수행
+      if (refresh) {
+        console.log('강제 새로고침 요청 - 전역 블로그 캐시 초기화');
+        blogCache = {}; // 모든 블로그 캐시 초기화
+      }
+      
       let posts = await getLatestBlogPosts(blogId, categories, limit);
+      
+      // 데이터 유효성 검사 - 포스트가 없으면 다시 시도
+      if (!posts || posts.length === 0) {
+        console.log('블로그 데이터 조회 실패, 카테고리 변경 후 재시도');
+        // 기본 카테고리를 변경하여 다시 시도
+        posts = await getLatestBlogPosts(blogId, ['0', '11'], limit);
+      }
       
       // 포스트가 없으면 고정 대체 데이터 제공 (항상 실제 데이터를 먼저 시도)
       if (!posts || !Array.isArray(posts) || posts.length === 0) {

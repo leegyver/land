@@ -831,6 +831,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (refresh) {
         console.log('강제 새로고침 요청 - 전역 블로그 캐시 초기화');
         blogCache = {}; // 모든 블로그 캐시 초기화
+        
+        // 캐시 초기화 로그를 남겨서 확인
+        console.log('블로그 캐시가 완전히 초기화되었습니다. 모든 데이터를 새로 가져옵니다.');
       }
       
       let posts = await getLatestBlogPosts(blogId, categories, limit);

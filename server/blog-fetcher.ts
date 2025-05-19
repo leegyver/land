@@ -921,83 +921,120 @@ export async function getLatestBlogPosts(
   }
   
   console.log(`블로그 데이터 새로 요청 (키: ${cacheKey})`);
+
+  // 모든 카테고리에서 포스트 수집
+  const allPosts: BlogPost[] = [];
+  const categories = ['0', ...categoryNos.filter(c => c !== '0')]; // 카테고리 0을 항상 먼저 처리
   
-  // 우선 최신글이 있는 카테고리(0)에서 가져오기 시도
-  let allPosts: BlogPost[] = [];
-  
-  try {
-    // 카테고리 0은 모든 최신글을 가져오므로 먼저 시도
-    const mainPosts = await fetchBlogPostsByCategory(blogId, '0', limit * 2);
-    if (mainPosts && mainPosts.length > 0) {
-      console.log(`메인 카테고리(0)에서 ${mainPosts.length}개의 최신 포스트 가져옴`);
-      allPosts = [...mainPosts];
-    }
-  } catch (e) {
-    console.error('메인 카테고리 블로그 포스트 가져오기 실패:', e);
-  }
-  
-  // 다른 카테고리에서도 포스트 가져오기 시도
-  for (const categoryNo of categoryNos) {
-    if (categoryNo === '0') continue; // 이미 처리됨
-    
+  // 각 카테고리별로 포스트 가져오기
+  for (const categoryNo of categories) {
     try {
-      const categoryPosts = await fetchBlogPostsByCategory(blogId, categoryNo, limit);
-      console.log(`카테고리 ${categoryNo}에서 ${categoryPosts.length}개 포스트 가져옴`);
-      allPosts = [...allPosts, ...categoryPosts];
+      const multiplier = categoryNo === '0' ? 3 : 1; // 카테고리 0에서는 더 많은 포스트 가져오기
+      const categoryPosts = await fetchBlogPostsByCategory(blogId, categoryNo, limit * multiplier);
+      if (categoryPosts && categoryPosts.length > 0) {
+        console.log(`카테고리 ${categoryNo}에서 ${categoryPosts.length}개 포스트 가져옴`);
+        allPosts.push(...categoryPosts);
+      }
     } catch (e) {
       console.error(`카테고리 ${categoryNo} 포스트 가져오기 실패:`, e);
     }
   }
   
-  // 필터링 및 중복 제거
-  const uniqueIdMap = new Map<string, BlogPost>();
+  console.log(`총 ${allPosts.length}개 포스트 수집됨 (중복/필터링 전)`);
   
-  // 유효한 포스트만 유지하고 중복 제거
-  allPosts.forEach(post => {
-    if (post && post.title && post.title.trim() !== '' && 
-        post.title !== '아직 작성된 글이 없습니다.' &&
-        !post.id.startsWith('post-')) {
-      
-      // 포스트 ID가 숫자인 경우, 더 큰 ID를 우선 저장 (최신글)
-      const postIdNum = parseInt(post.id, 10);
-      if (!isNaN(postIdNum)) {
-        const existingPost = uniqueIdMap.get(post.id);
-        if (!existingPost || parseInt(existingPost.id, 10) < postIdNum) {
-          uniqueIdMap.set(post.id, post);
+  // 유효한 포스트만 필터링
+  const validPosts = allPosts.filter(post => 
+    post && post.title && post.title.trim() !== '' && 
+    post.title !== '아직 작성된 글이 없습니다.' &&
+    !post.id.startsWith('post-')
+  );
+  
+  // 각 포스트의 날짜 정보를 JavaScript Date 객체로 변환
+  // publishedAt은 'YYYY.MM.DD' 형식
+  const postsWithDates = validPosts.map(post => {
+    let date: Date;
+    
+    // 날짜 파싱 시도
+    try {
+      // 날짜 파싱 (YYYY.MM.DD 형식)
+      const [year, month, day] = post.publishedAt.split('.');
+      if (year && month && day) {
+        // 숫자로 변환하여 유효성 검사
+        const y = parseInt(year, 10);
+        const m = parseInt(month, 10) - 1; // JavaScript의 월은 0부터 시작
+        const d = parseInt(day, 10);
+        
+        if (!isNaN(y) && !isNaN(m) && !isNaN(d) && 
+            y >= 2000 && y <= 2025 && // 현실적인 연도 범위 체크
+            m >= 0 && m < 12 && 
+            d >= 1 && d <= 31) {
+          date = new Date(y, m, d);
+        } else {
+          // 날짜가 범위를 벗어나면 현재 날짜 사용
+          date = new Date();
+          console.log(`날짜 범위 오류: ${post.publishedAt}, ID: ${post.id}`);
         }
       } else {
+        // 형식이 맞지 않으면 현재 날짜 사용
+        date = new Date();
+        console.log(`날짜 형식 오류: ${post.publishedAt}, ID: ${post.id}`);
+      }
+    } catch (e) {
+      // 파싱 실패 시 현재 날짜 사용
+      date = new Date();
+      console.log(`날짜 파싱 실패: ${post.publishedAt}, ID: ${post.id}`);
+    }
+    
+    // 일부 오래된 포스트는 ID를 기준으로 날짜 추정 (네이버 블로그 ID는 대략 시간순)
+    // 작은 ID (2억 미만)는 2021년 이전의 게시물로 추정
+    const postIdNum = parseInt(post.id, 10);
+    if (!isNaN(postIdNum) && postIdNum < 200000000) {
+      // 2021년 이전 게시물로 표시하여 최신 정렬에서 제외
+      date = new Date(2020, 0, 1);
+      console.log(`오래된 포스트 감지: ID ${post.id}는 2021년 이전 게시물로 추정`);
+    }
+    
+    return {
+      ...post,
+      parsedDate: date
+    };
+  });
+  
+  // ID 기준 중복 제거
+  const uniqueIdMap = new Map<string, typeof postsWithDates[0]>();
+  for (const post of postsWithDates) {
+    // 이미 있는 ID라면 더 최신 날짜를 가진 포스트를 선택
+    if (uniqueIdMap.has(post.id)) {
+      const existing = uniqueIdMap.get(post.id)!;
+      if (post.parsedDate > existing.parsedDate) {
         uniqueIdMap.set(post.id, post);
       }
+    } else {
+      uniqueIdMap.set(post.id, post);
     }
-  });
+  }
   
-  // 포스트 ID 숫자로 내림차순 정렬 (최신순)
-  const filteredPosts = Array.from(uniqueIdMap.values()).sort((a, b) => {
-    // 숫자 ID는 더 큰 값이 최신글
-    const aId = parseInt(a.id, 10);
-    const bId = parseInt(b.id, 10);
-    
-    if (!isNaN(aId) && !isNaN(bId)) {
-      return bId - aId; // 내림차순 (최신순)
-    }
-    
-    // 날짜 비교 (기본 정렬)
-    return b.publishedAt.localeCompare(a.publishedAt);
-  });
+  // 최근 날짜순으로 정렬 (parsedDate 기준 내림차순)
+  let sortedPosts = Array.from(uniqueIdMap.values())
+    .sort((a, b) => b.parsedDate.getTime() - a.parsedDate.getTime());
   
-  console.log(`중복 제거 후 ${filteredPosts.length}개의 유효한 포스트 필터링됨`);
+  console.log(`중복 제거 후 ${sortedPosts.length}개의 유효한 포스트 찾음`);
   
-  // 제한된 수의 포스트만 사용
-  const limitedPosts = filteredPosts.slice(0, limit);
+  // 개수 제한
+  sortedPosts = sortedPosts.slice(0, limit);
   
-  // 각 포스트 로깅 (디버깅용)
-  limitedPosts.forEach((post, idx) => {
-    console.log(`[${idx+1}] ID: ${post.id}, 제목: ${post.title.substring(0, 30)}${post.title.length > 30 ? '...' : ''}`);
+  // 로그에 최종 반환될 글 목록 출력
+  sortedPosts.forEach((post, index) => {
+    const dateStr = post.parsedDate.toISOString().split('T')[0];
+    console.log(`[${index + 1}] 날짜: ${dateStr}, ID: ${post.id}, 제목: ${post.title.substring(0, 30)}${post.title.length > 30 ? '...' : ''}`);
   });
   
   // 이미지 정보 강화
-  console.log(`블로그 포스트 이미지 정보 강화 중... (${limitedPosts.length}개)`);
-  const enrichedPosts = await enrichPostsWithImages(limitedPosts);
+  console.log(`블로그 포스트 이미지 정보 강화 중... (${sortedPosts.length}개)`);
+  
+  // parsedDate 필드 제거 후 반환
+  const finalPosts = sortedPosts.map(({ parsedDate, ...post }) => post);
+  const enrichedPosts = await enrichPostsWithImages(finalPosts);
   
   // 캐시 업데이트
   if (enrichedPosts.length > 0) {

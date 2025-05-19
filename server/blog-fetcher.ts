@@ -898,8 +898,8 @@ export let blogCache: {
   }
 } = {};
 
-// 캐시 유효 시간 (1시간)
-const CACHE_TTL = 60 * 60 * 1000;
+// 캐시 유효 시간 (30분으로 단축)
+const CACHE_TTL = 30 * 60 * 1000;
 
 /**
  * 캐싱을 활용하여 네이버 블로그 포스트 목록 가져오기
@@ -907,8 +907,8 @@ const CACHE_TTL = 60 * 60 * 1000;
  */
 export async function getLatestBlogPosts(
   blogId: string = '9551304',
-  categoryNos: string[] = ['21', '35', '36'],
-  limit: number = 5
+  categoryNos: string[] = ['0', '11', '21', '36'],
+  limit: number = 3
 ): Promise<BlogPost[]> {
   // 캐시키 생성 (블로그ID, 카테고리, 제한 수 기준)
   const cacheKey = `${blogId}_${categoryNos.sort().join('_')}_${limit}`;
@@ -922,12 +922,82 @@ export async function getLatestBlogPosts(
   
   console.log(`블로그 데이터 새로 요청 (키: ${cacheKey})`);
   
-  // 새로운 데이터 가져오기
-  const posts = await fetchBlogPosts(blogId, categoryNos, limit);
+  // 우선 최신글이 있는 카테고리(0)에서 가져오기 시도
+  let allPosts: BlogPost[] = [];
   
-  // 포스트 상세 페이지에서 이미지 정보 강화
-  console.log(`블로그 포스트 이미지 정보 강화 중... (${posts.length}개)`);
-  const enrichedPosts = await enrichPostsWithImages(posts);
+  try {
+    // 카테고리 0은 모든 최신글을 가져오므로 먼저 시도
+    const mainPosts = await fetchBlogPostsByCategory(blogId, '0', limit * 2);
+    if (mainPosts && mainPosts.length > 0) {
+      console.log(`메인 카테고리(0)에서 ${mainPosts.length}개의 최신 포스트 가져옴`);
+      allPosts = [...mainPosts];
+    }
+  } catch (e) {
+    console.error('메인 카테고리 블로그 포스트 가져오기 실패:', e);
+  }
+  
+  // 다른 카테고리에서도 포스트 가져오기 시도
+  for (const categoryNo of categoryNos) {
+    if (categoryNo === '0') continue; // 이미 처리됨
+    
+    try {
+      const categoryPosts = await fetchBlogPostsByCategory(blogId, categoryNo, limit);
+      console.log(`카테고리 ${categoryNo}에서 ${categoryPosts.length}개 포스트 가져옴`);
+      allPosts = [...allPosts, ...categoryPosts];
+    } catch (e) {
+      console.error(`카테고리 ${categoryNo} 포스트 가져오기 실패:`, e);
+    }
+  }
+  
+  // 필터링 및 중복 제거
+  const uniqueIdMap = new Map<string, BlogPost>();
+  
+  // 유효한 포스트만 유지하고 중복 제거
+  allPosts.forEach(post => {
+    if (post && post.title && post.title.trim() !== '' && 
+        post.title !== '아직 작성된 글이 없습니다.' &&
+        !post.id.startsWith('post-')) {
+      
+      // 포스트 ID가 숫자인 경우, 더 큰 ID를 우선 저장 (최신글)
+      const postIdNum = parseInt(post.id, 10);
+      if (!isNaN(postIdNum)) {
+        const existingPost = uniqueIdMap.get(post.id);
+        if (!existingPost || parseInt(existingPost.id, 10) < postIdNum) {
+          uniqueIdMap.set(post.id, post);
+        }
+      } else {
+        uniqueIdMap.set(post.id, post);
+      }
+    }
+  });
+  
+  // 포스트 ID 숫자로 내림차순 정렬 (최신순)
+  const filteredPosts = Array.from(uniqueIdMap.values()).sort((a, b) => {
+    // 숫자 ID는 더 큰 값이 최신글
+    const aId = parseInt(a.id, 10);
+    const bId = parseInt(b.id, 10);
+    
+    if (!isNaN(aId) && !isNaN(bId)) {
+      return bId - aId; // 내림차순 (최신순)
+    }
+    
+    // 날짜 비교 (기본 정렬)
+    return b.publishedAt.localeCompare(a.publishedAt);
+  });
+  
+  console.log(`중복 제거 후 ${filteredPosts.length}개의 유효한 포스트 필터링됨`);
+  
+  // 제한된 수의 포스트만 사용
+  const limitedPosts = filteredPosts.slice(0, limit);
+  
+  // 각 포스트 로깅 (디버깅용)
+  limitedPosts.forEach((post, idx) => {
+    console.log(`[${idx+1}] ID: ${post.id}, 제목: ${post.title.substring(0, 30)}${post.title.length > 30 ? '...' : ''}`);
+  });
+  
+  // 이미지 정보 강화
+  console.log(`블로그 포스트 이미지 정보 강화 중... (${limitedPosts.length}개)`);
+  const enrichedPosts = await enrichPostsWithImages(limitedPosts);
   
   // 캐시 업데이트
   if (enrichedPosts.length > 0) {

@@ -6,6 +6,7 @@
 interface CacheItem<T> {
   value: T;
   expiry: number;
+  timestamp: number; // 캐시 생성 시간 추가
 }
 
 class MemoryCache {
@@ -36,8 +37,19 @@ class MemoryCache {
    * @param ttl 캐시 유효 시간(ms), 기본값 5분
    */
   set<T>(key: string, value: T, ttl: number = this.DEFAULT_TTL): void {
-    const expiry = Date.now() + ttl;
-    this.cache.set(key, { value, expiry });
+    const now = Date.now();
+    const expiry = now + ttl;
+    this.cache.set(key, { value, expiry, timestamp: now });
+  }
+  
+  /**
+   * 캐시 항목이 생성된 시간을 반환
+   * @param key 캐시 키
+   * @returns 캐시 생성 시간(타임스탬프) 또는 undefined (캐시 없음)
+   */
+  getTimestamp(key: string): number | undefined {
+    const item = this.cache.get(key);
+    return item ? item.timestamp : undefined;
   }
 
   /**
@@ -53,11 +65,12 @@ class MemoryCache {
    * @param prefix 캐시 키 프리픽스
    */
   deleteByPrefix(prefix: string): void {
-    for (const key of this.cache.keys()) {
+    // Array.from으로 변환하여 이터레이터 이슈 해결
+    Array.from(this.cache.keys()).forEach(key => {
       if (key.startsWith(prefix)) {
         this.cache.delete(key);
       }
-    }
+    });
   }
 
   /**

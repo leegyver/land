@@ -198,7 +198,11 @@ const HomePage = () => {
                     <CardContent className="p-4 flex-grow">
                       <div className="flex items-center gap-2 mb-2">
                         <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200 text-xs">
-                          {post.category === "카테고리 0" ? "블로그 최신글" : post.category}
+                          {post.category === "카테고리 0" ? "일상다반사" : 
+                           post.category === "카테고리 35" ? "취미생활" : 
+                           post.category === "세상이야기" ? "세상이야기" : 
+                           post.category === "일상다반사" ? "일상다반사" :
+                           post.category === "모든 글" ? "일상다반사" : "취미생활"}
                         </Badge>
                         <span className="text-xs text-gray-500">
                           {post.publishedAt}

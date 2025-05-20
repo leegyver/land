@@ -736,7 +736,7 @@ const CACHE_TTL = 30 * 60 * 1000;
  */
 export async function getLatestBlogPosts(
   blogId: string = '9551304',
-  categoryNos: string[] = ['0', '11', '21', '36'],
+  categoryNos: string[] = ['21', '35', '36'],
   limit: number = 3
 ): Promise<BlogPost[]> {
   // 캐시키 생성 (블로그ID, 카테고리, 제한 수 기준)

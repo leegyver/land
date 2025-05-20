@@ -753,13 +753,12 @@ export async function getLatestBlogPosts(
 
   // 모든 카테고리에서 포스트 수집
   const allPosts: BlogPost[] = [];
-  const categories = ['0', ...categoryNos.filter(c => c !== '0')]; // 카테고리 0을 항상 먼저 처리
   
-  // 각 카테고리별로 포스트 가져오기
-  for (const categoryNo of categories) {
+  // 각 카테고리별로 포스트 가져오기 (요청한 카테고리만 처리)
+  for (const categoryNo of categoryNos) {
     try {
-      const multiplier = categoryNo === '0' ? 3 : 1; // 카테고리 0에서는 더 많은 포스트 가져오기
-      const categoryPosts = await fetchBlogPostsByCategory(blogId, categoryNo, limit * multiplier);
+      // 각 카테고리에서 충분한 수의 포스트를 가져옴 (카테고리별 제한 없음)
+      const categoryPosts = await fetchBlogPostsByCategory(blogId, categoryNo, limit * 5);
       if (categoryPosts && categoryPosts.length > 0) {
         console.log(`카테고리 ${categoryNo}에서 ${categoryPosts.length}개 포스트 가져옴`);
         allPosts.push(...categoryPosts);

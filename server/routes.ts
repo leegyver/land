@@ -830,10 +830,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 기존 global blogCache 초기화를 먼저 수행
       if (refresh) {
         console.log('강제 새로고침 요청 - 전역 블로그 캐시 초기화');
-        blogCache = {}; // 모든 블로그 캐시 초기화
-        
-        // 캐시 초기화 로그를 남겨서 확인
-        console.log('블로그 캐시가 완전히 초기화되었습니다. 모든 데이터를 새로 가져옵니다.');
+        // blogCache를 직접 import하여 사용
+        try {
+          // blog-fetcher에서 blogCache를 import
+          const blogFetcher = require('./blog-fetcher');
+          if (blogFetcher.blogCache) {
+            blogFetcher.blogCache = {};
+            console.log('블로그 캐시가 완전히 초기화되었습니다. 모든 데이터를 새로 가져옵니다.');
+          }
+        } catch (e) {
+          console.error('블로그 캐시 초기화 실패:', e);
+        }
       }
       
       let posts = await getLatestBlogPosts(blogId, categories, limit);

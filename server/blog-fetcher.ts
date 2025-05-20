@@ -50,13 +50,13 @@ export async function fetchBlogPostsByCategory(
     // 하위 카테고리를 포함하는 방식으로 URL 구성
     // 1. categoryNo=0&parentCategoryNo=카테고리 - 특정 상위 카테고리의 모든 하위 카테고리 포함
     // 2. categoryNo=카테고리 - 특정 카테고리만 조회
-    const pcUrl =
-      categoryNo === "0"
-        : `https://blog.naver.com/PostList.naver?blogId=${blogId}&categoryNo=${categoryNo}`;
-
-    const mobileUrl =
-      categoryNo === "0"
-        : `https://m.blog.naver.com/${blogId}?categoryNo=${categoryNo}`;
+    const pcUrl = categoryNo === "0"
+      ? `https://blog.naver.com/PostList.naver?blogId=${blogId}&categoryNo=0&parentCategoryNo=11`
+      : `https://blog.naver.com/PostList.naver?blogId=${blogId}&categoryNo=${categoryNo}`;
+    
+    const mobileUrl = categoryNo === "0"
+      ? `https://m.blog.naver.com/${blogId}?categoryNo=0&parentCategoryNo=11`
+      : `https://m.blog.naver.com/${blogId}?categoryNo=${categoryNo}`;
 
     // 먼저 PC버전 시도
     let response = await fetch(pcUrl, {
@@ -1064,7 +1064,12 @@ const CACHE_TTL = 1 * 60 * 1000;
  * 각 카테고리 조합별로 별도 캐싱 적용
  */
 export async function getLatestBlogPosts(
-  blogId: string = "9551304",
+  blogId: string = "9551304",categoryNos: string[] = ["21", "35", "36"]// 카테고리 ID를 사람이 읽을 수 있는 이름으로 매핑
+const CATEGORY_NAMES: CategoryMapping = {
+  "21": "일상다반사",
+  "35": "취미생활",
+  "36": "세상이야기",
+};
   categoryNos: string[] = ["21", "35", "36"],
   limit: number = 3,
 ): Promise<BlogPost[]> {

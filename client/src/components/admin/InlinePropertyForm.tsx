@@ -158,16 +158,16 @@ const detailedDistricts: { [key: string]: string[] } = {
 
 // 속성 입력 값 스키마
 const propertyFormSchema = insertPropertySchema.extend({
-  price: z.string().optional(),
-  size: z.string().optional(),
+  price: z.union([z.string(), z.number()]).optional(),
+  size: z.union([z.string(), z.number()]).optional(),
   imageUrl: z.string().optional(),
-  supplyArea: z.string().optional(),
-  privateArea: z.string().optional(),
-  floor: z.string().optional(),
-  totalFloors: z.string().optional(),
-  deposit: z.string().optional(),
-  monthlyRent: z.string().optional(),
-  maintenanceFee: z.string().optional(),
+  supplyArea: z.union([z.string(), z.number()]).optional().nullable(),
+  privateArea: z.union([z.string(), z.number()]).optional().nullable(),
+  floor: z.union([z.string(), z.number()]).optional().nullable(),
+  totalFloors: z.union([z.string(), z.number()]).optional().nullable(),
+  deposit: z.union([z.string(), z.number()]).optional().nullable(),
+  monthlyRent: z.union([z.string(), z.number()]).optional().nullable(),
+  maintenanceFee: z.union([z.string(), z.number()]).optional().nullable(),
 });
 
 type PropertyFormValues = z.infer<typeof propertyFormSchema>;

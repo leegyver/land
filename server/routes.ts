@@ -458,8 +458,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           agentId: req.body.agentId || req.body.agent_id || 4, // 기본값은 4 (정현우 중개사)
           supplyArea: req.body.supplyArea === "" ? null : req.body.supplyArea,
           privateArea: req.body.privateArea === "" ? null : req.body.privateArea,
-          floor: req.body.floor === "" ? null : parseInt(req.body.floor) || null, 
-          totalFloors: req.body.totalFloors === "" ? null : parseInt(req.body.totalFloors) || null,
+          floor: req.body.floor === "" ? null : (req.body.floor ? parseInt(req.body.floor) || null : null), 
+          totalFloors: req.body.totalFloors === "" ? null : (req.body.totalFloors ? parseInt(req.body.totalFloors) || null : null),
           deposit: req.body.deposit === "" ? null : req.body.deposit,
           monthlyRent: req.body.monthlyRent === "" ? null : req.body.monthlyRent,
           maintenanceFee: req.body.maintenanceFee === "" ? null : req.body.maintenanceFee
@@ -513,8 +513,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agentId: req.body.agentId || req.body.agent_id || existingProperty.agentId || 4, // 기본값은 4 (정현우 중개사)
         supplyArea: req.body.supplyArea === "" ? null : req.body.supplyArea,
         privateArea: req.body.privateArea === "" ? null : req.body.privateArea,
-        floor: req.body.floor === "" ? null : req.body.floor, 
-        totalFloors: req.body.totalFloors === "" ? null : req.body.totalFloors,
+        floor: req.body.floor === "" ? null : (req.body.floor ? parseInt(req.body.floor) : null), 
+        totalFloors: req.body.totalFloors === "" ? null : (req.body.totalFloors ? parseInt(req.body.totalFloors) : null),
         deposit: req.body.deposit === "" ? null : req.body.deposit,
         monthlyRent: req.body.monthlyRent === "" ? null : req.body.monthlyRent,
         maintenanceFee: req.body.maintenanceFee === "" ? null : req.body.maintenanceFee

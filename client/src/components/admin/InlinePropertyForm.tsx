@@ -156,18 +156,67 @@ const detailedDistricts: { [key: string]: string[] } = {
   ],
 };
 
-// 속성 입력 값 스키마
-const propertyFormSchema = insertPropertySchema.extend({
-  price: z.string().optional(),
-  size: z.string().optional(),
+// 속성 입력 값 스키마 - 모든 필수 필드를 선택적으로 만들고 문자열/숫자 유니온 타입 허용
+const propertyFormSchema = z.object({
+  // 필수 필드들을 선택적으로 변경
+  title: z.string().min(1, "제목을 입력해주세요"),
+  description: z.string().min(1, "설명을 입력해주세요"),
+  type: z.string().min(1, "부동산 유형을 선택해주세요"),
+  price: z.union([z.string(), z.number()]).transform(val => val === "" ? "0" : String(val)),
+  address: z.string().min(1, "주소를 입력해주세요"),
+  district: z.string().min(1, "지역을 선택해주세요"),
+  size: z.union([z.string(), z.number()]).transform(val => val === "" ? "0" : String(val)),
+  agentId: z.number().default(1),
+  
+  // 선택적 필드들
+  bedrooms: z.number().default(0),
+  bathrooms: z.number().default(0),
+  featured: z.boolean().default(false),
+  dealType: z.array(z.string()).default(["매매"]),
   imageUrl: z.string().optional(),
-  supplyArea: z.string().optional(),
-  privateArea: z.string().optional(),
-  floor: z.string().optional(),
-  totalFloors: z.string().optional(),
-  deposit: z.string().optional(),
-  monthlyRent: z.string().optional(),
-  maintenanceFee: z.string().optional(),
+  imageUrls: z.array(z.string()).optional(),
+  featuredImageIndex: z.number().optional(),
+  
+  // 위치 정보
+  buildingName: z.string().optional(),
+  unitNumber: z.string().optional(),
+  
+  // 면적 정보
+  supplyArea: z.union([z.string(), z.number(), z.null()]).optional(),
+  privateArea: z.union([z.string(), z.number(), z.null()]).optional(),
+  areaSize: z.string().optional(),
+  
+  // 건물 정보
+  floor: z.union([z.string(), z.number(), z.null()]).optional(),
+  totalFloors: z.union([z.string(), z.number(), z.null()]).optional(),
+  direction: z.string().optional(),
+  elevator: z.boolean().optional(),
+  parking: z.string().optional(),
+  heatingSystem: z.string().optional(),
+  approvalDate: z.string().optional(),
+  
+  // 토지 정보
+  landType: z.string().optional(),
+  zoneType: z.string().optional(),
+  
+  // 금액 정보
+  deposit: z.union([z.string(), z.number(), z.null()]).optional(),
+  monthlyRent: z.union([z.string(), z.number(), z.null()]).optional(),
+  maintenanceFee: z.union([z.string(), z.number(), z.null()]).optional(),
+  
+  // 연락처 정보
+  ownerName: z.string().optional(),
+  ownerPhone: z.string().optional(),
+  tenantName: z.string().optional(),
+  tenantPhone: z.string().optional(),
+  clientName: z.string().optional(),
+  clientPhone: z.string().optional(),
+  
+  // 추가 정보
+  specialNote: z.string().optional(),
+  coListing: z.boolean().optional(),
+  propertyDescription: z.string().optional(),
+  privateNote: z.string().optional(),
 });
 
 type PropertyFormValues = z.infer<typeof propertyFormSchema>;
@@ -189,18 +238,19 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
     title: "",
     description: "",
     type: "토지",
-    price: "",
+    price: "0",
     district: "강화읍 갑곳리",
     address: "",
-    size: "",
+    size: "0",
     agentId: 1,
     bedrooms: 0,
     bathrooms: 0,
     featured: false,
     dealType: ["매매"],
     imageUrl: "",
+    imageUrls: [],
     
-    // 추가 필드들 (빈 문자열로 초기화)
+    // 추가 필드들
     buildingName: "",
     unitNumber: "",
     supplyArea: "",
@@ -213,6 +263,8 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
     parking: "",
     heatingSystem: "",
     approvalDate: "",
+    landType: "",
+    zoneType: "",
     deposit: "",
     monthlyRent: "",
     maintenanceFee: "",
@@ -355,10 +407,40 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
 
   // 폼 제출 핸들러
   const onSubmit = (data: PropertyFormValues) => {
+    // 숫자 필드 안전 처리 - 빈 문자열을 null로 변환하고 숫자는 문자열로 변환
+    const processedData = {
+      ...data,
+      // 필수 숫자 필드들은 문자열로 변환 (빈 문자열인 경우 "0"으로 설정)
+      price: data.price || "0",
+      size: data.size || "0",
+      
+      // 선택적 숫자 필드들은 빈 문자열인 경우 null로 처리
+      floor: data.floor === "" || data.floor === undefined ? null : String(data.floor),
+      totalFloors: data.totalFloors === "" || data.totalFloors === undefined ? null : String(data.totalFloors),
+      supplyArea: data.supplyArea === "" || data.supplyArea === undefined ? null : String(data.supplyArea),
+      privateArea: data.privateArea === "" || data.privateArea === undefined ? null : String(data.privateArea),
+      deposit: data.deposit === "" || data.deposit === undefined ? null : String(data.deposit),
+      monthlyRent: data.monthlyRent === "" || data.monthlyRent === undefined ? null : String(data.monthlyRent),
+      maintenanceFee: data.maintenanceFee === "" || data.maintenanceFee === undefined ? null : String(data.maintenanceFee),
+      
+      // 이미지 URL 처리
+      imageUrl: data.imageUrl || "/attached_assets/Asset 3.png", // 기본 이미지
+      imageUrls: data.imageUrls || [],
+      
+      // 기본값 설정
+      bedrooms: data.bedrooms || 0,
+      bathrooms: data.bathrooms || 0,
+      agentId: data.agentId || 1,
+      featured: data.featured || false,
+      dealType: data.dealType && data.dealType.length > 0 ? data.dealType : ["매매"],
+      elevator: data.elevator || false,
+      coListing: data.coListing || false,
+    };
+    
     if (property) {
-      updatePropertyMutation.mutate({ id: property.id, data });
+      updatePropertyMutation.mutate({ id: property.id, data: processedData });
     } else {
-      createPropertyMutation.mutate(data);
+      createPropertyMutation.mutate(processedData);
     }
   };
 
@@ -533,6 +615,45 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
                 )}
               />
 
+              <FormField
+                control={form.control}
+                name="floor"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>층수</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="층수" 
+                        value={field.value || ""}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="totalFloors"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>총층</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="총층" 
+                        value={field.value || ""}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}

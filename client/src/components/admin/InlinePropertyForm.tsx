@@ -533,6 +533,33 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
                 )}
               />
 
+              <FormField
+                control={form.control}
+                name="floor"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>층수</FormLabel>
+                    <FormControl>
+                      <Input placeholder="층수" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="totalFloors"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>총층</FormLabel>
+                    <FormControl>
+                      <Input placeholder="총층" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}

@@ -355,10 +355,22 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
 
   // 폼 제출 핸들러
   const onSubmit = (data: PropertyFormValues) => {
+    // 숫자 필드 안전 처리
+    const processedData = {
+      ...data,
+      floor: data.floor === "" ? "" : data.floor,
+      totalFloors: data.totalFloors === "" ? "" : data.totalFloors,
+      supplyArea: data.supplyArea === "" ? "" : data.supplyArea,
+      privateArea: data.privateArea === "" ? "" : data.privateArea,
+      deposit: data.deposit === "" ? "" : data.deposit,
+      monthlyRent: data.monthlyRent === "" ? "" : data.monthlyRent,
+      maintenanceFee: data.maintenanceFee === "" ? "" : data.maintenanceFee,
+    };
+    
     if (property) {
-      updatePropertyMutation.mutate({ id: property.id, data });
+      updatePropertyMutation.mutate({ id: property.id, data: processedData });
     } else {
-      createPropertyMutation.mutate(data);
+      createPropertyMutation.mutate(processedData);
     }
   };
 

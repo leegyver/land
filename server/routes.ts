@@ -501,14 +501,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Property not found" });
       }
       
-      // 타입을 변환하지 않고 원래 타입 그대로 유지
+      // 신규 등록과 완전히 동일한 데이터 처리 로직 적용
       const processedData = {
         ...req.body,
-        bedrooms: req.body.bedrooms !== undefined ? req.body.bedrooms : existingProperty.bedrooms,
-        bathrooms: req.body.bathrooms !== undefined ? req.body.bathrooms : existingProperty.bathrooms,
+        bedrooms: req.body.bedrooms !== undefined ? req.body.bedrooms : (existingProperty.bedrooms || 0),
+        bathrooms: req.body.bathrooms !== undefined ? req.body.bathrooms : (existingProperty.bathrooms || 0),
+        // 이미지 URL 필드 처리
+        imageUrls: Array.isArray(req.body.imageUrls) ? req.body.imageUrls : (req.body.imageUrls ? [req.body.imageUrls] : existingProperty.imageUrls || []),
+        // dealType 처리 - 배열로 변환
+        dealType: Array.isArray(req.body.dealType) ? req.body.dealType : 
+                  (req.body.dealType ? [req.body.dealType] : (existingProperty.dealType || ['매매'])),
         // 필수 필드에 대한 기본값 처리
-        city: req.body.city || "인천", // city 필드에 기본값 설정
-        size: req.body.size !== undefined ? String(req.body.size) : undefined, // size를 문자열로 변환
+        city: req.body.city || existingProperty.city || "인천", // city 필드에 기본값 설정
+        size: req.body.size !== undefined ? String(req.body.size) : (existingProperty.size ? String(existingProperty.size) : "0"), // size를 문자열로 변환
         // agentId 처리 - 필수 필드이므로 기본값 설정 (database에서는 agent_id로 저장됨)
         agentId: req.body.agentId || req.body.agent_id || existingProperty.agentId || 4, // 기본값은 4 (정현우 중개사)
         supplyArea: req.body.supplyArea === "" ? null : req.body.supplyArea,

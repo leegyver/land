@@ -50,6 +50,11 @@ export default function AdminPage() {
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [currentDeleteType, setCurrentDeleteType] = useState<'properties' | 'news' | 'users' | null>(null);
   
+  // 개별 삭제 확인 대화 상자 상태
+  const [isIndividualDeleteOpen, setIsIndividualDeleteOpen] = useState(false);
+  const [individualDeleteId, setIndividualDeleteId] = useState<number | null>(null);
+  const [individualDeleteType, setIndividualDeleteType] = useState<'property' | 'news' | 'user' | null>(null);
+  
   // 데이터 로드를 위한 쿼리 매개변수
   const [skipCache, setSkipCache] = useState(false);
   
@@ -334,6 +339,32 @@ export default function AdminPage() {
       });
     },
   });
+
+  // 개별 삭제 핸들러 함수들
+  const handleIndividualDelete = (id: number, type: 'property' | 'news' | 'user') => {
+    setIndividualDeleteId(id);
+    setIndividualDeleteType(type);
+    setIsIndividualDeleteOpen(true);
+  };
+
+  const confirmIndividualDelete = () => {
+    if (individualDeleteId && individualDeleteType) {
+      switch (individualDeleteType) {
+        case 'property':
+          deletePropertyMutation.mutate(individualDeleteId);
+          break;
+        case 'news':
+          deleteNewsMutation.mutate(individualDeleteId);
+          break;
+        case 'user':
+          deleteUserMutation.mutate(individualDeleteId);
+          break;
+      }
+    }
+    setIsIndividualDeleteOpen(false);
+    setIndividualDeleteId(null);
+    setIndividualDeleteType(null);
+  };
   
   // 일괄 삭제 뮤테이션
   const batchDeleteMutation = useMutation({
@@ -751,7 +782,7 @@ export default function AdminPage() {
                                 <Edit className="h-4 w-4" />
                               </a>
                               <button 
-                                onClick={() => deletePropertyMutation.mutate(property.id)}
+                                onClick={() => handleIndividualDelete(property.id, 'property')}
                                 className="p-2 text-gray-500 hover:text-red-500"
                                 title="삭제"
                               >
@@ -869,7 +900,7 @@ export default function AdminPage() {
                                 <Eye className="h-4 w-4" />
                               </a>
                               <button 
-                                onClick={() => deleteNewsMutation.mutate(newsItem.id)}
+                                onClick={() => handleIndividualDelete(newsItem.id, 'news')}
                                 className="p-2 text-gray-500 hover:text-red-500"
                                 title="삭제"
                               >
@@ -965,7 +996,7 @@ export default function AdminPage() {
                           <TableCell>
                             <div className="flex space-x-1">
                               <button 
-                                onClick={() => deleteUserMutation.mutate(user.id)}
+                                onClick={() => handleIndividualDelete(user.id, 'user')}
                                 className="p-2 text-gray-500 hover:text-red-500"
                                 title="삭제"
                               >
@@ -984,7 +1015,41 @@ export default function AdminPage() {
         </TabsContent>
       </Tabs>
       
-      {/* 삭제 확인 대화 상자 */}
+      {/* 개별 삭제 확인 대화 상자 */}
+      <AlertDialog 
+        open={isIndividualDeleteOpen} 
+        onOpenChange={setIsIndividualDeleteOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>삭제 확인</AlertDialogTitle>
+            <AlertDialogDescription>
+              {individualDeleteType === 'property' && '이 부동산을 삭제하시겠습니까?'}
+              {individualDeleteType === 'news' && '이 뉴스를 삭제하시겠습니까?'}
+              {individualDeleteType === 'user' && '이 사용자를 삭제하시겠습니까?'}
+              <br />
+              삭제된 데이터는 복구할 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setIsIndividualDeleteOpen(false);
+              setIndividualDeleteId(null);
+              setIndividualDeleteType(null);
+            }}>
+              취소
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmIndividualDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      {/* 일괄 삭제 확인 대화 상자 */}
       <AlertDialog 
         open={isDeleteAlertOpen} 
         onOpenChange={setIsDeleteAlertOpen}

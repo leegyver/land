@@ -348,6 +348,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "문의글 삭제 중 오류가 발생했습니다." });
     }
   });
+
+  // 관리자용 문의글 알림 API
+  app.get("/api/admin/inquiries/unread", async (req, res) => {
+    try {
+      // 관리자 권한 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      }
+
+      const user = req.user as Express.User;
+      if (user.role !== "admin") {
+        return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+      }
+
+      const unreadInquiries = await storage.getUnreadInquiries();
+      res.json(unreadInquiries);
+    } catch (error) {
+      console.error("Error getting unread inquiries:", error);
+      res.status(500).json({ message: "미읽은 문의글을 가져오는 중 오류가 발생했습니다." });
+    }
+  });
+
+  app.get("/api/admin/inquiries/unread/count", async (req, res) => {
+    try {
+      // 관리자 권한 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      }
+
+      const user = req.user as Express.User;
+      if (user.role !== "admin") {
+        return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+      }
+
+      const count = await storage.getUnreadInquiryCount();
+      res.json({ count });
+    } catch (error) {
+      console.error("Error getting unread inquiry count:", error);
+      res.status(500).json({ message: "미읽은 문의글 수를 가져오는 중 오류가 발생했습니다." });
+    }
+  });
+
+  app.put("/api/admin/inquiries/:inquiryId/read", async (req, res) => {
+    try {
+      // 관리자 권한 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      }
+
+      const user = req.user as Express.User;
+      if (user.role !== "admin") {
+        return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+      }
+
+      const inquiryId = parseInt(req.params.inquiryId);
+      const success = await storage.markInquiryAsRead(inquiryId);
+      
+      if (success) {
+        res.json({ message: "문의글을 읽음 처리했습니다." });
+      } else {
+        res.status(500).json({ message: "읽음 처리 중 오류가 발생했습니다." });
+      }
+    } catch (error) {
+      console.error("Error marking inquiry as read:", error);
+      res.status(500).json({ message: "읽음 처리 중 오류가 발생했습니다." });
+    }
+  });
+
+  app.put("/api/admin/inquiries/read-all", async (req, res) => {
+    try {
+      // 관리자 권한 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      }
+
+      const user = req.user as Express.User;
+      if (user.role !== "admin") {
+        return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+      }
+
+      const success = await storage.markAllInquiriesAsRead();
+      
+      if (success) {
+        res.json({ message: "모든 문의글을 읽음 처리했습니다." });
+      } else {
+        res.status(500).json({ message: "읽음 처리 중 오류가 발생했습니다." });
+      }
+    } catch (error) {
+      console.error("Error marking all inquiries as read:", error);
+      res.status(500).json({ message: "읽음 처리 중 오류가 발생했습니다." });
+    }
+  });
   
   // Search properties
   app.get("/api/search", async (req, res) => {

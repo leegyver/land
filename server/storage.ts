@@ -120,7 +120,7 @@ export class DatabaseStorage implements IStorage {
     };
   }
   
-  async getFeaturedProperties(limit: number = 6): Promise<Property[]> {
+  async getFeaturedProperties(limit: number = 20): Promise<Property[]> {
     const results = await db.select()
       .from(properties)
       .where(eq(properties.featured, true))

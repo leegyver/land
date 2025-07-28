@@ -155,6 +155,7 @@ export const propertyInquiries = pgTable("property_inquiries", {
   content: text("content").notNull(),
   isReply: boolean("is_reply").default(false).notNull(),
   parentId: integer("parent_id"),
+  isReadByAdmin: boolean("is_read_by_admin").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

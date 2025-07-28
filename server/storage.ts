@@ -640,6 +640,74 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // 관리자용 문의글 관리 메서드
+  async getUnreadInquiries(): Promise<(PropertyInquiry & { authorUsername?: string; propertyTitle?: string })[]> {
+    try {
+      const inquiries = await db
+        .select({
+          id: propertyInquiries.id,
+          propertyId: propertyInquiries.propertyId,
+          userId: propertyInquiries.userId,
+          title: propertyInquiries.title,
+          content: propertyInquiries.content,
+          isReply: propertyInquiries.isReply,
+          parentId: propertyInquiries.parentId,
+          isReadByAdmin: propertyInquiries.isReadByAdmin,
+          createdAt: propertyInquiries.createdAt,
+          authorUsername: users.username,
+          propertyTitle: properties.title
+        })
+        .from(propertyInquiries)
+        .leftJoin(users, eq(propertyInquiries.userId, users.id))
+        .leftJoin(properties, eq(propertyInquiries.propertyId, properties.id))
+        .where(eq(propertyInquiries.isReadByAdmin, false))
+        .orderBy(desc(propertyInquiries.createdAt));
+      return inquiries as (PropertyInquiry & { authorUsername?: string; propertyTitle?: string })[];
+    } catch (error) {
+      console.error("Error getting unread inquiries:", error);
+      return [];
+    }
+  }
+
+  async getUnreadInquiryCount(): Promise<number> {
+    try {
+      const result = await db
+        .select()
+        .from(propertyInquiries)
+        .where(eq(propertyInquiries.isReadByAdmin, false));
+      return result.length;
+    } catch (error) {
+      console.error("Error getting unread inquiry count:", error);
+      return 0;
+    }
+  }
+
+  async markInquiryAsRead(id: number): Promise<boolean> {
+    try {  
+      await db
+        .update(propertyInquiries)
+        .set({ isReadByAdmin: true })
+        .where(eq(propertyInquiries.id, id));
+      return true;
+    } catch (error) {
+      console.error("Error marking inquiry as read:", error);
+      return false;
+    }
+  }
+
+  async markAllInquiriesAsRead(): Promise<boolean> {
+    try {
+      await db
+        .update(propertyInquiries)
+        .set({ isReadByAdmin: true })
+        .where(eq(propertyInquiries.isReadByAdmin, false));
+      return true;
+    } catch (error) {
+      console.error("Error marking all inquiries as read:", error);
+      return false;
+    }
+  }
+
   // 관심 매물 (Favorites) 메서드
   async getUserFavorites(userId: number): Promise<Favorite[]> {
     try {

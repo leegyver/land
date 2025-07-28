@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Loader2, Trash2, RefreshCw, Edit, Plus, Eye, FileSpreadsheet } from "lucide-react";
 import { ImportFromSheetModal } from "@/components/admin/ImportFromSheetModal";
+import InquiryNotifications from "@/components/admin/InquiryNotifications";
 import { 
   Table, 
   TableBody, 
@@ -523,7 +524,8 @@ export default function AdminPage() {
         <p className="text-gray-500">부동산, 뉴스, 사용자를 관리할 수 있습니다.</p>
       </div>
       
-      <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex justify-end items-center gap-2">
+        <InquiryNotifications />
         <Button variant="outline" onClick={handleRefreshClick}>
           <RefreshCw className="mr-2 h-4 w-4" />
           새로고침

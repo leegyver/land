@@ -6,7 +6,8 @@ import { getQueryFn, apiRequest } from "@/lib/queryClient";
 import { Property, News, User } from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Loader2, Trash2, RefreshCw, Edit, Plus, Eye, FileSpreadsheet } from "lucide-react";
+import { Loader2, Trash2, RefreshCw, Edit, Plus, Eye, FileSpreadsheet, GripVertical } from "lucide-react";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { ImportFromSheetModal } from "@/components/admin/ImportFromSheetModal";
 import InquiryNotifications from "@/components/admin/InquiryNotifications";
 import { 
@@ -260,6 +261,17 @@ export default function AdminPage() {
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: user?.role === "admin"
   });
+
+  // 추천 매물 데이터 조회
+  const {
+    data: featuredProperties,
+    isLoading: isLoadingFeatured,
+    refetch: refetchFeatured
+  } = useQuery<Property[]>({
+    queryKey: ["/api/properties/featured"],
+    queryFn: getQueryFn({ on401: "throw" }),
+    enabled: user?.role === "admin"
+  });
   
   // 데이터 로드 시 선택 초기화
   useEffect(() => {
@@ -339,6 +351,47 @@ export default function AdminPage() {
       });
     },
   });
+
+  // 추천 매물 순서 변경 뮤테이션
+  const updatePropertyOrderMutation = useMutation({
+    mutationFn: async ({ propertyId, displayOrder }: { propertyId: number; displayOrder: number }) => {
+      const res = await apiRequest("PUT", `/api/properties/${propertyId}/order`, { displayOrder });
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/properties/featured"] });
+      toast({
+        title: "순서 변경 성공",
+        description: "추천 매물 순서가 변경되었습니다.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "순서 변경 실패",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // 드래그앤드롭 핸들러
+  const handleDragEnd = (result: any) => {
+    if (!result.destination || !featuredProperties) return;
+    
+    const sourceIndex = result.source.index;
+    const destinationIndex = result.destination.index;
+    
+    if (sourceIndex === destinationIndex) return;
+    
+    // 순서 변경 로직
+    const draggedProperty = featuredProperties[sourceIndex];
+    const newOrder = destinationIndex;
+    
+    updatePropertyOrderMutation.mutate({
+      propertyId: draggedProperty.id,
+      displayOrder: newOrder
+    });
+  };
 
   // 개별 삭제 핸들러 함수들
   const handleIndividualDelete = (id: number, type: 'property' | 'news' | 'user') => {
@@ -566,6 +619,7 @@ export default function AdminPage() {
       <Tabs defaultValue="properties">
         <TabsList className="mb-4">
           <TabsTrigger value="properties">부동산</TabsTrigger>
+          <TabsTrigger value="featured">추천 매물 순서</TabsTrigger>
           <TabsTrigger value="news">뉴스</TabsTrigger>
           <TabsTrigger value="users">사용자</TabsTrigger>
         </TabsList>
@@ -796,6 +850,100 @@ export default function AdminPage() {
                   </TableBody>
                 </Table>
               </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* 추천 매물 순서 관리 탭 */}
+        <TabsContent value="featured">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">추천 매물 순서 관리</h2>
+              <p className="text-sm text-gray-500">드래그하여 순서를 변경하세요</p>
+            </div>
+            
+            {isLoadingFeatured ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : !featuredProperties || featuredProperties.length === 0 ? (
+              <div className="text-center py-10">
+                <p className="text-gray-500 mb-4">추천 매물이 없습니다.</p>
+                <p className="text-sm text-gray-400">부동산 관리에서 매물을 추천으로 설정해주세요.</p>
+              </div>
+            ) : (
+              <DragDropContext onDragEnd={handleDragEnd}>
+                <Droppable droppableId="featured-properties">
+                  {(provided) => (
+                    <div
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      className="space-y-3"
+                    >
+                      {featuredProperties.map((property, index) => (
+                        <Draggable key={property.id} draggableId={property.id.toString()} index={index}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={`bg-white border rounded-lg p-4 flex items-center space-x-4 transition-shadow ${
+                                snapshot.isDragging ? 'shadow-lg' : 'shadow-sm hover:shadow-md'
+                              }`}
+                            >
+                              <div
+                                {...provided.dragHandleProps}
+                                className="text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing"
+                              >
+                                <GripVertical className="h-5 w-5" />
+                              </div>
+                              
+                              <div className="flex-shrink-0 w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
+                                {property.images && property.images.length > 0 ? (
+                                  <img 
+                                    src={property.images[0]} 
+                                    alt={property.title} 
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                    <Eye className="h-6 w-6" />
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-medium text-lg truncate mb-1">{property.title}</h3>
+                                <div className="flex items-center space-x-4 text-sm text-gray-500">
+                                  <span>{property.propertyType}</span>
+                                  <span>{property.district}</span>
+                                  <span className="font-medium text-primary">
+                                    {property.price.toLocaleString()}만원
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              <div className="flex-shrink-0 text-sm text-gray-500">
+                                순서: {index + 1}
+                              </div>
+                              
+                              <div className="flex-shrink-0">
+                                <a 
+                                  href={`/properties/${property.id}`} 
+                                  className="p-2 text-gray-500 hover:text-primary"
+                                  title="보기"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </a>
+                              </div>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
             )}
           </div>
         </TabsContent>

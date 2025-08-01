@@ -9,7 +9,7 @@ import {
   favorites, type Favorite, type InsertFavorite
 } from "@shared/schema";
 import { db, pool } from "./db";
-import { eq, desc, and, gte, lte, like, inArray } from "drizzle-orm";
+import { eq, desc, asc, and, gte, lte, like, inArray } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
@@ -39,6 +39,7 @@ export interface IStorage {
   createProperty(property: InsertProperty): Promise<Property>;
   updateProperty(id: number, property: Partial<InsertProperty>): Promise<Property | undefined>;
   deleteProperty(id: number): Promise<boolean>;
+  updatePropertyOrder(propertyId: number, newOrder: number): Promise<boolean>;
   
   // Agent methods - 제거됨
   
@@ -124,7 +125,7 @@ export class DatabaseStorage implements IStorage {
     const results = await db.select()
       .from(properties)
       .where(eq(properties.featured, true))
-      .orderBy(desc(properties.createdAt))
+      .orderBy(asc(properties.displayOrder), desc(properties.createdAt))
       .limit(limit);
       
     // 호환성을 위해 각 속성에 imageUrls 필드를 추가합니다
@@ -209,6 +210,15 @@ export class DatabaseStorage implements IStorage {
   async deleteProperty(id: number): Promise<boolean> {
     const result = await db.delete(properties)
       .where(eq(properties.id, id))
+      .returning();
+    
+    return result.length > 0;
+  }
+
+  async updatePropertyOrder(propertyId: number, newOrder: number): Promise<boolean> {
+    const result = await db.update(properties)
+      .set({ displayOrder: newOrder })
+      .where(eq(properties.id, propertyId))
       .returning();
     
     return result.length > 0;

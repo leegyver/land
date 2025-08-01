@@ -1172,6 +1172,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // 추천 매물 순서 변경 API
+  app.put("/api/properties/:id/order", async (req, res) => {
+    try {
+      // 인증 및 권한 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      }
+      
+      const user = req.user as Express.User;
+      if (user.role !== "admin") {
+        return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+      }
+
+      const propertyId = parseInt(req.params.id);
+      const { displayOrder } = req.body;
+
+      if (typeof displayOrder !== 'number') {
+        return res.status(400).json({ message: "Display order must be a number" });
+      }
+
+      const success = await storage.updatePropertyOrder(propertyId, displayOrder);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Property not found" });
+      }
+      
+      res.json({ message: "Property order updated successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update property order" });
+    }
+  });
+
   // 부동산 다중 삭제 API
   app.post("/api/properties/batch-delete", async (req, res) => {
     try {

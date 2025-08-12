@@ -190,13 +190,13 @@ export default function AdminPage() {
   const propertyTypeArray = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
   const dealTypeArray = ["매매", "전세", "월세", "단기임대", "완료", "보류중"];
   
-  // 데이터 로드
+  // 데이터 로드 - 관리자용 모든 매물 조회
   const { 
     data: properties,
     isLoading: isLoadingProperties,
     refetch: refetchProperties
   } = useQuery<Property[]>({
-    queryKey: ["/api/properties", skipCache],
+    queryKey: ["/api/admin/properties", skipCache],
     queryFn: getQueryFn({ on401: "throw" })
   });
   
@@ -368,6 +368,30 @@ export default function AdminPage() {
     onError: (error: Error) => {
       toast({
         title: "순서 변경 실패",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // 매물 노출 상태 토글 뮤테이션
+  const toggleVisibilityMutation = useMutation({
+    mutationFn: async ({ propertyId, isVisible }: { propertyId: number; isVisible: boolean }) => {
+      const res = await apiRequest("PATCH", `/api/properties/${propertyId}/visibility`, { isVisible });
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/properties"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/properties/featured"] });
+      toast({
+        title: "노출 상태 변경 성공",
+        description: "매물 노출 상태가 변경되었습니다.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "노출 상태 변경 실패",
         description: error.message,
         variant: "destructive",
       });
@@ -732,13 +756,14 @@ export default function AdminPage() {
                       <TableHead className="min-w-[150px]">위치</TableHead>
                       <TableHead className="w-[120px]">가격</TableHead>
                       <TableHead className="w-[100px]">거래유형</TableHead>
+                      <TableHead className="w-[100px]">노출상태</TableHead>
                       <TableHead className="w-[100px]">작업</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {!filteredProperties || filteredProperties.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-4">
+                        <TableCell colSpan={9} className="text-center py-4">
                           {properties && properties.length > 0 
                             ? "필터링 조건에 맞는 부동산이 없습니다." 
                             : "등록된 부동산이 없습니다."}
@@ -818,6 +843,22 @@ export default function AdminPage() {
                                 </span>
                               )}
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              variant={property.isVisible ? "default" : "secondary"}
+                              onClick={() => 
+                                toggleVisibilityMutation.mutate({
+                                  propertyId: property.id,
+                                  isVisible: !property.isVisible
+                                })
+                              }
+                              disabled={toggleVisibilityMutation.isPending}
+                              className="text-xs"
+                            >
+                              {property.isVisible ? "노출" : "미노출"}
+                            </Button>
                           </TableCell>
                           <TableCell>
                             <div className="flex space-x-1">

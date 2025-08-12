@@ -69,6 +69,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch properties" });
     }
   });
+
+  // 관리자용 모든 매물 조회 (노출/미노출 포함)
+  app.get("/api/admin/properties", async (req, res) => {
+    try {
+      // 인증 및 권한 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      }
+      
+      const user = req.user as Express.User;
+      if (user.role !== "admin") {
+        return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+      }
+
+      const properties = await storage.getAllProperties();
+      res.json(properties);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch all properties" });
+    }
+  });
   
   app.get("/api/properties/featured", async (req, res) => {
     try {
@@ -1201,6 +1221,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Property order updated successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to update property order" });
+    }
+  });
+
+  // 매물 노출 상태 토글 API
+  app.patch("/api/properties/:id/visibility", async (req, res) => {
+    try {
+      // 인증 및 권한 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      }
+      
+      const user = req.user as Express.User;
+      if (user.role !== "admin") {
+        return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+      }
+
+      const propertyId = parseInt(req.params.id);
+      const { isVisible } = req.body;
+      
+      if (!propertyId || typeof isVisible !== 'boolean') {
+        return res.status(400).json({ message: "Property ID and visibility state are required" });
+      }
+      
+      const success = await storage.togglePropertyVisibility(propertyId, isVisible);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Property not found" });
+      }
+      
+      res.json({ message: "Property visibility updated successfully" });
+    } catch (error) {
+      console.error("Error updating property visibility:", error);
+      res.status(500).json({ message: "Failed to update property visibility" });
     }
   });
 

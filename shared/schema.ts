@@ -20,6 +20,7 @@ export const properties = pgTable("properties", {
   agentId: integer("agent_id").notNull(), // 매물 담당 중개사 ID
   featured: boolean("featured").default(false), // 추천 매물 여부
   displayOrder: integer("display_order").default(0), // 추천 매물 노출 순서
+  isVisible: boolean("is_visible").default(true), // 매물 노출 여부
   createdAt: timestamp("created_at").defaultNow(), // 등록일
   
   // 위치 정보 - 아래 필드들은 추가 필드로서 나중에 migrate 시킬 예정

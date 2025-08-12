@@ -31,6 +31,7 @@ export interface IStorage {
 
   // Property methods
   getProperties(): Promise<Property[]>;
+  getAllProperties(): Promise<Property[]>;
   getProperty(id: number): Promise<Property | undefined>;
   getFeaturedProperties(limit?: number): Promise<Property[]>;
   getPropertiesByType(type: string): Promise<Property[]>;
@@ -40,6 +41,7 @@ export interface IStorage {
   updateProperty(id: number, property: Partial<InsertProperty>): Promise<Property | undefined>;
   deleteProperty(id: number): Promise<boolean>;
   updatePropertyOrder(propertyId: number, newOrder: number): Promise<boolean>;
+  togglePropertyVisibility(propertyId: number, isVisible: boolean): Promise<boolean>;
   
   // Agent methods - 제거됨
   
@@ -100,6 +102,19 @@ export class DatabaseStorage implements IStorage {
   
   // Property methods
   async getProperties(): Promise<Property[]> {
+    const results = await db.select()
+      .from(properties)
+      .where(eq(properties.isVisible, true))
+      .orderBy(desc(properties.createdAt));
+    
+    // 호환성을 위해 각 속성에 imageUrls 필드를 추가합니다
+    return results.map(property => ({
+      ...property,
+      imageUrls: property.imageUrls || [] // imageUrls가 null이면 빈 배열로 초기화
+    }));
+  }
+
+  async getAllProperties(): Promise<Property[]> {
     const results = await db.select().from(properties).orderBy(desc(properties.createdAt));
     
     // 호환성을 위해 각 속성에 imageUrls 필드를 추가합니다
@@ -124,7 +139,7 @@ export class DatabaseStorage implements IStorage {
   async getFeaturedProperties(limit: number = 20): Promise<Property[]> {
     const results = await db.select()
       .from(properties)
-      .where(eq(properties.featured, true))
+      .where(and(eq(properties.featured, true), eq(properties.isVisible, true)))
       .orderBy(asc(properties.displayOrder), desc(properties.createdAt))
       .limit(limit);
       
@@ -138,7 +153,7 @@ export class DatabaseStorage implements IStorage {
   async getPropertiesByType(type: string): Promise<Property[]> {
     const results = await db.select()
       .from(properties)
-      .where(eq(properties.type, type))
+      .where(and(eq(properties.type, type), eq(properties.isVisible, true)))
       .orderBy(desc(properties.createdAt));
       
     // 호환성을 위해 각 속성에 imageUrls 필드를 추가합니다  
@@ -151,7 +166,7 @@ export class DatabaseStorage implements IStorage {
   async getPropertiesByDistrict(district: string): Promise<Property[]> {
     const results = await db.select()
       .from(properties)
-      .where(eq(properties.district, district))
+      .where(and(eq(properties.district, district), eq(properties.isVisible, true)))
       .orderBy(desc(properties.createdAt));
       
     // 호환성을 위해 각 속성에 imageUrls 필드를 추가합니다
@@ -167,7 +182,8 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           gte(properties.price, min.toString()),
-          lte(properties.price, max.toString())
+          lte(properties.price, max.toString()),
+          eq(properties.isVisible, true)
         )
       )
       .orderBy(desc(properties.createdAt));
@@ -218,6 +234,15 @@ export class DatabaseStorage implements IStorage {
   async updatePropertyOrder(propertyId: number, newOrder: number): Promise<boolean> {
     const result = await db.update(properties)
       .set({ displayOrder: newOrder })
+      .where(eq(properties.id, propertyId))
+      .returning();
+    
+    return result.length > 0;
+  }
+
+  async togglePropertyVisibility(propertyId: number, isVisible: boolean): Promise<boolean> {
+    const result = await db.update(properties)
+      .set({ isVisible })
       .where(eq(properties.id, propertyId))
       .returning();
     

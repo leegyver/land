@@ -431,7 +431,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           {/* Main image gallery */}
-          <div className="relative h-[400px] overflow-hidden rounded-lg mb-4 bg-gray-100 flex items-center justify-center">
+          <div className="relative aspect-[16/9] overflow-hidden rounded-lg mb-4 bg-gray-100">
             {images.length > 1 && (
               <button 
                 onClick={prevImage}
@@ -440,13 +440,11 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                 <ChevronLeft className="w-5 h-5" />
               </button>
             )}
-            <div className="h-full flex items-center justify-center">
-              <img 
-                src={images[currentImageIndex]} 
-                alt={property.title} 
-                className="max-w-full max-h-full object-contain"
-              />
-            </div>
+            <img 
+              src={images[currentImageIndex]} 
+              alt={property.title} 
+              className="w-full h-full object-cover"
+            />
             {images.length > 1 && (
               <button 
                 onClick={nextImage}
@@ -462,13 +460,13 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
               {images.map((image, index) => (
                 <button
                   key={index}
-                  className={`h-20 overflow-hidden rounded-md bg-gray-100 flex items-center justify-center ${currentImageIndex === index ? 'ring-2 ring-primary' : 'ring-1 ring-gray-200'}`}
+                  className={`aspect-[16/9] overflow-hidden rounded-md bg-gray-100 ${currentImageIndex === index ? 'ring-2 ring-primary' : 'ring-1 ring-gray-200'}`}
                   onClick={() => setCurrentImageIndex(index)}
                 >
                   <img 
                     src={image} 
                     alt={`${property.title} 이미지 ${index + 1}`} 
-                    className="max-w-full max-h-full object-contain"
+                    className="w-full h-full object-cover"
                   />
                 </button>
               ))}

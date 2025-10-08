@@ -105,7 +105,7 @@ export async function fetchBlogPostsByCategory(
           for (const selector of titleSelectors) {
             const titleEl = $el.find(selector);
             if (titleEl.length > 0) {
-              title = titleEl.text().trim();
+              title = titleEl.first().text().trim();
               if (title) break;
             }
           }
@@ -165,7 +165,7 @@ export async function fetchBlogPostsByCategory(
           for (const selector of imgSelectors) {
             const imgEl = $el.find(selector);
             if (imgEl.length > 0) {
-              thumbnail = imgEl.attr('src') || imgEl.attr('data-lazy-src') || '';
+              thumbnail = imgEl.first().attr('src') || imgEl.first().attr('data-lazy-src') || '';
               if (thumbnail) break;
             }
           }
@@ -184,7 +184,7 @@ export async function fetchBlogPostsByCategory(
           for (const selector of dateSelectors) {
             const dateEl = $el.find(selector);
             if (dateEl.length > 0) {
-              publishedAt = dateEl.text().trim();
+              publishedAt = dateEl.first().text().trim();
               if (publishedAt) break;
             }
           }
@@ -214,7 +214,7 @@ export async function fetchBlogPostsByCategory(
           for (const selector of summarySelectors) {
             const summaryEl = $el.find(selector);
             if (summaryEl.length > 0) {
-              summary = summaryEl.text().trim();
+              summary = summaryEl.first().text().trim();
               if (summary) {
                 summary = summary.length > 100 ? summary.substring(0, 100) + '...' : summary;
                 break;
@@ -285,7 +285,7 @@ export async function fetchBlogPostsByCategory(
             for (const selector of mobileTitleSelectors) {
               const titleEl = $el.find(selector);
               if (titleEl.length > 0) {
-                title = titleEl.text().trim();
+                title = titleEl.first().text().trim();
                 if (title) break;
               }
             }
@@ -318,7 +318,7 @@ export async function fetchBlogPostsByCategory(
             for (const selector of mobileImgSelectors) {
               const imgEl = $el.find(selector);
               if (imgEl.length > 0) {
-                thumbnail = imgEl.attr('src') || imgEl.attr('data-src') || '';
+                thumbnail = imgEl.first().attr('src') || imgEl.first().attr('data-src') || '';
                 if (thumbnail) break;
               }
             }
@@ -337,7 +337,7 @@ export async function fetchBlogPostsByCategory(
             for (const selector of mobileDateSelectors) {
               const dateEl = $el.find(selector);
               if (dateEl.length > 0) {
-                publishedAt = dateEl.text().trim();
+                publishedAt = dateEl.first().text().trim();
                 if (publishedAt) break;
               }
             }
@@ -367,7 +367,7 @@ export async function fetchBlogPostsByCategory(
             for (const selector of mobileSummarySelectors) {
               const summaryEl = $el.find(selector);
               if (summaryEl.length > 0) {
-                summary = summaryEl.text().trim();
+                summary = summaryEl.first().text().trim();
                 if (summary) {
                   summary = summary.length > 100 ? summary.substring(0, 100) + '...' : summary;
                   break;

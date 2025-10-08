@@ -784,7 +784,7 @@ export default function AdminPage() {
                           <TableCell>
                             <div className="flex items-center gap-3">
                               {property.imageUrls && property.imageUrls.length > 0 ? (
-                                <div className="relative h-10 w-16 overflow-hidden rounded">
+                                <div className="relative w-16 aspect-[16/9] overflow-hidden rounded">
                                   <img 
                                     src={property.imageUrls[0]} 
                                     alt={property.title} 
@@ -797,7 +797,7 @@ export default function AdminPage() {
                                   )}
                                 </div>
                               ) : (
-                                <div className="h-10 w-16 bg-gray-200 rounded flex items-center justify-center">
+                                <div className="w-16 aspect-[16/9] bg-gray-200 rounded flex items-center justify-center">
                                   <span className="text-gray-400 text-xs">No Image</span>
                                 </div>
                               )}
@@ -938,7 +938,7 @@ export default function AdminPage() {
                                 <GripVertical className="h-5 w-5" />
                               </div>
                               
-                              <div className="flex-shrink-0 w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
+                              <div className="flex-shrink-0 w-16 aspect-[16/9] bg-gray-200 rounded-lg overflow-hidden">
                                 {property.images && property.images.length > 0 ? (
                                   <img 
                                     src={property.images[0]} 
@@ -1055,7 +1055,7 @@ export default function AdminPage() {
                           <TableCell>
                             <div className="flex items-center gap-3">
                               {newsItem.imageUrl ? (
-                                <div className="h-10 w-16 overflow-hidden rounded">
+                                <div className="w-16 aspect-[16/9] overflow-hidden rounded">
                                   <img 
                                     src={newsItem.imageUrl} 
                                     alt={newsItem.title} 
@@ -1063,7 +1063,7 @@ export default function AdminPage() {
                                   />
                                 </div>
                               ) : (
-                                <div className="h-10 w-16 bg-gray-200 rounded flex items-center justify-center">
+                                <div className="w-16 aspect-[16/9] bg-gray-200 rounded flex items-center justify-center">
                                   <span className="text-gray-400 text-xs">No Image</span>
                                 </div>
                               )}

@@ -102,7 +102,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
   
   return (
     <Card className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition group">
-      <div className="relative h-60 overflow-hidden">
+      <div className="relative aspect-[16/9] overflow-hidden">
         {/* 부동산 유형 표시 */}
         <Badge 
           className={cn(
@@ -129,7 +129,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
                 type === "전세" ? "bg-amber-600" : 
                 type === "월세" ? "bg-indigo-600" :
                 type === "완료" ? "bg-gray-600" :
-                type === "보류중" ? "bg-pink-600" : "bg-secondary"
+                type === "보류중" ? "bg-pink-606" : "bg-secondary"
               )}
             >
               {type}

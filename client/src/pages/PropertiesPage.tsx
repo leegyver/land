@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Property } from "@shared/schema";
@@ -62,6 +62,33 @@ const PropertiesPage = () => {
       priceRange: initialPriceRange,
     },
   });
+
+  // URL이 변경될 때 폼 값 업데이트
+  useEffect(() => {
+    const params = new URLSearchParams(location.split("?")[1] || "");
+    const district = params.get("district") || "all";
+    const type = params.get("type") || "all";
+    const minPrice = params.get("minPrice");
+    const maxPrice = params.get("maxPrice");
+    
+    let priceRange = "all";
+    if (minPrice && maxPrice) {
+      priceRange = `${minPrice}-${maxPrice}`;
+    }
+    
+    form.reset({
+      district,
+      type,
+      priceRange,
+    });
+    
+    setFilterParams({
+      district,
+      type,
+      minPrice: minPrice || null,
+      maxPrice: maxPrice || null,
+    });
+  }, [location, form]);
 
   const { data: properties, isLoading, error } = useQuery<Property[]>({
     queryKey: ["/api/search", filterParams],
@@ -131,7 +158,7 @@ const PropertiesPage = () => {
                       <FormLabel>지역</FormLabel>
                       <Select 
                         onValueChange={field.onChange} 
-                        defaultValue={field.value}
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">
@@ -278,7 +305,7 @@ const PropertiesPage = () => {
                       <FormLabel>유형</FormLabel>
                       <Select 
                         onValueChange={field.onChange} 
-                        defaultValue={field.value}
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">
@@ -306,7 +333,7 @@ const PropertiesPage = () => {
                       <FormLabel>가격대</FormLabel>
                       <Select 
                         onValueChange={field.onChange} 
-                        defaultValue={field.value}
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger className="w-full">

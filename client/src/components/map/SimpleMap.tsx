@@ -14,9 +14,11 @@ declare global {
 // 숫자를 한국어 표기법으로 변환 (예: 10000 -> 1만)
 function formatPrice(price: number): string {
   if (price >= 100000000) {
-    return `${Math.floor(price / 100000000)}억 ${price % 100000000 > 0 ? Math.floor((price % 100000000) / 10000) + '만' : ''}원`;
+    const billion = (price / 100000000).toFixed(2);
+    const remainder = price % 100000000;
+    return remainder > 0 ? `${billion}억 ${(remainder / 10000).toFixed(2)}만원` : `${billion}억원`;
   } else if (price >= 10000) {
-    return `${Math.floor(price / 10000)}만원`;
+    return `${(price / 10000).toFixed(2)}만원`;
   }
   return `${price.toLocaleString()}원`;
 }

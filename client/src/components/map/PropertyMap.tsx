@@ -16,9 +16,9 @@ declare global {
 // 숫자를 한국어 표기법으로 변환 (예: 10000 -> 1만)
 const formatNumberToKorean = (num: number): string => {
   if (num >= 100000000) {
-    return `${(num / 100000000).toFixed(1).replace(/\.0$/, '')}억`;
+    return `${(num / 100000000).toFixed(2)}억`;
   } else if (num >= 10000) {
-    return `${(num / 10000).toFixed(0)}만`;
+    return `${(num / 10000).toFixed(2)}만`;
   }
   return num.toLocaleString();
 };

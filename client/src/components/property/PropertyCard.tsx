@@ -16,9 +16,9 @@ interface PropertyCardProps {
 const formatPrice = (price: string | number) => {
   const numPrice = Number(price);
   if (numPrice >= 100000000) {
-    return `${(numPrice / 100000000).toFixed(1)}억 원`;
+    return `${(numPrice / 100000000).toFixed(2)}억 원`;
   } else if (numPrice >= 10000) {
-    return `${(numPrice / 10000).toFixed(0)}만원`;
+    return `${(numPrice / 10000).toFixed(2)}만원`;
   }
   return numPrice.toLocaleString() + '원';
 };

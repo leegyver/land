@@ -374,9 +374,11 @@ export default function ProfilePage() {
                             </div>
                             <div className="font-bold text-primary">
                               {property.price && Number(property.price) > 0 ? (
+                                Number(property.price) >= 100000000 ?
+                                  `${(Number(property.price) / 100000000).toFixed(2)}억원` :
                                 Number(property.price) >= 10000 ? 
-                                  `${(Number(property.price) / 10000).toFixed(1)}억원` : 
-                                  `${Number(property.price).toLocaleString()}만원`
+                                  `${(Number(property.price) / 10000).toFixed(2)}만원` : 
+                                  `${Number(property.price).toLocaleString()}원`
                               ) : '가격 협의'}
                             </div>
                           </div>

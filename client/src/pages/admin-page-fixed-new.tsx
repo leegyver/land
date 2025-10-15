@@ -407,13 +407,19 @@ export default function AdminPage() {
     
     if (sourceIndex === destinationIndex) return;
     
-    // 순서 변경 로직
-    const draggedProperty = featuredProperties[sourceIndex];
-    const newOrder = destinationIndex;
+    // 배열 재정렬
+    const reorderedProperties = Array.from(featuredProperties);
+    const [movedProperty] = reorderedProperties.splice(sourceIndex, 1);
+    reorderedProperties.splice(destinationIndex, 0, movedProperty);
     
-    updatePropertyOrderMutation.mutate({
-      propertyId: draggedProperty.id,
-      displayOrder: newOrder
+    // 모든 매물의 displayOrder를 새로운 인덱스로 업데이트
+    reorderedProperties.forEach((property, index) => {
+      if (property.displayOrder !== index) {
+        updatePropertyOrderMutation.mutate({
+          propertyId: property.id,
+          displayOrder: index
+        });
+      }
     });
   };
 

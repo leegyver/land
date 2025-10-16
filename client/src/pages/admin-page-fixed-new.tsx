@@ -360,9 +360,11 @@ export default function AdminPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/properties/featured"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/properties"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
       toast({
         title: "순서 변경 성공",
-        description: "추천 매물 순서가 변경되었습니다.",
+        description: "매물 순서가 변경되었습니다.",
       });
     },
     onError: (error: Error) => {
@@ -398,7 +400,7 @@ export default function AdminPage() {
     },
   });
 
-  // 드래그앤드롭 핸들러
+  // 추천 매물 드래그앤드롭 핸들러
   const handleDragEnd = (result: any) => {
     if (!result.destination || !featuredProperties) return;
     
@@ -411,6 +413,44 @@ export default function AdminPage() {
     const reorderedProperties = Array.from(featuredProperties);
     const [movedProperty] = reorderedProperties.splice(sourceIndex, 1);
     reorderedProperties.splice(destinationIndex, 0, movedProperty);
+    
+    // 모든 매물의 displayOrder를 새로운 인덱스로 업데이트
+    reorderedProperties.forEach((property, index) => {
+      if (property.displayOrder !== index) {
+        updatePropertyOrderMutation.mutate({
+          propertyId: property.id,
+          displayOrder: index
+        });
+      }
+    });
+  };
+
+  // 일반 매물 드래그앤드롭 핸들러
+  const handleAllPropertiesDragEnd = (result: any) => {
+    if (!result.destination || !properties) return;
+    
+    // 필터가 활성화되어 있으면 드래그 차단
+    if (filterType !== 'all' || filterDistrict !== 'all' || filterDealType !== 'all') {
+      toast({
+        title: "순서 변경 불가",
+        description: "필터를 모두 '전체'로 설정한 후 순서를 변경해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const sourceIndex = result.source.index;
+    const destinationIndex = result.destination.index;
+    
+    if (sourceIndex === destinationIndex) return;
+    
+    // 배열 재정렬
+    const reorderedProperties = Array.from(properties);
+    const [movedProperty] = reorderedProperties.splice(sourceIndex, 1);
+    reorderedProperties.splice(destinationIndex, 0, movedProperty);
+    
+    // Optimistic update: 즉시 캐시 업데이트
+    queryClient.setQueryData(["/api/admin/properties", skipCache], reorderedProperties);
     
     // 모든 매물의 displayOrder를 새로운 인덱스로 업데이트
     reorderedProperties.forEach((property, index) => {
@@ -747,155 +787,338 @@ export default function AdminPage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[40px]">
-                        <Checkbox 
-                          checked={filteredProperties && filteredProperties.length > 0 && selectedProperties.length === filteredProperties.length}
-                          onCheckedChange={handleSelectAllProperties}
-                        />
-                      </TableHead>
-                      <TableHead className="w-[80px]">번호</TableHead>
-                      <TableHead className="min-w-[200px]">제목/이미지</TableHead>
-                      <TableHead className="w-[120px]">유형</TableHead>
-                      <TableHead className="min-w-[150px]">위치</TableHead>
-                      <TableHead className="w-[120px]">가격</TableHead>
-                      <TableHead className="w-[100px]">거래유형</TableHead>
-                      <TableHead className="w-[100px]">노출상태</TableHead>
-                      <TableHead className="w-[100px]">작업</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {!filteredProperties || filteredProperties.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={9} className="text-center py-4">
-                          {properties && properties.length > 0 
-                            ? "필터링 조건에 맞는 부동산이 없습니다." 
-                            : "등록된 부동산이 없습니다."}
-                        </TableCell>
+                {/* 필터가 활성화되어 있으면 드래그 앤 드롭 비활성화 */}
+                {filterType === 'all' && filterDistrict === 'all' && filterDealType === 'all' ? (
+                  <>
+                    <DragDropContext onDragEnd={handleAllPropertiesDragEnd}>
+                      <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[40px]">
+                            <GripVertical className="h-4 w-4 text-gray-400" />
+                          </TableHead>
+                        <TableHead className="w-[40px]">
+                          <Checkbox 
+                            checked={filteredProperties && filteredProperties.length > 0 && selectedProperties.length === filteredProperties.length}
+                            onCheckedChange={handleSelectAllProperties}
+                          />
+                        </TableHead>
+                        <TableHead className="w-[80px]">번호</TableHead>
+                        <TableHead className="min-w-[200px]">제목/이미지</TableHead>
+                        <TableHead className="w-[120px]">유형</TableHead>
+                        <TableHead className="min-w-[150px]">위치</TableHead>
+                        <TableHead className="w-[120px]">가격</TableHead>
+                        <TableHead className="w-[100px]">거래유형</TableHead>
+                        <TableHead className="w-[100px]">노출상태</TableHead>
+                        <TableHead className="w-[100px]">작업</TableHead>
                       </TableRow>
-                    ) : (
-                      filteredProperties.map((property) => (
-                        <TableRow key={property.id}>
-                          <TableCell>
+                    </TableHeader>
+                    <Droppable droppableId="all-properties">
+                      {(provided) => (
+                        <TableBody ref={provided.innerRef} {...provided.droppableProps}>
+                          {!filteredProperties || filteredProperties.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={10} className="text-center py-4">
+                                {properties && properties.length > 0 
+                                  ? "필터링 조건에 맞는 부동산이 없습니다." 
+                                  : "등록된 부동산이 없습니다."}
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            <>
+                              {filteredProperties.map((property, index) => (
+                                <Draggable key={property.id} draggableId={property.id.toString()} index={index}>
+                                  {(provided, snapshot) => (
+                                    <TableRow 
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      className={snapshot.isDragging ? 'bg-gray-50' : ''}
+                                    >
+                                      <TableCell {...provided.dragHandleProps}>
+                                        <GripVertical className="h-4 w-4 text-gray-400 cursor-grab active:cursor-grabbing" />
+                                      </TableCell>
+                                      <TableCell>
+                                        <Checkbox 
+                                          checked={selectedProperties.includes(property.id)}
+                                          onCheckedChange={(checked) => 
+                                            handleSelectProperty(property.id, checked === true)
+                                          }
+                                        />
+                                      </TableCell>
+                                      <TableCell>{property.id}</TableCell>
+                                      <TableCell>
+                                        <div className="flex items-center gap-3">
+                                          {property.imageUrls && property.imageUrls.length > 0 ? (
+                                            <div className="relative w-16 aspect-[16/9] overflow-hidden rounded">
+                                              <img 
+                                                src={property.imageUrls[0]} 
+                                                alt={property.title} 
+                                                className="h-full w-full object-cover"
+                                              />
+                                              {property.imageUrls.length > 1 && (
+                                                <span className="absolute bottom-0 right-0 bg-black/50 text-white text-xs px-1">
+                                                  +{property.imageUrls.length - 1}
+                                                </span>
+                                              )}
+                                            </div>
+                                          ) : (
+                                            <div className="w-16 aspect-[16/9] bg-gray-200 rounded flex items-center justify-center">
+                                              <span className="text-gray-400 text-xs">No Image</span>
+                                            </div>
+                                          )}
+                                          <div>
+                                            <div className="font-medium">{property.title}</div>
+                                            <div className="text-xs text-gray-500 truncate max-w-[200px]">
+                                              {property.description}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </TableCell>
+                                      <TableCell>{property.type}</TableCell>
+                                      <TableCell>
+                                        <div className="truncate max-w-[150px]">{property.district} {property.address}</div>
+                                      </TableCell>
+                                      <TableCell>{property.price}</TableCell>
+                                      <TableCell>
+                                        <div className="flex flex-wrap gap-1">
+                                          {Array.isArray(property.dealType) ? (
+                                            property.dealType.map((type, idx) => (
+                                              <span 
+                                                key={idx} 
+                                                className={`text-xs px-2 py-1 rounded ${
+                                                  type === '매매' ? 'bg-blue-100 text-blue-800' : 
+                                                  type === '전세' ? 'bg-green-100 text-green-800' : 
+                                                  type === '월세' ? 'bg-orange-100 text-orange-800' : 
+                                                  'bg-gray-100 text-gray-800'
+                                                }`}
+                                              >
+                                                {type}
+                                              </span>
+                                            ))
+                                          ) : (
+                                            <span 
+                                              className={`text-xs px-2 py-1 rounded ${
+                                                property.dealType === '매매' ? 'bg-blue-100 text-blue-800' : 
+                                                property.dealType === '전세' ? 'bg-green-100 text-green-800' : 
+                                                property.dealType === '월세' ? 'bg-orange-100 text-orange-800' : 
+                                                'bg-gray-100 text-gray-800'
+                                              }`}
+                                            >
+                                              {property.dealType}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </TableCell>
+                                      <TableCell>
+                                        <Button
+                                          size="sm"
+                                          variant={property.isVisible ? "default" : "secondary"}
+                                          onClick={() => 
+                                            toggleVisibilityMutation.mutate({
+                                              propertyId: property.id,
+                                              isVisible: !property.isVisible
+                                            })
+                                          }
+                                          disabled={toggleVisibilityMutation.isPending}
+                                          className="text-xs"
+                                        >
+                                          {property.isVisible ? "노출" : "미노출"}
+                                        </Button>
+                                      </TableCell>
+                                      <TableCell>
+                                        <div className="flex space-x-1">
+                                          <a 
+                                            href={`/properties/${property.id}`} 
+                                            className="p-2 text-gray-500 hover:text-primary"
+                                            title="보기"
+                                          >
+                                            <Eye className="h-4 w-4" />
+                                          </a>
+                                          <a 
+                                            href={`/admin/properties/edit/${property.id}`} 
+                                            className="p-2 text-gray-500 hover:text-primary"
+                                            title="수정"
+                                          >
+                                            <Edit className="h-4 w-4" />
+                                          </a>
+                                          <button 
+                                            onClick={() => handleIndividualDelete(property.id, 'property')}
+                                            className="p-2 text-gray-500 hover:text-red-500"
+                                            title="삭제"
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </button>
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  )}
+                                </Draggable>
+                              ))}
+                              {provided.placeholder}
+                            </>
+                          )}
+                        </TableBody>
+                      )}
+                    </Droppable>
+                      </Table>
+                    </DragDropContext>
+                  </>
+                ) : (
+                  <div>
+                    <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded mb-4 text-sm">
+                      ⚠️ 필터가 적용된 상태에서는 순서 변경이 불가능합니다. 순서를 변경하려면 모든 필터를 "전체"로 설정해주세요.
+                    </div>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[40px]">
                             <Checkbox 
-                              checked={selectedProperties.includes(property.id)}
-                              onCheckedChange={(checked) => 
-                                handleSelectProperty(property.id, checked === true)
-                              }
+                              checked={filteredProperties && filteredProperties.length > 0 && selectedProperties.length === filteredProperties.length}
+                              onCheckedChange={handleSelectAllProperties}
                             />
-                          </TableCell>
-                          <TableCell>{property.id}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              {property.imageUrls && property.imageUrls.length > 0 ? (
-                                <div className="relative w-16 aspect-[16/9] overflow-hidden rounded">
-                                  <img 
-                                    src={property.imageUrls[0]} 
-                                    alt={property.title} 
-                                    className="h-full w-full object-cover"
-                                  />
-                                  {property.imageUrls.length > 1 && (
-                                    <span className="absolute bottom-0 right-0 bg-black/50 text-white text-xs px-1">
-                                      +{property.imageUrls.length - 1}
+                          </TableHead>
+                          <TableHead className="w-[80px]">번호</TableHead>
+                          <TableHead className="min-w-[200px]">제목/이미지</TableHead>
+                          <TableHead className="w-[120px]">유형</TableHead>
+                          <TableHead className="min-w-[150px]">위치</TableHead>
+                          <TableHead className="w-[120px]">가격</TableHead>
+                          <TableHead className="w-[100px]">거래유형</TableHead>
+                          <TableHead className="w-[100px]">노출상태</TableHead>
+                          <TableHead className="w-[100px]">작업</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {!filteredProperties || filteredProperties.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={9} className="text-center py-4">
+                              {properties && properties.length > 0 
+                                ? "필터링 조건에 맞는 부동산이 없습니다." 
+                                : "등록된 부동산이 없습니다."}
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          filteredProperties.map((property) => (
+                            <TableRow key={property.id}>
+                              <TableCell>
+                                <Checkbox 
+                                  checked={selectedProperties.includes(property.id)}
+                                  onCheckedChange={(checked) => 
+                                    handleSelectProperty(property.id, checked === true)
+                                  }
+                                />
+                              </TableCell>
+                              <TableCell>{property.id}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  {property.imageUrls && property.imageUrls.length > 0 ? (
+                                    <div className="relative w-16 aspect-[16/9] overflow-hidden rounded">
+                                      <img 
+                                        src={property.imageUrls[0]} 
+                                        alt={property.title} 
+                                        className="h-full w-full object-cover"
+                                      />
+                                      {property.imageUrls.length > 1 && (
+                                        <span className="absolute bottom-0 right-0 bg-black/50 text-white text-xs px-1">
+                                          +{property.imageUrls.length - 1}
+                                        </span>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div className="w-16 aspect-[16/9] bg-gray-200 rounded flex items-center justify-center">
+                                      <span className="text-gray-400 text-xs">No Image</span>
+                                    </div>
+                                  )}
+                                  <div>
+                                    <div className="font-medium">{property.title}</div>
+                                    <div className="text-xs text-gray-500 truncate max-w-[200px]">
+                                      {property.description}
+                                    </div>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>{property.type}</TableCell>
+                              <TableCell>
+                                <div className="truncate max-w-[150px]">{property.district} {property.address}</div>
+                              </TableCell>
+                              <TableCell>{property.price}</TableCell>
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1">
+                                  {Array.isArray(property.dealType) ? (
+                                    property.dealType.map((type, idx) => (
+                                      <span 
+                                        key={idx} 
+                                        className={`text-xs px-2 py-1 rounded ${
+                                          type === '매매' ? 'bg-blue-100 text-blue-800' : 
+                                          type === '전세' ? 'bg-green-100 text-green-800' : 
+                                          type === '월세' ? 'bg-orange-100 text-orange-800' : 
+                                          'bg-gray-100 text-gray-800'
+                                        }`}
+                                      >
+                                        {type}
+                                      </span>
+                                    ))
+                                  ) : (
+                                    <span 
+                                      className={`text-xs px-2 py-1 rounded ${
+                                        property.dealType === '매매' ? 'bg-blue-100 text-blue-800' : 
+                                        property.dealType === '전세' ? 'bg-green-100 text-green-800' : 
+                                        property.dealType === '월세' ? 'bg-orange-100 text-orange-800' : 
+                                        'bg-gray-100 text-gray-800'
+                                      }`}
+                                    >
+                                      {property.dealType}
                                     </span>
                                   )}
                                 </div>
-                              ) : (
-                                <div className="w-16 aspect-[16/9] bg-gray-200 rounded flex items-center justify-center">
-                                  <span className="text-gray-400 text-xs">No Image</span>
-                                </div>
-                              )}
-                              <div>
-                                <div className="font-medium">{property.title}</div>
-                                <div className="text-xs text-gray-500 truncate max-w-[200px]">
-                                  {property.description}
-                                </div>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{property.type}</TableCell>
-                          <TableCell>
-                            <div className="truncate max-w-[150px]">{property.district} {property.address}</div>
-                          </TableCell>
-                          <TableCell>{property.price}</TableCell>
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1">
-                              {Array.isArray(property.dealType) ? (
-                                property.dealType.map((type, idx) => (
-                                  <span 
-                                    key={idx} 
-                                    className={`text-xs px-2 py-1 rounded ${
-                                      type === '매매' ? 'bg-blue-100 text-blue-800' : 
-                                      type === '전세' ? 'bg-green-100 text-green-800' : 
-                                      type === '월세' ? 'bg-orange-100 text-orange-800' : 
-                                      'bg-gray-100 text-gray-800'
-                                    }`}
-                                  >
-                                    {type}
-                                  </span>
-                                ))
-                              ) : (
-                                <span 
-                                  className={`text-xs px-2 py-1 rounded ${
-                                    property.dealType === '매매' ? 'bg-blue-100 text-blue-800' : 
-                                    property.dealType === '전세' ? 'bg-green-100 text-green-800' : 
-                                    property.dealType === '월세' ? 'bg-orange-100 text-orange-800' : 
-                                    'bg-gray-100 text-gray-800'
-                                  }`}
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  size="sm"
+                                  variant={property.isVisible ? "default" : "secondary"}
+                                  onClick={() => 
+                                    toggleVisibilityMutation.mutate({
+                                      propertyId: property.id,
+                                      isVisible: !property.isVisible
+                                    })
+                                  }
+                                  disabled={toggleVisibilityMutation.isPending}
+                                  className="text-xs"
                                 >
-                                  {property.dealType}
-                                </span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              size="sm"
-                              variant={property.isVisible ? "default" : "secondary"}
-                              onClick={() => 
-                                toggleVisibilityMutation.mutate({
-                                  propertyId: property.id,
-                                  isVisible: !property.isVisible
-                                })
-                              }
-                              disabled={toggleVisibilityMutation.isPending}
-                              className="text-xs"
-                            >
-                              {property.isVisible ? "노출" : "미노출"}
-                            </Button>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex space-x-1">
-                              <a 
-                                href={`/properties/${property.id}`} 
-                                className="p-2 text-gray-500 hover:text-primary"
-                                title="보기"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </a>
-                              <a 
-                                href={`/admin/properties/edit/${property.id}`} 
-                                className="p-2 text-gray-500 hover:text-primary"
-                                title="수정"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </a>
-                              <button 
-                                onClick={() => handleIndividualDelete(property.id, 'property')}
-                                className="p-2 text-gray-500 hover:text-red-500"
-                                title="삭제"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+                                  {property.isVisible ? "노출" : "미노출"}
+                                </Button>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex space-x-1">
+                                  <a 
+                                    href={`/properties/${property.id}`} 
+                                    className="p-2 text-gray-500 hover:text-primary"
+                                    title="보기"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </a>
+                                  <a 
+                                    href={`/admin/properties/edit/${property.id}`} 
+                                    className="p-2 text-gray-500 hover:text-primary"
+                                    title="수정"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </a>
+                                  <button 
+                                    onClick={() => handleIndividualDelete(property.id, 'property')}
+                                    className="p-2 text-gray-500 hover:text-red-500"
+                                    title="삭제"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </div>
             )}
           </div>

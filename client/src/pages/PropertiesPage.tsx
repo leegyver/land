@@ -34,8 +34,8 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const PropertiesPage = () => {
-  const [location] = useLocation();
-  const searchParams = new URLSearchParams(location.split("?")[1] || "");
+  const [location, setLocation] = useLocation();
+  const searchParams = new URLSearchParams(window.location.search);
   
   const initialDistrict = searchParams.get("district") || "all";
   const initialType = searchParams.get("type") || "all";
@@ -65,7 +65,7 @@ const PropertiesPage = () => {
 
   // URL이 변경될 때 폼 값 업데이트
   useEffect(() => {
-    const params = new URLSearchParams(location.split("?")[1] || "");
+    const params = new URLSearchParams(window.location.search);
     const district = params.get("district") || "all";
     const type = params.get("type") || "all";
     const minPrice = params.get("minPrice");
@@ -76,6 +76,8 @@ const PropertiesPage = () => {
       priceRange = `${minPrice}-${maxPrice}`;
     }
     
+    console.log("URL에서 파싱된 파라미터:", { district, type, minPrice, maxPrice, priceRange });
+    
     form.reset({
       district,
       type,
@@ -85,13 +87,13 @@ const PropertiesPage = () => {
     setFilterParams({
       district,
       type,
-      minPrice: minPrice || null,
-      maxPrice: maxPrice || null,
+      minPrice: minPrice,
+      maxPrice: maxPrice,
     });
-  }, [location, form]);
+  }, [location]);
 
   const { data: properties, isLoading, error } = useQuery<Property[]>({
-    queryKey: ["/api/search", filterParams],
+    queryKey: ["/api/search", filterParams.district, filterParams.type, filterParams.minPrice, filterParams.maxPrice],
     queryFn: async () => {
       // 검색 파라미터 구성
       const searchParams = new URLSearchParams();
@@ -133,12 +135,18 @@ const PropertiesPage = () => {
       newParams.maxPrice = max;
     }
 
-    setFilterParams({
-      district: newParams.district || "all",
-      type: newParams.type || "all",
-      minPrice: newParams.minPrice || null,
-      maxPrice: newParams.maxPrice || null,
-    });
+    // URL 파라미터 생성 및 페이지 이동
+    const searchParams = new URLSearchParams();
+    if (newParams.district) searchParams.append("district", newParams.district);
+    if (newParams.type) searchParams.append("type", newParams.type);
+    if (newParams.minPrice && newParams.maxPrice) {
+      searchParams.append("minPrice", newParams.minPrice);
+      searchParams.append("maxPrice", newParams.maxPrice);
+    }
+
+    // wouter의 setLocation을 사용하여 URL 업데이트
+    const newUrl = searchParams.toString() ? `/properties?${searchParams.toString()}` : '/properties';
+    setLocation(newUrl);
   };
 
   return (

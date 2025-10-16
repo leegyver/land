@@ -105,7 +105,7 @@ export class DatabaseStorage implements IStorage {
     const results = await db.select()
       .from(properties)
       .where(eq(properties.isVisible, true))
-      .orderBy(desc(properties.createdAt));
+      .orderBy(asc(properties.displayOrder), desc(properties.createdAt));
     
     // 호환성을 위해 각 속성에 imageUrls 필드를 추가합니다
     return results.map(property => ({
@@ -115,7 +115,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllProperties(): Promise<Property[]> {
-    const results = await db.select().from(properties).orderBy(desc(properties.createdAt));
+    const results = await db.select().from(properties).orderBy(asc(properties.displayOrder), desc(properties.createdAt));
     
     // 호환성을 위해 각 속성에 imageUrls 필드를 추가합니다
     return results.map(property => ({
@@ -154,7 +154,7 @@ export class DatabaseStorage implements IStorage {
     const results = await db.select()
       .from(properties)
       .where(and(eq(properties.type, type), eq(properties.isVisible, true)))
-      .orderBy(desc(properties.createdAt));
+      .orderBy(asc(properties.displayOrder), desc(properties.createdAt));
       
     // 호환성을 위해 각 속성에 imageUrls 필드를 추가합니다  
     return results.map(property => ({
@@ -167,7 +167,7 @@ export class DatabaseStorage implements IStorage {
     const results = await db.select()
       .from(properties)
       .where(and(eq(properties.district, district), eq(properties.isVisible, true)))
-      .orderBy(desc(properties.createdAt));
+      .orderBy(asc(properties.displayOrder), desc(properties.createdAt));
       
     // 호환성을 위해 각 속성에 imageUrls 필드를 추가합니다
     return results.map(property => ({
@@ -186,7 +186,7 @@ export class DatabaseStorage implements IStorage {
           eq(properties.isVisible, true)
         )
       )
-      .orderBy(desc(properties.createdAt));
+      .orderBy(asc(properties.displayOrder), desc(properties.createdAt));
       
     // 호환성을 위해 각 속성에 imageUrls 필드를 추가합니다
     return results.map(property => ({

@@ -42,6 +42,7 @@ export interface IStorage {
   deleteProperty(id: number): Promise<boolean>;
   updatePropertyOrder(propertyId: number, newOrder: number): Promise<boolean>;
   togglePropertyVisibility(propertyId: number, isVisible: boolean): Promise<boolean>;
+  togglePropertyFeatured(propertyId: number, featured: boolean): Promise<boolean>;
   
   // Agent methods - 제거됨
   
@@ -243,6 +244,15 @@ export class DatabaseStorage implements IStorage {
   async togglePropertyVisibility(propertyId: number, isVisible: boolean): Promise<boolean> {
     const result = await db.update(properties)
       .set({ isVisible })
+      .where(eq(properties.id, propertyId))
+      .returning();
+    
+    return result.length > 0;
+  }
+
+  async togglePropertyFeatured(propertyId: number, featured: boolean): Promise<boolean> {
+    const result = await db.update(properties)
+      .set({ featured })
       .where(eq(properties.id, propertyId))
       .returning();
     

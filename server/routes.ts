@@ -1257,6 +1257,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 매물 추천 상태 토글 API
+  app.patch("/api/properties/:id/featured", async (req, res) => {
+    try {
+      // 인증 및 권한 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      }
+      
+      const user = req.user as Express.User;
+      if (user.role !== "admin") {
+        return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+      }
+
+      const propertyId = parseInt(req.params.id);
+      const { featured } = req.body;
+      
+      if (!propertyId || typeof featured !== 'boolean') {
+        return res.status(400).json({ message: "Property ID and featured state are required" });
+      }
+      
+      const success = await storage.togglePropertyFeatured(propertyId, featured);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Property not found" });
+      }
+      
+      res.json({ message: "Property featured status updated successfully" });
+    } catch (error) {
+      console.error("Error updating property featured status:", error);
+      res.status(500).json({ message: "Failed to update property featured status" });
+    }
+  });
+
   // 부동산 다중 삭제 API
   app.post("/api/properties/batch-delete", async (req, res) => {
     try {

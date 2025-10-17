@@ -400,6 +400,30 @@ export default function AdminPage() {
     },
   });
 
+  // 매물 추천 상태 토글 뮤테이션
+  const toggleFeaturedMutation = useMutation({
+    mutationFn: async ({ propertyId, featured }: { propertyId: number; featured: boolean }) => {
+      const res = await apiRequest("PATCH", `/api/properties/${propertyId}/featured`, { featured });
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/properties"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/properties/featured"] });
+      toast({
+        title: "추천 상태 변경 성공",
+        description: "매물 추천 상태가 변경되었습니다.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "추천 상태 변경 실패",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // 추천 매물 드래그앤드롭 핸들러
   const handleDragEnd = (result: any) => {
     if (!result.destination || !featuredProperties) return;
@@ -914,8 +938,10 @@ export default function AdminPage() {
                                         <Checkbox
                                           checked={property.featured}
                                           onCheckedChange={(checked) => {
-                                            // TODO: featured 토글 mutation 추가
-                                            console.log('Toggle featured:', property.id, checked);
+                                            toggleFeaturedMutation.mutate({
+                                              propertyId: property.id,
+                                              featured: checked === true
+                                            });
                                           }}
                                         />
                                       </TableCell>

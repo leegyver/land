@@ -809,6 +809,7 @@ export default function AdminPage() {
                         <TableHead className="min-w-[150px]">위치</TableHead>
                         <TableHead className="w-[120px]">가격</TableHead>
                         <TableHead className="w-[100px]">거래유형</TableHead>
+                        <TableHead className="w-[100px]">추천매물</TableHead>
                         <TableHead className="w-[100px]">노출상태</TableHead>
                         <TableHead className="w-[100px]">작업</TableHead>
                       </TableRow>
@@ -910,6 +911,15 @@ export default function AdminPage() {
                                         </div>
                                       </TableCell>
                                       <TableCell>
+                                        <Checkbox
+                                          checked={property.featured}
+                                          onCheckedChange={(checked) => {
+                                            // TODO: featured 토글 mutation 추가
+                                            console.log('Toggle featured:', property.id, checked);
+                                          }}
+                                        />
+                                      </TableCell>
+                                      <TableCell>
                                         <Button
                                           size="sm"
                                           variant={property.isVisible ? "default" : "secondary"}
@@ -983,6 +993,7 @@ export default function AdminPage() {
                           <TableHead className="min-w-[150px]">위치</TableHead>
                           <TableHead className="w-[120px]">가격</TableHead>
                           <TableHead className="w-[100px]">거래유형</TableHead>
+                          <TableHead className="w-[100px]">추천매물</TableHead>
                           <TableHead className="w-[100px]">노출상태</TableHead>
                           <TableHead className="w-[100px]">작업</TableHead>
                         </TableRow>
@@ -990,7 +1001,7 @@ export default function AdminPage() {
                       <TableBody>
                         {!filteredProperties || filteredProperties.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={9} className="text-center py-4">
+                            <TableCell colSpan={10} className="text-center py-4">
                               {properties && properties.length > 0 
                                 ? "필터링 조건에 맞는 부동산이 없습니다." 
                                 : "등록된 부동산이 없습니다."}
@@ -1070,6 +1081,15 @@ export default function AdminPage() {
                                     </span>
                                   )}
                                 </div>
+                              </TableCell>
+                              <TableCell>
+                                <Checkbox
+                                  checked={property.featured}
+                                  onCheckedChange={(checked) => {
+                                    // TODO: featured 토글 mutation 추가
+                                    console.log('Toggle featured:', property.id, checked);
+                                  }}
+                                />
                               </TableCell>
                               <TableCell>
                                 <Button

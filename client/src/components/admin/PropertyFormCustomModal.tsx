@@ -805,27 +805,6 @@ export function PropertyFormCustomModal({ isOpen, onClose, property }: PropertyF
                   )}
                 />
               </div>
-
-              <div>
-                <FormField
-                  control={form.control}
-                  name="featured"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center gap-2 space-y-0">
-                      <FormControl>
-                        <input
-                          type="checkbox"
-                          className="w-4 h-4"
-                          checked={field.value}
-                          onChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormLabel className="font-normal">추천 매물로 표시</FormLabel>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
             </div>
 
             <div className="flex justify-end gap-2">

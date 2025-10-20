@@ -283,6 +283,7 @@ export function PropertyFormCustomModal({ isOpen, onClose, property }: PropertyF
       coListing: false,
       propertyDescription: "",
       privateNote: "",
+      youtubeUrl: "",
       
       // 기존 필드
       bedrooms: 0,
@@ -425,6 +426,7 @@ export function PropertyFormCustomModal({ isOpen, onClose, property }: PropertyF
         coListing: property.coListing === null ? false : property.coListing,
         propertyDescription: property.propertyDescription || "",
         privateNote: property.privateNote || "",
+        youtubeUrl: property.youtubeUrl || "",
       });
     } else {
       // 새 속성 등록을 위한 초기값 설정
@@ -798,6 +800,26 @@ export function PropertyFormCustomModal({ isOpen, onClose, property }: PropertyF
                           placeholder="욕실 수"
                           {...field}
                           onChange={(e) => field.onChange(Number(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div>
+                <FormField
+                  control={form.control}
+                  name="youtubeUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>유튜브 영상 URL (선택사항)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="url" 
+                          placeholder="https://www.youtube.com/watch?v=..."
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />

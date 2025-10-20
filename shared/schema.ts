@@ -64,6 +64,7 @@ export const properties = pgTable("properties", {
   coListing: boolean("co_listing").default(false), // 공동중개
   propertyDescription: text("property_description"), // 매물설명 (기존 DB 호환용)
   privateNote: text("private_note"), // 비공개메모
+  youtubeUrl: text("youtube_url"), // 유튜브 영상 URL
 });
 
 export const insertPropertySchema = createInsertSchema(properties).omit({

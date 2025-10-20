@@ -479,6 +479,7 @@ export function PropertyFormCustomModal({ isOpen, onClose, property }: PropertyF
         coListing: false,
         propertyDescription: "",
         privateNote: "",
+        youtubeUrl: "",
         
         // 기존 필드
         bedrooms: 0,

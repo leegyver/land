@@ -58,6 +58,27 @@ const formatPrice = (price: string | number) => {
   return numPrice.toLocaleString() + '원';
 };
 
+const getYoutubeEmbedUrl = (url: string) => {
+  // 유튜브 URL을 임베드 URL로 변환
+  try {
+    const urlObj = new URL(url);
+    let videoId = '';
+    
+    // youtube.com/watch?v=VIDEO_ID 형식
+    if (urlObj.hostname.includes('youtube.com')) {
+      videoId = urlObj.searchParams.get('v') || '';
+    }
+    // youtu.be/VIDEO_ID 형식
+    else if (urlObj.hostname.includes('youtu.be')) {
+      videoId = urlObj.pathname.slice(1);
+    }
+    
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+  } catch {
+    return url;
+  }
+};
+
 const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { user } = useAuth();
@@ -708,6 +729,23 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                 <h3 className="text-xl font-bold mb-4">이 매물 문의게시판</h3>
                 <PropertyInquiryBoard propertyId={Number(propertyId)} />
               </div>
+              
+              {/* 유튜브 영상 섹션 */}
+              {property.youtubeUrl && (
+                <div className="mt-6">
+                  <h3 className="text-xl font-bold mb-4">매물 영상</h3>
+                  <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                    <iframe
+                      className="absolute top-0 left-0 w-full h-full rounded-lg"
+                      src={getYoutubeEmbedUrl(property.youtubeUrl)}
+                      title="매물 영상"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                </div>
+              )}
               
               {/* 매물 상세 설명 필드 복원 - 특이사항 위에 배치 */}
             </div>

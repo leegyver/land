@@ -234,6 +234,7 @@ function PropertyForm() {
     coListing: false,
     // propertyDescription 필드 삭제
     privateNote: "",
+    youtubeUrl: "", // 유튜브 영상 URL
     featuredImageIndex: 0, // 대표 이미지 인덱스 추가
   });
   
@@ -619,6 +620,19 @@ function PropertyForm() {
                       </div>
                     </div>
                   )}
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="youtubeUrl">유튜브 영상 URL (선택사항)</Label>
+                    <Input
+                      id="youtubeUrl"
+                      name="youtubeUrl"
+                      type="url"
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      value={formData.youtubeUrl || ""}
+                      onChange={handleChange}
+                    />
+                    <p className="text-xs text-gray-500">매물 소개 영상이 있다면 유튜브 URL을 입력하세요</p>
+                  </div>
                 </CardContent>
               </Card>
               

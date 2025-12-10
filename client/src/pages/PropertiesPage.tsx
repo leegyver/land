@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { Property } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -80,13 +80,15 @@ declare global {
 
 const PropertiesPage = () => {
   const [location, setLocation] = useLocation();
-  const searchParams = new URLSearchParams(window.location.search);
+  const search = useSearch();
   
-  const initialDistrict = searchParams.get("district") || "all";
-  const initialType = searchParams.get("type") || "all";
-  const initialMinPrice = searchParams.get("minPrice");
-  const initialMaxPrice = searchParams.get("maxPrice");
-  const initialKeyword = searchParams.get("keyword") || "";
+  // useSearch 훅에서 초기값 파싱 (wouter의 반응형 쿼리 문자열 사용)
+  const initialParams = new URLSearchParams(search);
+  const initialDistrict = initialParams.get("district") || "all";
+  const initialType = initialParams.get("type") || "all";
+  const initialMinPrice = initialParams.get("minPrice");
+  const initialMaxPrice = initialParams.get("maxPrice");
+  const initialKeyword = initialParams.get("keyword") || "";
   
   let initialPriceRange = "all";
   if (initialMinPrice && initialMaxPrice) {
@@ -254,7 +256,8 @@ const PropertiesPage = () => {
 
   // URL이 변경될 때 폼 값 업데이트
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+    // wouter의 useSearch 훅을 통해 쿼리 문자열 가져오기
+    const params = new URLSearchParams(search);
     const district = params.get("district") || "all";
     const type = params.get("type") || "all";
     const minPrice = params.get("minPrice");
@@ -283,7 +286,7 @@ const PropertiesPage = () => {
       maxPrice: maxPrice,
       keyword: keyword,
     });
-  }, [location]);
+  }, [search]);
 
   const { data: properties, isLoading, error } = useQuery<Property[]>({
     queryKey: ["/api/search", filterParams.district, filterParams.type, filterParams.minPrice, filterParams.maxPrice, filterParams.keyword],

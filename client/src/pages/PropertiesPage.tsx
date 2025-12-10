@@ -177,7 +177,11 @@ const PropertiesPage = () => {
     setLocation(`/properties?${newParams.toString()}`);
   }, [setLocation, filterParams]);
   
-  // 키워드 검색 실행 (기존 필터 유지)
+  // form 객체가 초기화된 후에 handleKeywordSearch를 정의해야 하므로,
+  // form.getValues()를 사용하기 위한 간접 호출 패턴을 사용
+  const getFormValues = useRef<() => FormValues | null>(null);
+  
+  // 키워드 검색 실행 (현재 폼 필터 값 사용)
   const handleKeywordSearch = useCallback(() => {
     const newParams = new URLSearchParams();
     
@@ -186,43 +190,55 @@ const PropertiesPage = () => {
       newParams.append("keyword", searchKeyword.trim());
     }
     
-    // 기존 필터 값 유지
-    if (filterParams.district && filterParams.district !== "all") {
-      newParams.append("district", filterParams.district);
-    }
-    if (filterParams.type && filterParams.type !== "all") {
-      newParams.append("type", filterParams.type);
-    }
-    if (filterParams.minPrice && filterParams.maxPrice) {
-      newParams.append("minPrice", filterParams.minPrice);
-      newParams.append("maxPrice", filterParams.maxPrice);
+    // 현재 폼 값을 직접 사용 (간접 호출)
+    const formValues = getFormValues.current?.();
+    if (formValues) {
+      if (formValues.district && formValues.district !== "all") {
+        newParams.append("district", formValues.district);
+      }
+      if (formValues.type && formValues.type !== "all") {
+        newParams.append("type", formValues.type);
+      }
+      if (formValues.priceRange && formValues.priceRange !== "all") {
+        const [minPrice, maxPrice] = formValues.priceRange.split("-");
+        if (minPrice && maxPrice) {
+          newParams.append("minPrice", minPrice);
+          newParams.append("maxPrice", maxPrice);
+        }
+      }
     }
     
     const newUrl = newParams.toString() ? `/properties?${newParams.toString()}` : '/properties';
     setLocation(newUrl);
-  }, [searchKeyword, setLocation, filterParams]);
+  }, [searchKeyword, setLocation]);
   
-  // 키워드 검색 초기화 (기존 필터 유지)
+  // 키워드 검색 초기화 (현재 폼 필터 값 유지)
   const clearKeyword = useCallback(() => {
     setSearchKeyword("");
     
     const newParams = new URLSearchParams();
     
-    // 기존 필터 값 유지
-    if (filterParams.district && filterParams.district !== "all") {
-      newParams.append("district", filterParams.district);
-    }
-    if (filterParams.type && filterParams.type !== "all") {
-      newParams.append("type", filterParams.type);
-    }
-    if (filterParams.minPrice && filterParams.maxPrice) {
-      newParams.append("minPrice", filterParams.minPrice);
-      newParams.append("maxPrice", filterParams.maxPrice);
+    // 현재 폼 값을 직접 사용
+    const formValues = getFormValues.current?.();
+    if (formValues) {
+      if (formValues.district && formValues.district !== "all") {
+        newParams.append("district", formValues.district);
+      }
+      if (formValues.type && formValues.type !== "all") {
+        newParams.append("type", formValues.type);
+      }
+      if (formValues.priceRange && formValues.priceRange !== "all") {
+        const [minPrice, maxPrice] = formValues.priceRange.split("-");
+        if (minPrice && maxPrice) {
+          newParams.append("minPrice", minPrice);
+          newParams.append("maxPrice", maxPrice);
+        }
+      }
     }
     
     const newUrl = newParams.toString() ? `/properties?${newParams.toString()}` : '/properties';
     setLocation(newUrl);
-  }, [setLocation, filterParams]);
+  }, [setLocation]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -232,6 +248,9 @@ const PropertiesPage = () => {
       priceRange: initialPriceRange,
     },
   });
+  
+  // getFormValues ref 설정 (handleKeywordSearch에서 사용)
+  getFormValues.current = () => form.getValues();
 
   // URL이 변경될 때 폼 값 업데이트
   useEffect(() => {

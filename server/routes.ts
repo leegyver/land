@@ -464,10 +464,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Search properties
   app.get("/api/search", async (req, res) => {
     try {
-      const { district, type, minPrice, maxPrice } = req.query;
-      console.log("검색 파라미터:", { district, type, minPrice, maxPrice });
+      const { district, type, minPrice, maxPrice, keyword } = req.query;
+      console.log("검색 파라미터:", { district, type, minPrice, maxPrice, keyword });
       
       let properties = await storage.getProperties();
+      
+      // 키워드 검색 (제목, 설명, 주소에서 검색)
+      if (keyword && typeof keyword === 'string' && keyword.trim() !== '') {
+        const searchKeyword = keyword.toLowerCase().trim();
+        console.log(`키워드 검색: "${searchKeyword}"`);
+        
+        properties = properties.filter(p => {
+          const title = (p.title || '').toLowerCase();
+          const description = (p.description || '').toLowerCase();
+          const address = (p.address || '').toLowerCase();
+          const district = (p.district || '').toLowerCase();
+          
+          return title.includes(searchKeyword) || 
+                 description.includes(searchKeyword) || 
+                 address.includes(searchKeyword) ||
+                 district.includes(searchKeyword);
+        });
+        console.log(`키워드 검색 결과: ${properties.length}개 매물`);
+      }
       
       // 지역 필터링 (district 값이 존재하고 "all"이 아닌 경우)
       if (district && district !== "all") {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Property } from "@shared/schema";
@@ -7,8 +7,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import PropertyCard from "@/components/property/PropertyCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapIcon } from "lucide-react";
+import { MapIcon, Mic, MicOff, Search, X } from "lucide-react";
 import KakaoMap from "@/components/map/KakaoMap";
+import { Input } from "@/components/ui/input";
 import {
   Form,
   FormControl,
@@ -33,6 +34,50 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+// Web Speech API 타입 선언
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+  resultIndex: number;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  isFinal: boolean;
+  length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onstart: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onend: ((this: SpeechRecognition, ev: Event) => void) | null;
+  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => void) | null;
+  onerror: ((this: SpeechRecognition, ev: Event) => void) | null;
+  start(): void;
+  stop(): void;
+  abort(): void;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: new () => SpeechRecognition;
+    webkitSpeechRecognition: new () => SpeechRecognition;
+  }
+}
+
 const PropertiesPage = () => {
   const [location, setLocation] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
@@ -41,6 +86,7 @@ const PropertiesPage = () => {
   const initialType = searchParams.get("type") || "all";
   const initialMinPrice = searchParams.get("minPrice");
   const initialMaxPrice = searchParams.get("maxPrice");
+  const initialKeyword = searchParams.get("keyword") || "";
   
   let initialPriceRange = "all";
   if (initialMinPrice && initialMaxPrice) {
@@ -52,7 +98,131 @@ const PropertiesPage = () => {
     type: initialType,
     minPrice: initialMinPrice,
     maxPrice: initialMaxPrice,
+    keyword: initialKeyword,
   });
+  
+  // 음성검색 관련 상태
+  const [searchKeyword, setSearchKeyword] = useState(initialKeyword);
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  
+  // 음성인식 지원 여부 확인
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      setSpeechSupported(true);
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = 'ko-KR'; // 한국어 설정
+      
+      recognitionRef.current.onstart = () => {
+        setIsListening(true);
+      };
+      
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+      
+      recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+        const transcript = event.results[0][0].transcript;
+        setSearchKeyword(transcript);
+        // 음성인식 완료 후 자동 검색
+        handleVoiceSearch(transcript);
+      };
+      
+      recognitionRef.current.onerror = () => {
+        setIsListening(false);
+      };
+    }
+    
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
+    };
+  }, []);
+  
+  // 음성인식 시작/중지
+  const toggleListening = useCallback(() => {
+    if (!recognitionRef.current) return;
+    
+    if (isListening) {
+      recognitionRef.current.stop();
+    } else {
+      recognitionRef.current.start();
+    }
+  }, [isListening]);
+  
+  // 음성검색 실행 (기존 필터 유지)
+  const handleVoiceSearch = useCallback((keyword: string) => {
+    if (!keyword.trim()) return;
+    
+    const newParams = new URLSearchParams();
+    newParams.append("keyword", keyword.trim());
+    
+    // 기존 필터 값 유지
+    if (filterParams.district && filterParams.district !== "all") {
+      newParams.append("district", filterParams.district);
+    }
+    if (filterParams.type && filterParams.type !== "all") {
+      newParams.append("type", filterParams.type);
+    }
+    if (filterParams.minPrice && filterParams.maxPrice) {
+      newParams.append("minPrice", filterParams.minPrice);
+      newParams.append("maxPrice", filterParams.maxPrice);
+    }
+    
+    setLocation(`/properties?${newParams.toString()}`);
+  }, [setLocation, filterParams]);
+  
+  // 키워드 검색 실행 (기존 필터 유지)
+  const handleKeywordSearch = useCallback(() => {
+    const newParams = new URLSearchParams();
+    
+    // 키워드가 있으면 추가
+    if (searchKeyword.trim()) {
+      newParams.append("keyword", searchKeyword.trim());
+    }
+    
+    // 기존 필터 값 유지
+    if (filterParams.district && filterParams.district !== "all") {
+      newParams.append("district", filterParams.district);
+    }
+    if (filterParams.type && filterParams.type !== "all") {
+      newParams.append("type", filterParams.type);
+    }
+    if (filterParams.minPrice && filterParams.maxPrice) {
+      newParams.append("minPrice", filterParams.minPrice);
+      newParams.append("maxPrice", filterParams.maxPrice);
+    }
+    
+    const newUrl = newParams.toString() ? `/properties?${newParams.toString()}` : '/properties';
+    setLocation(newUrl);
+  }, [searchKeyword, setLocation, filterParams]);
+  
+  // 키워드 검색 초기화 (기존 필터 유지)
+  const clearKeyword = useCallback(() => {
+    setSearchKeyword("");
+    
+    const newParams = new URLSearchParams();
+    
+    // 기존 필터 값 유지
+    if (filterParams.district && filterParams.district !== "all") {
+      newParams.append("district", filterParams.district);
+    }
+    if (filterParams.type && filterParams.type !== "all") {
+      newParams.append("type", filterParams.type);
+    }
+    if (filterParams.minPrice && filterParams.maxPrice) {
+      newParams.append("minPrice", filterParams.minPrice);
+      newParams.append("maxPrice", filterParams.maxPrice);
+    }
+    
+    const newUrl = newParams.toString() ? `/properties?${newParams.toString()}` : '/properties';
+    setLocation(newUrl);
+  }, [setLocation, filterParams]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -70,13 +240,14 @@ const PropertiesPage = () => {
     const type = params.get("type") || "all";
     const minPrice = params.get("minPrice");
     const maxPrice = params.get("maxPrice");
+    const keyword = params.get("keyword") || "";
     
     let priceRange = "all";
     if (minPrice && maxPrice) {
       priceRange = `${minPrice}-${maxPrice}`;
     }
     
-    console.log("URL에서 파싱된 파라미터:", { district, type, minPrice, maxPrice, priceRange });
+    console.log("URL에서 파싱된 파라미터:", { district, type, minPrice, maxPrice, priceRange, keyword });
     
     form.reset({
       district,
@@ -84,19 +255,27 @@ const PropertiesPage = () => {
       priceRange,
     });
     
+    setSearchKeyword(keyword);
+    
     setFilterParams({
       district,
       type,
       minPrice: minPrice,
       maxPrice: maxPrice,
+      keyword: keyword,
     });
   }, [location]);
 
   const { data: properties, isLoading, error } = useQuery<Property[]>({
-    queryKey: ["/api/search", filterParams.district, filterParams.type, filterParams.minPrice, filterParams.maxPrice],
+    queryKey: ["/api/search", filterParams.district, filterParams.type, filterParams.minPrice, filterParams.maxPrice, filterParams.keyword],
     queryFn: async () => {
       // 검색 파라미터 구성
       const searchParams = new URLSearchParams();
+      
+      // 키워드 검색
+      if (filterParams.keyword && filterParams.keyword.trim() !== "") {
+        searchParams.append("keyword", filterParams.keyword.trim());
+      }
       
       if (filterParams.district && filterParams.district !== "all") {
         searchParams.append("district", filterParams.district);
@@ -154,6 +333,80 @@ const PropertiesPage = () => {
       <div className="bg-primary/10 py-12">
         <div className="container mx-auto px-4">
           <h1 className="text-3xl font-bold mb-6">매물 검색</h1>
+          
+          {/* 음성검색 입력창 */}
+          <div className="bg-white p-4 rounded-lg shadow-md mb-4">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="검색어를 입력하거나 마이크를 눌러 음성으로 검색하세요"
+                  value={searchKeyword}
+                  onChange={(e) => setSearchKeyword(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleKeywordSearch();
+                    }
+                  }}
+                  className="pl-10 pr-10"
+                  data-testid="input-voice-search"
+                />
+                {searchKeyword && (
+                  <button
+                    type="button"
+                    onClick={clearKeyword}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    data-testid="button-clear-search"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              
+              {speechSupported && (
+                <Button
+                  type="button"
+                  variant={isListening ? "destructive" : "outline"}
+                  size="icon"
+                  onClick={toggleListening}
+                  className={`flex-shrink-0 ${isListening ? 'animate-pulse' : ''}`}
+                  title={isListening ? "음성인식 중지" : "음성으로 검색"}
+                  data-testid="button-voice-search"
+                >
+                  {isListening ? (
+                    <MicOff className="h-5 w-5" />
+                  ) : (
+                    <Mic className="h-5 w-5" />
+                  )}
+                </Button>
+              )}
+              
+              <Button
+                type="button"
+                onClick={handleKeywordSearch}
+                className="flex-shrink-0"
+                data-testid="button-search"
+              >
+                <Search className="h-4 w-4 mr-2" />
+                검색
+              </Button>
+            </div>
+            
+            {isListening && (
+              <div className="mt-3 flex items-center gap-2 text-sm text-primary">
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                <span>음성을 듣고 있습니다... 말씀해 주세요</span>
+              </div>
+            )}
+            
+            {searchKeyword && filterParams.keyword && (
+              <div className="mt-3 text-sm text-gray-600">
+                <span className="font-medium">"{filterParams.keyword}"</span> 검색 결과
+              </div>
+            )}
+          </div>
           
           <div className="bg-white p-6 rounded-lg shadow-md">
             <Form {...form}>
@@ -423,12 +676,15 @@ const PropertiesPage = () => {
                 type: "all",
                 priceRange: "all",
               });
+              setSearchKeyword("");
               setFilterParams({
                 district: "all",
                 type: "all",
                 minPrice: null,
                 maxPrice: null,
+                keyword: "",
               });
+              setLocation('/properties');
             }}>
               필터 초기화
             </Button>

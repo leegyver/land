@@ -16,6 +16,7 @@ import {
 const Header = () => {
   const [location, setLocation] = useLocation();
   const { user, logoutMutation } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   const navItems = [
     { name: "홈", path: "/" },
@@ -94,7 +95,7 @@ const Header = () => {
           </div>
 
           {/* Mobile Navigation */}
-          <Sheet>
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" className="md:hidden p-2">
                 <svg 
@@ -120,6 +121,7 @@ const Header = () => {
                   <Link 
                     key={item.path} 
                     href={item.path}
+                    onClick={() => setMobileMenuOpen(false)}
                     className={`text-lg font-medium hover:text-primary transition-colors ${
                       location === item.path ? "text-primary" : "text-neutral-800"
                     }`}
@@ -144,6 +146,7 @@ const Header = () => {
                       
                       <Link 
                         href="/profile" 
+                        onClick={() => setMobileMenuOpen(false)}
                         className="flex items-center py-2 text-lg font-medium text-neutral-800 hover:text-primary"
                       >
                         <User className="mr-2 h-5 w-5" />
@@ -153,6 +156,7 @@ const Header = () => {
                       {user.role === "admin" && (
                         <Link 
                           href="/admin" 
+                          onClick={() => setMobileMenuOpen(false)}
                           className="flex items-center py-2 text-lg font-medium text-neutral-800 hover:text-primary"
                         >
                           <Settings className="mr-2 h-5 w-5" />
@@ -161,7 +165,10 @@ const Header = () => {
                       )}
                       
                       <button
-                        onClick={handleLogout}
+                        onClick={() => {
+                          handleLogout();
+                          setMobileMenuOpen(false);
+                        }}
                         className="flex items-center py-2 text-lg font-medium text-neutral-800 hover:text-primary"
                       >
                         <LogOut className="mr-2 h-5 w-5" />
@@ -171,6 +178,7 @@ const Header = () => {
                   ) : (
                     <Link
                       href="/auth"
+                      onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center py-2 text-lg font-medium text-neutral-800 hover:text-primary"
                     >
                       <LogIn className="mr-2 h-5 w-5" />

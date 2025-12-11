@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Helmet } from "react-helmet";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useSearch } from "wouter";
 import { Property } from "@shared/schema";
@@ -351,6 +352,13 @@ const PropertiesPage = () => {
   };
 
   return (
+    <>
+      <Helmet>
+        <title>매물 검색 | 이가이버부동산 - 강화도 부동산</title>
+        <meta name="description" content="강화도 토지, 주택, 아파트, 상가 매물을 검색하세요. 음성검색 지원, 지도보기로 편리하게 매물을 찾을 수 있습니다." />
+        <meta property="og:title" content="매물 검색 | 이가이버부동산" />
+        <meta property="og:description" content="강화도 토지, 주택, 아파트, 상가 매물 검색" />
+      </Helmet>
     <div className="pt-16"> {/* Offset for fixed header */}
       <div className="bg-primary/10 py-12">
         <div className="container mx-auto px-4">
@@ -715,6 +723,7 @@ const PropertiesPage = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 

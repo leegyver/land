@@ -69,8 +69,8 @@ const HomePage = () => {
                 <HomeMap />
               </div>
               
-              {/* 검색 폼 - 모바일에서는 숨김 */}
-              <div className="hidden md:block rounded-lg overflow-hidden shadow-md">
+              {/* 음성검색 폼 */}
+              <div className="rounded-lg overflow-hidden shadow-md">
                 <PropertySearch />
               </div>
             </div>

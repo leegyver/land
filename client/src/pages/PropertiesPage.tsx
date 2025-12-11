@@ -430,7 +430,8 @@ const PropertiesPage = () => {
             )}
           </div>
           
-          <div className="bg-white p-6 rounded-lg shadow-md">
+          {/* 카테고리 필터 숨김 - 음성검색만 사용 */}
+          <div className="hidden">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <FormField

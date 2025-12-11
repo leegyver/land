@@ -1,9 +1,7 @@
+import { Helmet } from "react-helmet";
 import HomeMap from "@/components/home/HomeMap";
 import PropertySearch from "@/components/home/PropertySearch";
 import FeaturedProperties from "@/components/home/FeaturedProperties";
-// BlogPosts 컴포넌트 제거됨
-// Testimonials 컴포넌트 제거됨
-// ContactForm 컴포넌트 제거됨
 import { useQuery } from "@tanstack/react-query";
 import { News } from "@shared/schema";
 import { Link } from "wouter";
@@ -53,6 +51,12 @@ const HomePage = () => {
 
   return (
     <>
+      <Helmet>
+        <title>이가이버부동산 - 강화도 부동산 전문 중개</title>
+        <meta name="description" content="강화도 부동산 전문 중개 - 토지, 주택, 아파트, 상가 매물 정보. 강화도 지역 부동산 매매 및 임대 서비스를 제공합니다." />
+        <meta property="og:title" content="이가이버부동산 - 강화도 부동산 전문 중개" />
+        <meta property="og:description" content="강화도 부동산 전문 중개 - 토지, 주택, 아파트, 상가 매물 정보" />
+      </Helmet>
       <div className="pt-16"> {/* Offset for fixed header */}
         {/* 맵과 검색을 오른쪽으로 배치한 새로운 레이아웃 */}
         <div className="container mx-auto px-4 py-4">

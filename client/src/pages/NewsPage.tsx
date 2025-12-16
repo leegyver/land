@@ -185,8 +185,8 @@ export default function NewsPage() {
                   <thead>
                     <tr className="bg-neutral-100">
                       <th className="py-3 px-4 text-left font-medium text-neutral-700">제목</th>
-                      <th className="py-3 px-4 text-center font-medium text-neutral-700 w-24">카테고리</th>
-                      <th className="py-3 px-4 text-center font-medium text-neutral-700 w-32">등록일</th>
+                      <th className="py-3 px-4 text-center font-medium text-neutral-700 w-24 hidden md:table-cell">카테고리</th>
+                      <th className="py-3 px-4 text-center font-medium text-neutral-700 w-32 hidden md:table-cell">등록일</th>
                       <th className="py-3 px-4 text-center font-medium text-neutral-700 w-24">원문</th>
                     </tr>
                   </thead>
@@ -195,16 +195,16 @@ export default function NewsPage() {
                       <tr key={news.id} className="border-b hover:bg-neutral-50">
                         <td className="py-3 px-4">
                           <div>
-                            <a href={`/news/${news.id}`} className="font-medium line-clamp-1 hover:text-primary transition-colors">
+                            <a href={`/news/${news.id}`} className="font-medium line-clamp-2 md:line-clamp-1 hover:text-primary transition-colors">
                               {news.title}
                             </a>
-                            <p className="text-sm text-neutral-500 line-clamp-1 mt-1">{news.description}</p>
+                            <p className="text-sm text-neutral-500 line-clamp-1 mt-1 hidden md:block">{news.description}</p>
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-center">
+                        <td className="py-3 px-4 text-center hidden md:table-cell">
                           <Badge variant="outline">{news.category}</Badge>
                         </td>
-                        <td className="py-3 px-4 text-center text-neutral-600 text-sm">
+                        <td className="py-3 px-4 text-center text-neutral-600 text-sm hidden md:table-cell">
                           <div className="flex flex-col items-center">
                             <span>{formatDate(news.createdAt!)}</span>
                           </div>

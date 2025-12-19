@@ -145,7 +145,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
       </div>
       <div className="p-6">
         <Link href={`/properties/${property.id}`}>
-          <h3 className="text-xl font-bold mb-1 hover:text-primary transition-colors cursor-pointer line-clamp-1">
+          <h3 className="text-xl font-bold mb-1 hover:text-primary transition-colors cursor-pointer line-clamp-2">
             {property.title}
           </h3>
         </Link>
@@ -156,24 +156,6 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
           </svg>
           {property.district}
         </p>
-        <div className="flex items-center justify-between mb-4 p-2 bg-gray-50 rounded-md">
-          <span className="flex items-center text-sm font-medium">
-            <Maximize className="w-4 h-4 mr-1 text-primary" /> 
-            <span>
-              {property.size 
-                ? `${property.size}m² (약 ${(Number(property.size) * 0.3025).toFixed(1)}평)` 
-                : '정보 없음'}
-            </span>
-          </span>
-          <span className="flex items-center text-sm font-medium">
-            <Bed className="w-4 h-4 mr-1 text-primary" /> 
-            <span>{property.bedrooms}개</span>
-          </span>
-          <span className="flex items-center text-sm font-medium">
-            <Bath className="w-4 h-4 mr-1 text-primary" /> 
-            <span>{property.bathrooms}개</span>
-          </span>
-        </div>
         <div className="flex justify-between items-center">
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-1">

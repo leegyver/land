@@ -8,6 +8,7 @@ import { AuthProvider } from "@/hooks/use-auth";
 import NotFound from "@/pages/not-found";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import FloatingContactButtons from "@/components/layout/FloatingContactButtons";
 import HomePage from "@/pages/HomePage";
 import PropertiesPage from "@/pages/PropertiesPage";
 import PropertyDetailPage from "@/pages/PropertyDetailPage";
@@ -51,10 +52,11 @@ function App() {
           <TooltipProvider>
             <div className="flex flex-col min-h-screen">
               <Header />
-              <main className="flex-grow">
+              <main className="flex-grow pb-16 md:pb-0">
                 <AppRouter />
               </main>
               <Footer />
+              <FloatingContactButtons />
             </div>
             <Toaster />
           </TooltipProvider>

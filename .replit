@@ -37,3 +37,9 @@ waitForPort = 5000
 
 [agent]
 integrations = ["javascript_websocket:1.0.0", "javascript_sendgrid:1.0.0"]
+
+[userenv]
+
+[userenv.shared]
+VITE_GOOGLE_SHEETS_ID = "1JZaBTQ3RSy9yUSd0fRSd2nLMDraQ03h5pxlDP_5NWYk"
+VITE_GOOGLE_API_KEY = "AIzaSyB6B62pmwCPKr_a_HaP14L8NtbzrRHuyj0"

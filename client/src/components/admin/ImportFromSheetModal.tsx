@@ -22,8 +22,8 @@ interface ImportFromSheetModalProps {
 
 export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalProps) {
   const { toast } = useToast();
-  const [spreadsheetId, setSpreadsheetId] = useState("");
-  const [apiKey, setApiKey] = useState("");
+  const [spreadsheetId, setSpreadsheetId] = useState(import.meta.env.VITE_GOOGLE_SHEETS_ID || "");
+  const [apiKey, setApiKey] = useState(import.meta.env.VITE_GOOGLE_API_KEY || "");
   const [range, setRange] = useState("Sheet1!A2:AN");
   const [filterDate, setFilterDate] = useState("");
 

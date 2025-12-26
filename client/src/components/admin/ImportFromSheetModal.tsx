@@ -14,6 +14,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Calendar, FileSpreadsheet, Key, Table2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ImportFromSheetModalProps {
   isOpen: boolean;
@@ -23,11 +30,20 @@ interface ImportFromSheetModalProps {
 const DEFAULT_SPREADSHEET_ID = import.meta.env.VITE_GOOGLE_SHEETS_ID || "";
 const DEFAULT_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || "";
 
+const SUPPORTED_SHEETS = [
+  { name: "토지", range: "토지!A2:AT" },
+  { name: "주택", range: "주택!A2:AK" },
+  { name: "아파트연립다세대", range: "아파트연립다세대!A2:AP" },
+  { name: "서희", range: "서희!A2:AH" },
+  { name: "원투룸", range: "원투룸!A2:AS" },
+  { name: "상가공장창고펜션", range: "상가공장창고펜션!A2:AQ" },
+];
+
 export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalProps) {
   const { toast } = useToast();
   const [spreadsheetId, setSpreadsheetId] = useState(DEFAULT_SPREADSHEET_ID);
   const [apiKey, setApiKey] = useState(DEFAULT_API_KEY);
-  const [range, setRange] = useState("Sheet1!A2:AN");
+  const [selectedSheet, setSelectedSheet] = useState(SUPPORTED_SHEETS[0].name);
   const [filterDate, setFilterDate] = useState("");
   
   useEffect(() => {
@@ -36,6 +52,11 @@ export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalPr
       setApiKey(DEFAULT_API_KEY);
     }
   }, [isOpen]);
+  
+  const getRange = () => {
+    const sheet = SUPPORTED_SHEETS.find(s => s.name === selectedSheet);
+    return sheet?.range || "토지!A2:AT";
+  };
 
   const importMutation = useMutation({
     mutationFn: async (data: { spreadsheetId: string; apiKey: string; range: string; filterDate?: string }) => {
@@ -91,7 +112,7 @@ export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalPr
     importMutation.mutate({ 
       spreadsheetId, 
       apiKey, 
-      range,
+      range: getRange(),
       filterDate: filterDate || undefined
     });
   };
@@ -138,17 +159,22 @@ export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalPr
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="range" className="flex items-center gap-2">
+              <Label htmlFor="sheetSelect" className="flex items-center gap-2">
                 <Table2 className="h-4 w-4" />
-                데이터 범위
+                시트 선택
               </Label>
-              <Input
-                id="range"
-                value={range}
-                onChange={(e) => setRange(e.target.value)}
-                placeholder="Sheet1!A2:AN"
-                data-testid="input-range"
-              />
+              <Select value={selectedSheet} onValueChange={setSelectedSheet}>
+                <SelectTrigger data-testid="select-sheet">
+                  <SelectValue placeholder="시트를 선택하세요" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUPPORTED_SHEETS.map((sheet) => (
+                    <SelectItem key={sheet.name} value={sheet.name}>
+                      {sheet.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="space-y-2">

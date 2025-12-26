@@ -6,12 +6,13 @@ const ContactPage = () => {
   return (
     <div className="pt-16"> {/* Offset for fixed header */}
       <Helmet>
-        <title>문의하기 | 이가이버부동산</title>
+        <title>문의하기 | 강화도 부동산, 강화 토지 매매, 강화 전원주택 - 이가이버부동산</title>
         <meta 
           name="description" 
-          content="이가이버부동산에 문의하세요. 부동산 매매, 임대, 투자에 관한 모든 궁금증을 전문가가 상담해 드립니다."
+          content="강화도 부동산, 강화 토지 매매, 강화 전원주택 매매 문의는 이가이버부동산으로. 강화군 부동산 매매, 임대, 투자에 관한 모든 궁금증을 전문가가 상담해 드립니다."
         />
-        <meta property="og:title" content="문의하기 | 이가이버부동산" />
+        <meta name="keywords" content="강화도 부동산 문의, 강화 토지 매매 문의, 강화 전원주택 상담, 강화군 부동산 중개" />
+        <meta property="og:title" content="문의하기 | 강화도 부동산 전문 - 이가이버부동산" />
         <meta property="og:type" content="website" />
         <meta property="og:description" content="이가이버부동산에 문의하세요. 부동산 매매, 임대, 투자에 관한 모든 궁금증을 전문가가 상담해 드립니다." />
       </Helmet>

@@ -88,7 +88,7 @@ export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalPr
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>구글 스프레드시트에서 데이터 가져오기</DialogTitle>

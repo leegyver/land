@@ -20,8 +20,8 @@ interface ImportFromSheetModalProps {
   onClose: () => void;
 }
 
-const DEFAULT_SPREADSHEET_ID = import.meta.env.VITE_GOOGLE_SHEETS_ID || "1JZaBTQ3RSy9yUSd0fRSd2nLMDraQ03h5pxlDP_5NWYk";
-const DEFAULT_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || "AIzaSyB6B62pmwCPKr_a_HaP14L8NtbzrRHuyj0";
+const DEFAULT_SPREADSHEET_ID = import.meta.env.VITE_GOOGLE_SHEETS_ID || "";
+const DEFAULT_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || "";
 
 export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalProps) {
   const { toast } = useToast();

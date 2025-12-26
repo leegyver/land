@@ -69,6 +69,7 @@ export default function NewsDetailPage() {
   return (
     <div className="container mx-auto px-4 py-20">
       <Helmet>
+        <meta name="keywords" content={`${news.category}, 강화도 부동산 뉴스, 강화군 부동산, 부동산 정책, 강화도`} />
         <title>{news.title} | 부동산뉴스 | 이가이버 부동산</title>
         <meta name="description" content={news.description} />
       </Helmet>

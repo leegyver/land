@@ -354,10 +354,11 @@ const PropertiesPage = () => {
   return (
     <>
       <Helmet>
-        <title>매물 검색 | 이가이버부동산 - 강화도 부동산</title>
-        <meta name="description" content="강화도 토지, 주택, 아파트, 상가 매물을 검색하세요. 음성검색 지원, 지도보기로 편리하게 매물을 찾을 수 있습니다." />
-        <meta property="og:title" content="매물 검색 | 이가이버부동산" />
-        <meta property="og:description" content="강화도 토지, 주택, 아파트, 상가 매물 검색" />
+        <title>매물 검색 | 강화도 부동산, 강화 토지 매매, 강화 전원주택 - 이가이버부동산</title>
+        <meta name="description" content="강화 토지 매매, 강화 전원주택 매매, 강화도 아파트, 강화도 상가, 강화도 펜션 매물을 검색하세요. 음성검색 지원, 지도보기로 편리하게 강화군 부동산 매물을 찾을 수 있습니다." />
+        <meta name="keywords" content="강화 토지 매매, 강화 전원주택 매매, 강화도 부동산, 강화도 아파트, 강화도 주택, 강화도 상가, 강화도 펜션, 강화군 부동산 검색" />
+        <meta property="og:title" content="매물 검색 | 강화도 부동산, 강화 토지 매매 - 이가이버부동산" />
+        <meta property="og:description" content="강화 토지 매매, 강화 전원주택 매매, 강화도 아파트, 상가 매물 검색" />
       </Helmet>
     <div className="pt-16"> {/* Offset for fixed header */}
       <div className="bg-primary/10 py-12">

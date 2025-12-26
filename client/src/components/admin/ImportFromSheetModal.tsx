@@ -22,20 +22,25 @@ interface ImportFromSheetModalProps {
 
 export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalProps) {
   const { toast } = useToast();
-  const [spreadsheetId, setSpreadsheetId] = useState("");
-  const [apiKey, setApiKey] = useState("");
-  const [range, setRange] = useState("Sheet1!A2:Z");
+  const [spreadsheetId, setSpreadsheetId] = useState(import.meta.env.VITE_GOOGLE_SHEETS_ID || "");
+  const [apiKey, setApiKey] = useState(import.meta.env.VITE_GOOGLE_API_KEY || "");
+  const [range, setRange] = useState("Sheet1!A2:AN");
+  const [filterDate, setFilterDate] = useState("");
 
   const importMutation = useMutation({
-    mutationFn: async (data: { spreadsheetId: string; apiKey: string; range: string }) => {
+    mutationFn: async (data: { spreadsheetId: string; apiKey: string; range: string; filterDate?: string }) => {
       const res = await apiRequest("POST", "/api/admin/import-from-sheet", data);
       return await res.json();
     },
     onSuccess: (data) => {
       if (data.success) {
+        const message = data.skipped 
+          ? `${data.count}개의 매물 데이터를 가져왔습니다. (${data.skipped}개 행 스킵됨)`
+          : `${data.count}개의 매물 데이터를 가져왔습니다.`;
+        
         toast({
           title: "데이터 가져오기 성공",
-          description: `${data.count}개의 매물 데이터를 가져왔습니다.`,
+          description: message,
         });
         
         // 성공 후 캐시 무효화
@@ -73,12 +78,17 @@ export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalPr
       return;
     }
     
-    importMutation.mutate({ spreadsheetId, apiKey, range });
+    importMutation.mutate({ 
+      spreadsheetId, 
+      apiKey, 
+      range,
+      filterDate: filterDate || undefined
+    });
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>구글 스프레드시트에서 데이터 가져오기</DialogTitle>
@@ -126,6 +136,23 @@ export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalPr
                 className="col-span-3"
                 placeholder="Sheet1!A2:AN"
               />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="filterDate" className="text-right">
+                입력일 필터
+              </Label>
+              <Input
+                id="filterDate"
+                type="date"
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
+                className="col-span-3"
+                placeholder="YYYY-MM-DD"
+              />
+            </div>
+            <div className="col-span-4 text-xs text-muted-foreground">
+              <p>※ 입력일을 설정하면 해당 날짜 이후에 입력된 데이터만 가져옵니다.</p>
             </div>
             
             <div className="col-span-4">

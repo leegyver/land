@@ -7,12 +7,14 @@ import { log } from './vite';
 export async function importPropertiesFromSheet(
   spreadsheetId: string,
   apiKey: string,
-  range: string = 'Sheet1!A2:AN'
+  range: string = 'Sheet1!A2:AN',
+  filterDate?: string
 ): Promise<{
   success: boolean;
   count?: number;
   importedIds?: number[];
   error?: string;
+  skipped?: number;
 }> {
   try {
     // 구글 시트 API 클라이언트 생성
@@ -37,6 +39,15 @@ export async function importPropertiesFromSheet(
     
     // 에러 기록
     const errors: string[] = [];
+    
+    // 스킵된 행 수
+    let skippedCount = 0;
+    
+    // 날짜 필터가 있는 경우 Date 객체로 변환
+    const filterDateObj = filterDate ? new Date(filterDate) : null;
+    if (filterDateObj) {
+      log(`날짜 필터 적용: ${filterDate} 이후 데이터만 가져옵니다.`, 'info');
+    }
 
     // 각 행을 처리하여 매물 데이터로 변환
     for (let i = 0; i < rows.length; i++) {
@@ -46,6 +57,38 @@ export async function importPropertiesFromSheet(
         if (row.length < 3) {
           errors.push(`행 ${i+2}: 데이터가 부족합니다.`);
           continue;
+        }
+        
+        // C열(인덱스 2) 날짜 필터링
+        if (filterDateObj && row[2]) {
+          try {
+            // C열의 날짜를 파싱 (다양한 형식 지원)
+            const rowDateStr = row[2].toString().trim();
+            let rowDate: Date | null = null;
+            
+            // YYYY-MM-DD 형식
+            if (/^\d{4}-\d{2}-\d{2}$/.test(rowDateStr)) {
+              rowDate = new Date(rowDateStr);
+            }
+            // YYYY.MM.DD 형식
+            else if (/^\d{4}\.\d{2}\.\d{2}$/.test(rowDateStr)) {
+              rowDate = new Date(rowDateStr.replace(/\./g, '-'));
+            }
+            // MM/DD/YYYY 형식
+            else if (/^\d{2}\/\d{2}\/\d{4}$/.test(rowDateStr)) {
+              rowDate = new Date(rowDateStr);
+            }
+            
+            // 날짜가 유효하고 필터 날짜보다 이전이면 스킵
+            if (rowDate && !isNaN(rowDate.getTime())) {
+              if (rowDate < filterDateObj) {
+                skippedCount++;
+                continue;
+              }
+            }
+          } catch (dateError) {
+            log(`행 ${i+2}: 날짜 파싱 오류 (${row[2]})`, 'warn');
+          }
         }
 
         // 시트 열 매핑 (확장된 버전)
@@ -120,11 +163,16 @@ export async function importPropertiesFromSheet(
     if (errors.length > 0) {
       log(`${errors.length}개의 행에서 오류가 발생했습니다: ${errors.join('; ')}`, 'error');
     }
+    
+    if (skippedCount > 0) {
+      log(`${skippedCount}개의 행이 날짜 필터로 인해 스킵되었습니다.`, 'info');
+    }
 
     return {
       success: true,
       count: importedIds.length,
       importedIds,
+      skipped: skippedCount,
       error: errors.length > 0 ? `${errors.length}개의 행에서 오류가 발생했습니다` : undefined
     };
   } catch (error) {

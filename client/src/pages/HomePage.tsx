@@ -52,10 +52,11 @@ const HomePage = () => {
   return (
     <>
       <Helmet>
-        <title>이가이버부동산 - 강화도 부동산 전문 중개</title>
-        <meta name="description" content="강화도 부동산 전문 중개 - 토지, 주택, 아파트, 상가 매물 정보. 강화도 지역 부동산 매매 및 임대 서비스를 제공합니다." />
-        <meta property="og:title" content="이가이버부동산 - 강화도 부동산 전문 중개" />
-        <meta property="og:description" content="강화도 부동산 전문 중개 - 토지, 주택, 아파트, 상가 매물 정보" />
+        <title>이가이버부동산 - 강화도 부동산, 강화 토지 매매, 강화 전원주택 전문</title>
+        <meta name="description" content="강화도 부동산 전문 중개 - 강화 토지 매매, 강화 전원주택 매매, 강화도 아파트, 강화도 상가, 강화도 펜션 매물. 인천 강화군 부동산 매매 및 임대 전문." />
+        <meta name="keywords" content="강화도 부동산, 강화 토지 매매, 강화 전원주택 매매, 강화도 아파트, 강화도 주택, 강화 토지, 강화 전원주택, 강화군 부동산, 인천 강화" />
+        <meta property="og:title" content="이가이버부동산 - 강화도 부동산, 강화 토지 매매, 강화 전원주택 전문" />
+        <meta property="og:description" content="강화도 부동산 전문 중개 - 강화 토지 매매, 강화 전원주택 매매, 강화도 아파트, 상가 매물" />
       </Helmet>
       <div className="pt-16"> {/* Offset for fixed header */}
         {/* 맵과 검색을 오른쪽으로 배치한 새로운 레이아웃 */}

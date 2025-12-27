@@ -240,6 +240,17 @@ export async function importPropertiesFromSheet(
         
         log(`행 ${i+2}: 날짜 필터 통과 (${rowDateStr} >= ${filterDate})`, 'info');
         
+        // 행 패딩 전 원본 데이터 로깅
+        log(`행 ${i+2}: 패딩 전 행 길이: ${row.length}`, 'info');
+        
+        // 원본 이미지 열 데이터 확인 (패딩 전)
+        const originalAV = row[COL.AV] || '(없음)';
+        const originalAW = row[COL.AW] || '(없음)';
+        const originalAX = row[COL.AX] || '(없음)';
+        const originalAY = row[COL.AY] || '(없음)';
+        const originalAZ = row[COL.AZ] || '(없음)';
+        log(`행 ${i+2}: 원본 이미지 데이터 - AV: "${String(originalAV).substring(0, 30)}", AW: "${String(originalAW).substring(0, 30)}", AX: "${String(originalAX).substring(0, 30)}"`, 'info');
+        
         // 행 패딩: Google Sheets API가 빈 셀을 잘라내기 때문에 BA열까지 패딩
         const requiredLength = COL.BA + 1; // BA열 포함하려면 53개 요소 필요
         while (row.length < requiredLength) {

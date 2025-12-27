@@ -744,24 +744,46 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="agentName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>담당중개사 (이름)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="담당중개사 이름 입력"
-                        data-testid="input-agent-name"
-                        {...field}
-                        value={field.value || ""}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* 추가정보 - 공동중개 및 담당중개사 */}
+              <div className="md:col-span-2 flex items-center gap-4 py-2">
+                <FormField
+                  control={form.control}
+                  name="coListing"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          data-testid="checkbox-co-listing"
+                        />
+                      </FormControl>
+                      <FormLabel className="font-normal">공동중개</FormLabel>
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="agentName"
+                  render={({ field }) => (
+                    <FormItem className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <FormLabel className="whitespace-nowrap">담당중개사</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="담당중개사 이름 입력"
+                            data-testid="input-agent-name"
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             <div className="flex justify-end gap-2">

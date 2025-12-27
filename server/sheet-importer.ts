@@ -240,6 +240,13 @@ export async function importPropertiesFromSheet(
         
         log(`행 ${i+2}: 날짜 필터 통과 (${rowDateStr} >= ${filterDate})`, 'info');
         
+        // 행 패딩: Google Sheets API가 빈 셀을 잘라내기 때문에 BA열까지 패딩
+        const requiredLength = COL.BA + 1; // BA열 포함하려면 53개 요소 필요
+        while (row.length < requiredLength) {
+          row.push('');
+        }
+        log(`행 ${i+2}: 패딩 후 행 길이: ${row.length}`, 'info');
+        
         // 중복 매물 건너뛰기 체크
         const rowAddress = row[COL.C]?.toString().trim();
         if (rowAddress && skipAddresses.includes(rowAddress)) {

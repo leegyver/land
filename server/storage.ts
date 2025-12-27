@@ -1,8 +1,7 @@
 import { 
   properties, type Property, type InsertProperty,
-  // agents 삭제됨
+  agents, type Agent, type InsertAgent, // agents 스키마 임포트
   inquiries, type Inquiry, type InsertInquiry,
-  // testimonials 삭제됨
   users, type User, type InsertUser,
   news, type News, type InsertNews,
   propertyInquiries, type PropertyInquiry, type InsertPropertyInquiry,
@@ -43,16 +42,19 @@ export interface IStorage {
   updatePropertyOrder(propertyId: number, newOrder: number): Promise<boolean>;
   togglePropertyVisibility(propertyId: number, isVisible: boolean): Promise<boolean>;
   togglePropertyFeatured(propertyId: number, featured: boolean): Promise<boolean>;
-  
-  // Agent methods - 제거됨
-  
+
+  // Agent methods
+  getAgents(): Promise<Agent[]>;
+  getAgent(id: number): Promise<Agent | undefined>;
+  createAgent(agent: InsertAgent): Promise<Agent>;
+  updateAgent(id: number, agent: Partial<InsertAgent>): Promise<Agent | undefined>;
+  deleteAgent(id: number): Promise<boolean>;
+
   // Inquiry methods
   getInquiries(): Promise<Inquiry[]>;
   getInquiry(id: number): Promise<Inquiry | undefined>;
   createInquiry(inquiry: InsertInquiry): Promise<Inquiry>;
-  
-  // Testimonial methods - 제거됨
-  
+
   // User methods
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -69,28 +71,28 @@ export interface IStorage {
   createNews(news: InsertNews): Promise<News>;
   updateNews(id: number, news: Partial<InsertNews>): Promise<News | undefined>;
   deleteNews(id: number): Promise<boolean>;
-  
+
   // Property Inquiry methods
   getPropertyInquiries(propertyId: number): Promise<PropertyInquiry[]>;
   getPropertyInquiry(id: number): Promise<PropertyInquiry | undefined>;
   createPropertyInquiry(inquiry: InsertPropertyInquiry): Promise<PropertyInquiry>;
   updatePropertyInquiry(id: number, inquiry: Partial<InsertPropertyInquiry>): Promise<PropertyInquiry | undefined>;
   deletePropertyInquiry(id: number): Promise<boolean>;
-  
+
   // Favorites methods
   getUserFavorites(userId: number): Promise<Favorite[]>;
   getFavoriteProperties(userId: number): Promise<Property[]>;
   isFavorite(userId: number, propertyId: number): Promise<boolean>;
   addFavorite(favorite: InsertFavorite): Promise<Favorite>;
   removeFavorite(userId: number, propertyId: number): Promise<boolean>;
-  
+
   // Init Data
   initializeData(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
   sessionStore: session.Store;
-  
+
   constructor() {
     // 세션 저장소 설정 (PostgreSQL) - cookie_parse, serializer 옵션 추가
     this.sessionStore = new PostgresSessionStore({
@@ -100,14 +102,14 @@ export class DatabaseStorage implements IStorage {
       schemaName: 'public', // 스키마 명시적 지정
     });
   }
-  
+
   // Property methods
   async getProperties(): Promise<Property[]> {
     const results = await db.select()
       .from(properties)
       .where(eq(properties.isVisible, true))
       .orderBy(asc(properties.displayOrder), desc(properties.createdAt));
-    
+
     // 호환성을 위해 각 속성에 imageUrls 필드를 추가합니다
     return results.map(property => ({
       ...property,
@@ -117,66 +119,66 @@ export class DatabaseStorage implements IStorage {
 
   async getAllProperties(): Promise<Property[]> {
     const results = await db.select().from(properties).orderBy(asc(properties.displayOrder), desc(properties.createdAt));
-    
+
     // 호환성을 위해 각 속성에 imageUrls 필드를 추가합니다
     return results.map(property => ({
       ...property,
       imageUrls: property.imageUrls || [] // imageUrls가 null이면 빈 배열로 초기화
     }));
   }
-  
+
   async getProperty(id: number): Promise<Property | undefined> {
     const result = await db.select().from(properties).where(eq(properties.id, id));
-    
+
     if (!result[0]) return undefined;
-    
+
     // 호환성을 위해 imageUrls 필드를 추가합니다
     return {
       ...result[0],
       imageUrls: result[0].imageUrls || [] // imageUrls가 null이면 빈 배열로 초기화
     };
   }
-  
+
   async getFeaturedProperties(limit: number = 20): Promise<Property[]> {
     const results = await db.select()
       .from(properties)
       .where(and(eq(properties.featured, true), eq(properties.isVisible, true)))
       .orderBy(asc(properties.displayOrder), desc(properties.createdAt))
       .limit(limit);
-      
+
     // 호환성을 위해 각 속성에 imageUrls 필드를 추가합니다
     return results.map(property => ({
       ...property,
       imageUrls: property.imageUrls || [] // imageUrls가 null이면 빈 배열로 초기화
     }));
   }
-  
+
   async getPropertiesByType(type: string): Promise<Property[]> {
     const results = await db.select()
       .from(properties)
       .where(and(eq(properties.type, type), eq(properties.isVisible, true)))
       .orderBy(asc(properties.displayOrder), desc(properties.createdAt));
-      
+
     // 호환성을 위해 각 속성에 imageUrls 필드를 추가합니다  
     return results.map(property => ({
       ...property,
       imageUrls: property.imageUrls || []
     }));
   }
-  
+
   async getPropertiesByDistrict(district: string): Promise<Property[]> {
     const results = await db.select()
       .from(properties)
       .where(and(eq(properties.district, district), eq(properties.isVisible, true)))
       .orderBy(asc(properties.displayOrder), desc(properties.createdAt));
-      
+
     // 호환성을 위해 각 속성에 imageUrls 필드를 추가합니다
     return results.map(property => ({
       ...property,
       imageUrls: property.imageUrls || []
     }));
   }
-  
+
   async getPropertiesByPriceRange(min: number, max: number): Promise<Property[]> {
     const results = await db.select()
       .from(properties)
@@ -188,14 +190,14 @@ export class DatabaseStorage implements IStorage {
         )
       )
       .orderBy(asc(properties.displayOrder), desc(properties.createdAt));
-      
+
     // 호환성을 위해 각 속성에 imageUrls 필드를 추가합니다
     return results.map(property => ({
       ...property,
       imageUrls: property.imageUrls || []
     }));
   }
-  
+
   async createProperty(property: InsertProperty): Promise<Property> {
     // imageUrls 필드가 없거나 유효하지 않으면 빈 배열로 설정
     const propertyWithDefaultValues = {
@@ -203,32 +205,32 @@ export class DatabaseStorage implements IStorage {
       imageUrls: property.imageUrls || [],
       createdAt: new Date()
     };
-    
+
     const result = await db.insert(properties)
       .values(propertyWithDefaultValues)
       .returning();
-    
+
     // 호환성을 위해 imageUrls 필드가 있는지 확인
     return {
       ...result[0],
       imageUrls: result[0].imageUrls || []
     };
   }
-  
+
   async updateProperty(id: number, property: Partial<InsertProperty>): Promise<Property | undefined> {
     const result = await db.update(properties)
       .set(property)
       .where(eq(properties.id, id))
       .returning();
-    
+
     return result[0];
   }
-  
+
   async deleteProperty(id: number): Promise<boolean> {
     const result = await db.delete(properties)
       .where(eq(properties.id, id))
       .returning();
-    
+
     return result.length > 0;
   }
 
@@ -237,7 +239,7 @@ export class DatabaseStorage implements IStorage {
       .set({ displayOrder: newOrder })
       .where(eq(properties.id, propertyId))
       .returning();
-    
+
     return result.length > 0;
   }
 
@@ -246,7 +248,7 @@ export class DatabaseStorage implements IStorage {
       .set({ isVisible })
       .where(eq(properties.id, propertyId))
       .returning();
-    
+
     return result.length > 0;
   }
 
@@ -255,22 +257,58 @@ export class DatabaseStorage implements IStorage {
       .set({ featured })
       .where(eq(properties.id, propertyId))
       .returning();
-    
+
     return result.length > 0;
   }
-  
-  // Agent methods - 제거됨
-  
+
+  // Agent methods
+  async getAgents(): Promise<Agent[]> {
+    return await db.select().from(agents).where(eq(agents.isActive, true)).orderBy(asc(agents.id));
+  }
+
+  async getAgent(id: number): Promise<Agent | undefined> {
+    const result = await db.select().from(agents).where(eq(agents.id, id));
+    return result[0];
+  }
+
+  async createAgent(agent: InsertAgent): Promise<Agent> {
+    const result = await db.insert(agents)
+      .values({
+        ...agent,
+        createdAt: new Date()
+      })
+      .returning();
+
+    return result[0];
+  }
+
+  async updateAgent(id: number, agent: Partial<InsertAgent>): Promise<Agent | undefined> {
+    const result = await db.update(agents)
+      .set(agent)
+      .where(eq(agents.id, id))
+      .returning();
+
+    return result[0];
+  }
+
+  async deleteAgent(id: number): Promise<boolean> {
+    const result = await db.delete(agents)
+      .where(eq(agents.id, id))
+      .returning();
+
+    return result.length > 0;
+  }
+
   // Inquiry methods
   async getInquiries(): Promise<Inquiry[]> {
     return await db.select().from(inquiries).orderBy(desc(inquiries.createdAt));
   }
-  
+
   async getInquiry(id: number): Promise<Inquiry | undefined> {
     const result = await db.select().from(inquiries).where(eq(inquiries.id, id));
     return result[0];
   }
-  
+
   async createInquiry(inquiry: InsertInquiry): Promise<Inquiry> {
     const result = await db.insert(inquiries)
       .values({
@@ -278,23 +316,21 @@ export class DatabaseStorage implements IStorage {
         createdAt: new Date()
       })
       .returning();
-    
+
     return result[0];
   }
-  
-  // Testimonial methods - 제거됨
-  
+
   // User methods
   async getUser(id: number): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.id, id));
     return result[0];
   }
-  
+
   async getUserByUsername(username: string): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.username, username));
     return result[0];
   }
-  
+
   async createUser(insertUser: InsertUser): Promise<User> {
     const result = await db.insert(users)
       .values({
@@ -302,31 +338,31 @@ export class DatabaseStorage implements IStorage {
         role: insertUser.role || "user"
       })
       .returning();
-    
+
     return result[0];
   }
-  
+
   async getAllUsers(): Promise<User[]> {
     return await db.select().from(users);
   }
-  
+
   async updateUser(id: number, userData: Partial<InsertUser>): Promise<User | undefined> {
     const result = await db.update(users)
       .set(userData)
       .where(eq(users.id, id))
       .returning();
-    
+
     return result[0];
   }
-  
+
   async deleteUser(id: number): Promise<boolean> {
     const result = await db.delete(users)
       .where(eq(users.id, id))
       .returning();
-    
+
     return result.length > 0;
   }
-  
+
   // News methods
   async getNews(): Promise<News[]> {
     try {
@@ -336,7 +372,7 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
-  
+
   async getLatestNews(limit: number = 6): Promise<News[]> {
     try {
       return await db.select()
@@ -348,7 +384,7 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
-  
+
   async getNewsById(id: number): Promise<News | undefined> {
     try {
       const result = await db.select().from(news).where(eq(news.id, id));
@@ -358,7 +394,7 @@ export class DatabaseStorage implements IStorage {
       return undefined;
     }
   }
-  
+
   async getNewsByCategory(category: string): Promise<News[]> {
     try {
       return await db.select()
@@ -370,7 +406,7 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
-  
+
   async createNews(newsItem: InsertNews): Promise<News> {
     try {
       const result = await db.insert(news)
@@ -379,41 +415,41 @@ export class DatabaseStorage implements IStorage {
           createdAt: new Date()
         })
         .returning();
-      
+
       return result[0];
     } catch (error) {
       console.error("Error creating news:", error);
       throw error;
     }
   }
-  
+
   async updateNews(id: number, newsItem: Partial<InsertNews>): Promise<News | undefined> {
     try {
       const result = await db.update(news)
         .set(newsItem)
         .where(eq(news.id, id))
         .returning();
-      
+
       return result[0];
     } catch (error) {
       console.error("Error updating news:", error);
       return undefined;
     }
   }
-  
+
   async deleteNews(id: number): Promise<boolean> {
     try {
       const result = await db.delete(news)
         .where(eq(news.id, id))
         .returning();
-      
+
       return result.length > 0;
     } catch (error) {
       console.error("Error deleting news:", error);
       return false;
     }
   }
-  
+
   // 초기 데이터 설정
   async initializeData(): Promise<void> {
     // 관리자 계정 생성
@@ -424,16 +460,22 @@ export class DatabaseStorage implements IStorage {
         password: await hashPassword("adminpass"),
         role: "admin"
       });
-      
+
       // 일반 사용자 계정 생성
       await this.createUser({
         username: "user",
         password: await hashPassword("userpass"),
         role: "user"
       });
-      
-      // 중개사 데이터 - 제거됨
-      
+
+      // 중개사 데이터 초기화
+      await this.createAgent({
+        name: "이가이버부동산",
+        contact: "010-1234-5678",
+        email: "eguyer@example.com",
+        isActive: true
+      });
+
       // 부동산 데이터
       const properties: InsertProperty[] = [
         {
@@ -446,6 +488,7 @@ export class DatabaseStorage implements IStorage {
           size: "84.12",
           bedrooms: 3,
           bathrooms: 2,
+          agentId: 1, // 이가이버부동산 ID
           imageUrl: "https://images.unsplash.com/photo-1592595896616-c37162298647?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500",
           featured: true
         },
@@ -459,6 +502,7 @@ export class DatabaseStorage implements IStorage {
           size: "165.3",
           bedrooms: 4,
           bathrooms: 3,
+          agentId: 1, // 이가이버부동산 ID
           imageUrl: "https://images.unsplash.com/photo-1570129477492-45c003edd2be?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500",
           featured: true
         },
@@ -472,6 +516,7 @@ export class DatabaseStorage implements IStorage {
           size: "45.9",
           bedrooms: 1,
           bathrooms: 1,
+          agentId: 1, // 이가이버부동산 ID
           imageUrl: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500",
           featured: true
         },
@@ -485,6 +530,7 @@ export class DatabaseStorage implements IStorage {
           size: "109.5",
           bedrooms: 4,
           bathrooms: 2,
+          agentId: 1, // 이가이버부동산 ID
           imageUrl: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500",
           featured: true
         },
@@ -498,6 +544,7 @@ export class DatabaseStorage implements IStorage {
           size: "92.7",
           bedrooms: 3,
           bathrooms: 2,
+          agentId: 1, // 이가이버부동산 ID
           imageUrl: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500",
           featured: true
         },
@@ -511,17 +558,16 @@ export class DatabaseStorage implements IStorage {
           size: "198.3",
           bedrooms: 5,
           bathrooms: 3,
+          agentId: 1, // 이가이버부동산 ID
           imageUrl: "https://images.unsplash.com/photo-1493809842364-78817add7ffb?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500",
           featured: true
         }
       ];
-      
+
       for (const property of properties) {
         await this.createProperty(property);
       }
-      
-      // 후기 데이터 - 제거됨
-      
+
       // 뉴스 데이터
       const newsItems: InsertNews[] = [
         {
@@ -597,13 +643,17 @@ export class DatabaseStorage implements IStorage {
           isPinned: false
         }
       ];
-      
+
+      for (const property of properties) {
+        await this.createProperty(property);
+      }
+
       for (const newsItem of newsItems) {
         await this.createNews(newsItem);
       }
     }
   }
-  
+
   // Property Inquiry methods
   async getPropertyInquiries(propertyId: number): Promise<(PropertyInquiry & { authorUsername?: string })[]> {
     try {
@@ -765,7 +815,7 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
-  
+
   async getFavoriteProperties(userId: number): Promise<Property[]> {
     try {
       const favs = await db.select({
@@ -773,15 +823,15 @@ export class DatabaseStorage implements IStorage {
         })
         .from(favorites)
         .where(eq(favorites.userId, userId));
-      
+
       if (favs.length === 0) return [];
-      
+
       const propertyIds = favs.map(f => f.propertyId);
-      
+
       const results = await db.select()
         .from(properties)
         .where(inArray(properties.id, propertyIds));
-      
+
       // 호환성을 위한 imageUrls 처리
       return results.map(property => ({
         ...property,
@@ -792,7 +842,7 @@ export class DatabaseStorage implements IStorage {
       return [];
     }
   }
-  
+
   async isFavorite(userId: number, propertyId: number): Promise<boolean> {
     try {
       const result = await db.select()
@@ -801,14 +851,14 @@ export class DatabaseStorage implements IStorage {
           eq(favorites.userId, userId),
           eq(favorites.propertyId, propertyId)
         ));
-      
+
       return result.length > 0;
     } catch (error) {
       console.error("Error checking if property is favorite:", error);
       return false;
     }
   }
-  
+
   async addFavorite(favorite: InsertFavorite): Promise<Favorite> {
     try {
       // 이미 존재하는지 확인
@@ -816,21 +866,21 @@ export class DatabaseStorage implements IStorage {
       if (existing) {
         throw new Error("이미 관심 매물로 등록되어 있습니다.");
       }
-      
+
       const result = await db.insert(favorites)
         .values({
           ...favorite,
           createdAt: new Date()
         })
         .returning();
-      
+
       return result[0];
     } catch (error) {
       console.error("Error adding favorite:", error);
       throw error;
     }
   }
-  
+
   async removeFavorite(userId: number, propertyId: number): Promise<boolean> {
     try {
       const result = await db.delete(favorites)
@@ -839,7 +889,7 @@ export class DatabaseStorage implements IStorage {
           eq(favorites.propertyId, propertyId)
         ))
         .returning();
-      
+
       return result.length > 0;
     } catch (error) {
       console.error("Error removing favorite:", error);

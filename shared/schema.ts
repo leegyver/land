@@ -73,7 +73,26 @@ export const insertPropertySchema = createInsertSchema(properties).omit({
   createdAt: true,
 });
 
-// Agent schema - REMOVED
+// Agent schema
+export const agents = pgTable("agents", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email"),
+  phone: text("phone"),
+  position: text("position"), // 직책
+  photo: text("photo"), // 프로필 사진 URL
+  bio: text("bio"), // 소개
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertAgentSchema = createInsertSchema(agents).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type Agent = typeof agents.$inferSelect;
+export type InsertAgent = z.infer<typeof insertAgentSchema>;
 
 // Inquiry schema
 export const inquiries = pgTable("inquiries", {
@@ -116,7 +135,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export type Property = typeof properties.$inferSelect;
 export type InsertProperty = z.infer<typeof insertPropertySchema>;
 
-// Agent types - REMOVED
+// Agent types are defined above
 
 export type Inquiry = typeof inquiries.$inferSelect;
 export type InsertInquiry = z.infer<typeof insertInquirySchema>;

@@ -166,7 +166,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Agents API - 제거됨
+  // Agents API
+  app.get("/api/agents", async (req, res) => {
+    try {
+      const agents = await storage.getAgents();
+      res.json(agents);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch agents" });
+    }
+  });
+
+  app.get("/api/agents/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const agent = await storage.getAgent(id);
+
+      if (!agent) {
+        return res.status(404).json({ message: "Agent not found" });
+      }
+
+      res.json(agent);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch agent" });
+    }
+  });
+
+  app.post("/api/agents", async (req, res) => {
+    try {
+      // 인증 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const user = req.user as Express.User;
+      if (user.role !== "admin") {
+        return res.status(403).json({ message: "Admin permission required" });
+      }
+
+      const agent = await storage.createAgent(req.body);
+      res.status(201).json(agent);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create agent" });
+    }
+  });
+
+  app.patch("/api/agents/:id", async (req, res) => {
+    try {
+      // 인증 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const user = req.user as Express.User;
+      if (user.role !== "admin") {
+        return res.status(403).json({ message: "Admin permission required" });
+      }
+
+      const id = parseInt(req.params.id);
+      const agent = await storage.updateAgent(id, req.body);
+      
+      if (!agent) {
+        return res.status(404).json({ message: "Agent not found" });
+      }
+
+      res.json(agent);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update agent" });
+    }
+  });
+
+  app.delete("/api/agents/:id", async (req, res) => {
+    try {
+      // 인증 확인
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const user = req.user as Express.User;
+      if (user.role !== "admin") {
+        return res.status(403).json({ message: "Admin permission required" });
+      }
+
+      const id = parseInt(req.params.id);
+      const result = await storage.deleteAgent(id);
+
+      if (result) {
+        res.json({ success: true });
+      } else {
+        res.status(404).json({ message: "Agent not found" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete agent" });
+    }
+  });
 
   // Testimonials API - 제거됨
 

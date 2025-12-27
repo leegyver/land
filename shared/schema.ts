@@ -47,7 +47,8 @@ export const properties = pgTable("properties", {
   
   // 금액 정보
   dealType: text("deal_type").array(), // 거래종류 (매매, 전세, 월세, 완료, 보류중) - 다중선택
-  deposit: numeric("deposit"), // 전세금/보증금
+  deposit: numeric("deposit"), // 전세금
+  depositAmount: numeric("deposit_amount"), // 보증금
   monthlyRent: numeric("monthly_rent"), // 월세
   maintenanceFee: numeric("maintenance_fee"), // 관리비
   

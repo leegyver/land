@@ -1724,9 +1724,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       log(`데이터 가져오기 시작: 스프레드시트=${spreadsheetId}, 날짜필터=${filterDate}, 건너뛸 주소: ${skipAddresses?.length || 0}개`, 'info');
+      log(`전달받은 ranges 파라미터: ${JSON.stringify(ranges)}`, 'info');
 
       // 여러 시트에서 데이터 가져오기 (한글 시트 이름 사용)
       const sheetRanges = ranges || ["토지!A2:BA", "주택!A2:BA", "아파트외!A2:BA", "상가외!A2:BA"];
+      log(`처리할 시트 목록: ${JSON.stringify(sheetRanges)}`, 'info');
       let totalCount = 0;
       let allImportedIds: number[] = [];
       let allErrors: string[] = [];

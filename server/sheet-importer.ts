@@ -298,17 +298,27 @@ export async function importPropertiesFromSheet(
         const collectImageUrls = (): string[] => {
           const imageColumns = [COL.AV, COL.AW, COL.AX, COL.AY, COL.AZ];
           const urls: string[] = [];
-          log(`행 ${i+2}: 이미지 열 확인 - 행 길이: ${row.length}, AV(${COL.AV}), AW(${COL.AW}), AX(${COL.AX}), AY(${COL.AY}), AZ(${COL.AZ})`, 'info');
+          console.log(`[이미지] 행 ${i+2}: 이미지 열 확인 시작 - 행 길이: ${row.length}`);
           for (const col of imageColumns) {
             if (col < row.length) {
-              const url = row[col]?.toString().trim() || '';
-              log(`행 ${i+2}: 열 ${col} 값: "${url.substring(0, 50)}${url.length > 50 ? '...' : ''}"`, 'info');
-              if (url && url.length > 0 && (url.startsWith('http') || url.startsWith('//'))) {
-                urls.push(url.startsWith('//') ? 'https:' + url : url);
+              const rawValue = row[col];
+              const url = rawValue?.toString().trim() || '';
+              console.log(`[이미지] 행 ${i+2}: 열 ${col} 원본값: "${String(rawValue).substring(0, 80)}", 타입: ${typeof rawValue}`);
+              
+              // URL 검증 - 공백 제거 후 http/https 체크
+              const cleanUrl = url.replace(/\s+/g, '');
+              if (cleanUrl && cleanUrl.length > 0) {
+                if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://') || cleanUrl.startsWith('//')) {
+                  const finalUrl = cleanUrl.startsWith('//') ? 'https:' + cleanUrl : cleanUrl;
+                  console.log(`[이미지] 행 ${i+2}: 유효한 URL 발견: ${finalUrl.substring(0, 60)}...`);
+                  urls.push(finalUrl);
+                } else {
+                  console.log(`[이미지] 행 ${i+2}: 열 ${col} - URL 형식이 아님 (http/https로 시작하지 않음)`);
+                }
               }
             }
           }
-          log(`행 ${i+2}: 총 ${urls.length}개의 유효한 이미지 URL 발견`, 'info');
+          console.log(`[이미지] 행 ${i+2}: 총 ${urls.length}개의 유효한 이미지 URL 발견`);
           return urls;
         };
 

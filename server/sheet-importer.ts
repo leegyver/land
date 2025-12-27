@@ -298,29 +298,36 @@ export async function importPropertiesFromSheet(
         const collectImageUrls = (): string[] => {
           const imageColumns = [COL.AV, COL.AW, COL.AX, COL.AY, COL.AZ];
           const urls: string[] = [];
-          log(`[이미지] 행 ${i+2}: 이미지 열 확인 시작 - 행 길이: ${row.length}, 이미지열 인덱스: ${imageColumns.join(',')}`, 'info');
+          console.log(`\n=== 이미지 수집 행 ${i+2} ===`);
+          console.log(`행 길이: ${row.length}, 이미지열: AV(${COL.AV}), AW(${COL.AW}), AX(${COL.AX}), AY(${COL.AY}), AZ(${COL.AZ})`);
+          
+          // 디버깅: 이미지 열 주변의 실제 데이터 출력 (AT=45, AU=46, AV=47, AW=48, AX=49, AY=50, AZ=51, BA=52)
+          console.log(`열 45(AT-제목) 값: "${(row[45] || '').toString().substring(0, 60)}"`);
+          console.log(`열 46(AU-설명) 값: "${(row[46] || '').toString().substring(0, 60)}"`);
+          console.log(`열 47(AV-이미지1) 값: "${(row[47] || '').toString().substring(0, 80)}"`);
+          console.log(`열 48(AW-이미지2) 값: "${(row[48] || '').toString().substring(0, 80)}"`);
+          console.log(`열 49(AX-이미지3) 값: "${(row[49] || '').toString().substring(0, 80)}"`);
+          console.log(`열 50(AY-이미지4) 값: "${(row[50] || '').toString().substring(0, 80)}"`);
+          console.log(`열 51(AZ-이미지5) 값: "${(row[51] || '').toString().substring(0, 80)}"`);
+          console.log(`열 52(BA-유튜브) 값: "${(row[52] || '').toString().substring(0, 80)}"`);
+          
           for (const col of imageColumns) {
-            if (col < row.length) {
-              const rawValue = row[col];
-              const url = rawValue?.toString().trim() || '';
-              log(`[이미지] 행 ${i+2}: 열 ${col} 원본값: "${String(rawValue).substring(0, 100)}", 타입: ${typeof rawValue}`, 'info');
-              
-              // URL 검증 - 공백 제거 후 http/https 체크
-              const cleanUrl = url.replace(/\s+/g, '');
-              if (cleanUrl && cleanUrl.length > 0) {
-                if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://') || cleanUrl.startsWith('//')) {
-                  const finalUrl = cleanUrl.startsWith('//') ? 'https:' + cleanUrl : cleanUrl;
-                  log(`[이미지] 행 ${i+2}: 유효한 URL 발견: ${finalUrl.substring(0, 80)}...`, 'info');
-                  urls.push(finalUrl);
-                } else {
-                  log(`[이미지] 행 ${i+2}: 열 ${col} - URL 형식이 아님 (값: ${cleanUrl.substring(0, 50)})`, 'info');
-                }
+            const rawValue = row[col];
+            const url = rawValue?.toString().trim() || '';
+            
+            // URL 검증 - 공백 제거 후 http/https 체크
+            const cleanUrl = url.replace(/\s+/g, '');
+            if (cleanUrl && cleanUrl.length > 0) {
+              if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://') || cleanUrl.startsWith('//')) {
+                const finalUrl = cleanUrl.startsWith('//') ? 'https:' + cleanUrl : cleanUrl;
+                console.log(`>>> 유효한 URL 발견 (열 ${col}): ${finalUrl.substring(0, 80)}...`);
+                urls.push(finalUrl);
+              } else {
+                console.log(`열 ${col}: URL 형식 아님 - "${cleanUrl.substring(0, 50)}"`);
               }
-            } else {
-              log(`[이미지] 행 ${i+2}: 열 ${col}이 행 길이(${row.length})를 초과`, 'info');
             }
           }
-          log(`[이미지] 행 ${i+2}: 총 ${urls.length}개의 유효한 이미지 URL 발견`, 'info');
+          console.log(`=== 행 ${i+2}: 총 ${urls.length}개 이미지 URL ===\n`);
           return urls;
         };
 

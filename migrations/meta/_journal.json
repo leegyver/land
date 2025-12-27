@@ -8,6 +8,13 @@
       "when": 1766836747599,
       "tag": "0000_shiny_ultimates",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1766838334726,
+      "tag": "0001_curved_luckman",
+      "breakpoints": true
     }
   ]
 }

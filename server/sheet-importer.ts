@@ -162,6 +162,15 @@ export async function importPropertiesFromSheet(
           const numStr = val.replace(/[^0-9.-]/g, '');
           return numStr || null;
         };
+        
+        // 금액 필드용 함수 (만원 → 원 변환: *10000)
+        const getMoneyValue = (idx: number): string | null => {
+          const val = getNumericValue(idx);
+          if (!val || val === '0') return null;
+          const numericVal = parseFloat(val);
+          if (isNaN(numericVal)) return null;
+          return String(Math.round(numericVal * 10000));
+        };
         const getBooleanValue = (idx: number): boolean => {
           const val = getValue(idx).toLowerCase();
           return val === 'true' || val === '1' || val === 'yes' || val === '예' || val === 'o';
@@ -177,12 +186,17 @@ export async function importPropertiesFromSheet(
         const collectImageUrls = (): string[] => {
           const imageColumns = [COL.AV, COL.AW, COL.AX, COL.AY, COL.AZ];
           const urls: string[] = [];
+          log(`행 ${i+2}: 이미지 열 확인 - 행 길이: ${row.length}, AV(${COL.AV}), AW(${COL.AW}), AX(${COL.AX}), AY(${COL.AY}), AZ(${COL.AZ})`, 'info');
           for (const col of imageColumns) {
-            const url = getValue(col);
-            if (url && url.length > 0) {
-              urls.push(url);
+            if (col < row.length) {
+              const url = row[col]?.toString().trim() || '';
+              log(`행 ${i+2}: 열 ${col} 값: "${url.substring(0, 50)}${url.length > 50 ? '...' : ''}"`, 'info');
+              if (url && url.length > 0 && (url.startsWith('http') || url.startsWith('//'))) {
+                urls.push(url.startsWith('//') ? 'https:' + url : url);
+              }
             }
           }
+          log(`행 ${i+2}: 총 ${urls.length}개의 유효한 이미지 URL 발견`, 'info');
           return urls;
         };
 
@@ -251,11 +265,11 @@ export async function importPropertiesFromSheet(
           landType: getValue(COL.D) || null,
           zoneType: getValue(COL.E) || null,
           
-          // 금액 정보
+          // 금액 정보 (만원 → 원 변환)
           dealType: dealTypeArray,
-          deposit: getNumericValue(COL.AF),
-          depositAmount: getNumericValue(COL.AG),
-          monthlyRent: getNumericValue(COL.AH),
+          deposit: getMoneyValue(COL.AF),
+          depositAmount: getMoneyValue(COL.AG),
+          monthlyRent: getMoneyValue(COL.AH),
           maintenanceFee: getNumericValue(COL.AI),
           
           // 연락처 정보

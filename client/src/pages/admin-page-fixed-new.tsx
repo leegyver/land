@@ -516,6 +516,7 @@ export default function AdminPage() {
   // 일괄 삭제 뮤테이션
   const batchDeleteMutation = useMutation({
     mutationFn: async ({ type, ids }: { type: 'properties' | 'news' | 'users', ids: number[] }) => {
+      console.log(`일괄 삭제 요청: type=${type}, ids=`, ids);
       const endpoint = `/api/admin/batch-delete/${type}`;
       const res = await apiRequest("POST", endpoint, { ids });
       return res;
@@ -642,6 +643,9 @@ export default function AdminPage() {
   const handleBatchDelete = () => {
     if (!currentDeleteType) return;
     
+    console.log(`handleBatchDelete 호출: currentDeleteType=${currentDeleteType}`);
+    console.log(`selectedProperties:`, selectedProperties);
+    
     switch (currentDeleteType) {
       case 'properties':
         if (selectedProperties.length === 0) {
@@ -652,7 +656,8 @@ export default function AdminPage() {
           });
           return;
         }
-        batchDeleteMutation.mutate({ type: 'properties', ids: selectedProperties });
+        console.log(`삭제할 부동산 IDs: ${selectedProperties.join(', ')}`);
+        batchDeleteMutation.mutate({ type: 'properties', ids: [...selectedProperties] });
         break;
         
       case 'news':

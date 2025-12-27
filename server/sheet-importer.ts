@@ -55,8 +55,8 @@ const COL = {
 export async function importPropertiesFromSheet(
   spreadsheetId: string,
   apiKey: string,
-  range: string = 'Sheet1!A2:BA',
-  filterDate?: string // 필터링할 날짜 (YYYY-MM-DD 형식)
+  range: string = '토지!A2:BA', // 기본값을 한글 시트 이름으로 변경
+  filterDate: string // 필터링할 날짜 (YYYY-MM-DD 형식) - 필수
 ): Promise<{
   success: boolean;
   count?: number;
@@ -79,15 +79,12 @@ export async function importPropertiesFromSheet(
       return { success: false, error: '시트에 데이터가 없습니다.' };
     }
 
-    log(`구글 시트에서 ${rows.length}개의 행을 찾았습니다.`, 'info');
+    log(`구글 시트에서 ${rows.length}개의 행을 찾았습니다. (시트: ${range})`, 'info');
 
-    // 필터 날짜가 있으면 Date 객체로 변환
-    let filterDateTime: Date | null = null;
-    if (filterDate) {
-      filterDateTime = new Date(filterDate);
-      filterDateTime.setHours(0, 0, 0, 0);
-      log(`날짜 필터 적용: ${filterDate} 이후의 데이터만 가져옵니다.`, 'info');
-    }
+    // 필터 날짜를 Date 객체로 변환 (필수)
+    const filterDateTime = new Date(filterDate);
+    filterDateTime.setHours(0, 0, 0, 0);
+    log(`날짜 필터 적용: ${filterDate} 이후의 데이터만 가져옵니다.`, 'info');
 
     // 가져온 프로퍼티 ID 목록
     const importedIds: number[] = [];
@@ -105,36 +102,55 @@ export async function importPropertiesFromSheet(
           continue;
         }
 
-        // A열(인덱스 0)의 날짜 확인 및 필터링
-        if (filterDateTime && row[COL.A]) {
-          const rowDateStr = row[COL.A];
-          let rowDate: Date;
-          
-          // 다양한 날짜 형식 처리
-          if (rowDateStr.includes('/')) {
-            // MM/DD/YYYY 또는 YYYY/MM/DD 형식
-            const parts = rowDateStr.split('/');
-            if (parts[0].length === 4) {
-              rowDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-            } else {
-              rowDate = new Date(parseInt(parts[2]), parseInt(parts[0]) - 1, parseInt(parts[1]));
-            }
-          } else if (rowDateStr.includes('-')) {
-            // YYYY-MM-DD 형식
-            rowDate = new Date(rowDateStr);
-          } else {
-            rowDate = new Date(rowDateStr);
-          }
-          
-          rowDate.setHours(0, 0, 0, 0);
-          
-          if (isNaN(rowDate.getTime())) {
-            log(`행 ${i+2}: 날짜 형식이 올바르지 않습니다 (${rowDateStr})`, 'warn');
-          } else if (rowDate < filterDateTime) {
-            log(`행 ${i+2}: 날짜 필터로 제외됨 (${rowDateStr} < ${filterDate})`, 'info');
-            continue;
-          }
+        // A열(인덱스 0)의 날짜 확인 및 필터링 (필수)
+        const rowDateStr = row[COL.A]?.toString().trim();
+        
+        // A열에 날짜가 없으면 스킵
+        if (!rowDateStr) {
+          log(`행 ${i+2}: A열에 날짜가 없어 스킵됨`, 'info');
+          continue;
         }
+        
+        let rowDate: Date;
+        
+        // 다양한 날짜 형식 처리
+        if (rowDateStr.includes('/')) {
+          // MM/DD/YYYY 또는 YYYY/MM/DD 형식
+          const parts = rowDateStr.split('/');
+          if (parts[0].length === 4) {
+            rowDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+          } else {
+            rowDate = new Date(parseInt(parts[2]), parseInt(parts[0]) - 1, parseInt(parts[1]));
+          }
+        } else if (rowDateStr.includes('-')) {
+          // YYYY-MM-DD 형식
+          rowDate = new Date(rowDateStr);
+        } else if (rowDateStr.includes('.')) {
+          // YYYY.MM.DD 또는 MM.DD.YYYY 형식
+          const parts = rowDateStr.split('.');
+          if (parts[0].length === 4) {
+            rowDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+          } else {
+            rowDate = new Date(parseInt(parts[2]), parseInt(parts[0]) - 1, parseInt(parts[1]));
+          }
+        } else {
+          rowDate = new Date(rowDateStr);
+        }
+        
+        rowDate.setHours(0, 0, 0, 0);
+        
+        if (isNaN(rowDate.getTime())) {
+          log(`행 ${i+2}: 날짜 형식이 올바르지 않습니다 (${rowDateStr}), 스킵됨`, 'warn');
+          continue;
+        }
+        
+        // 날짜 필터 적용: 선택한 날짜 이후(같거나 이후)의 데이터만 가져오기
+        if (rowDate < filterDateTime) {
+          log(`행 ${i+2}: 날짜 필터로 제외됨 (${rowDateStr} < ${filterDate})`, 'info');
+          continue;
+        }
+        
+        log(`행 ${i+2}: 날짜 필터 통과 (${rowDateStr} >= ${filterDate})`, 'info');
 
         // 안전하게 값 가져오기
         const getValue = (idx: number): string => row[idx]?.toString().trim() || '';

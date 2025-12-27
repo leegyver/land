@@ -1580,11 +1580,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { type } = req.params;
       const { ids } = req.body;
 
+      console.log(`일괄 삭제 API 호출: type=${type}, body=`, req.body);
+      console.log(`ids 타입: ${typeof ids}, 배열여부: ${Array.isArray(ids)}, 값:`, ids);
+
       if (!Array.isArray(ids) || ids.length === 0) {
         return res.status(400).json({ message: "유효한 ID 목록이 필요합니다." });
       }
 
-      console.log(`일괄 삭제 요청: ${type}, IDs:`, ids);
+      console.log(`일괄 삭제 처리 시작: ${type}, 삭제할 ID 개수: ${ids.length}, IDs:`, ids);
 
       let successCount = 0;
 
@@ -1669,8 +1672,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "스프레드시트 ID는 필수입니다." });
       }
 
-      // 여러 시트에서 데이터 가져오기
-      const sheetRanges = ranges || ["Sheet1!A2:BA", "Sheet2!A2:BA", "Sheet3!A2:BA", "Sheet4!A2:BA"];
+      // 날짜 필터 필수 검증
+      if (!filterDate) {
+        return res.status(400).json({ success: false, error: "날짜를 반드시 선택해주세요." });
+      }
+
+      log(`데이터 가져오기 시작: 스프레드시트=${spreadsheetId}, 날짜필터=${filterDate}`, 'info');
+
+      // 여러 시트에서 데이터 가져오기 (한글 시트 이름 사용)
+      const sheetRanges = ranges || ["토지!A2:BA", "주택!A2:BA", "아파트외!A2:BA", "상가외!A2:BA"];
       let totalCount = 0;
       let allImportedIds: number[] = [];
       let allErrors: string[] = [];

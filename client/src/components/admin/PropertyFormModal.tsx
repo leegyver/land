@@ -32,6 +32,12 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Property, insertPropertySchema } from "@shared/schema";
 
+// Define Agent type (assuming it has id and name)
+type Agent = {
+  id: number;
+  name: string;
+};
+
 // 부동산 유형 목록
 const propertyTypes = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
 
@@ -221,6 +227,7 @@ const propertyFormSchema = insertPropertySchema.extend({
   deposit: z.union([z.string(), z.number()]).optional().nullable(),
   monthlyRent: z.union([z.string(), z.number()]).optional().nullable(),
   maintenanceFee: z.union([z.string(), z.number()]).optional().nullable(),
+  agentId: z.number().optional(), // agentId 추가
 });
 
 type PropertyFormValues = z.infer<typeof propertyFormSchema>;
@@ -236,7 +243,40 @@ export function PropertyFormModal({ open, onOpenChange, property }: PropertyForm
   const queryClient = useQueryClient();
   const [selectedMainDistrict, setSelectedMainDistrict] = useState("강화읍");
   const [detailedDistrictOptions, setDetailedDistrictOptions] = useState<string[]>(detailedDistricts["강화읍"]);
-  
+  const [agents, setAgents] = useState<Agent[]>([]); // 중개사 목록 상태
+
+  // 중개사 목록 가져오기
+  useEffect(() => {
+    const fetchAgents = async () => {
+      try {
+        const res = await apiRequest("GET", "/api/agents");
+        if (!res.ok) {
+          throw new Error("중개사 목록을 가져오는데 실패했습니다.");
+        }
+        const data = await res.json();
+        setAgents(data);
+        // 기본 중개사 설정
+        if (!property && data.length > 0) {
+          const defaultAgent = data.find((agent: Agent) => agent.name === "이가이버부동산");
+          if (defaultAgent) {
+            form.setValue("agentId", defaultAgent.id);
+          } else {
+            form.setValue("agentId", data[0].id); // 첫 번째 중개사를 기본값으로 설정
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching agents:", error);
+        toast({
+          title: "중개사 목록 오류",
+          description: "중개사 정보를 불러오지 못했습니다.",
+          variant: "destructive",
+        });
+      }
+    };
+    fetchAgents();
+  }, [form, property, toast]);
+
+
   // 부동산 등록/수정 폼
   const form = useForm<PropertyFormValues>({
     resolver: zodResolver(propertyFormSchema),
@@ -250,17 +290,17 @@ export function PropertyFormModal({ open, onOpenChange, property }: PropertyForm
       district: "강화읍 갑곳리", 
       address: "",
       size: "",
-      agentId: 1,
-      
+      agentId: undefined, // 기본값 undefined로 설정
+
       // 위치 정보
       buildingName: "",
       unitNumber: "",
-      
+
       // 면적 정보
       supplyArea: "",
       privateArea: "",
       areaSize: "",
-      
+
       // 건물 정보
       floor: "",
       totalFloors: "",
@@ -269,13 +309,13 @@ export function PropertyFormModal({ open, onOpenChange, property }: PropertyForm
       parking: "",
       heatingSystem: "",
       approvalDate: "",
-      
+
       // 금액 정보
       dealType: ["매매"],
       deposit: "",
       monthlyRent: "",
       maintenanceFee: "",
-      
+
       // 연락처 정보
       ownerName: "",
       ownerPhone: "",
@@ -283,13 +323,13 @@ export function PropertyFormModal({ open, onOpenChange, property }: PropertyForm
       tenantPhone: "",
       clientName: "",
       clientPhone: "",
-      
+
       // 추가 정보
       specialNote: "",
       coListing: false,
       propertyDescription: "",
       privateNote: "",
-      
+
       // 기존 필드
       bedrooms: 0,
       bathrooms: 0,
@@ -305,7 +345,7 @@ export function PropertyFormModal({ open, onOpenChange, property }: PropertyForm
       form.setValue("district", detailedDistricts[selectedMainDistrict][0]);
     }
   }, [selectedMainDistrict, form]);
-  
+
   // 읍면 변경 핸들러
   const handleDistrictChange = (value: string) => {
     setSelectedMainDistrict(value);
@@ -388,9 +428,9 @@ export function PropertyFormModal({ open, onOpenChange, property }: PropertyForm
       const mainDistrict = districts.find(d => 
         property.district.startsWith(d)
       ) || "강화읍";
-      
+
       setSelectedMainDistrict(mainDistrict);
-      
+
       // 폼 값 설정
       form.reset({
         title: property.title,
@@ -445,17 +485,17 @@ export function PropertyFormModal({ open, onOpenChange, property }: PropertyForm
         address: "",
         size: "",
         imageUrl: "",
-        agentId: 1,
-        
+        agentId: undefined, // 새 등록 시 agentId는 undefined
+
         // 위치 정보
         buildingName: "",
         unitNumber: "",
-        
+
         // 면적 정보
         supplyArea: "",
         privateArea: "",
         areaSize: "",
-        
+
         // 건물 정보
         floor: "",
         totalFloors: "",
@@ -464,13 +504,13 @@ export function PropertyFormModal({ open, onOpenChange, property }: PropertyForm
         parking: "",
         heatingSystem: "",
         approvalDate: "",
-        
+
         // 금액 정보
         dealType: ["매매"],
         deposit: "",
         monthlyRent: "",
         maintenanceFee: "",
-        
+
         // 연락처 정보
         ownerName: "",
         ownerPhone: "",
@@ -478,13 +518,13 @@ export function PropertyFormModal({ open, onOpenChange, property }: PropertyForm
         tenantPhone: "",
         clientName: "",
         clientPhone: "",
-        
+
         // 추가 정보
         specialNote: "",
         coListing: false,
         propertyDescription: "",
         privateNote: "",
-        
+
         // 기존 필드
         bedrooms: 0,
         bathrooms: 0,
@@ -502,7 +542,7 @@ export function PropertyFormModal({ open, onOpenChange, property }: PropertyForm
             {property ? "부동산 정보를 수정하세요" : "새로운 부동산 매물을 등록하세요"}
           </DialogDescription>
         </DialogHeader>
-        
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -738,7 +778,35 @@ export function PropertyFormModal({ open, onOpenChange, property }: PropertyForm
                 />
               </div>
 
-
+              <div>
+                <FormField
+                  control={form.control}
+                  name="agentId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>담당 중개사</FormLabel>
+                      <Select
+                        onValueChange={(value) => field.onChange(Number(value))}
+                        defaultValue={field.value?.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="중개사 선택" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {agents?.map((agent) => (
+                            <SelectItem key={agent.id} value={agent.id.toString()}>
+                              {agent.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <div>
                 <FormField

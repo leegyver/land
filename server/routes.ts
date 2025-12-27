@@ -1734,7 +1734,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       for (const range of sheetRanges) {
         try {
+          log(`시트 처리 시작: ${range}`, 'info');
           const result = await importPropertiesFromSheet(spreadsheetId, apiKey, range, filterDate, addressesToSkip);
+          log(`시트 처리 완료: ${range}, 성공=${result.success}, 개수=${result.count || 0}`, 'info');
           if (result.success && result.count) {
             totalCount += result.count;
             if (result.importedIds) {
@@ -1742,11 +1744,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
           if (result.error) {
+            log(`시트 오류 발생: ${range}: ${result.error}`, 'warn');
             allErrors.push(`${range}: ${result.error}`);
           }
-        } catch (sheetError) {
+        } catch (sheetError: any) {
           // 시트가 없거나 빈 경우 오류 무시하고 계속
-          log(`시트 ${range} 처리 중 오류 (무시됨): ${sheetError}`, 'warn');
+          const errorMessage = sheetError?.message || String(sheetError);
+          log(`시트 ${range} 처리 중 예외 발생: ${errorMessage}`, 'error');
+          allErrors.push(`${range}: ${errorMessage}`);
         }
       }
 

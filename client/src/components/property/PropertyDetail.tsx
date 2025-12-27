@@ -784,23 +784,28 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                 <span className="text-gray-500 text-sm">매물 가격</span>
                 <div className="text-2xl font-bold text-primary mt-1">{formatPrice(property.price)}</div>
               </div>
-              {property.dealType && Array.isArray(property.dealType) && property.dealType.includes("월세") && property.monthlyRent && (
+              {property.deposit && Number(property.deposit) > 0 && (
+                <div>
+                  <span className="text-gray-500 text-sm">전세금</span>
+                  <div className="text-lg font-medium mt-1">{formatPrice(property.deposit)}</div>
+                </div>
+              )}
+              {property.depositAmount && Number(property.depositAmount) > 0 && (
+                <div>
+                  <span className="text-gray-500 text-sm">보증금</span>
+                  <div className="text-lg font-medium mt-1">{formatPrice(property.depositAmount)}</div>
+                </div>
+              )}
+              {property.monthlyRent && Number(property.monthlyRent) > 0 && (
                 <div>
                   <span className="text-gray-500 text-sm">월세</span>
                   <div className="text-xl font-bold mt-1">{formatPrice(property.monthlyRent)}</div>
                 </div>
               )}
-              {property.maintenanceFee && (
+              {property.maintenanceFee && Number(property.maintenanceFee) > 0 && (
                 <div>
                   <span className="text-gray-500 text-sm">관리비</span>
                   <div className="text-lg font-medium mt-1">{formatPrice(property.maintenanceFee)}</div>
-                </div>
-              )}
-              
-              {property.deposit && (
-                <div>
-                  <span className="text-gray-500 text-sm">보증금</span>
-                  <div className="text-lg font-medium mt-1">{formatPrice(property.deposit)}</div>
                 </div>
               )}
               

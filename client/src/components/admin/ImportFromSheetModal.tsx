@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -13,65 +13,29 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Calendar, FileSpreadsheet, Key, Table2 } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Loader2 } from "lucide-react";
 
 interface ImportFromSheetModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const DEFAULT_SPREADSHEET_ID = import.meta.env.VITE_GOOGLE_SHEETS_ID || "";
-const DEFAULT_API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || "";
-
-const SUPPORTED_SHEETS = [
-  { name: "토지", range: "토지!A2:AT" },
-  { name: "주택", range: "주택!A2:AK" },
-  { name: "아파트연립다세대", range: "아파트연립다세대!A2:AP" },
-  { name: "서희", range: "서희!A2:AH" },
-  { name: "원투룸", range: "원투룸!A2:AS" },
-  { name: "상가공장창고펜션", range: "상가공장창고펜션!A2:AQ" },
-];
-
 export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalProps) {
   const { toast } = useToast();
-  const [spreadsheetId, setSpreadsheetId] = useState(DEFAULT_SPREADSHEET_ID);
-  const [apiKey, setApiKey] = useState(DEFAULT_API_KEY);
-  const [selectedSheet, setSelectedSheet] = useState(SUPPORTED_SHEETS[0].name);
-  const [filterDate, setFilterDate] = useState("");
-  
-  useEffect(() => {
-    if (isOpen) {
-      setSpreadsheetId(DEFAULT_SPREADSHEET_ID);
-      setApiKey(DEFAULT_API_KEY);
-    }
-  }, [isOpen]);
-  
-  const getRange = () => {
-    const sheet = SUPPORTED_SHEETS.find(s => s.name === selectedSheet);
-    return sheet?.range || "토지!A2:AT";
-  };
+  const [spreadsheetId, setSpreadsheetId] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [range, setRange] = useState("Sheet1!A2:Z");
 
   const importMutation = useMutation({
-    mutationFn: async (data: { spreadsheetId: string; apiKey: string; range: string; filterDate?: string }) => {
+    mutationFn: async (data: { spreadsheetId: string; apiKey: string; range: string }) => {
       const res = await apiRequest("POST", "/api/admin/import-from-sheet", data);
       return await res.json();
     },
     onSuccess: (data) => {
       if (data.success) {
-        const message = data.skipped 
-          ? `${data.count}개의 매물 데이터를 가져왔습니다. (${data.skipped}개 행 스킵됨)`
-          : `${data.count}개의 매물 데이터를 가져왔습니다.`;
-        
         toast({
           title: "데이터 가져오기 성공",
-          description: message,
+          description: `${data.count}개의 매물 데이터를 가져왔습니다.`,
         });
         
         // 성공 후 캐시 무효화
@@ -109,114 +73,87 @@ export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalPr
       return;
     }
     
-    importMutation.mutate({ 
-      spreadsheetId, 
-      apiKey, 
-      range: getRange(),
-      filterDate: filterDate || undefined
-    });
+    importMutation.mutate({ spreadsheetId, apiKey, range });
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>구글 스프레드시트에서 데이터 가져오기</DialogTitle>
             <DialogDescription>
-              구글 스프레드시트에서 부동산 매물 데이터를 직접 가져옵니다.
+              구글 스프레드시트에서 부동산 매물 데이터를 직접 가져옵니다. 정보를 입력해주세요.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="spreadsheetId" className="flex items-center gap-2">
-                <FileSpreadsheet className="h-4 w-4" />
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="spreadsheetId" className="text-right">
                 스프레드시트 ID
               </Label>
               <Input
                 id="spreadsheetId"
                 value={spreadsheetId}
                 onChange={(e) => setSpreadsheetId(e.target.value)}
+                className="col-span-3"
                 placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
-                data-testid="input-spreadsheet-id"
               />
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="apiKey" className="flex items-center gap-2">
-                <Key className="h-4 w-4" />
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="apiKey" className="text-right">
                 Google API 키
               </Label>
               <Input
                 id="apiKey"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
+                className="col-span-3"
                 type="password"
                 placeholder="AIzaSyD..."
-                data-testid="input-api-key"
               />
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="sheetSelect" className="flex items-center gap-2">
-                <Table2 className="h-4 w-4" />
-                시트 선택
-              </Label>
-              <Select value={selectedSheet} onValueChange={setSelectedSheet}>
-                <SelectTrigger data-testid="select-sheet">
-                  <SelectValue placeholder="시트를 선택하세요" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SUPPORTED_SHEETS.map((sheet) => (
-                    <SelectItem key={sheet.name} value={sheet.name}>
-                      {sheet.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="filterDate" className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                입력일 필터 (C열 기준)
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="range" className="text-right">
+                데이터 범위
               </Label>
               <Input
-                id="filterDate"
-                type="date"
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
-                data-testid="input-filter-date"
+                id="range"
+                value={range}
+                onChange={(e) => setRange(e.target.value)}
+                className="col-span-3"
+                placeholder="Sheet1!A2:AN"
               />
-              <p className="text-xs text-muted-foreground">
-                설정한 날짜 이후에 입력된 데이터만 가져옵니다. (C열의 날짜 기준)
-              </p>
             </div>
             
-            <details className="text-xs text-muted-foreground border rounded-md p-2">
-              <summary className="cursor-pointer font-medium">시트 포맷 안내 (클릭하여 펼치기)</summary>
-              <div className="mt-2 space-y-1">
-                <p>A:제목, B:설명, C:입력일, D:유형, E:가격, F:주소, G:지역, H:면적...</p>
-                <p>유형: 토지, 주택, 아파트연립다세대, 원투룸, 상가공장창고펜션</p>
-              </div>
-            </details>
+            <div className="col-span-4">
+              <DialogDescription className="text-xs">
+                <p className="mt-2 font-semibold">시트 포맷 안내:</p>
+                <p>A:제목, B:설명, C:유형, D:가격, E:주소, F:지역, G:면적, H:침실수, I:욕실수, J:층수, K:총층수, L:이미지URL, M:이미지URLs, N:추천매물</p>
+                <p>O:거래유형, P:건축년도, Q:보증금, R:월세, S:관리비, T:지목, U:용도지역, V:건물명, W:동호수, X:공급면적, Y:전용면적, Z:평형</p>
+                <p>AA:방향, AB:승강기(true/false), AC:주차대수, AD:난방방식, AE:사용승인일, AF:소유자, AG:소유자전화, AH:임차인, AI:임차인전화</p>
+                <p>AJ:의뢰인, AK:의뢰인전화, AL:특이사항, AM:공동중개(true/false), AN:비공개메모</p>
+                <p>
+                  유형은 다음 중 하나여야 합니다: 토지, 주택, 아파트연립다세대, 원투룸, 상가공장창고펜션
+                </p>
+              </DialogDescription>
+            </div>
           </div>
           
-          <DialogFooter className="gap-2">
+          <DialogFooter>
             <Button 
               type="button" 
               variant="outline" 
               onClick={onClose} 
               disabled={importMutation.isPending}
-              data-testid="button-cancel-import"
             >
               취소
             </Button>
             <Button 
               type="submit"
               disabled={importMutation.isPending || !spreadsheetId || !apiKey}
-              data-testid="button-submit-import"
             >
               {importMutation.isPending ? (
                 <>

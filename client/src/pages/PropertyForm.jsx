@@ -48,10 +48,15 @@ function PropertyForm() {
   // 부동산 유형별 기본 이미지 매핑
   const defaultPropertyImages = {
     '토지': landDefaultImage,
-    '주택': houseDefaultImage,
-    '아파트연립다세대': apartmentDefaultImage,
+    '단독': houseDefaultImage,
+    '근린': commercialDefaultImage,
+    '아파트': apartmentDefaultImage,
+    '다세대': apartmentDefaultImage,
+    '연립': apartmentDefaultImage,
     '원투룸': oneroomDefaultImage,
-    '상가공장창고펜션': commercialDefaultImage
+    '다가구': apartmentDefaultImage,
+    '오피스텔': apartmentDefaultImage,
+    '기타': houseDefaultImage
   };
 
   // 부동산 유형에 맞는 기본 이미지 가져오기
@@ -61,7 +66,7 @@ function PropertyForm() {
 
   // 거래 유형 정의
   const dealTypeOptions = ["매매", "전세", "월세", "완료", "보류중"];
-  const propertyTypeOptions = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
+  const propertyTypeOptions = ["토지", "단독", "근린", "아파트", "다세대", "연립", "원투룸", "다가구", "오피스텔", "기타"];
 
   // 통합된 지역 목록 (읍면동리)
   const allLocations = [
@@ -233,6 +238,7 @@ function PropertyForm() {
     // 추가 정보
     specialNote: "",
     coListing: false,
+    agentName: "", // 담당중개사 이름
     // propertyDescription 필드 삭제
     privateNote: "",
     youtubeUrl: "", // 유튜브 영상 URL
@@ -272,6 +278,7 @@ function PropertyForm() {
               elevator: Boolean(data.elevator),
               coListing: Boolean(data.coListing),
               featured: Boolean(data.featured),
+              agentName: data.agentName || "",
             });
 
             // 이미지 처리: 배열 먼저 확인하고, 없으면 단일 이미지 확인
@@ -1275,16 +1282,30 @@ function PropertyForm() {
                     />
                   </div>
 
-                  <div className="flex items-center space-x-2 pt-2">
-                    <Checkbox
-                      id="coListing"
-                      name="coListing"
-                      checked={formData.coListing}
-                      onCheckedChange={(checked) => 
-                        setFormData({ ...formData, coListing: checked })
-                      }
-                    />
-                    <Label htmlFor="coListing">공동중개</Label>
+                  <div className="flex items-center space-x-2 pt-2 gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="coListing"
+                        name="coListing"
+                        checked={formData.coListing}
+                        onCheckedChange={(checked) => 
+                          setFormData({ ...formData, coListing: checked })
+                        }
+                      />
+                      <Label htmlFor="coListing">공동중개</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2 flex-1">
+                      <Label htmlFor="agentName" className="whitespace-nowrap">담당중개사</Label>
+                      <Input
+                        id="agentName"
+                        name="agentName"
+                        value={formData.agentName || ""}
+                        onChange={handleChange}
+                        placeholder="담당중개사 이름 입력"
+                        className="flex-1"
+                      />
+                    </div>
                   </div>
 
                   {/* 매물설명 필드 삭제 요청에 따라 제거됨 */}

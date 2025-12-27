@@ -32,7 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Property, insertPropertySchema } from "@shared/schema";
 
 // 부동산 유형 목록
-const propertyTypes = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
+const propertyTypes = ["토지", "단독", "근린", "아파트", "다세대", "연립", "원투룸", "다가구", "오피스텔", "기타"];
 
 // 통합된 지역 목록 (읍면동리)
 const allLocations = [

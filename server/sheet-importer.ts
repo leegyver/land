@@ -179,7 +179,7 @@ export async function importPropertiesFromSheet(
 
         // 시트 열 매핑
         const propertyData: Partial<InsertProperty> = {
-          title: getValue(COL.AT) || getValue(COL.C) || '제목 없음',
+          title: getValue(COL.AT) || '제목을 입력하세요',
           description: getValue(COL.AU) || getValue(COL.AR) || '',
           type: mapPropertyType(getValue(COL.Y)),
           price: getNumericValue(COL.AE) || '0',

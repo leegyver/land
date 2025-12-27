@@ -3,11 +3,54 @@ import { storage } from './storage';
 import { InsertProperty } from '@shared/schema';
 import { log } from './vite';
 
+// 열 인덱스 매핑 (A=0, B=1, ... Z=25, AA=26, AB=27, ...)
+const COL = {
+  A: 0,   // 날짜
+  B: 1,   // 지역 (district)
+  C: 2,   // 주소 (address)
+  D: 3,   // 지목 (landType)
+  E: 4,   // 용도지역 (zoneType)
+  G: 6,   // 건물명 (buildingName)
+  H: 7,   // 동호수 (unitNumber)
+  J: 9,   // 면적/공급면적 (size/supplyArea)
+  M: 12,  // 전용면적 (privateArea)
+  O: 14,  // 평형 (areaSize)
+  P: 15,  // 방개수 (bedrooms)
+  Q: 16,  // 욕실개수 (bathrooms)
+  S: 18,  // 층수 (floor)
+  T: 19,  // 총층 (totalFloors)
+  U: 20,  // 방향 (direction)
+  V: 21,  // 난방방식 (heatingSystem)
+  X: 23,  // 사용승인일 (approvalDate)
+  Y: 24,  // 유형 (type)
+  AB: 27, // 승강기유무 (elevator)
+  AC: 28, // 주차 (parking)
+  AD: 29, // 거래종류 (dealType)
+  AE: 30, // 가격 (price)
+  AF: 31, // 전세금 (deposit)
+  AG: 32, // 보증금 (depositAmount)
+  AH: 33, // 월세 (monthlyRent)
+  AI: 34, // 관리비 (maintenanceFee)
+  AJ: 35, // 소유자 (ownerName)
+  AK: 36, // 소유자전화 (ownerPhone)
+  AL: 37, // 임차인 (tenantName)
+  AM: 38, // 임차인전화 (tenantPhone)
+  AN: 39, // 의뢰인 (clientName)
+  AO: 40, // 의뢰인전화 (clientPhone)
+  AP: 41, // 특이사항 (specialNote)
+  AQ: 42, // 공동중개 (coListing)
+  AR: 43, // 매물설명 (propertyDescription)
+  AS: 44, // 비공개메모 (privateNote)
+  AT: 45, // 제목 (title)
+  AU: 46, // 설명 (description)
+  BA: 52, // 유튜브URL (youtubeUrl)
+};
+
 // 구글 시트 데이터를 부동산 매물 데이터로 변환하는 함수
 export async function importPropertiesFromSheet(
   spreadsheetId: string,
   apiKey: string,
-  range: string = 'Sheet1!A2:AN',
+  range: string = 'Sheet1!A2:BA',
   filterDate?: string // 필터링할 날짜 (YYYY-MM-DD 형식)
 ): Promise<{
   success: boolean;
@@ -37,7 +80,7 @@ export async function importPropertiesFromSheet(
     let filterDateTime: Date | null = null;
     if (filterDate) {
       filterDateTime = new Date(filterDate);
-      filterDateTime.setHours(0, 0, 0, 0); // 시간 부분 제거
+      filterDateTime.setHours(0, 0, 0, 0);
       log(`날짜 필터 적용: ${filterDate} 이후의 데이터만 가져옵니다.`, 'info');
     }
 
@@ -58,74 +101,126 @@ export async function importPropertiesFromSheet(
         }
 
         // A열(인덱스 0)의 날짜 확인 및 필터링
-        if (filterDateTime && row[0]) {
-          const rowDate = new Date(row[0]);
-          rowDate.setHours(0, 0, 0, 0); // 시간 부분 제거
+        if (filterDateTime && row[COL.A]) {
+          const rowDateStr = row[COL.A];
+          let rowDate: Date;
+          
+          // 다양한 날짜 형식 처리
+          if (rowDateStr.includes('/')) {
+            // MM/DD/YYYY 또는 YYYY/MM/DD 형식
+            const parts = rowDateStr.split('/');
+            if (parts[0].length === 4) {
+              rowDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            } else {
+              rowDate = new Date(parseInt(parts[2]), parseInt(parts[0]) - 1, parseInt(parts[1]));
+            }
+          } else if (rowDateStr.includes('-')) {
+            // YYYY-MM-DD 형식
+            rowDate = new Date(rowDateStr);
+          } else {
+            rowDate = new Date(rowDateStr);
+          }
+          
+          rowDate.setHours(0, 0, 0, 0);
           
           if (isNaN(rowDate.getTime())) {
-            log(`행 ${i+2}: 날짜 형식이 올바르지 않습니다 (${row[0]})`, 'warn');
+            log(`행 ${i+2}: 날짜 형식이 올바르지 않습니다 (${rowDateStr})`, 'warn');
           } else if (rowDate < filterDateTime) {
-            log(`행 ${i+2}: 날짜 필터로 제외됨 (${row[0]} < ${filterDate})`, 'info');
-            continue; // 선택된 날짜 이전의 데이터는 건너뜀
+            log(`행 ${i+2}: 날짜 필터로 제외됨 (${rowDateStr} < ${filterDate})`, 'info');
+            continue;
           }
         }
 
-        // 시트 열 매핑 (업데이트된 버전)
-        // AT:제목, AU:설명, Y:유형, AE:가격, C:주소, B:지역, J:면적, P:침실수, Q:욕실수,
-        // S:층수, T:총층수, U:방향, V:난방방식, X:사용승인일,
-        // D:지목, E:용도지역, G:건물명, H:동호수, J:공급면적, M:전용면적, O:평형,
-        // AD:거래유형, AG:보증금, AH:월세, AI:관리비,
-        // AJ:소유자, AK:소유자전화, AL:임차인, AM:임차인전화, AN:의뢰인, AO:의뢰인전화,
-        // AP:특이사항, AQ:공동중개, AR:매물설명, AS:비공개메모, BA:유튜브URL,
-        // AB:승강기유무, AC:주차
+        // 안전하게 값 가져오기
+        const getValue = (idx: number): string => row[idx]?.toString().trim() || '';
+        const getNumericValue = (idx: number): string | null => {
+          const val = getValue(idx);
+          if (!val || val === '') return null;
+          // 숫자만 추출
+          const numStr = val.replace(/[^0-9.-]/g, '');
+          return numStr || null;
+        };
+        const getBooleanValue = (idx: number): boolean => {
+          const val = getValue(idx).toLowerCase();
+          return val === 'true' || val === '1' || val === 'yes' || val === '예' || val === 'o';
+        };
+
+        // 거래유형 파싱 (쉼표로 구분된 다중 값 지원)
+        const dealTypeStr = getValue(COL.AD);
+        let dealTypeArray: string[] = ['매매'];
+        if (dealTypeStr) {
+          dealTypeArray = dealTypeStr.split(',').map(s => s.trim()).filter(s => s);
+          if (dealTypeArray.length === 0) dealTypeArray = ['매매'];
+        }
+
+        // 시트 열 매핑
         const propertyData: Partial<InsertProperty> = {
-          title: row[45] || '', // AT열: 제목
-          description: row[46] || '', // AU열: 설명
-          type: mapPropertyType(row[24] || ''), // Y열: 유형
-          price: row[30] || '', // AE열: 가격
-          address: row[2] || '', // C열: 주소
-          district: row[1] || '', // B열: 지역
-          size: row[9]?.toString() || '0', // J열: 면적
-          bedrooms: parseInt(row[15]) || 0, // P열: 침실수
-          bathrooms: parseInt(row[16]) || 0, // Q열: 욕실수
-          floor: parseInt(row[18]) || null, // S열: 층수
-          totalFloors: parseInt(row[19]) || null, // T열: 총층수
-          direction: row[20] || null, // U열: 방향
-          heatingSystem: row[21] || null, // V열: 난방방식
-          approvalDate: row[23] || null, // X열: 사용승인일
-          landType: row[3] || null, // D열: 지목
-          zoneType: row[4] || null, // E열: 용도지역
-          buildingName: row[6] || null, // G열: 건물명
-          unitNumber: row[7] || null, // H열: 동호수
-          supplyArea: row[9] || null, // J열: 공급면적
-          privateArea: row[12] || null, // M열: 전용면적
-          areaSize: row[14] || null, // O열: 평형
-          dealType: row[29] ? [row[29]] : ['매매'], // AD열: 거래유형
-          deposit: row[32] || null, // AG열: 보증금
-          monthlyRent: row[33] || null, // AH열: 월세
-          maintenanceFee: row[34] || null, // AI열: 관리비
-          ownerName: row[35] || null, // AJ열: 소유자
-          ownerPhone: row[36] || null, // AK열: 소유자전화
-          tenantName: row[37] || null, // AL열: 임차인
-          tenantPhone: row[38] || null, // AM열: 임차인전화
-          clientName: row[39] || null, // AN열: 의뢰인
-          clientPhone: row[40] || null, // AO열: 의뢰인전화
-          specialNote: row[41] || null, // AP열: 특이사항
-          coListing: row[42]?.toLowerCase() === 'true' || false, // AQ열: 공동중개
-          propertyDescription: row[43] || null, // AR열: 매물설명
-          privateNote: row[44] || null, // AS열: 비공개메모
-          youtubeUrl: row[52] || null, // BA열: 유튜브URL
-          elevator: row[27]?.toLowerCase() === 'true' || false, // AB열: 승강기유무
-          parking: row[28] || null, // AC열: 주차
-          imageUrl: getDefaultImageForPropertyType(mapPropertyType(row[24] || '')), // 기본 이미지
-          imageUrls: [], // 빈 배열로 초기화
-          featured: false, // 기본값
+          title: getValue(COL.AT) || getValue(COL.C) || '제목 없음',
+          description: getValue(COL.AU) || getValue(COL.AR) || '',
+          type: mapPropertyType(getValue(COL.Y)),
+          price: getNumericValue(COL.AE) || '0',
+          address: getValue(COL.C),
+          district: getValue(COL.B),
+          size: getNumericValue(COL.J) || '0',
+          bedrooms: parseInt(getValue(COL.P)) || 0,
+          bathrooms: parseInt(getValue(COL.Q)) || 0,
+          
+          // 위치 정보
+          buildingName: getValue(COL.G) || null,
+          unitNumber: getValue(COL.H) || null,
+          
+          // 면적 정보
+          supplyArea: getNumericValue(COL.J),
+          privateArea: getNumericValue(COL.M),
+          areaSize: getValue(COL.O) || null,
+          
+          // 건물 정보
+          floor: parseInt(getValue(COL.S)) || null,
+          totalFloors: parseInt(getValue(COL.T)) || null,
+          direction: getValue(COL.U) || null,
+          elevator: getBooleanValue(COL.AB),
+          parking: getValue(COL.AC) || null,
+          heatingSystem: getValue(COL.V) || null,
+          approvalDate: getValue(COL.X) || null,
+          
+          // 토지 정보
+          landType: getValue(COL.D) || null,
+          zoneType: getValue(COL.E) || null,
+          
+          // 금액 정보
+          dealType: dealTypeArray,
+          deposit: getNumericValue(COL.AF),
+          depositAmount: getNumericValue(COL.AG),
+          monthlyRent: getNumericValue(COL.AH),
+          maintenanceFee: getNumericValue(COL.AI),
+          
+          // 연락처 정보
+          ownerName: getValue(COL.AJ) || null,
+          ownerPhone: getValue(COL.AK) || null,
+          tenantName: getValue(COL.AL) || null,
+          tenantPhone: getValue(COL.AM) || null,
+          clientName: getValue(COL.AN) || null,
+          clientPhone: getValue(COL.AO) || null,
+          
+          // 추가 정보
+          specialNote: getValue(COL.AP) || null,
+          coListing: getBooleanValue(COL.AQ),
+          propertyDescription: getValue(COL.AR) || null,
+          privateNote: getValue(COL.AS) || null,
+          youtubeUrl: getValue(COL.BA) || null,
+          
+          // 기본값
+          imageUrl: getDefaultImageForPropertyType(mapPropertyType(getValue(COL.Y))),
+          imageUrls: [],
+          featured: false,
+          displayOrder: 0,
+          isVisible: true,
           agentId: 4 // 기본 중개사 ID
         };
 
         // 필수 필드 검증
-        if (!propertyData.title || !propertyData.price || !propertyData.address) {
-          errors.push(`행 ${i+2}: 필수 필드(제목, 가격, 주소)가 누락되었습니다.`);
+        if (!propertyData.title || !propertyData.address) {
+          errors.push(`행 ${i+2}: 필수 필드(제목, 주소)가 누락되었습니다.`);
           continue;
         }
 
@@ -142,7 +237,7 @@ export async function importPropertiesFromSheet(
 
     // 오류가 있으면 로그에 기록
     if (errors.length > 0) {
-      log(`${errors.length}개의 행에서 오류가 발생했습니다: ${errors.join('; ')}`, 'error');
+      log(`${errors.length}개의 행에서 오류가 발생했습니다: ${errors.slice(0, 5).join('; ')}`, 'error');
     }
 
     return {
@@ -176,14 +271,16 @@ function mapPropertyType(type: string): string {
     '상가공장창고펜션': '상가공장창고펜션'
   };
 
+  const normalizedType = type.trim();
+  
   // 정확한 매칭 시도
-  if (typeMap[type]) {
-    return typeMap[type];
+  if (typeMap[normalizedType]) {
+    return typeMap[normalizedType];
   }
 
   // 부분 매칭 시도
   for (const key in typeMap) {
-    if (type.includes(key)) {
+    if (normalizedType.includes(key)) {
       return typeMap[key];
     }
   }

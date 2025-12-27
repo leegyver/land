@@ -218,8 +218,10 @@ export async function importPropertiesFromSheet(
           price: (() => {
             const priceVal = getNumericValue(COL.AE);
             if (!priceVal || priceVal === '0') return '0';
-            // 가격 뒤에 "0000" 추가 (만원 단위를 원 단위로 변환)
-            return priceVal + '0000';
+            // 가격 * 10000 (만원 단위를 원 단위로 변환)
+            const numericPrice = parseFloat(priceVal);
+            if (isNaN(numericPrice)) return '0';
+            return String(Math.round(numericPrice * 10000));
           })(),
           address: getValue(COL.C),
           district: getValue(COL.B),

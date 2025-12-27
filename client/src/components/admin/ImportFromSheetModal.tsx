@@ -25,9 +25,10 @@ export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalPr
   const [spreadsheetId, setSpreadsheetId] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [range, setRange] = useState("Sheet1!A2:Z");
+  const [filterDate, setFilterDate] = useState("");
 
   const importMutation = useMutation({
-    mutationFn: async (data: { spreadsheetId: string; apiKey: string; range: string }) => {
+    mutationFn: async (data: { spreadsheetId: string; apiKey: string; range: string; filterDate?: string }) => {
       const res = await apiRequest("POST", "/api/admin/import-from-sheet", data);
       return await res.json();
     },
@@ -73,7 +74,12 @@ export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalPr
       return;
     }
     
-    importMutation.mutate({ spreadsheetId, apiKey, range });
+    importMutation.mutate({ 
+      spreadsheetId, 
+      apiKey, 
+      range,
+      filterDate: filterDate || undefined
+    });
   };
 
   return (
@@ -128,10 +134,25 @@ export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalPr
               />
             </div>
             
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="filterDate" className="text-right">
+                날짜 필터 (선택)
+              </Label>
+              <Input
+                id="filterDate"
+                type="date"
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            
             <div className="col-span-4">
               <DialogDescription className="text-xs">
+                <p className="mt-2 font-semibold">날짜 필터:</p>
+                <p>A열의 날짜와 비교하여 선택된 날짜 이후의 데이터만 가져옵니다. (형식: YYYY-MM-DD)</p>
                 <p className="mt-2 font-semibold">시트 포맷 안내 (필수 필드):</p>
-                <p>AT:제목, AU:설명, Y:유형, AE:가격, C:주소, B:지역, J:면적, P:방개수, Q:욕실개수</p>
+                <p>A:날짜, AT:제목, AU:설명, Y:유형, AE:가격, C:주소, B:지역, J:면적, P:방개수, Q:욕실개수</p>
                 <p className="mt-1 font-semibold">건물 정보 (선택):</p>
                 <p>S:층수, T:총층, U:방향, AB:승강기(true/false), AC:주차, V:난방방식, X:사용승인일</p>
                 <p>G:건물명, H:동호수, J:공급면적, M:전용면적, O:평형</p>

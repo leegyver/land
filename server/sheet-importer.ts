@@ -7,7 +7,8 @@ import { log } from './vite';
 export async function importPropertiesFromSheet(
   spreadsheetId: string,
   apiKey: string,
-  range: string = 'Sheet1!A2:AN'
+  range: string = 'Sheet1!A2:AN',
+  filterDate?: string // 필터링할 날짜 (YYYY-MM-DD 형식)
 ): Promise<{
   success: boolean;
   count?: number;
@@ -32,6 +33,14 @@ export async function importPropertiesFromSheet(
 
     log(`구글 시트에서 ${rows.length}개의 행을 찾았습니다.`, 'info');
 
+    // 필터 날짜가 있으면 Date 객체로 변환
+    let filterDateTime: Date | null = null;
+    if (filterDate) {
+      filterDateTime = new Date(filterDate);
+      filterDateTime.setHours(0, 0, 0, 0); // 시간 부분 제거
+      log(`날짜 필터 적용: ${filterDate} 이후의 데이터만 가져옵니다.`, 'info');
+    }
+
     // 가져온 프로퍼티 ID 목록
     const importedIds: number[] = [];
     
@@ -46,6 +55,19 @@ export async function importPropertiesFromSheet(
         if (row.length < 3) {
           errors.push(`행 ${i+2}: 데이터가 부족합니다.`);
           continue;
+        }
+
+        // A열(인덱스 0)의 날짜 확인 및 필터링
+        if (filterDateTime && row[0]) {
+          const rowDate = new Date(row[0]);
+          rowDate.setHours(0, 0, 0, 0); // 시간 부분 제거
+          
+          if (isNaN(rowDate.getTime())) {
+            log(`행 ${i+2}: 날짜 형식이 올바르지 않습니다 (${row[0]})`, 'warn');
+          } else if (rowDate < filterDateTime) {
+            log(`행 ${i+2}: 날짜 필터로 제외됨 (${row[0]} < ${filterDate})`, 'info');
+            continue; // 선택된 날짜 이전의 데이터는 건너뜀
+          }
         }
 
         // 시트 열 매핑 (업데이트된 버전)

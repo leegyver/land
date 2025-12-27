@@ -20,6 +20,7 @@ import { testRealEstateAPI } from "./test-api";
 import { getLatestBlogPosts } from "./blog-fetcher";
 import { getLatestYouTubeVideos } from "./youtube-fetcher";
 import { importPropertiesFromSheet } from "./sheet-importer";
+import { log } from "./vite";
 
 // 사이트 설정 (필요시 환경변수나 설정 파일로 이동 가능)
 const siteConfig = {

@@ -19,7 +19,7 @@ import { getRecentTransactions } from "./real-estate-api";
 import { testRealEstateAPI } from "./test-api";
 import { getLatestBlogPosts } from "./blog-fetcher";
 import { getLatestYouTubeVideos } from "./youtube-fetcher";
-import { importPropertiesFromSheet } from "./sheet-importer";
+import { importPropertiesFromSheet, checkDuplicatesFromSheet } from "./sheet-importer";
 import { log } from "./vite";
 
 // 사이트 설정 (필요시 환경변수나 설정 파일로 이동 가능)
@@ -1646,6 +1646,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // 블로그 포스트 관련 API 제거됨
 
+  // 구글 스프레드시트 중복 매물 확인 API
+  app.post("/api/admin/check-sheet-duplicates", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      }
+
+      const user = req.user as Express.User;
+      if (user.role !== "admin") {
+        return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+      }
+
+      const { spreadsheetId, ranges, filterDate } = req.body;
+      const apiKey = process.env.GOOGLE_API_KEY;
+      
+      if (!apiKey) {
+        return res.status(500).json({ success: false, error: "서버에 Google API 키가 설정되지 않았습니다." });
+      }
+
+      if (!spreadsheetId || !filterDate) {
+        return res.status(400).json({ success: false, error: "스프레드시트 ID와 날짜는 필수입니다." });
+      }
+
+      const sheetRanges = ranges || ["토지!A2:BA", "주택!A2:BA", "아파트외!A2:BA", "상가외!A2:BA"];
+      let allDuplicates: { rowIndex: number; address: string; existingPropertyId: number; existingPropertyTitle: string; sheetName: string }[] = [];
+
+      for (const range of sheetRanges) {
+        try {
+          const result = await checkDuplicatesFromSheet(spreadsheetId, apiKey, range, filterDate);
+          if (result.success && result.duplicates) {
+            const sheetName = range.split('!')[0];
+            allDuplicates = [...allDuplicates, ...result.duplicates.map(d => ({ ...d, sheetName }))];
+          }
+        } catch (sheetError) {
+          log(`시트 ${range} 중복 확인 중 오류 (무시됨): ${sheetError}`, 'warn');
+        }
+      }
+
+      res.json({ success: true, duplicates: allDuplicates });
+    } catch (error) {
+      console.error("중복 확인 오류:", error);
+      res.status(500).json({ success: false, error: "중복 확인 중 오류가 발생했습니다." });
+    }
+  });
+
   // 구글 스프레드시트에서 부동산 데이터 가져오기 API
 
   app.post("/api/admin/import-from-sheet", async (req, res) => {
@@ -1660,7 +1705,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
       }
 
-      const { spreadsheetId, ranges, filterDate } = req.body;
+      const { spreadsheetId, ranges, filterDate, skipAddresses } = req.body;
       
       // 서버에 저장된 Google API 키 사용
       const apiKey = process.env.GOOGLE_API_KEY;
@@ -1678,17 +1723,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ success: false, error: "날짜를 반드시 선택해주세요." });
       }
 
-      log(`데이터 가져오기 시작: 스프레드시트=${spreadsheetId}, 날짜필터=${filterDate}`, 'info');
+      log(`데이터 가져오기 시작: 스프레드시트=${spreadsheetId}, 날짜필터=${filterDate}, 건너뛸 주소: ${skipAddresses?.length || 0}개`, 'info');
 
       // 여러 시트에서 데이터 가져오기 (한글 시트 이름 사용)
       const sheetRanges = ranges || ["토지!A2:BA", "주택!A2:BA", "아파트외!A2:BA", "상가외!A2:BA"];
       let totalCount = 0;
       let allImportedIds: number[] = [];
       let allErrors: string[] = [];
+      const addressesToSkip: string[] = skipAddresses || [];
       
       for (const range of sheetRanges) {
         try {
-          const result = await importPropertiesFromSheet(spreadsheetId, apiKey, range, filterDate);
+          const result = await importPropertiesFromSheet(spreadsheetId, apiKey, range, filterDate, addressesToSkip);
           if (result.success && result.count) {
             totalCount += result.count;
             if (result.importedIds) {

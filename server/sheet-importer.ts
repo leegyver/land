@@ -52,16 +52,103 @@ const COL = {
   BA: 52, // 유튜브URL (youtubeUrl)
 };
 
+// 중복 매물 확인 함수
+export async function checkDuplicatesFromSheet(
+  spreadsheetId: string,
+  apiKey: string,
+  range: string,
+  filterDate: string
+): Promise<{
+  success: boolean;
+  duplicates?: { rowIndex: number; address: string; existingPropertyId: number; existingPropertyTitle: string }[];
+  error?: string;
+}> {
+  try {
+    const sheets = google.sheets({ version: 'v4', auth: apiKey });
+    const response = await sheets.spreadsheets.values.get({ spreadsheetId, range });
+    const rows = response.data.values;
+    
+    if (!rows || rows.length === 0) {
+      return { success: true, duplicates: [] };
+    }
+
+    const filterDateTime = new Date(filterDate);
+    filterDateTime.setHours(0, 0, 0, 0);
+
+    // 유효한 행에서 주소 수집
+    const addressMap: Map<string, number> = new Map();
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      if (row.length < 3) continue;
+      
+      const rowDateStr = row[COL.A]?.toString().trim();
+      if (!rowDateStr) continue;
+      
+      let rowDate: Date;
+      if (rowDateStr.includes('/')) {
+        const parts = rowDateStr.split('/');
+        if (parts[0].length === 4) {
+          rowDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        } else {
+          rowDate = new Date(parseInt(parts[2]), parseInt(parts[0]) - 1, parseInt(parts[1]));
+        }
+      } else if (rowDateStr.includes('-')) {
+        rowDate = new Date(rowDateStr);
+      } else if (rowDateStr.includes('.')) {
+        const parts = rowDateStr.split('.');
+        if (parts[0].length === 4) {
+          rowDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        } else {
+          rowDate = new Date(parseInt(parts[2]), parseInt(parts[0]) - 1, parseInt(parts[1]));
+        }
+      } else {
+        rowDate = new Date(rowDateStr);
+        if (isNaN(rowDate.getTime())) continue;
+      }
+      
+      rowDate.setHours(0, 0, 0, 0);
+      if (rowDate < filterDateTime) continue;
+      
+      const address = row[COL.C]?.toString().trim();
+      if (address) {
+        addressMap.set(address, i + 2); // 엑셀 행 번호 (1-indexed + 헤더)
+      }
+    }
+
+    if (addressMap.size === 0) {
+      return { success: true, duplicates: [] };
+    }
+
+    // 기존 매물과 비교
+    const addresses = Array.from(addressMap.keys());
+    const existingProperties = await storage.getPropertiesByAddresses(addresses);
+    
+    const duplicates = existingProperties.map(prop => ({
+      rowIndex: addressMap.get(prop.address) || 0,
+      address: prop.address,
+      existingPropertyId: prop.id,
+      existingPropertyTitle: prop.title
+    }));
+
+    return { success: true, duplicates };
+  } catch (error) {
+    log(`중복 확인 실패: ${error}`, 'error');
+    return { success: false, error: `중복 확인 실패: ${error}` };
+  }
+}
+
 // 구글 시트 데이터를 부동산 매물 데이터로 변환하는 함수
 export async function importPropertiesFromSheet(
   spreadsheetId: string,
   apiKey: string,
-  range: string = '토지!A2:BA', // 기본값을 한글 시트 이름으로 변경
-  filterDate: string // 필터링할 날짜 (YYYY-MM-DD 형식) - 필수
+  range: string = '토지!A2:BA',
+  filterDate: string,
+  skipAddresses: string[] = [] // 건너뛸 주소 목록
 ): Promise<{
   success: boolean;
   count?: number;
   importedIds?: number[];
+  skippedCount?: number;
   error?: string;
 }> {
   try {
@@ -152,6 +239,13 @@ export async function importPropertiesFromSheet(
         }
         
         log(`행 ${i+2}: 날짜 필터 통과 (${rowDateStr} >= ${filterDate})`, 'info');
+        
+        // 중복 매물 건너뛰기 체크
+        const rowAddress = row[COL.C]?.toString().trim();
+        if (rowAddress && skipAddresses.includes(rowAddress)) {
+          log(`행 ${i+2}: 중복 매물로 건너뜀 (주소: ${rowAddress})`, 'info');
+          continue;
+        }
 
         // 안전하게 값 가져오기
         const getValue = (idx: number): string => row[idx]?.toString().trim() || '';

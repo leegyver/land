@@ -1,5 +1,4 @@
 import sharp from 'sharp';
-import fetch from 'node-fetch';
 import * as fs from 'fs';
 import * as path from 'path';
 import { log } from './vite';
@@ -28,7 +27,8 @@ export async function resizeImageFromUrl(imageUrl: string): Promise<string | nul
       return imageUrl;
     }
 
-    const imageBuffer = await response.buffer();
+    const arrayBuffer = await response.arrayBuffer();
+    const imageBuffer = Buffer.from(arrayBuffer);
 
     const resizedBuffer = await sharp(imageBuffer)
       .resize(TARGET_WIDTH, TARGET_HEIGHT, {

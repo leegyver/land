@@ -36,6 +36,7 @@ export interface IStorage {
   getPropertiesByType(type: string): Promise<Property[]>;
   getPropertiesByDistrict(district: string): Promise<Property[]>;
   getPropertiesByPriceRange(min: number, max: number): Promise<Property[]>;
+  getPropertiesByAddresses(addresses: string[]): Promise<Property[]>;
   createProperty(property: InsertProperty): Promise<Property>;
   updateProperty(id: number, property: Partial<InsertProperty>): Promise<Property | undefined>;
   deleteProperty(id: number): Promise<boolean>;
@@ -192,6 +193,17 @@ export class DatabaseStorage implements IStorage {
       .orderBy(asc(properties.displayOrder), desc(properties.createdAt));
 
     // 호환성을 위해 각 속성에 imageUrls 필드를 추가합니다
+    return results.map(property => ({
+      ...property,
+      imageUrls: property.imageUrls || []
+    }));
+  }
+
+  async getPropertiesByAddresses(addresses: string[]): Promise<Property[]> {
+    if (addresses.length === 0) return [];
+    const results = await db.select()
+      .from(properties)
+      .where(inArray(properties.address, addresses));
     return results.map(property => ({
       ...property,
       imageUrls: property.imageUrls || []

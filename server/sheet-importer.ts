@@ -2,6 +2,7 @@ import { google } from 'googleapis';
 import { storage } from './storage';
 import { InsertProperty } from '@shared/schema';
 import { log } from './vite';
+import { resizeImages } from './image-resizer';
 
 // 열 인덱스 매핑 (A=0, B=1, ... Z=25, AA=26, AB=27, ...)
 const COL = {
@@ -193,12 +194,33 @@ export async function importPropertiesFromSheet(
           if (dealTypeArray.length === 0) dealTypeArray = ['매매'];
         }
 
+        // 이미지 URL 수집 및 리사이징 (1027x768)
+        const originalImageUrls = collectImageUrls();
+        let processedImageUrls: string[] = [];
+        
+        if (originalImageUrls.length > 0) {
+          log(`행 ${i+2}: ${originalImageUrls.length}개 이미지 리사이징 시작...`, 'info');
+          processedImageUrls = await resizeImages(originalImageUrls);
+          log(`행 ${i+2}: 이미지 리사이징 완료 (${processedImageUrls.length}개)`, 'info');
+        }
+        
+        // 이미지가 없으면 기본 이미지 사용
+        const propertyType = mapPropertyType(getValue(COL.Y));
+        if (processedImageUrls.length === 0) {
+          processedImageUrls = [getDefaultImageForPropertyType(propertyType)];
+        }
+
         // 시트 열 매핑
         const propertyData: Partial<InsertProperty> = {
           title: getValue(COL.AT) || '제목을 입력하세요',
           description: getValue(COL.AU) || getValue(COL.AR) || '',
-          type: mapPropertyType(getValue(COL.Y)),
-          price: getNumericValue(COL.AE) || '0',
+          type: propertyType,
+          price: (() => {
+            const priceVal = getNumericValue(COL.AE);
+            if (!priceVal || priceVal === '0') return '0';
+            // 가격 뒤에 "0000" 추가 (만원 단위를 원 단위로 변환)
+            return priceVal + '0000';
+          })(),
           address: getValue(COL.C),
           district: getValue(COL.B),
           size: getNumericValue(COL.J) || '0',
@@ -250,16 +272,9 @@ export async function importPropertiesFromSheet(
           privateNote: getValue(COL.AS) || null,
           youtubeUrl: getValue(COL.BA) || null,
           
-          // 이미지 URL 처리 - AV-AZ 열에서 수집, 없으면 기본 이미지 사용
-          imageUrl: (() => {
-            const urls = collectImageUrls();
-            return urls.length > 0 ? urls[0] : getDefaultImageForPropertyType(mapPropertyType(getValue(COL.Y)));
-          })(),
-          imageUrls: (() => {
-            const urls = collectImageUrls();
-            // 이미지가 없으면 기본 이미지 1장으로 대체
-            return urls.length > 0 ? urls : [getDefaultImageForPropertyType(mapPropertyType(getValue(COL.Y)))];
-          })(),
+          // 이미지 URL 처리 - 리사이징된 이미지 사용
+          imageUrl: processedImageUrls[0],
+          imageUrls: processedImageUrls,
           featured: false,
           displayOrder: 0,
           isVisible: true,

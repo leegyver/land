@@ -24,6 +24,14 @@ interface ImportFromSheetModalProps {
 // 기본 스프레드시트 ID
 const DEFAULT_SPREADSHEET_ID = "1sfbhHTcrJOanlbzQbYgWC9KleLzyewsbtwYb_oE_0iQ";
 
+// 시트 이름 매핑 (한글 이름)
+const SHEET_NAMES: Record<number, string> = {
+  1: "토지",
+  2: "주택",
+  3: "아파트외",
+  4: "상가외"
+};
+
 export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalProps) {
   const { toast } = useToast();
   const [spreadsheetId, setSpreadsheetId] = useState(DEFAULT_SPREADSHEET_ID);
@@ -92,13 +100,27 @@ export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalPr
       return;
     }
     
-    // 선택된 시트들의 범위 생성
-    const ranges = selectedSheets.map(num => `Sheet${num}!A2:BA`);
+    // 날짜 필수 선택 검증
+    if (!filterDate) {
+      toast({
+        title: "날짜 선택 필요",
+        description: "날짜를 반드시 선택해주세요. 선택한 날짜 이후의 데이터만 가져옵니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // 선택된 시트들의 범위 생성 (한글 시트 이름 사용)
+    const ranges = selectedSheets
+      .filter(num => SHEET_NAMES[num]) // 유효한 시트 번호만 필터링
+      .map(num => `${SHEET_NAMES[num]}!A2:BA`);
+    
+    console.log("가져오기 요청:", { spreadsheetId, ranges, filterDate });
     
     importMutation.mutate({ 
       spreadsheetId, 
       ranges,
-      filterDate: filterDate || undefined
+      filterDate
     });
   };
 
@@ -148,7 +170,7 @@ export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalPr
                       data-testid={`checkbox-sheet-${sheetNum}`}
                     />
                     <Label htmlFor={`sheet-${sheetNum}`} className="cursor-pointer">
-                      Sheet{sheetNum}
+                      {SHEET_NAMES[sheetNum]} (Sheet{sheetNum})
                     </Label>
                   </div>
                 ))}
@@ -159,15 +181,16 @@ export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalPr
             <div className="space-y-2">
               <Label htmlFor="filterDate" className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
-                날짜 필터 (선택)
+                날짜 필터 <span className="text-red-500">*필수</span>
               </Label>
               <Input
                 id="filterDate"
                 type="date"
                 value={filterDate}
                 onChange={(e) => setFilterDate(e.target.value)}
-                className="w-full"
+                className={`w-full ${!filterDate ? 'border-red-300' : ''}`}
                 data-testid="input-filter-date"
+                required
               />
               <p className="text-xs text-muted-foreground">A열의 날짜와 비교하여 선택된 날짜 이후의 데이터만 가져옵니다.</p>
             </div>

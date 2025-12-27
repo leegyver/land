@@ -540,12 +540,6 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                             <td className="py-2 font-medium">{property.buildingName}</td>
                           </tr>
                         )}
-                        {property.unitNumber && (
-                          <tr className="border-b border-gray-100">
-                            <td className="py-2 text-gray-600">동호수</td>
-                            <td className="py-2 font-medium">{property.unitNumber}</td>
-                          </tr>
-                        )}
                         {/* 주소는 개인정보 보호를 위해 상세페이지에서 표시하지 않음 */}
                         {property.approvalDate && (
                           <tr className="border-b border-gray-100">
@@ -624,12 +618,6 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                       <h4 className="font-semibold text-lg mb-3">건물 정보</h4>
                       <table className="w-full">
                         <tbody>
-                        {property.floor && (
-                          <tr className="border-b border-gray-100">
-                            <td className="py-2 text-gray-600 w-1/3">해당 층</td>
-                            <td className="py-2 font-medium">{property.floor}층</td>
-                          </tr>
-                        )}
                         {property.totalFloors && (
                           <tr className="border-b border-gray-100">
                             <td className="py-2 text-gray-600">총 층수</td>
@@ -685,8 +673,14 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                         )}
                         {property.deposit && Number(property.deposit) > 0 && (
                           <tr className="border-b border-gray-100">
-                            <td className="py-2 text-gray-600">보증금</td>
+                            <td className="py-2 text-gray-600">전세금</td>
                             <td className="py-2 font-medium">{formatPrice(property.deposit)}</td>
+                          </tr>
+                        )}
+                        {property.depositAmount && Number(property.depositAmount) > 0 && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2 text-gray-600">보증금</td>
+                            <td className="py-2 font-medium">{formatPrice(property.depositAmount)}</td>
                           </tr>
                         )}
                         {property.monthlyRent && Number(property.monthlyRent) > 0 && (
@@ -707,6 +701,15 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                   )}
                 </div>
               </div>
+              
+              {/* 담당중개사 표시 */}
+              {property.agentName && (
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-green-800 font-medium">
+                    (매물담당 "{property.agentName}" 공인중개사 대표)
+                  </p>
+                </div>
+              )}
               
               {/* 매물 설명 섹션 */}
               {property.description && (

@@ -29,7 +29,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { X } from "lucide-react";
 
 // 부동산 유형 목록
-const propertyTypes = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
+const propertyTypes = ["토지", "단독", "근린", "아파트", "다세대", "연립", "원투룸", "다가구", "오피스텔", "기타"];
 
 // 읍면 리스트
 const districts = [
@@ -215,6 +215,7 @@ const propertyFormSchema = z.object({
   // 추가 정보
   specialNote: z.string().optional(),
   coListing: z.boolean().optional(),
+  agentName: z.string().optional(), // 담당중개사 이름
   propertyDescription: z.string().optional(),
   privateNote: z.string().optional(),
 });
@@ -281,6 +282,7 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
     clientPhone: "",
     specialNote: "",
     coListing: false,
+    agentName: "",
     propertyDescription: "",
     privateNote: "",
   };
@@ -352,6 +354,7 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
         clientPhone: property.clientPhone || "",
         specialNote: property.specialNote || "",
         coListing: !!property.coListing,
+        agentName: property.agentName || "",
         propertyDescription: property.propertyDescription || "",
         privateNote: property.privateNote || "",
       };
@@ -440,6 +443,7 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
       dealType: data.dealType && data.dealType.length > 0 ? data.dealType : ["매매"],
       elevator: data.elevator || false,
       coListing: data.coListing || false,
+      agentName: data.agentName || undefined,
     };
     
     if (property) {
@@ -717,7 +721,7 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
                 name="agentId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>담당 중개사</FormLabel>
+                    <FormLabel>담당 중개사 (시스템)</FormLabel>
                     <Select
                       onValueChange={(value) => field.onChange(Number(value))}
                       value={field.value?.toString()}
@@ -735,6 +739,25 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="agentName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>담당중개사 (이름)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="담당중개사 이름 입력"
+                        data-testid="input-agent-name"
+                        {...field}
+                        value={field.value || ""}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -13,36 +13,33 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, FileSpreadsheet, Calendar, Key, Table2 } from "lucide-react";
+import { Loader2, FileSpreadsheet, Calendar, Table2, Info } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ImportFromSheetModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const SPREADSHEET_ID_KEY = "leegyver_spreadsheet_id";
+// 기본 스프레드시트 ID
+const DEFAULT_SPREADSHEET_ID = "1sfbhHTcrJOanlbzQbYgWC9KleLzyewsbtwYb_oE_0iQ";
 
 export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalProps) {
   const { toast } = useToast();
-  const [spreadsheetId, setSpreadsheetId] = useState("");
-  const [apiKey, setApiKey] = useState("");
-  const [range, setRange] = useState("Sheet1!A2:BA");
+  const [spreadsheetId, setSpreadsheetId] = useState(DEFAULT_SPREADSHEET_ID);
   const [filterDate, setFilterDate] = useState("");
+  const [selectedSheets, setSelectedSheets] = useState<number[]>([1, 2, 3, 4]);
 
-  useEffect(() => {
-    const savedSpreadsheetId = localStorage.getItem(SPREADSHEET_ID_KEY);
-    if (savedSpreadsheetId) {
-      setSpreadsheetId(savedSpreadsheetId);
-    }
-  }, []);
-
-  const handleSpreadsheetIdChange = (value: string) => {
-    setSpreadsheetId(value);
-    localStorage.setItem(SPREADSHEET_ID_KEY, value);
+  const handleSheetToggle = (sheetNum: number) => {
+    setSelectedSheets(prev => 
+      prev.includes(sheetNum) 
+        ? prev.filter(n => n !== sheetNum)
+        : [...prev, sheetNum].sort((a, b) => a - b)
+    );
   };
 
   const importMutation = useMutation({
-    mutationFn: async (data: { spreadsheetId: string; apiKey: string; range: string; filterDate?: string }) => {
+    mutationFn: async (data: { spreadsheetId: string; ranges: string[]; filterDate?: string }) => {
       const res = await apiRequest("POST", "/api/admin/import-from-sheet", data);
       return await res.json();
     },
@@ -77,19 +74,30 @@ export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalPr
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!spreadsheetId || !apiKey) {
+    if (!spreadsheetId) {
       toast({
         title: "필수 정보 누락",
-        description: "스프레드시트 ID와 API 키는 필수입니다.",
+        description: "스프레드시트 ID는 필수입니다.",
         variant: "destructive",
       });
       return;
     }
     
+    if (selectedSheets.length === 0) {
+      toast({
+        title: "시트 선택 필요",
+        description: "최소 하나의 시트를 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // 선택된 시트들의 범위 생성
+    const ranges = selectedSheets.map(num => `Sheet${num}!A2:BA`);
+    
     importMutation.mutate({ 
       spreadsheetId, 
-      apiKey, 
-      range,
+      ranges,
       filterDate: filterDate || undefined
     });
   };
@@ -117,40 +125,35 @@ export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalPr
               <Input
                 id="spreadsheetId"
                 value={spreadsheetId}
-                onChange={(e) => handleSpreadsheetIdChange(e.target.value)}
-                placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
+                onChange={(e) => setSpreadsheetId(e.target.value)}
+                placeholder="스프레드시트 ID"
                 className="w-full"
+                data-testid="input-spreadsheet-id"
               />
-              <p className="text-xs text-muted-foreground">저장된 ID는 다음에 자동으로 불러옵니다.</p>
+              <p className="text-xs text-muted-foreground">기본값이 설정되어 있습니다.</p>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="apiKey" className="flex items-center gap-2">
-                <Key className="w-4 h-4" />
-                Google API 키
-              </Label>
-              <Input
-                id="apiKey"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                type="password"
-                placeholder="AIzaSyD..."
-                className="w-full"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="range" className="flex items-center gap-2">
+              <Label className="flex items-center gap-2">
                 <Table2 className="w-4 h-4" />
-                데이터 범위
+                가져올 시트 선택
               </Label>
-              <Input
-                id="range"
-                value={range}
-                onChange={(e) => setRange(e.target.value)}
-                placeholder="Sheet1!A2:BA"
-                className="w-full"
-              />
+              <div className="flex flex-wrap gap-4 pt-2">
+                {[1, 2, 3, 4].map((sheetNum) => (
+                  <div key={sheetNum} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`sheet-${sheetNum}`}
+                      checked={selectedSheets.includes(sheetNum)}
+                      onCheckedChange={() => handleSheetToggle(sheetNum)}
+                      data-testid={`checkbox-sheet-${sheetNum}`}
+                    />
+                    <Label htmlFor={`sheet-${sheetNum}`} className="cursor-pointer">
+                      Sheet{sheetNum}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">선택한 시트에서 데이터를 가져옵니다 (기본: 1~4번 시트 모두).</p>
             </div>
             
             <div className="space-y-2">
@@ -164,8 +167,19 @@ export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalPr
                 value={filterDate}
                 onChange={(e) => setFilterDate(e.target.value)}
                 className="w-full"
+                data-testid="input-filter-date"
               />
               <p className="text-xs text-muted-foreground">A열의 날짜와 비교하여 선택된 날짜 이후의 데이터만 가져옵니다.</p>
+            </div>
+            
+            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-2">
+              <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+                <Info className="w-4 h-4" />
+                <span className="font-medium">API 키 안내</span>
+              </div>
+              <p className="text-sm text-blue-600 dark:text-blue-400">
+                Google API 키는 서버에 안전하게 저장되어 있어 별도 입력이 필요하지 않습니다.
+              </p>
             </div>
             
             <div className="bg-muted rounded-lg p-4 space-y-3 text-sm">
@@ -190,7 +204,7 @@ export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalPr
                   S: 층수 | T: 총층 | U: 방향 | V: 난방방식 | X: 사용승인일
                 </p>
                 <p className="text-muted-foreground">
-                  AB: 승강기(true/false) | AC: 주차
+                  AB: 승강기("유"=체크) | AC: 주차
                 </p>
               </div>
               
@@ -217,17 +231,17 @@ export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalPr
               <div>
                 <p className="font-medium text-primary">추가 정보</p>
                 <p className="text-muted-foreground">
-                  AP: 특이사항 | AQ: 공동중개(true/false) | AR: 매물설명
+                  AP: 특이사항 | AQ: 담당중개사 | AR: 매물설명
                 </p>
                 <p className="text-muted-foreground">
-                  AS: 비공개메모 | BA: 유튜브URL
+                  AS: 비공개메모 | AV-AZ: 이미지1~5 | BA: 유튜브URL
                 </p>
               </div>
               
               <div className="pt-2 border-t">
                 <p className="font-medium">유형 값 (Y열)</p>
                 <p className="text-muted-foreground">
-                  토지, 주택, 아파트연립다세대, 원투룸, 상가공장창고펜션
+                  토지, 단독, 근린, 아파트, 다세대, 연립, 원투룸, 다가구, 오피스텔, 기타
                 </p>
               </div>
             </div>
@@ -239,12 +253,14 @@ export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalPr
               variant="outline" 
               onClick={onClose} 
               disabled={importMutation.isPending}
+              data-testid="button-cancel"
             >
               취소
             </Button>
             <Button 
               type="submit"
-              disabled={importMutation.isPending || !spreadsheetId || !apiKey}
+              disabled={importMutation.isPending || !spreadsheetId || selectedSheets.length === 0}
+              data-testid="button-import"
             >
               {importMutation.isPending ? (
                 <>

@@ -1656,24 +1656,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
       }
 
-      const { spreadsheetId, apiKey, range, filterDate } = req.body;
-
-      if (!spreadsheetId || !apiKey) {
-        return res.status(400).json({ message: "스프레드시트 ID와 API 키는 필수입니다." });
+      const { spreadsheetId, ranges, filterDate } = req.body;
+      
+      // 서버에 저장된 Google API 키 사용
+      const apiKey = process.env.GOOGLE_API_KEY;
+      
+      if (!apiKey) {
+        return res.status(500).json({ success: false, error: "서버에 Google API 키가 설정되지 않았습니다." });
       }
 
-      // 구글 시트에서 데이터 가져오기 (날짜 필터 포함)
-      const result = await importPropertiesFromSheet(spreadsheetId, apiKey, range, filterDate);
+      if (!spreadsheetId) {
+        return res.status(400).json({ message: "스프레드시트 ID는 필수입니다." });
+      }
 
-      if (!result.success) {
-        return res.status(500).json({ success: false, error: result.error });
+      // 여러 시트에서 데이터 가져오기
+      const sheetRanges = ranges || ["Sheet1!A2:BA", "Sheet2!A2:BA", "Sheet3!A2:BA", "Sheet4!A2:BA"];
+      let totalCount = 0;
+      let allImportedIds: number[] = [];
+      let allErrors: string[] = [];
+      
+      for (const range of sheetRanges) {
+        try {
+          const result = await importPropertiesFromSheet(spreadsheetId, apiKey, range, filterDate);
+          if (result.success && result.count) {
+            totalCount += result.count;
+            if (result.importedIds) {
+              allImportedIds = [...allImportedIds, ...result.importedIds];
+            }
+          }
+          if (result.error) {
+            allErrors.push(`${range}: ${result.error}`);
+          }
+        } catch (sheetError) {
+          // 시트가 없거나 빈 경우 오류 무시하고 계속
+          log(`시트 ${range} 처리 중 오류 (무시됨): ${sheetError}`, 'warn');
+        }
       }
 
       res.json({ 
         success: true, 
-        count: result.count,
-        importedIds: result.importedIds,
-        error: result.error
+        count: totalCount,
+        importedIds: allImportedIds,
+        error: allErrors.length > 0 ? allErrors.join('; ') : undefined
       });
     } catch (error) {
       console.error("스프레드시트 데이터 가져오기 오류:", error);

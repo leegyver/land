@@ -298,27 +298,29 @@ export async function importPropertiesFromSheet(
         const collectImageUrls = (): string[] => {
           const imageColumns = [COL.AV, COL.AW, COL.AX, COL.AY, COL.AZ];
           const urls: string[] = [];
-          console.log(`[이미지] 행 ${i+2}: 이미지 열 확인 시작 - 행 길이: ${row.length}`);
+          log(`[이미지] 행 ${i+2}: 이미지 열 확인 시작 - 행 길이: ${row.length}, 이미지열 인덱스: ${imageColumns.join(',')}`, 'info');
           for (const col of imageColumns) {
             if (col < row.length) {
               const rawValue = row[col];
               const url = rawValue?.toString().trim() || '';
-              console.log(`[이미지] 행 ${i+2}: 열 ${col} 원본값: "${String(rawValue).substring(0, 80)}", 타입: ${typeof rawValue}`);
+              log(`[이미지] 행 ${i+2}: 열 ${col} 원본값: "${String(rawValue).substring(0, 100)}", 타입: ${typeof rawValue}`, 'info');
               
               // URL 검증 - 공백 제거 후 http/https 체크
               const cleanUrl = url.replace(/\s+/g, '');
               if (cleanUrl && cleanUrl.length > 0) {
                 if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://') || cleanUrl.startsWith('//')) {
                   const finalUrl = cleanUrl.startsWith('//') ? 'https:' + cleanUrl : cleanUrl;
-                  console.log(`[이미지] 행 ${i+2}: 유효한 URL 발견: ${finalUrl.substring(0, 60)}...`);
+                  log(`[이미지] 행 ${i+2}: 유효한 URL 발견: ${finalUrl.substring(0, 80)}...`, 'info');
                   urls.push(finalUrl);
                 } else {
-                  console.log(`[이미지] 행 ${i+2}: 열 ${col} - URL 형식이 아님 (http/https로 시작하지 않음)`);
+                  log(`[이미지] 행 ${i+2}: 열 ${col} - URL 형식이 아님 (값: ${cleanUrl.substring(0, 50)})`, 'info');
                 }
               }
+            } else {
+              log(`[이미지] 행 ${i+2}: 열 ${col}이 행 길이(${row.length})를 초과`, 'info');
             }
           }
-          console.log(`[이미지] 행 ${i+2}: 총 ${urls.length}개의 유효한 이미지 URL 발견`);
+          log(`[이미지] 행 ${i+2}: 총 ${urls.length}개의 유효한 이미지 URL 발견`, 'info');
           return urls;
         };
 

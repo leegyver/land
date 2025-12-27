@@ -23,7 +23,7 @@ const COL = {
   V: 21,  // 난방방식 (heatingSystem)
   X: 23,  // 사용승인일 (approvalDate)
   Y: 24,  // 유형 (type)
-  AB: 27, // 승강기유무 (elevator)
+  AB: 27, // 승강기유무 (elevator) - "유"이면 체크, "무"이거나 빈값이면 비체크
   AC: 28, // 주차 (parking)
   AD: 29, // 거래종류 (dealType)
   AE: 30, // 가격 (price)
@@ -38,11 +38,16 @@ const COL = {
   AN: 39, // 의뢰인 (clientName)
   AO: 40, // 의뢰인전화 (clientPhone)
   AP: 41, // 특이사항 (specialNote)
-  AQ: 42, // 담당중개사ID (agentId)
+  AQ: 42, // 담당중개사 (agentName) - 텍스트로 저장
   AR: 43, // 매물설명 (propertyDescription)
   AS: 44, // 비공개메모 (privateNote)
   AT: 45, // 제목 (title)
   AU: 46, // 설명 (description)
+  AV: 47, // 이미지1
+  AW: 48, // 이미지2
+  AX: 49, // 이미지3
+  AY: 50, // 이미지4
+  AZ: 51, // 이미지5
   BA: 52, // 유튜브URL (youtubeUrl)
 };
 
@@ -144,6 +149,25 @@ export async function importPropertiesFromSheet(
           const val = getValue(idx).toLowerCase();
           return val === 'true' || val === '1' || val === 'yes' || val === '예' || val === 'o';
         };
+        
+        // 승강기 체크 - "유"이면 true, "무"이거나 빈값이면 false
+        const getElevatorValue = (idx: number): boolean => {
+          const val = getValue(idx).trim();
+          return val === '유';
+        };
+        
+        // 이미지 URL 수집 (AV-AZ 열에서 가져오기)
+        const collectImageUrls = (): string[] => {
+          const imageColumns = [COL.AV, COL.AW, COL.AX, COL.AY, COL.AZ];
+          const urls: string[] = [];
+          for (const col of imageColumns) {
+            const url = getValue(col);
+            if (url && url.length > 0) {
+              urls.push(url);
+            }
+          }
+          return urls;
+        };
 
         // 거래유형 파싱 (쉼표로 구분된 다중 값 지원)
         const dealTypeStr = getValue(COL.AD);
@@ -178,7 +202,7 @@ export async function importPropertiesFromSheet(
           floor: parseInt(getValue(COL.S)) || null,
           totalFloors: parseInt(getValue(COL.T)) || null,
           direction: getValue(COL.U) || null,
-          elevator: getBooleanValue(COL.AB),
+          elevator: getElevatorValue(COL.AB), // "유"이면 체크, "무"이거나 빈값이면 비체크
           parking: getValue(COL.AC) || null,
           heatingSystem: getValue(COL.V) || null,
           approvalDate: getValue(COL.X) || null,
@@ -205,20 +229,25 @@ export async function importPropertiesFromSheet(
           // 추가 정보
           specialNote: getValue(COL.AP) || null,
           coListing: false, // 공동중개 기본값
+          agentName: getValue(COL.AQ) || null, // 담당중개사 이름 (텍스트)
           propertyDescription: getValue(COL.AR) || null,
           privateNote: getValue(COL.AS) || null,
           youtubeUrl: getValue(COL.BA) || null,
           
-          // 기본값
-          imageUrl: getDefaultImageForPropertyType(mapPropertyType(getValue(COL.Y))),
-          imageUrls: [],
+          // 이미지 URL 처리 - AV-AZ 열에서 수집, 없으면 기본 이미지 사용
+          imageUrl: (() => {
+            const urls = collectImageUrls();
+            return urls.length > 0 ? urls[0] : getDefaultImageForPropertyType(mapPropertyType(getValue(COL.Y)));
+          })(),
+          imageUrls: (() => {
+            const urls = collectImageUrls();
+            // 이미지가 없으면 기본 이미지 1장으로 대체
+            return urls.length > 0 ? urls : [getDefaultImageForPropertyType(mapPropertyType(getValue(COL.Y)))];
+          })(),
           featured: false,
           displayOrder: 0,
           isVisible: true,
-          agentId: (() => {
-            const raw = parseInt(getValue(COL.AQ));
-            return Number.isFinite(raw) ? raw : 4; // AQ열에서 담당중개사ID 가져오기, 없거나 NaN이면 기본값 4 (이민호)
-          })()
+          agentId: 4 // 기본값 4 (이민호)
         };
 
         // 필수 필드 검증
@@ -255,23 +284,28 @@ export async function importPropertiesFromSheet(
   }
 }
 
-// 속성 유형 매핑 함수
+// 속성 유형 매핑 함수 - 새로운 부동산 유형: 토지,단독,근린,아파트,다세대,연립,원투룸,다가구,오피스텔,기타
 function mapPropertyType(type: string): string {
   const typeMap: Record<string, string> = {
     '토지': '토지',
-    '주택': '주택',
-    '아파트': '아파트연립다세대',
-    '연립': '아파트연립다세대',
-    '다세대': '아파트연립다세대',
-    '아파트연립다세대': '아파트연립다세대',
+    '단독': '단독',
+    '단독주택': '단독',
+    '주택': '단독',
+    '근린': '근린',
+    '근린상가': '근린',
+    '아파트': '아파트',
+    '다세대': '다세대',
+    '연립': '연립',
     '원룸': '원투룸',
     '투룸': '원투룸',
     '원투룸': '원투룸',
-    '상가': '상가공장창고펜션',
-    '공장': '상가공장창고펜션',
-    '창고': '상가공장창고펜션',
-    '펜션': '상가공장창고펜션',
-    '상가공장창고펜션': '상가공장창고펜션'
+    '다가구': '다가구',
+    '오피스텔': '오피스텔',
+    '상가': '근린',
+    '공장': '기타',
+    '창고': '기타',
+    '펜션': '기타',
+    '기타': '기타'
   };
 
   const normalizedType = type.trim();
@@ -289,17 +323,22 @@ function mapPropertyType(type: string): string {
   }
 
   // 기본값
-  return '주택';
+  return '기타';
 }
 
 // 속성 유형에 따른 기본 이미지 URL 반환 함수
 function getDefaultImageForPropertyType(type: string): string {
   const imageMap: Record<string, string> = {
     '토지': '/attached_assets/토지-001.png',
-    '주택': '/attached_assets/주택-001.png',
-    '아파트연립다세대': '/attached_assets/아파트-001.png',
+    '단독': '/attached_assets/주택-001.png',
+    '근린': '/attached_assets/상가펜션-001.png',
+    '아파트': '/attached_assets/아파트-001.png',
+    '다세대': '/attached_assets/아파트-001.png',
+    '연립': '/attached_assets/아파트-001.png',
     '원투룸': '/attached_assets/원룸-001.png',
-    '상가공장창고펜션': '/attached_assets/상가펜션-001.png'
+    '다가구': '/attached_assets/아파트-001.png',
+    '오피스텔': '/attached_assets/아파트-001.png',
+    '기타': '/attached_assets/주택-001.png'
   };
 
   return imageMap[type] || '/attached_assets/주택-001.png';

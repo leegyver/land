@@ -661,6 +661,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('부동산 등록 요청 데이터:', JSON.stringify(req.body, null, 2));
 
       try {
+        // 숫자 필드에서 쉼표 제거하는 헬퍼 함수
+        const stripCommas = (value: any): string | null => {
+          if (value === "" || value === null || value === undefined) return null;
+          return String(value).replace(/,/g, '');
+        };
+
         // 다중 이미지 URLs 배열을 처리
         // imageUrls가 있으면 그대로 사용하고, 없으면 기본값인 빈 배열을 사용
         // 타입을 변환하지 않고 원래 타입 그대로 유지
@@ -674,18 +680,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // dealType 처리 - 배열로 변환
           dealType: Array.isArray(req.body.dealType) ? req.body.dealType : 
                     (req.body.dealType ? [req.body.dealType] : ['매매']),
-          // 필수 필드에 대한 기본값 처리
-          city: req.body.city || "인천", // city 필드에 기본값 설정
-          size: req.body.size !== undefined ? String(req.body.size) : "0", // size를 문자열로 변환
+          // 숫자 필드들 - 쉼표 제거 후 처리
+          price: stripCommas(req.body.price) || "0",
+          size: stripCommas(req.body.size) || "0",
           // agentId 처리 - 필수 필드이므로 기본값 설정 (database에서는 agent_id로 저장됨)
-          agentId: req.body.agentId || req.body.agent_id || 4, // 기본값은 4 (정현우 중개사)
-          supplyArea: req.body.supplyArea === "" ? null : req.body.supplyArea,
-          privateArea: req.body.privateArea === "" ? null : req.body.privateArea,
+          agentId: (() => {
+            const raw = Number(req.body.agentId || req.body.agent_id);
+            return Number.isFinite(raw) && raw > 0 ? raw : 4; // NaN이나 무효한 값이면 기본값 4 (이민호 중개사)
+          })(),
+          supplyArea: stripCommas(req.body.supplyArea),
+          privateArea: stripCommas(req.body.privateArea),
           floor: req.body.floor === "" ? null : (req.body.floor ? parseInt(req.body.floor) || null : null), 
           totalFloors: req.body.totalFloors === "" ? null : (req.body.totalFloors ? parseInt(req.body.totalFloors) || null : null),
-          deposit: req.body.deposit === "" ? null : req.body.deposit,
-          monthlyRent: req.body.monthlyRent === "" ? null : req.body.monthlyRent,
-          maintenanceFee: req.body.maintenanceFee === "" ? null : req.body.maintenanceFee
+          deposit: stripCommas(req.body.deposit),
+          depositAmount: stripCommas(req.body.depositAmount),
+          monthlyRent: stripCommas(req.body.monthlyRent),
+          maintenanceFee: stripCommas(req.body.maintenanceFee)
         };
 
         console.log('처리된 데이터:', JSON.stringify(processedData, null, 2));
@@ -724,6 +734,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Property not found" });
       }
 
+      // 숫자 필드에서 쉼표 제거하는 헬퍼 함수
+      const stripCommas = (value: any): string | null => {
+        if (value === "" || value === null || value === undefined) return null;
+        return String(value).replace(/,/g, '');
+      };
+
       // 신규 등록과 완전히 동일한 데이터 처리 로직 적용
       const processedData = {
         ...req.body,
@@ -734,18 +750,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // dealType 처리 - 배열로 변환
         dealType: Array.isArray(req.body.dealType) ? req.body.dealType : 
                   (req.body.dealType ? [req.body.dealType] : (existingProperty.dealType || ['매매'])),
-        // 필수 필드에 대한 기본값 처리
-        city: req.body.city || existingProperty.city || "인천", // city 필드에 기본값 설정
-        size: req.body.size !== undefined ? String(req.body.size) : (existingProperty.size ? String(existingProperty.size) : "0"), // size를 문자열로 변환
+        // 숫자 필드들 - 쉼표 제거 후 처리
+        price: stripCommas(req.body.price) || existingProperty.price || "0",
+        size: stripCommas(req.body.size) || existingProperty.size || "0",
         // agentId 처리 - 필수 필드이므로 기본값 설정 (database에서는 agent_id로 저장됨)
-        agentId: req.body.agentId || req.body.agent_id || existingProperty.agentId || 4, // 기본값은 4 (정현우 중개사)
-        supplyArea: req.body.supplyArea === "" ? null : req.body.supplyArea,
-        privateArea: req.body.privateArea === "" ? null : req.body.privateArea,
+        agentId: (() => {
+          const raw = Number(req.body.agentId || req.body.agent_id || existingProperty.agentId);
+          return Number.isFinite(raw) && raw > 0 ? raw : 4; // NaN이나 무효한 값이면 기본값 4 (이민호 중개사)
+        })(),
+        supplyArea: stripCommas(req.body.supplyArea),
+        privateArea: stripCommas(req.body.privateArea),
         floor: req.body.floor === "" ? null : (req.body.floor ? parseInt(req.body.floor) || null : null), 
         totalFloors: req.body.totalFloors === "" ? null : (req.body.totalFloors ? parseInt(req.body.totalFloors) || null : null),
-        deposit: req.body.deposit === "" ? null : req.body.deposit,
-        monthlyRent: req.body.monthlyRent === "" ? null : req.body.monthlyRent,
-        maintenanceFee: req.body.maintenanceFee === "" ? null : req.body.maintenanceFee
+        deposit: stripCommas(req.body.deposit),
+        depositAmount: stripCommas(req.body.depositAmount),
+        monthlyRent: stripCommas(req.body.monthlyRent),
+        maintenanceFee: stripCommas(req.body.maintenanceFee)
       };
 
       const validatedData = insertPropertySchema.partial().parse(processedData);

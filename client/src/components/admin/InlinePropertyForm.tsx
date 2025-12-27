@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Property, insertPropertySchema } from "@shared/schema";
+import { Property, insertPropertySchema, User } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { X } from "lucide-react";
 
@@ -230,6 +230,11 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedMainDistrict, setSelectedMainDistrict] = useState<string>(districts[0]);
+  
+  // 담당 중개사 목록 조회
+  const { data: users } = useQuery<User[]>({
+    queryKey: ['/api/admin/users'],
+  });
   const [detailedDistrictOptions, setDetailedDistrictOptions] = useState<string[]>(
     detailedDistricts[districts[0]]
   );
@@ -242,7 +247,7 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
     district: "강화읍 갑곳리",
     address: "",
     size: "0",
-    agentId: 1,
+    agentId: 4, // 기본값: 이민호
     bedrooms: 0,
     bathrooms: 0,
     featured: false,
@@ -319,7 +324,7 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
         size: property.size ? property.size.toString() : "",
         bedrooms: property.bedrooms || 0,
         bathrooms: property.bathrooms || 0,
-        agentId: property.agentId || 1,
+        agentId: property.agentId || 4,
         featured: !!property.featured,
         buildingName: property.buildingName || "",
         unitNumber: property.unitNumber || "",
@@ -702,6 +707,34 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
                     <div className="space-y-1 leading-none">
                       <FormLabel>추천 매물로 표시</FormLabel>
                     </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="agentId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>담당 중개사</FormLabel>
+                    <Select
+                      onValueChange={(value) => field.onChange(Number(value))}
+                      value={field.value?.toString()}
+                    >
+                      <FormControl>
+                        <SelectTrigger data-testid="select-agent">
+                          <SelectValue placeholder="담당 중개사 선택" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {users?.map((user) => (
+                          <SelectItem key={user.id} value={user.id.toString()}>
+                            {user.username}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

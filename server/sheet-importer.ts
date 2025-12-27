@@ -38,7 +38,7 @@ const COL = {
   AN: 39, // 의뢰인 (clientName)
   AO: 40, // 의뢰인전화 (clientPhone)
   AP: 41, // 특이사항 (specialNote)
-  AQ: 42, // 공동중개 (coListing)
+  AQ: 42, // 담당중개사ID (agentId)
   AR: 43, // 매물설명 (propertyDescription)
   AS: 44, // 비공개메모 (privateNote)
   AT: 45, // 제목 (title)
@@ -204,7 +204,7 @@ export async function importPropertiesFromSheet(
           
           // 추가 정보
           specialNote: getValue(COL.AP) || null,
-          coListing: getBooleanValue(COL.AQ),
+          coListing: false, // 공동중개 기본값
           propertyDescription: getValue(COL.AR) || null,
           privateNote: getValue(COL.AS) || null,
           youtubeUrl: getValue(COL.BA) || null,
@@ -215,7 +215,10 @@ export async function importPropertiesFromSheet(
           featured: false,
           displayOrder: 0,
           isVisible: true,
-          agentId: 4 // 기본 중개사 ID
+          agentId: (() => {
+            const raw = parseInt(getValue(COL.AQ));
+            return Number.isFinite(raw) ? raw : 4; // AQ열에서 담당중개사ID 가져오기, 없거나 NaN이면 기본값 4 (이민호)
+          })()
         };
 
         // 필수 필드 검증

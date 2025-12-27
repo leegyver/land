@@ -41,10 +41,11 @@ export default function KakaoMap({ singleProperty, zoom = 3 }: KakaoMapProps) {
 
   // 매물 위치 좌표 계산 함수
   const getPropertyLocation = (property: Property) => {
-    // 실제 위/경도 정보가 있는 경우
-    if (property.latitude !== undefined && property.longitude !== undefined) {
-      const lat = Number(property.latitude);
-      const lng = Number(property.longitude);
+    // 실제 위/경도 정보가 있는 경우 (property에 해당 필드가 있을 때만)
+    const propWithCoords = property as Property & { latitude?: number; longitude?: number };
+    if (propWithCoords.latitude !== undefined && propWithCoords.longitude !== undefined) {
+      const lat = Number(propWithCoords.latitude);
+      const lng = Number(propWithCoords.longitude);
       
       if (!isNaN(lat) && !isNaN(lng)) {
         return { lat, lng };

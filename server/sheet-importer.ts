@@ -48,54 +48,56 @@ export async function importPropertiesFromSheet(
           continue;
         }
 
-        // 시트 열 매핑 (확장된 버전)
-        // A:제목, B:설명, C:유형, D:가격, E:주소, F:지역, G:면적, H:침실수, I:욕실수,
-        // J:층수, K:총층수, L:이미지URL, M:이미지URLs, N:추천매물, O:거래유형, P:건축년도,
-        // Q:보증금, R:월세, S:관리비, T:지목, U:용도지역, V:건물명, W:동호수, X:공급면적,
-        // Y:전용면적, Z:평형, AA:방향, AB:승강기유무, AC:주차대수, AD:난방방식, AE:사용승인일,
-        // AF:소유자, AG:소유자전화, AH:임차인, AI:임차인전화, AJ:의뢰인, AK:의뢰인전화,
-        // AL:특이사항, AM:공동중개유무, AN:비공개메모
+        // 시트 열 매핑 (업데이트된 버전)
+        // AT:제목, AU:설명, Y:유형, AE:가격, C:주소, B:지역, J:면적, P:침실수, Q:욕실수,
+        // S:층수, T:총층수, U:방향, V:난방방식, X:사용승인일,
+        // D:지목, E:용도지역, G:건물명, H:동호수, J:공급면적, M:전용면적, O:평형,
+        // AD:거래유형, AG:보증금, AH:월세, AI:관리비,
+        // AJ:소유자, AK:소유자전화, AL:임차인, AM:임차인전화, AN:의뢰인, AO:의뢰인전화,
+        // AP:특이사항, AQ:공동중개, AR:매물설명, AS:비공개메모, BA:유튜브URL,
+        // AB:승강기유무, AC:주차
         const propertyData: Partial<InsertProperty> = {
-          title: row[0] || '',
-          description: row[1] || '',
-          type: mapPropertyType(row[2] || ''),
-          price: row[3] || '',
-          address: row[4] || '',
-          district: row[5] || '',
-          size: row[6]?.toString() || '0',
-          bedrooms: parseInt(row[7]) || 0,
-          bathrooms: parseInt(row[8]) || 0,
-          floor: parseInt(row[9]) || null,
-          totalFloors: parseInt(row[10]) || null,
-          imageUrl: row[11] || getDefaultImageForPropertyType(mapPropertyType(row[2] || '')),
-          imageUrls: row[12] ? JSON.parse(row[12]) : [row[11] || getDefaultImageForPropertyType(mapPropertyType(row[2] || ''))],
-          featured: row[13]?.toLowerCase() === 'true' || false,
-          dealType: row[14] ? [row[14]] : ['매매'], // O열: 거래유형
-          yearBuilt: row[15] || null, // P열: 건축년도
-          deposit: row[16] || null, // Q열: 보증금
-          monthlyRent: row[17] || null, // R열: 월세
-          maintenanceFee: row[18] || null, // S열: 관리비
-          landType: row[19] || null, // T열: 지목
-          zoneType: row[20] || null, // U열: 용도지역
-          buildingName: row[21] || null, // V열: 건물명
-          unitNumber: row[22] || null, // W열: 동호수
-          supplyArea: row[23] || null, // X열: 공급면적
-          privateArea: row[24] || null, // Y열: 전용면적
-          areaSize: row[25] || null, // Z열: 평형
-          direction: row[26] || null, // AA열: 방향
+          title: row[45] || '', // AT열: 제목
+          description: row[46] || '', // AU열: 설명
+          type: mapPropertyType(row[24] || ''), // Y열: 유형
+          price: row[30] || '', // AE열: 가격
+          address: row[2] || '', // C열: 주소
+          district: row[1] || '', // B열: 지역
+          size: row[9]?.toString() || '0', // J열: 면적
+          bedrooms: parseInt(row[15]) || 0, // P열: 침실수
+          bathrooms: parseInt(row[16]) || 0, // Q열: 욕실수
+          floor: parseInt(row[18]) || null, // S열: 층수
+          totalFloors: parseInt(row[19]) || null, // T열: 총층수
+          direction: row[20] || null, // U열: 방향
+          heatingSystem: row[21] || null, // V열: 난방방식
+          approvalDate: row[23] || null, // X열: 사용승인일
+          landType: row[3] || null, // D열: 지목
+          zoneType: row[4] || null, // E열: 용도지역
+          buildingName: row[6] || null, // G열: 건물명
+          unitNumber: row[7] || null, // H열: 동호수
+          supplyArea: row[9] || null, // J열: 공급면적
+          privateArea: row[12] || null, // M열: 전용면적
+          areaSize: row[14] || null, // O열: 평형
+          dealType: row[29] ? [row[29]] : ['매매'], // AD열: 거래유형
+          deposit: row[32] || null, // AG열: 보증금
+          monthlyRent: row[33] || null, // AH열: 월세
+          maintenanceFee: row[34] || null, // AI열: 관리비
+          ownerName: row[35] || null, // AJ열: 소유자
+          ownerPhone: row[36] || null, // AK열: 소유자전화
+          tenantName: row[37] || null, // AL열: 임차인
+          tenantPhone: row[38] || null, // AM열: 임차인전화
+          clientName: row[39] || null, // AN열: 의뢰인
+          clientPhone: row[40] || null, // AO열: 의뢰인전화
+          specialNote: row[41] || null, // AP열: 특이사항
+          coListing: row[42]?.toLowerCase() === 'true' || false, // AQ열: 공동중개
+          propertyDescription: row[43] || null, // AR열: 매물설명
+          privateNote: row[44] || null, // AS열: 비공개메모
+          youtubeUrl: row[52] || null, // BA열: 유튜브URL
           elevator: row[27]?.toLowerCase() === 'true' || false, // AB열: 승강기유무
-          parking: row[28] || null, // AC열: 주차대수
-          heatingSystem: row[29] || null, // AD열: 난방방식
-          approvalDate: row[30] || null, // AE열: 사용승인일
-          ownerName: row[31] || null, // AF열: 소유자
-          ownerPhone: row[32] || null, // AG열: 소유자전화
-          tenantName: row[33] || null, // AH열: 임차인
-          tenantPhone: row[34] || null, // AI열: 임차인전화
-          clientName: row[35] || null, // AJ열: 의뢰인
-          clientPhone: row[36] || null, // AK열: 의뢰인전화
-          specialNote: row[37] || null, // AL열: 특이사항
-          coListing: row[38]?.toLowerCase() === 'true' || false, // AM열: 공동중개유무
-          privateNote: row[39] || null, // AN열: 비공개메모
+          parking: row[28] || null, // AC열: 주차
+          imageUrl: getDefaultImageForPropertyType(mapPropertyType(row[24] || '')), // 기본 이미지
+          imageUrls: [], // 빈 배열로 초기화
+          featured: false, // 기본값
           agentId: 4 // 기본 중개사 ID
         };
 

@@ -41,14 +41,10 @@ function PropertyForm() {
   const { toast } = useToast();
   const params = useParams();
   const isEditMode = !!params.id;
-  
+
   const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
-  
-  // 거래 유형 정의
-  const dealTypeOptions = ["매매", "전세", "월세", "완료", "보류중"];
-  const propertyTypeOptions = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
-  
+
   // 부동산 유형별 기본 이미지 매핑
   const defaultPropertyImages = {
     '토지': landDefaultImage,
@@ -57,12 +53,16 @@ function PropertyForm() {
     '원투룸': oneroomDefaultImage,
     '상가공장창고펜션': commercialDefaultImage
   };
-  
+
   // 부동산 유형에 맞는 기본 이미지 가져오기
   const getDefaultImageForPropertyType = (type) => {
     return defaultPropertyImages[type] || defaultPropertyImages['주택']; // 기본값은 주택 이미지
   };
-  
+
+  // 거래 유형 정의
+  const dealTypeOptions = ["매매", "전세", "월세", "완료", "보류중"];
+  const propertyTypeOptions = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
+
   // 통합된 지역 목록 (읍면동리)
   const allLocations = [
     "강화읍 갑곳리",
@@ -163,10 +163,10 @@ function PropertyForm() {
     "화도면 흥왕리",
     "기타지역"
   ];
-  
+
   // 지목 옵션 목록
   const landTypeOptions = ["전", "답", "임", "대", "목", "잡", "창", "도", "장", "학", "주", "염", "과", "철", "제", "천", "구", "유", "양", "수", "공원", "체", "원", "종", "사", "묘", "광"];
-  
+
   // 용도지역 옵션 목록
   const zoneTypeOptions = [
     "제1종전용주거", "제2종전용주거", "제1종일반주거", "제2종일반주거", "제3종일반주거", 
@@ -192,16 +192,16 @@ function PropertyForm() {
     imageUrls: [], // 다중 이미지 저장용 배열
     agentId: 4, // 기본 에이전트 ID 설정 (정현우 중개사)
     featured: false,
-    
+
     // 위치 정보
     buildingName: "",
     unitNumber: "",
-    
+
     // 면적 정보
     supplyArea: "",
     privateArea: "",
     areaSize: "",
-    
+
     // 건물 정보
     floor: "",
     totalFloors: 0, // 숫자로 초기화
@@ -210,17 +210,18 @@ function PropertyForm() {
     parking: "",
     heatingSystem: "",
     approvalDate: "",
-    
+
     // 토지 정보
     landType: "", // 지목
     zoneType: "", // 용도지역
-    
+
     // 금액 정보
     dealType: ["매매"],
     deposit: "",
+    depositAmount: "", // 추가된 필드
     monthlyRent: "",
     maintenanceFee: "",
-    
+
     // 연락처 정보
     ownerName: "",
     ownerPhone: "",
@@ -228,7 +229,7 @@ function PropertyForm() {
     tenantPhone: "",
     clientName: "",
     clientPhone: "",
-    
+
     // 추가 정보
     specialNote: "",
     coListing: false,
@@ -237,14 +238,14 @@ function PropertyForm() {
     youtubeUrl: "", // 유튜브 영상 URL
     featuredImageIndex: 0, // 대표 이미지 인덱스 추가
   });
-  
+
   // 이미지 업로드 관련 상태
   const [uploadedImages, setUploadedImages] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
   const [featuredImageIndex, setFeaturedImageIndex] = useState(0); // 대표 이미지 인덱스 관리
-  
 
-  
+
+
   // 편집 모드일 경우 기존 데이터 로드
   useEffect(() => {
     if (isEditMode) {
@@ -263,15 +264,19 @@ function PropertyForm() {
               // 필수 필드 데이터 보완
               agentId: data.agentId || 4, // 기본값 4 (정현우 중개사)
               dealType: data.dealType || ["매매"],
+              deposit: data.deposit ? data.deposit.toString() : "",
+              depositAmount: data.depositAmount ? data.depositAmount.toString() : "",
+              monthlyRent: data.monthlyRent ? data.monthlyRent.toString() : "",
+              maintenanceFee: data.maintenanceFee ? data.maintenanceFee.toString() : "",
               imageUrls: data.imageUrls || [],
               elevator: Boolean(data.elevator),
               coListing: Boolean(data.coListing),
               featured: Boolean(data.featured),
             });
-            
+
             // 이미지 처리: 배열 먼저 확인하고, 없으면 단일 이미지 확인
             let imageList = [];
-            
+
             if (data.imageUrls && Array.isArray(data.imageUrls) && data.imageUrls.length > 0) {
               // 이미지 배열 사용
               imageList = [...data.imageUrls];
@@ -280,7 +285,7 @@ function PropertyForm() {
               // 단일 이미지가 있으면 배열에 추가
               imageList = [data.imageUrl];
             }
-            
+
             // 이미지 객체 배열로 변환
             if (imageList.length > 0) {
               const images = imageList.map((url, index) => ({
@@ -288,7 +293,7 @@ function PropertyForm() {
                 url: url
               }));
               setUploadedImages(images);
-              
+
               // 대표 이미지 인덱스 설정
               // 단일 imageUrl이 있고 그 URL이 imageUrls 배열에 있으면 해당 인덱스를 대표 이미지로 설정
               if (data.imageUrl) {
@@ -297,7 +302,7 @@ function PropertyForm() {
                   setFeaturedImageIndex(representativeIndex);
                 }
               }
-              
+
               // 폼 데이터의 imageUrls도 업데이트
               setFormData(prev => ({
                 ...prev,
@@ -324,15 +329,15 @@ function PropertyForm() {
           setLoading(false);
         }
       };
-      
+
       fetchProperty();
     }
   }, [isEditMode, params.id, toast]);
-  
+
   // 입력 필드 변경 핸들러
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     if (type === "checkbox") {
       setFormData({ ...formData, [name]: checked });
     } else if (type === "number") {
@@ -341,12 +346,12 @@ function PropertyForm() {
       setFormData({ ...formData, [name]: value });
     }
   };
-  
+
   // 셀렉트 필드 변경 핸들러
   const handleSelectChange = (name, value) => {
     setFormData({ ...formData, [name]: value });
   };
-  
+
   // 거래 유형 체크박스 핸들러
   const handleDealTypeChange = (type, checked) => {
     if (checked) {
@@ -361,11 +366,11 @@ function PropertyForm() {
       });
     }
   };
-  
+
   // 폼 제출 핸들러
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.title || !formData.price || !formData.address) {
       toast({
         title: "입력 오류",
@@ -374,10 +379,10 @@ function PropertyForm() {
       });
       return;
     }
-    
+
     try {
       setSaving(true);
-      
+
       // 서버에 맞게 데이터 타입 변환하기
       const submissionData = {
         ...formData,
@@ -391,17 +396,17 @@ function PropertyForm() {
         bathrooms: Number(formData.bathrooms),
         featuredImageIndex: featuredImageIndex
       };
-      
+
       // 이미지 처리: 이미지가 없을 경우 부동산 유형에 맞는 기본 이미지 설정
       if (!formData.imageUrls || formData.imageUrls.length === 0) {
         try {
           // 부동산 유형에 맞는 기본 이미지 가져오기
           const defaultImage = getDefaultImageForPropertyType(formData.type);
-          
+
           // 기본 이미지를 배열과 단일 이미지 URL에 모두 설정
           submissionData.imageUrls = [defaultImage];
           submissionData.imageUrl = defaultImage;
-          
+
           console.log(`이미지가 없어 기본 이미지를 적용합니다. 유형: ${formData.type}, 이미지: ${defaultImage}`);
         } catch (error) {
           console.error("기본 이미지 적용 중 오류 발생:", error);
@@ -411,16 +416,16 @@ function PropertyForm() {
       else if (formData.imageUrls && formData.imageUrls.length > 0 && featuredImageIndex >= 0) {
         submissionData.imageUrl = formData.imageUrls[featuredImageIndex] || formData.imageUrls[0];
       }
-      
+
       // 디버깅용 로그
       console.log("부동산 수정 요청 데이터:", submissionData);
-      
+
       const url = isEditMode 
         ? `/api/properties/${params.id}` 
         : "/api/properties";
-      
+
       const method = isEditMode ? "PATCH" : "POST";
-      
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -428,7 +433,7 @@ function PropertyForm() {
         },
         body: JSON.stringify(submissionData),
       });
-      
+
       if (response.ok) {
         const result = await response.json();
         toast({
@@ -453,7 +458,7 @@ function PropertyForm() {
       setSaving(false);
     }
   };
-  
+
   if (loading) {
     return (
       <div className="container mx-auto p-6 flex justify-center items-center min-h-[60vh]">
@@ -461,7 +466,7 @@ function PropertyForm() {
       </div>
     );
   }
-  
+
   return (
     <div className="container mx-auto p-4">
       <div className="flex items-center mb-6">
@@ -478,7 +483,7 @@ function PropertyForm() {
           {isEditMode ? "부동산 정보 수정" : "새 부동산 등록"}
         </h1>
       </div>
-      
+
       <form onSubmit={handleSubmit}>
         <Tabs defaultValue="basic" className="w-full">
           <TabsList className="mb-4">
@@ -489,7 +494,7 @@ function PropertyForm() {
             <TabsTrigger value="contacts">연락처</TabsTrigger>
             <TabsTrigger value="notes">추가 정보</TabsTrigger>
           </TabsList>
-          
+
           {/* 기본 정보 탭 */}
           <TabsContent value="basic">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -511,7 +516,7 @@ function PropertyForm() {
                       required
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="type">부동산 유형 *</Label>
                     <Select 
@@ -531,7 +536,7 @@ function PropertyForm() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="price">매매가 *</Label>
                     <Input
@@ -543,7 +548,7 @@ function PropertyForm() {
                       required
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="address">주소 *</Label>
                     <Input
@@ -555,7 +560,7 @@ function PropertyForm() {
                       placeholder="상세 주소를 입력하세요"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="district">지역 *</Label>
                     <Select
@@ -574,7 +579,7 @@ function PropertyForm() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="size">면적(㎡) *</Label>
                     <Input
@@ -592,7 +597,7 @@ function PropertyForm() {
                       required
                     />
                   </div>
-                  
+
                   {/* 부동산 유형이 '토지'가 아닐 때만 방 개수와 화장실 개수 필드 표시 */}
                   {formData.type !== '토지' && (
                     <div className="grid grid-cols-2 gap-4">
@@ -620,7 +625,7 @@ function PropertyForm() {
                       </div>
                     </div>
                   )}
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="youtubeUrl">유튜브 영상 URL (선택사항)</Label>
                     <Input
@@ -635,7 +640,7 @@ function PropertyForm() {
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader>
                   <CardTitle>추가 기본 정보</CardTitle>
@@ -654,7 +659,7 @@ function PropertyForm() {
                       rows={4}
                     />
                   </div>
-                  
+
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
@@ -693,9 +698,9 @@ function PropertyForm() {
 
                                   const file = e.target.files[0];
                                   if (!file) return;
-                                  
+
                                   setIsUploading(true);
-                                  
+
                                   // 이미지 압축 함수
                                   const compressImage = (file) => {
                                     return new Promise((resolve) => {
@@ -710,7 +715,7 @@ function PropertyForm() {
                                           const MAX_SIZE = 800;
                                           let width = img.width;
                                           let height = img.height;
-                                          
+
                                           // 이미지 크기 조정
                                           if (width > height) {
                                             if (width > MAX_SIZE) {
@@ -723,14 +728,14 @@ function PropertyForm() {
                                               height = MAX_SIZE;
                                             }
                                           }
-                                          
+
                                           canvas.width = width;
                                           canvas.height = height;
-                                          
+
                                           // 캔버스에 이미지 그리기
                                           const ctx = canvas.getContext('2d');
                                           ctx.drawImage(img, 0, 0, width, height);
-                                          
+
                                           // 이미지 포맷 및 품질 설정 (0.7 = 70% 품질)
                                           const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
                                           resolve(compressedDataUrl);
@@ -739,7 +744,7 @@ function PropertyForm() {
                                       reader.readAsDataURL(file);
                                     });
                                   };
-                                  
+
                                   // 이미지 압축 실행
                                   compressImage(file).then(compressedDataUrl => {
                                     const newImage = {
@@ -747,22 +752,22 @@ function PropertyForm() {
                                       url: compressedDataUrl,
                                       file: file
                                     };
-                                    
+
                                     // 기존 이미지에 추가
                                     const updatedImages = [...uploadedImages, newImage];
                                     setUploadedImages(updatedImages);
-                                    
+
                                     // 첫 번째 이미지일 경우 대표 이미지로 설정
                                     if (uploadedImages.length === 0) {
                                       setFeaturedImageIndex(0);
                                     }
-                                    
+
                                     // formData의 imageUrls 업데이트
                                     setFormData(prev => ({
                                       ...prev,
                                       imageUrls: updatedImages.map(img => img.url)
                                     }));
-                                    
+
                                     // 업로드 완료 상태로 변경
                                     setIsUploading(false);
                                   }).catch(error => {
@@ -774,7 +779,7 @@ function PropertyForm() {
                                       variant: "destructive"
                                     });
                                   });
-                                  
+
                                   // input 초기화
                                   e.target.value = '';
                                 }}
@@ -783,7 +788,7 @@ function PropertyForm() {
                             </label>
                           </div>
                         </div>
-                        
+
                         {/* 업로드된 이미지 미리보기 */}
                         {uploadedImages.length > 0 && (
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-3">
@@ -802,13 +807,13 @@ function PropertyForm() {
                                       // 이미지 제거
                                       const updatedImages = uploadedImages.filter(img => img.id !== image.id);
                                       setUploadedImages(updatedImages);
-                                      
+
                                       // formData 업데이트
                                       setFormData(prev => ({
                                         ...prev,
                                         imageUrls: updatedImages.map(img => img.url)
                                       }));
-                                      
+
                                       // 대표 이미지 인덱스 조정
                                       if (featuredImageIndex >= updatedImages.length && updatedImages.length > 0) {
                                         setFeaturedImageIndex(0);
@@ -850,12 +855,12 @@ function PropertyForm() {
                         )}
                       </div>
                     </div>
-                    
+
                     {/* 대표 이미지 URL 입력 필드는 제거됨 */}
                   </div>
-                  
 
-                  
+
+
                   <div className="flex items-center space-x-2 pt-4">
                     <Checkbox
                       id="featured"
@@ -871,7 +876,7 @@ function PropertyForm() {
               </Card>
             </div>
           </TabsContent>
-          
+
           {/* 상세 정보 탭 */}
           <TabsContent value="details">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -892,7 +897,7 @@ function PropertyForm() {
                       onChange={handleChange}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="unitNumber">동호수</Label>
                     <Input
@@ -904,7 +909,7 @@ function PropertyForm() {
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader>
                   <CardTitle>면적 정보</CardTitle>
@@ -923,7 +928,7 @@ function PropertyForm() {
                       onChange={handleChange}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="privateArea">전용(평)</Label>
                     <Input
@@ -934,7 +939,7 @@ function PropertyForm() {
                       onChange={handleChange}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="areaSize">평형</Label>
                     <Input
@@ -946,7 +951,7 @@ function PropertyForm() {
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader>
                   <CardTitle>건물 정보</CardTitle>
@@ -977,7 +982,7 @@ function PropertyForm() {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="direction">방향</Label>
                     <Input
@@ -987,7 +992,7 @@ function PropertyForm() {
                       onChange={handleChange}
                     />
                   </div>
-                  
+
                   <div className="flex items-center space-x-2 pt-2">
                     <Checkbox
                       id="elevator"
@@ -999,7 +1004,7 @@ function PropertyForm() {
                     />
                     <Label htmlFor="elevator">승강기 있음</Label>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="parking">주차</Label>
                     <Input
@@ -1009,7 +1014,7 @@ function PropertyForm() {
                       onChange={handleChange}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="heatingSystem">난방방식</Label>
                     <Input
@@ -1019,7 +1024,7 @@ function PropertyForm() {
                       onChange={handleChange}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="approvalDate">사용승인</Label>
                     <Input
@@ -1034,8 +1039,7 @@ function PropertyForm() {
               </Card>
             </div>
           </TabsContent>
-          
-          {/* 가격 정보 탭 */}
+
           {/* 토지 정보 탭 */}
           <TabsContent value="land">
             <Card>
@@ -1064,7 +1068,7 @@ function PropertyForm() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="zoneType">용도지역</Label>
                     <Select 
@@ -1086,7 +1090,7 @@ function PropertyForm() {
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="price">
             <Card>
               <CardHeader>
@@ -1113,15 +1117,26 @@ function PropertyForm() {
                     ))}
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                   <div className="space-y-2">
-                    <Label htmlFor="deposit">전세금/보증금</Label>
+                    <Label htmlFor="deposit">전세금</Label>
                     <Input
                       id="deposit"
                       name="deposit"
                       type="text"
                       value={formData.deposit || ""}
+                      onChange={handleChange}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="depositAmount">보증금</Label>
+                    <Input
+                      id="depositAmount"
+                      name="depositAmount"
+                      type="text"
+                      value={formData.depositAmount || ""}
                       onChange={handleChange}
                     />
                   </div>
@@ -1137,7 +1152,7 @@ function PropertyForm() {
                     />
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="maintenanceFee">관리비</Label>
                   <Input
@@ -1151,7 +1166,7 @@ function PropertyForm() {
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           {/* 연락처 탭 */}
           <TabsContent value="contacts">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1169,7 +1184,7 @@ function PropertyForm() {
                       onChange={handleChange}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="ownerPhone">소유자 전화</Label>
                     <Input
@@ -1181,7 +1196,7 @@ function PropertyForm() {
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader>
                   <CardTitle>임차인 정보</CardTitle>
@@ -1196,7 +1211,7 @@ function PropertyForm() {
                       onChange={handleChange}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="tenantPhone">임차인 전화</Label>
                     <Input
@@ -1208,7 +1223,7 @@ function PropertyForm() {
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card>
                 <CardHeader>
                   <CardTitle>의뢰인 정보</CardTitle>
@@ -1223,7 +1238,7 @@ function PropertyForm() {
                       onChange={handleChange}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="clientPhone">의뢰인 전화</Label>
                     <Input
@@ -1237,7 +1252,7 @@ function PropertyForm() {
               </Card>
             </div>
           </TabsContent>
-          
+
           {/* 추가 정보 탭 */}
           <TabsContent value="notes">
             <div className="grid grid-cols-1 gap-6">
@@ -1259,7 +1274,7 @@ function PropertyForm() {
                       rows={3}
                     />
                   </div>
-                  
+
                   <div className="flex items-center space-x-2 pt-2">
                     <Checkbox
                       id="coListing"
@@ -1271,9 +1286,9 @@ function PropertyForm() {
                     />
                     <Label htmlFor="coListing">공동중개</Label>
                   </div>
-                  
+
                   {/* 매물설명 필드 삭제 요청에 따라 제거됨 */}
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="privateNote">비공개 메모</Label>
                     <Textarea
@@ -1289,7 +1304,7 @@ function PropertyForm() {
             </div>
           </TabsContent>
         </Tabs>
-        
+
         <div className="mt-8 flex justify-end">
           <Button
             type="button"

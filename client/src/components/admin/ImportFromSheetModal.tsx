@@ -25,9 +25,10 @@ export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalPr
   const [spreadsheetId, setSpreadsheetId] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [range, setRange] = useState("Sheet1!A2:Z");
+  const [filterDate, setFilterDate] = useState("");
 
   const importMutation = useMutation({
-    mutationFn: async (data: { spreadsheetId: string; apiKey: string; range: string }) => {
+    mutationFn: async (data: { spreadsheetId: string; apiKey: string; range: string; filterDate?: string }) => {
       const res = await apiRequest("POST", "/api/admin/import-from-sheet", data);
       return await res.json();
     },
@@ -73,7 +74,12 @@ export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalPr
       return;
     }
     
-    importMutation.mutate({ spreadsheetId, apiKey, range });
+    importMutation.mutate({ 
+      spreadsheetId, 
+      apiKey, 
+      range,
+      filterDate: filterDate || undefined
+    });
   };
 
   return (
@@ -128,15 +134,35 @@ export function ImportFromSheetModal({ isOpen, onClose }: ImportFromSheetModalPr
               />
             </div>
             
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="filterDate" className="text-right">
+                날짜 필터 (선택)
+              </Label>
+              <Input
+                id="filterDate"
+                type="date"
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            
             <div className="col-span-4">
               <DialogDescription className="text-xs">
-                <p className="mt-2 font-semibold">시트 포맷 안내:</p>
-                <p>A:제목, B:설명, C:유형, D:가격, E:주소, F:지역, G:면적, H:침실수, I:욕실수, J:층수, K:총층수, L:이미지URL, M:이미지URLs, N:추천매물</p>
-                <p>O:거래유형, P:건축년도, Q:보증금, R:월세, S:관리비, T:지목, U:용도지역, V:건물명, W:동호수, X:공급면적, Y:전용면적, Z:평형</p>
-                <p>AA:방향, AB:승강기(true/false), AC:주차대수, AD:난방방식, AE:사용승인일, AF:소유자, AG:소유자전화, AH:임차인, AI:임차인전화</p>
-                <p>AJ:의뢰인, AK:의뢰인전화, AL:특이사항, AM:공동중개(true/false), AN:비공개메모</p>
-                <p>
-                  유형은 다음 중 하나여야 합니다: 토지, 주택, 아파트연립다세대, 원투룸, 상가공장창고펜션
+                <p className="mt-2 font-semibold">날짜 필터:</p>
+                <p>A열의 날짜와 비교하여 선택된 날짜 이후의 데이터만 가져옵니다. (형식: YYYY-MM-DD)</p>
+                <p className="mt-2 font-semibold">시트 포맷 안내 (필수 필드):</p>
+                <p>A:날짜, AT:제목, AU:설명, Y:유형, AE:가격, C:주소, B:지역, J:면적, P:방개수, Q:욕실개수</p>
+                <p className="mt-1 font-semibold">건물 정보 (선택):</p>
+                <p>S:층수, T:총층, U:방향, AB:승강기(true/false), AC:주차, V:난방방식, X:사용승인일</p>
+                <p>G:건물명, H:동호수, J:공급면적, M:전용면적, O:평형</p>
+                <p className="mt-1 font-semibold">토지/금액/연락처 (선택):</p>
+                <p>D:지목, E:용도지역, AD:거래종류, AG:보증금, AH:월세, AI:관리비</p>
+                <p>AJ:소유자, AK:소유자전화, AL:임차인, AM:임차인전화, AN:의뢰인, AO:의뢰인전화</p>
+                <p className="mt-1 font-semibold">추가 정보 (선택):</p>
+                <p>AP:특이사항, AQ:공동중개(true/false), AR:매물설명, AS:비공개메모, BA:유튜브URL</p>
+                <p className="mt-1">
+                  유형(Y열): 토지, 주택, 아파트연립다세대, 원투룸, 상가공장창고펜션
                 </p>
               </DialogDescription>
             </div>

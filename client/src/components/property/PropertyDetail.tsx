@@ -304,7 +304,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
   const property = propertyData as Property | undefined;
   
   // 부동산 등록시 첨부한 이미지들을 사용
-  const defaultImage = "https://via.placeholder.com/800x500?text=매물+이미지+준비중";
+  const defaultImage = "/uploads/default-property.png";
   
   // 지도 관련 코드는 KakaoMap 컴포넌트로 이동했습니다.
   
@@ -447,6 +447,13 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
           {/* 주소에서 지번 정보를 제외 - 대략적인 위치만 표시 */}
           {property.district}
         </p>
+        
+        {/* 담당중개사 정보 - 위치와 이미지 사이 */}
+        {property.agentName && (
+          <p className="mt-2 text-sm text-green-700 font-medium bg-green-50 px-3 py-2 rounded-md inline-block">
+            담당공인중개사는 "{property.agentName}" 부동산 대표입니다
+          </p>
+        )}
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -702,14 +709,6 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                 </div>
               </div>
               
-              {/* 담당중개사 표시 */}
-              {property.agentName && (
-                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-green-800 font-medium">
-                    (매물담당 "{property.agentName}" 공인중개사 대표)
-                  </p>
-                </div>
-              )}
               
               {/* 매물 설명 섹션 */}
               {property.description && (

@@ -20,10 +20,10 @@ const Header = () => {
   
   const navItems = [
     { name: "홈", path: "/" },
-    { name: "매물", path: "/properties" },
-    { name: "부동산뉴스", path: "/news" },
+    { name: "모든매물보기", path: "/properties" },
+    { name: "강화도뉴스", path: "/news" },
     { name: "실거래가(디스코)", path: "/about" },
-    { name: "문의", path: "/contact" },
+    { name: "문의하기", path: "/contact" },
   ];
   
   const handleLogout = () => {
@@ -98,7 +98,7 @@ const Header = () => {
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" className="md:hidden px-3 py-2 text-sm font-medium">
-                전체보기
+                매물모두보기
               </Button>
             </SheetTrigger>
             <SheetContent>

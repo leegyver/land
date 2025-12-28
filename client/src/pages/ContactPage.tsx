@@ -25,18 +25,18 @@ const ContactPage = () => {
         </div>
       </div>
       
-      <section className="py-16">
+      <section className="py-6">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <div className="bg-white p-8 rounded-lg shadow-md">
-              <h3 className="text-2xl font-bold mb-6">상담 신청</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <h3 className="text-2xl font-bold mb-4">상담 신청</h3>
               <ContactForm />
             </div>
             
-            <div className="bg-white p-8 rounded-lg shadow-md">
-              <h3 className="text-2xl font-bold mb-6">연락처 정보</h3>
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <h3 className="text-2xl font-bold mb-4">연락처 정보</h3>
               
-              <div className="space-y-4">
+              <div className="space-y-2">
                 <div className="flex items-start">
                   <MapPin className="text-primary text-xl mt-1 w-8" />
                   <div>

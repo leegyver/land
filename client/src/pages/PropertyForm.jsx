@@ -553,14 +553,14 @@ function PropertyForm() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="price">매매가 *</Label>
+                    <Label htmlFor="price">매매가</Label>
                     <Input
                       id="price"
                       name="price"
                       type="text"
                       value={formData.price}
                       onChange={handleChange}
-                      required
+                      placeholder="선택사항"
                     />
                   </div>
 

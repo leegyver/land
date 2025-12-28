@@ -298,18 +298,8 @@ export async function importPropertiesFromSheet(
         const collectImageUrls = (): string[] => {
           const imageColumns = [COL.AV, COL.AW, COL.AX, COL.AY, COL.AZ];
           const urls: string[] = [];
-          console.log(`\n=== 이미지 수집 행 ${i+2} ===`);
-          console.log(`행 길이: ${row.length}, 이미지열: AV(${COL.AV}), AW(${COL.AW}), AX(${COL.AX}), AY(${COL.AY}), AZ(${COL.AZ})`);
-          
-          // 디버깅: 이미지 열 주변의 실제 데이터 출력 (AT=45, AU=46, AV=47, AW=48, AX=49, AY=50, AZ=51, BA=52)
-          console.log(`열 45(AT-제목) 값: "${(row[45] || '').toString().substring(0, 60)}"`);
-          console.log(`열 46(AU-설명) 값: "${(row[46] || '').toString().substring(0, 60)}"`);
-          console.log(`열 47(AV-이미지1) 값: "${(row[47] || '').toString().substring(0, 80)}"`);
-          console.log(`열 48(AW-이미지2) 값: "${(row[48] || '').toString().substring(0, 80)}"`);
-          console.log(`열 49(AX-이미지3) 값: "${(row[49] || '').toString().substring(0, 80)}"`);
-          console.log(`열 50(AY-이미지4) 값: "${(row[50] || '').toString().substring(0, 80)}"`);
-          console.log(`열 51(AZ-이미지5) 값: "${(row[51] || '').toString().substring(0, 80)}"`);
-          console.log(`열 52(BA-유튜브) 값: "${(row[52] || '').toString().substring(0, 80)}"`);
+          log(`[IMG] 행 ${i+2}: 행길이=${row.length}, AV(47)="${(row[47] || '').toString().substring(0, 60)}"`, 'info');
+          log(`[IMG] 행 ${i+2}: AW(48)="${(row[48] || '').toString().substring(0, 60)}", AX(49)="${(row[49] || '').toString().substring(0, 60)}"`, 'info');
           
           for (const col of imageColumns) {
             const rawValue = row[col];
@@ -320,14 +310,14 @@ export async function importPropertiesFromSheet(
             if (cleanUrl && cleanUrl.length > 0) {
               if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://') || cleanUrl.startsWith('//')) {
                 const finalUrl = cleanUrl.startsWith('//') ? 'https:' + cleanUrl : cleanUrl;
-                console.log(`>>> 유효한 URL 발견 (열 ${col}): ${finalUrl.substring(0, 80)}...`);
+                log(`[IMG] 행 ${i+2}: 열 ${col}에서 URL 발견: ${finalUrl.substring(0, 60)}...`, 'info');
                 urls.push(finalUrl);
               } else {
-                console.log(`열 ${col}: URL 형식 아님 - "${cleanUrl.substring(0, 50)}"`);
+                log(`[IMG] 행 ${i+2}: 열 ${col} URL형식 아님: "${cleanUrl.substring(0, 40)}"`, 'warn');
               }
             }
           }
-          console.log(`=== 행 ${i+2}: 총 ${urls.length}개 이미지 URL ===\n`);
+          log(`[IMG] 행 ${i+2}: 총 ${urls.length}개 URL`, 'info');
           return urls;
         };
 

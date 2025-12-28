@@ -16,27 +16,27 @@ const ContactPage = () => {
         <meta property="og:description" content="이가이버부동산에 문의하세요. 부동산 매매, 임대, 투자에 관한 모든 궁금증을 전문가가 상담해 드립니다." />
       </Helmet>
 
-      <div className="bg-primary/10 py-12">
+      <div className="bg-primary/10 py-4">
         <div className="container mx-auto px-4">
-          <h1 className="text-3xl font-bold">문의하기</h1>
-          <p className="text-gray-medium mt-2">
+          <h1 className="text-2xl font-bold">문의하기</h1>
+          <p className="text-gray-medium text-sm mt-1">
             궁금한 점이나 상담이 필요하시면 언제든지 문의해 주세요.
           </p>
         </div>
       </div>
       
-      <section className="py-6">
+      <section className="py-4">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-2xl font-bold mb-4">상담 신청</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="bg-white p-4 rounded-lg shadow-md">
+              <h3 className="text-xl font-bold mb-3">상담 신청</h3>
               <ContactForm />
             </div>
             
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-2xl font-bold mb-4">연락처 정보</h3>
+            <div className="bg-white p-4 rounded-lg shadow-md">
+              <h3 className="text-xl font-bold mb-3">연락처 정보</h3>
               
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <div className="flex items-start">
                   <MapPin className="text-primary text-xl mt-1 w-8" />
                   <div>

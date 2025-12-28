@@ -122,7 +122,7 @@ const PropertySearch = () => {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
           <Input
             type="text"
-            placeholder="검색어를 입력하거나 마이크를 눌러 음성으로 검색하세요"
+            placeholder="음성검색 또는 입력"
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
             className="pl-10 pr-12"

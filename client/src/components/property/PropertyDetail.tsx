@@ -625,6 +625,12 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                       <h4 className="font-semibold text-lg mb-3">건물 정보</h4>
                       <table className="w-full">
                         <tbody>
+                        {property.floor && (
+                          <tr className="border-b border-gray-100">
+                            <td className="py-2 text-gray-600">해당층</td>
+                            <td className="py-2 font-medium">{property.floor}층</td>
+                          </tr>
+                        )}
                         {property.totalFloors && (
                           <tr className="border-b border-gray-100">
                             <td className="py-2 text-gray-600">총 층수</td>

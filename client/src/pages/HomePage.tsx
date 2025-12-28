@@ -60,7 +60,7 @@ const HomePage = () => {
       <div className="pt-16"> {/* Offset for fixed header */}
         {/* 맵과 검색을 오른쪽으로 배치한 새로운 레이아웃 */}
         <div className="container mx-auto px-4 py-4">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {/* 왼쪽 콘텐츠 영역 - 추천 매물만 표시 (3/4 크기) */}
             <div className="order-2 lg:order-1 lg:col-span-3">
               <FeaturedProperties />
@@ -69,7 +69,7 @@ const HomePage = () => {
             {/* 오른쪽 지도 및 검색 영역 (1/4 크기) */}
             <div className="order-1 lg:order-2 lg:col-span-1">
               {/* 지도 및 읍면 선택 */}
-              <div className="rounded-lg shadow-md mb-6 p-3 bg-white">
+              <div className="rounded-lg shadow-md mb-3 p-3 bg-white">
                 <HomeMap />
               </div>
               
@@ -82,7 +82,7 @@ const HomePage = () => {
         </div>
         
         {/* YouTube Videos Section */}
-        <section id="youtube" className="py-4 bg-gradient-to-r from-red-50 to-red-100">
+        <section id="youtube" className="py-2 bg-gradient-to-r from-red-50 to-red-100">
           <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold flex items-center">
@@ -171,7 +171,7 @@ const HomePage = () => {
         </section>
         
         {/* Blog Posts Section */}
-        <section id="blog" className="py-4 bg-gradient-to-r from-green-50 to-green-100">
+        <section id="blog" className="py-2 bg-gradient-to-r from-green-50 to-green-100">
           <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold flex items-center">
@@ -188,7 +188,7 @@ const HomePage = () => {
               </a>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {isBlogPostsLoading ? (
                 <div className="col-span-full text-center py-8">
                   <div className="animate-pulse flex flex-col items-center">
@@ -245,7 +245,7 @@ const HomePage = () => {
         </section>
         
         {/* News Section */}
-        <section id="news" className="py-4 bg-gray-light">
+        <section id="news" className="py-2 bg-gray-light">
           <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold">최신 부동산뉴스</h2>

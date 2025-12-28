@@ -360,9 +360,9 @@ const PropertiesPage = () => {
         <meta property="og:description" content="강화도 토지, 주택, 아파트, 상가 매물 검색" />
       </Helmet>
     <div className="pt-16"> {/* Offset for fixed header */}
-      <div className="bg-primary/10 py-12">
+      <div className="bg-primary/10 py-4">
         <div className="container mx-auto px-4">
-          <h1 className="text-3xl font-bold mb-6">매물 검색</h1>
+          <h1 className="text-2xl font-bold mb-3">매물 검색</h1>
           
           {/* 음성검색 입력창 */}
           <div className="bg-white p-4 rounded-lg shadow-md mb-4">
@@ -371,7 +371,7 @@ const PropertiesPage = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   type="text"
-                  placeholder="검색어를 입력하거나 마이크를 눌러 음성으로 검색하세요"
+                  placeholder="음성검색 또는 입력"
                   value={searchKeyword}
                   onChange={(e) => setSearchKeyword(e.target.value)}
                   onKeyDown={(e) => {
@@ -436,6 +436,37 @@ const PropertiesPage = () => {
                 <span className="font-medium">"{filterParams.keyword}"</span> 검색 결과
               </div>
             )}
+            
+            {/* 읍면별 드롭다운 */}
+            <div className="mt-3">
+              <Select onValueChange={(value) => {
+                if (value === "전체") {
+                  setLocation("/properties");
+                } else {
+                  setLocation(`/properties?keyword=${encodeURIComponent(value)}`);
+                }
+              }}>
+                <SelectTrigger className="w-full" data-testid="select-district-filter">
+                  <SelectValue placeholder="읍면별 검색" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="전체">전체</SelectItem>
+                  <SelectItem value="강화읍">강화읍</SelectItem>
+                  <SelectItem value="교동면">교동면</SelectItem>
+                  <SelectItem value="길상면">길상면</SelectItem>
+                  <SelectItem value="내가면">내가면</SelectItem>
+                  <SelectItem value="불은면">불은면</SelectItem>
+                  <SelectItem value="삼산면">삼산면</SelectItem>
+                  <SelectItem value="서도면">서도면</SelectItem>
+                  <SelectItem value="선원면">선원면</SelectItem>
+                  <SelectItem value="송해면">송해면</SelectItem>
+                  <SelectItem value="양도면">양도면</SelectItem>
+                  <SelectItem value="양사면">양사면</SelectItem>
+                  <SelectItem value="하점면">하점면</SelectItem>
+                  <SelectItem value="화도면">화도면</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           
           {/* 카테고리 필터 숨김 - 음성검색만 사용 */}

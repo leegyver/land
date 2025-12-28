@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { siteConfig } from "@/config/siteConfig";
 
 interface PropertyCardProps {
   property: Property;
@@ -138,7 +139,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
         </div>
         
         <img 
-          src={property.imageUrl} 
+          src={property.imageUrl || siteConfig.defaultImageUrl} 
           alt={property.title} 
           className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
         />

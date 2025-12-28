@@ -29,7 +29,7 @@ const districts = [
 
 const HomeMap = () => {
   const [, setLocation] = useLocation();
-  const [selectedDistrict, setSelectedDistrict] = useState("전체");
+  const [selectedDistrict, setSelectedDistrict] = useState("");
 
   const handleDistrictChange = (value: string) => {
     setSelectedDistrict(value);

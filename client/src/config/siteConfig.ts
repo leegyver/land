@@ -1,3 +1,5 @@
+import defaultPropertyImage from "@assets/강화도부동산sample_1766916360262.png";
+
 // 사이트 전역 설정
 export const siteConfig = {
   siteName: "이가이버 부동산",
@@ -5,7 +7,7 @@ export const siteConfig = {
   siteDescription: "강화도 부동산 중개 서비스",
   contactEmail: "contact@ganghwaestate.com",
   copyrightYear: new Date().getFullYear(),
-  defaultImageUrl: "https://www.ganghwa.go.kr/images/kr/sub/sub0305_img01.jpg"
+  defaultImageUrl: defaultPropertyImage
 };
 
 // 브라우저 환경에서 전역 사이트 이름 설정

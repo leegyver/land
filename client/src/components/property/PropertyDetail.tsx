@@ -304,7 +304,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
   const property = propertyData as Property | undefined;
   
   // 부동산 등록시 첨부한 이미지들을 사용
-  const defaultImage = "/uploads/default-property.png";
+  const defaultImage = siteConfig.defaultImageUrl;
   
   // 지도 관련 코드는 KakaoMap 컴포넌트로 이동했습니다.
   

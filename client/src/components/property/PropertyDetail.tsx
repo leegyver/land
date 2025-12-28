@@ -536,7 +536,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                 {/* 기본 정보 */}
                 <div className="space-y-4">
-                  {(property.buildingName || property.unitNumber || property.approvalDate || property.type) && (
+                  {(property.buildingName || property.approvalDate || property.type) && (
                     <div className="border-b pb-2">
                       <h4 className="font-semibold text-lg mb-3">기본 정보</h4>
                       <table className="w-full">

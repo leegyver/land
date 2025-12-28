@@ -48,8 +48,8 @@ const HomeMap = () => {
         <h2 className="text-lg font-bold">지도로 부동산찾기</h2>
       </div>
       
-      {/* 지도 높이 조절 - 모바일에서는 60% 크기 */}
-      <div className="h-[30vh] md:h-[50vh] w-full rounded-lg overflow-hidden">
+      {/* 지도 높이 조절 - 모바일에서는 더 작은 크기 */}
+      <div className="h-[18vh] md:h-[50vh] w-full rounded-lg overflow-hidden">
         <KakaoMap />
       </div>
 

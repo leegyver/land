@@ -58,15 +58,15 @@ const FeaturedProperties = () => {
   }
 
   return (
-    <section id="properties" className="py-4">
+    <section id="properties" className="py-2">
       <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">추천 매물</h2>
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-xl font-bold">추천 매물</h2>
           <Link href="/properties" className="text-primary font-medium hover:text-secondary">
-            모든 매물 보기 <span aria-hidden="true">→</span>
+            모든매물보기 <span aria-hidden="true">→</span>
           </Link>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {properties && properties.map((property) => (
             <PropertyCard key={property.id} property={property} />
           ))}

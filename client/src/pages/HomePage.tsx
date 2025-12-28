@@ -59,7 +59,7 @@ const HomePage = () => {
       </Helmet>
       <div className="pt-16"> {/* Offset for fixed header */}
         {/* 맵과 검색을 오른쪽으로 배치한 새로운 레이아웃 */}
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-2">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {/* 왼쪽 콘텐츠 영역 - 추천 매물만 표시 (3/4 크기) */}
             <div className="order-2 lg:order-1 lg:col-span-3">
@@ -84,9 +84,9 @@ const HomePage = () => {
         {/* YouTube Videos Section */}
         <section id="youtube" className="py-2 bg-gradient-to-r from-red-50 to-red-100">
           <div className="container mx-auto px-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold flex items-center">
-                <Youtube className="h-6 w-6 mr-2 text-red-600" />
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-xl font-bold flex items-center">
+                <Youtube className="h-5 w-5 mr-2 text-red-600" />
                 이가이버 유튜브 최신 영상
               </h2>
               <a 
@@ -173,9 +173,9 @@ const HomePage = () => {
         {/* Blog Posts Section */}
         <section id="blog" className="py-2 bg-gradient-to-r from-green-50 to-green-100">
           <div className="container mx-auto px-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold flex items-center">
-                <BookOpen className="h-6 w-6 mr-2 text-green-600" />
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-xl font-bold flex items-center">
+                <BookOpen className="h-5 w-5 mr-2 text-green-600" />
                 이가이버 블로그 포럼
               </h2>
               <a 
@@ -247,8 +247,8 @@ const HomePage = () => {
         {/* News Section */}
         <section id="news" className="py-2 bg-gray-light">
           <div className="container mx-auto px-4">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold">최신 부동산뉴스</h2>
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-xl font-bold">최신 부동산뉴스</h2>
               <Link href="/news" className="text-primary hover:text-secondary font-medium flex items-center gap-1">
                 모든 뉴스 보기 <ArrowRight className="h-4 w-4" />
               </Link>

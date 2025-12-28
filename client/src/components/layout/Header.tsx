@@ -98,7 +98,7 @@ const Header = () => {
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" className="md:hidden px-3 py-2 text-sm font-medium">
-                매물모두보기
+                모든매물보기
               </Button>
             </SheetTrigger>
             <SheetContent>

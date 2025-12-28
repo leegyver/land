@@ -193,9 +193,8 @@ export async function importPropertiesFromSheet(
         // A열(인덱스 0)의 날짜 확인 및 필터링 (필수)
         const rowDateStr = row[COL.A]?.toString().trim();
         
-        // A열에 날짜가 없으면 스킵
+        // A열에 날짜가 없으면 스킵 (로그 생략 - 너무 많음)
         if (!rowDateStr) {
-          log(`행 ${i+2}: A열에 날짜가 없어 스킵됨`, 'info');
           continue;
         }
         
@@ -232,9 +231,8 @@ export async function importPropertiesFromSheet(
           continue;
         }
         
-        // 날짜 필터 적용: 선택한 날짜 이후(같거나 이후)의 데이터만 가져오기
+        // 날짜 필터 적용: 선택한 날짜 이후(같거나 이후)의 데이터만 가져오기 (로그 생략)
         if (rowDate < filterDateTime) {
-          log(`행 ${i+2}: 날짜 필터로 제외됨 (${rowDateStr} < ${filterDate})`, 'info');
           continue;
         }
         

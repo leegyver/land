@@ -695,7 +695,7 @@ const PropertiesPage = () => {
             <h2 className="text-lg font-bold">지도로 부동산찾기</h2>
           </div>
           <div className="h-[40vh] w-full rounded-lg overflow-hidden mb-6">
-            <KakaoMap />
+            <KakaoMap properties={properties} />
           </div>
         </div>
         

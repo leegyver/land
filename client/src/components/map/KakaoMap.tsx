@@ -23,18 +23,22 @@ function formatPrice(price: number): string {
 
 interface KakaoMapProps {
   singleProperty?: Property;
+  properties?: Property[]; // 외부에서 필터된 매물 목록을 받을 수 있음
   zoom?: number;
 }
 
-export default function KakaoMap({ singleProperty, zoom = 3 }: KakaoMapProps) {
+export default function KakaoMap({ singleProperty, properties: externalProperties, zoom = 3 }: KakaoMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   
-  // 매물 데이터 가져오기 - 단일 매물이 제공되지 않았을 때만 실행
-  const { data: properties, isLoading } = useQuery<Property[]>({
+  // 매물 데이터 가져오기 - 단일 매물 또는 외부 매물 목록이 제공되지 않았을 때만 실행
+  const { data: fetchedProperties, isLoading } = useQuery<Property[]>({
     queryKey: ['/api/properties'],
-    enabled: !singleProperty // 단일 매물이 제공되면 이 쿼리는 실행되지 않음
+    enabled: !singleProperty && !externalProperties // 단일 매물이나 외부 목록이 제공되면 이 쿼리는 실행되지 않음
   });
+  
+  // 외부에서 제공된 매물 목록 우선 사용
+  const properties = externalProperties || fetchedProperties;
 
   // 강화군 기본 좌표 (위도/경도)
   const defaultLocation = { lat: 37.7466, lng: 126.4881 };
@@ -412,8 +416,8 @@ export default function KakaoMap({ singleProperty, zoom = 3 }: KakaoMapProps) {
     }
   }, [properties, singleProperty, zoom]);
 
-  // 로딩 화면 표시
-  if (!singleProperty && isLoading) {
+  // 로딩 화면 표시 - 외부 매물 목록이 제공되지 않고 로딩 중일 때만
+  if (!singleProperty && !externalProperties && isLoading) {
     return (
       <div className="flex items-center justify-center h-[60vh] bg-gray-100">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>

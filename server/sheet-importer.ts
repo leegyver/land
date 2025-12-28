@@ -494,18 +494,6 @@ function mapPropertyType(type: string): string {
 
 // 속성 유형에 따른 기본 이미지 URL 반환 함수
 function getDefaultImageForPropertyType(type: string): string {
-  const imageMap: Record<string, string> = {
-    '토지': '/attached_assets/토지-001.png',
-    '단독': '/attached_assets/주택-001.png',
-    '근린': '/attached_assets/상가펜션-001.png',
-    '아파트': '/attached_assets/아파트-001.png',
-    '다세대': '/attached_assets/아파트-001.png',
-    '연립': '/attached_assets/아파트-001.png',
-    '원투룸': '/attached_assets/원룸-001.png',
-    '다가구': '/attached_assets/아파트-001.png',
-    '오피스텔': '/attached_assets/아파트-001.png',
-    '기타': '/attached_assets/주택-001.png'
-  };
-
-  return imageMap[type] || '/attached_assets/주택-001.png';
+  // 모든 부동산 유형에 동일한 기본 이미지 사용
+  return '/attached_assets/강화도부동산sample_1766919163169.png';
 }

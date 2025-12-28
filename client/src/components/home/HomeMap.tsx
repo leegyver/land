@@ -57,7 +57,7 @@ const HomeMap = () => {
       <div className="mt-4 mb-2">
         <Select value={selectedDistrict} onValueChange={handleDistrictChange}>
           <SelectTrigger className="w-full" data-testid="select-district">
-            <SelectValue placeholder="읍면 선택" />
+            <SelectValue placeholder="읍면별 검색" />
           </SelectTrigger>
           <SelectContent>
             {districts.map((district) => (

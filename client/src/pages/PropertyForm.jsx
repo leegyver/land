@@ -29,12 +29,8 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 
-// 각 부동산 유형별 기본 이미지 경로 설정 (public 폴더에 있는 이미지)
-const landDefaultImage = "/default-property-images/land.png";
-const houseDefaultImage = "/default-property-images/house.png";
-const apartmentDefaultImage = "/default-property-images/apartment.png";
-const oneroomDefaultImage = "/default-property-images/oneroom.png";
-const commercialDefaultImage = "/default-property-images/commercial.png";
+// 기본 이미지 설정
+import defaultPropertyImage from "@assets/강화도부동산sample_1766919163169.png";
 
 function PropertyForm() {
   const { user } = useAuth();
@@ -45,23 +41,9 @@ function PropertyForm() {
   const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
 
-  // 부동산 유형별 기본 이미지 매핑
-  const defaultPropertyImages = {
-    '토지': landDefaultImage,
-    '단독': houseDefaultImage,
-    '근린': commercialDefaultImage,
-    '아파트': apartmentDefaultImage,
-    '다세대': apartmentDefaultImage,
-    '연립': apartmentDefaultImage,
-    '원투룸': oneroomDefaultImage,
-    '다가구': apartmentDefaultImage,
-    '오피스텔': apartmentDefaultImage,
-    '기타': houseDefaultImage
-  };
-
-  // 부동산 유형에 맞는 기본 이미지 가져오기
-  const getDefaultImageForPropertyType = (type) => {
-    return defaultPropertyImages[type] || defaultPropertyImages['주택']; // 기본값은 주택 이미지
+  // 기본 이미지 가져오기
+  const getDefaultImageForPropertyType = () => {
+    return defaultPropertyImage;
   };
 
   // 거래 유형 정의

@@ -46,21 +46,26 @@ export async function resizeImageFromUrl(imageUrl: string): Promise<string | nul
 
     log(`이미지 리사이징 시작: ${downloadUrl}`, 'info');
 
+    console.log(`[이미지 다운로드] 시도: ${downloadUrl}`);
+    
     const response = await fetch(downloadUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      }
+      },
+      redirect: 'follow'
     });
+    
+    console.log(`[이미지 다운로드] 응답 상태: ${response.status}, 타입: ${response.headers.get('content-type')}`);
     
     if (!response.ok) {
       log(`이미지 다운로드 실패: ${imageUrl}, 상태: ${response.status}`, 'warn');
-      return imageUrl;
+      return null; // 실패 시 null 반환하여 기본 이미지 사용하도록
     }
 
     const contentType = response.headers.get('content-type');
     if (!contentType || !contentType.startsWith('image/')) {
       log(`이미지가 아닌 콘텐츠: ${imageUrl}, 타입: ${contentType}`, 'warn');
-      return imageUrl;
+      return null; // 이미지가 아니면 null 반환
     }
 
     const arrayBuffer = await response.arrayBuffer();
@@ -90,7 +95,8 @@ export async function resizeImageFromUrl(imageUrl: string): Promise<string | nul
     return resizedUrl;
   } catch (error) {
     log(`이미지 리사이징 오류: ${imageUrl}, 에러: ${error}`, 'error');
-    return imageUrl;
+    console.log(`[이미지 오류] ${imageUrl}: ${error}`);
+    return null; // 오류 시 null 반환
   }
 }
 

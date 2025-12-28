@@ -95,6 +95,7 @@ export default function AdminPage() {
   const [isDeletingNews, setIsDeletingNews] = useState<number | false>(false);
   const [selectedMainDistrict, setSelectedMainDistrict] = useState("강화읍");
   const [detailedDistrictOptions, setDetailedDistrictOptions] = useState<string[]>(detailedDistricts["강화읍"]);
+  const [selectedAgentFilter, setSelectedAgentFilter] = useState<string>("all");
   
 
 
@@ -381,15 +382,33 @@ export default function AdminPage() {
                     등록된 부동산 매물 목록을 관리합니다.
                   </CardDescription>
                 </div>
-                <Button onClick={handleAddProperty}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  부동산 등록
-                </Button>
+                <div className="flex items-center gap-3">
+                  <Select value={selectedAgentFilter} onValueChange={setSelectedAgentFilter}>
+                    <SelectTrigger className="w-[180px]" data-testid="select-agent-filter">
+                      <SelectValue placeholder="담당중개사 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">전체 중개사</SelectItem>
+                      {(() => {
+                        const agentNames = [...new Set(properties?.map(p => p.agentName).filter(Boolean) || [])];
+                        return agentNames.map((name) => (
+                          <SelectItem key={name} value={name || ""}>
+                            {name}
+                          </SelectItem>
+                        ));
+                      })()}
+                    </SelectContent>
+                  </Select>
+                  <Button onClick={handleAddProperty}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    부동산 등록
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
               <Table>
-                <TableCaption>총 {properties?.length || 0}개의 부동산 매물</TableCaption>
+                <TableCaption>총 {(selectedAgentFilter === "all" ? properties : properties?.filter(p => p.agentName === selectedAgentFilter))?.length || 0}개의 부동산 매물</TableCaption>
                 <TableHeader>
                   <TableRow>
                     <TableHead>ID</TableHead>
@@ -403,7 +422,7 @@ export default function AdminPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {properties?.map((property) => (
+                  {(selectedAgentFilter === "all" ? properties : properties?.filter(p => p.agentName === selectedAgentFilter))?.map((property) => (
                     <TableRow key={property.id}>
                       <TableCell className="font-medium">{property.id}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{property.title}</TableCell>

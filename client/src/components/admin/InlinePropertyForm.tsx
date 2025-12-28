@@ -162,7 +162,7 @@ const propertyFormSchema = z.object({
   title: z.string().min(1, "제목을 입력해주세요"),
   description: z.string().min(1, "설명을 입력해주세요"),
   type: z.string().min(1, "부동산 유형을 선택해주세요"),
-  price: z.union([z.string(), z.number()]).transform(val => val === "" ? "0" : String(val)),
+  price: z.union([z.string(), z.number()]).optional().transform(val => val === "" || val === undefined ? "0" : String(val)),
   address: z.string().min(1, "주소를 입력해주세요"),
   district: z.string().min(1, "지역을 선택해주세요"),
   size: z.union([z.string(), z.number()]).transform(val => val === "" ? "0" : String(val)),
@@ -468,7 +468,16 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
+            const firstErrorKey = Object.keys(errors)[0];
+            if (firstErrorKey) {
+              const errorElement = document.querySelector(`[name="${firstErrorKey}"]`);
+              if (errorElement) {
+                errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                (errorElement as HTMLElement).focus();
+              }
+            }
+          })} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* 기본 정보 */}
               <FormField

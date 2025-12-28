@@ -1,6 +1,5 @@
 import { Helmet } from "react-helmet";
 import HomeMap from "@/components/home/HomeMap";
-import PropertySearch from "@/components/home/PropertySearch";
 import FeaturedProperties from "@/components/home/FeaturedProperties";
 import { useQuery } from "@tanstack/react-query";
 import { News } from "@shared/schema";
@@ -68,14 +67,9 @@ const HomePage = () => {
             
             {/* 오른쪽 지도 및 검색 영역 (1/4 크기) */}
             <div className="order-1 lg:order-2 lg:col-span-1">
-              {/* 지도 및 읍면 선택 */}
-              <div className="rounded-lg shadow-md mb-3 p-3 bg-white">
+              {/* 지도 + 검색 통합 */}
+              <div className="rounded-lg shadow-md p-3 bg-white">
                 <HomeMap />
-              </div>
-              
-              {/* 음성검색 폼 */}
-              <div className="rounded-lg overflow-hidden shadow-md">
-                <PropertySearch />
               </div>
             </div>
           </div>

@@ -1,9 +1,13 @@
 import express, { type Request, Response, NextFunction } from "express";
+import path from "path";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { setupNewsScheduler } from "./news-fetcher";
 
 const app = express();
+
+// 정적 파일 제공: /uploads/ 경로로 접근 가능
+app.use('/uploads', express.static(path.join(process.cwd(), 'public/uploads')));
 // 파일 업로드 크기 제한 증가 (기본값 100kb → 10MB)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));

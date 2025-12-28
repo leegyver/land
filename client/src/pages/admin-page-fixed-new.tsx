@@ -63,6 +63,7 @@ export default function AdminPage() {
   const [filterType, setFilterType] = useState<string>("all");
   const [filterDistrict, setFilterDistrict] = useState<string>("all");
   const [filterDealType, setFilterDealType] = useState<string>("all");
+  const [filterAgent, setFilterAgent] = useState<string>("all");
   
   // 스프레드시트 가져오기 모달 상태
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -214,7 +215,7 @@ export default function AdminPage() {
     if (!props) return [];
     
     // 필터링 로그
-    console.log("필터링 적용: ", { filterType, filterDistrict, filterDealType });
+    console.log("필터링 적용: ", { filterType, filterDistrict, filterDealType, filterAgent });
     
     return props.filter(property => {
       // 유형 필터
@@ -238,16 +239,26 @@ export default function AdminPage() {
               ? property.dealType.replace('{', '').replace('}', '').split(',')
               : [property.dealType.toString()];
               
-          return dealTypesArray.some(type => type.includes(filterDealType));
+          if (!dealTypesArray.some(type => type.includes(filterDealType))) {
+            return false;
+          }
         } catch (e) {
           console.error("딜 타입 필터링 오류:", e, property.dealType);
           return false;
         }
       }
       
+      // 담당중개사 필터
+      if (filterAgent && filterAgent !== 'all' && property.agentName !== filterAgent) {
+        return false;
+      }
+      
       return true;
     });
   };
+  
+  // 담당중개사 목록 추출
+  const agentNames = [...new Set(properties?.map(p => p.agentName).filter(Boolean) || [])];
   
   // 필터링된 부동산 목록
   const filteredProperties = filterProperties(properties || []);
@@ -454,7 +465,7 @@ export default function AdminPage() {
     if (!result.destination || !properties) return;
     
     // 필터가 활성화되어 있으면 드래그 차단
-    if (filterType !== 'all' || filterDistrict !== 'all' || filterDealType !== 'all') {
+    if (filterType !== 'all' || filterDistrict !== 'all' || filterDealType !== 'all' || filterAgent !== 'all') {
       toast({
         title: "순서 변경 불가",
         description: "필터를 모두 '전체'로 설정한 후 순서를 변경해주세요.",
@@ -757,7 +768,7 @@ export default function AdminPage() {
             </div>
             
             {/* 필터 UI */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium mb-1">유형</label>
                 <Select value={filterType} onValueChange={setFilterType}>
@@ -808,6 +819,23 @@ export default function AdminPage() {
                   </SelectContent>
                 </Select>
               </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">담당중개사</label>
+                <Select value={filterAgent} onValueChange={setFilterAgent}>
+                  <SelectTrigger data-testid="select-agent-filter">
+                    <SelectValue placeholder="전체 중개사" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">전체 중개사</SelectItem>
+                    {agentNames.map((name) => (
+                      <SelectItem key={name} value={name || ""}>
+                        {name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             
             {isLoadingProperties ? (
@@ -817,7 +845,7 @@ export default function AdminPage() {
             ) : (
               <div className="overflow-x-auto">
                 {/* 필터가 활성화되어 있으면 드래그 앤 드롭 비활성화 */}
-                {filterType === 'all' && filterDistrict === 'all' && filterDealType === 'all' ? (
+                {filterType === 'all' && filterDistrict === 'all' && filterDealType === 'all' && filterAgent === 'all' ? (
                   <>
                     <DragDropContext onDragEnd={handleAllPropertiesDragEnd}>
                       <Table>

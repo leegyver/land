@@ -378,12 +378,20 @@ function PropertyForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.title || !formData.price || !formData.address) {
+    if (!formData.title || !formData.address) {
       toast({
         title: "입력 오류",
-        description: "필수 입력 필드를 모두 작성해주세요 (제목, 가격, 주소)",
+        description: "필수 입력 필드를 모두 작성해주세요 (제목, 주소)",
         variant: "destructive",
       });
+      
+      // 오류 필드로 스크롤 및 포커스
+      const firstEmptyField = !formData.title ? 'title' : 'address';
+      const errorElement = document.querySelector(`[name="${firstEmptyField}"]`);
+      if (errorElement) {
+        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        errorElement.focus();
+      }
       return;
     }
 

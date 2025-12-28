@@ -68,13 +68,18 @@ export default function AdminPage() {
   // 스프레드시트 가져오기 모달 상태
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   
-  // 필터 옵션 - 요청받은 카테고리로 업데이트
+  // 필터 옵션 - 부동산 등록 폼과 동일하게 설정
   const propertyTypes = [
     { value: "토지", label: "토지" },
-    { value: "주택", label: "주택" },
-    { value: "아파트연립다세대", label: "아파트연립다세대" },
+    { value: "단독", label: "단독" },
+    { value: "근린", label: "근린" },
+    { value: "아파트", label: "아파트" },
+    { value: "다세대", label: "다세대" },
+    { value: "연립", label: "연립" },
     { value: "원투룸", label: "원투룸" },
-    { value: "상가공장창고펜션", label: "상가공장창고펜션" },
+    { value: "다가구", label: "다가구" },
+    { value: "오피스텔", label: "오피스텔" },
+    { value: "기타", label: "기타" },
   ];
   
   const dealTypes = [
@@ -87,7 +92,6 @@ export default function AdminPage() {
   
   // 지역 필터 - 제공된 정확한 위치 목록 사용
   const districts = [
-    { value: "all", label: "모든 지역" },
     { value: "강화읍 갑곳리", label: "강화읍 갑곳리" },
     { value: "강화읍 관청리", label: "강화읍 관청리" },
     { value: "강화읍 국화리", label: "강화읍 국화리" },

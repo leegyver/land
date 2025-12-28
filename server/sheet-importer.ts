@@ -494,6 +494,6 @@ function mapPropertyType(type: string): string {
 
 // 속성 유형에 따른 기본 이미지 URL 반환 함수
 function getDefaultImageForPropertyType(type: string): string {
-  // 모든 부동산 유형에 동일한 기본 이미지 사용
-  return '/attached_assets/강화도부동산sample_1766919163169.png';
+  // 모든 부동산 유형에 동일한 기본 이미지 사용 (public 폴더에서 제공)
+  return '/uploads/default-property.png';
 }

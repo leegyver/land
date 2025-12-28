@@ -68,8 +68,8 @@ const HomePage = () => {
             
             {/* 오른쪽 지도 및 검색 영역 (1/4 크기) */}
             <div className="order-1 lg:order-2 lg:col-span-1">
-              {/* 지도 */}
-              <div className="rounded-lg overflow-hidden shadow-md mb-6">
+              {/* 지도 및 읍면 선택 */}
+              <div className="rounded-lg shadow-md mb-6 p-3 bg-white">
                 <HomeMap />
               </div>
               

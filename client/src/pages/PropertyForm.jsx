@@ -29,8 +29,8 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 
-// 기본 이미지 설정
-import defaultPropertyImage from "@assets/강화도부동산sample_1766919163169.png";
+// 기본 이미지 경로 (public 폴더에서 제공)
+const defaultPropertyImage = "/uploads/default-property.png";
 
 function PropertyForm() {
   const { user } = useAuth();

@@ -72,6 +72,8 @@ export const properties = pgTable("properties", {
 export const insertPropertySchema = createInsertSchema(properties).omit({
   id: true,
   createdAt: true,
+}).extend({
+  price: z.union([z.string(), z.number()]).optional().transform(val => val === "" || val === undefined || val === null ? "0" : String(val)),
 });
 
 // Agent schema

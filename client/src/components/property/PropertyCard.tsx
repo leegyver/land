@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { Link } from "wouter";
-import { Heart, Maximize, Bed, Bath, Loader2, Phone } from "lucide-react";
+import { Heart, Maximize, Bed, Bath, Loader2, Phone, X } from "lucide-react";
 import { SiKakaotalk } from "react-icons/si";
 import { type Property } from "@shared/schema";
 import { Card } from "@/components/ui/card";
@@ -32,6 +33,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [showPhonePopup, setShowPhonePopup] = useState(false);
   
   // 관심매물 상태 조회
   const { data: favoriteData, isLoading: favoriteLoading } = useQuery<{ isFavorite: boolean }>({
@@ -214,10 +216,20 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
         
         {/* 전화문의 및 카톡상담 배너 */}
         <div className="flex gap-2 mt-4">
+          {/* PC: 팝업으로 전화번호 표시 */}
+          <button
+            onClick={() => setShowPhonePopup(true)}
+            className="hidden md:flex flex-1 items-center justify-center gap-1.5 bg-primary text-white py-2 rounded-lg hover:bg-primary/90 transition-all text-sm font-medium"
+            data-testid={`button-call-property-pc-${property.id}`}
+          >
+            <Phone className="w-4 h-4" />
+            <span>전화문의</span>
+          </button>
+          {/* 모바일: 직접 전화 연결 */}
           <a
             href={`tel:${phoneNumber}`}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-primary text-white py-2 rounded-lg hover:bg-primary/90 transition-all text-sm font-medium"
-            data-testid={`button-call-property-${property.id}`}
+            className="md:hidden flex-1 flex items-center justify-center gap-1.5 bg-primary text-white py-2 rounded-lg hover:bg-primary/90 transition-all text-sm font-medium"
+            data-testid={`button-call-property-mobile-${property.id}`}
           >
             <Phone className="w-4 h-4" />
             <span>전화문의</span>
@@ -234,6 +246,25 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
           </a>
         </div>
       </div>
+      
+      {/* PC 전화번호 팝업 */}
+      {showPhonePopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowPhonePopup(false)}>
+          <div className="bg-white rounded-xl p-6 shadow-2xl max-w-sm mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-800">전화 상담</h3>
+              <button onClick={() => setShowPhonePopup(false)} className="text-gray-500 hover:text-gray-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="text-center py-4">
+              <Phone className="w-12 h-12 text-primary mx-auto mb-3" />
+              <p className="text-2xl font-bold text-primary">{phoneNumber}</p>
+              <p className="text-gray-500 mt-2">위 번호로 전화주시면 친절히 상담해 드립니다.</p>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 };

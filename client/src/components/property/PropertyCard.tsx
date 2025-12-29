@@ -1,5 +1,6 @@
 import { Link } from "wouter";
-import { Heart, Maximize, Bed, Bath, Loader2 } from "lucide-react";
+import { Heart, Maximize, Bed, Bath, Loader2, Phone } from "lucide-react";
+import { SiKakaotalk } from "react-icons/si";
 import { type Property } from "@shared/schema";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,9 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { siteConfig } from "@/config/siteConfig";
+
+const phoneNumber = "010-4787-3120";
+const kakaoChannelUrl = "http://pf.kakao.com/_xaxbxlxfs/chat";
 
 interface PropertyCardProps {
   property: Property;
@@ -206,6 +210,28 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
               />
             )}
           </button>
+        </div>
+        
+        {/* 전화문의 및 카톡상담 배너 */}
+        <div className="flex gap-2 mt-4">
+          <a
+            href={`tel:${phoneNumber}`}
+            className="flex-1 flex items-center justify-center gap-1.5 bg-primary text-white py-2 rounded-lg hover:bg-primary/90 transition-all text-sm font-medium"
+            data-testid={`button-call-property-${property.id}`}
+          >
+            <Phone className="w-4 h-4" />
+            <span>전화문의</span>
+          </a>
+          <a
+            href={kakaoChannelUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 flex items-center justify-center gap-1.5 bg-[#FEE500] text-[#191919] py-2 rounded-lg hover:bg-[#FDD835] transition-all text-sm font-medium"
+            data-testid={`button-kakao-property-${property.id}`}
+          >
+            <SiKakaotalk className="w-4 h-4" />
+            <span>실시간 카톡상담</span>
+          </a>
         </div>
       </div>
     </Card>

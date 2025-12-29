@@ -36,7 +36,7 @@ const Header = () => {
         <div className="flex justify-between items-center">
           <Link href="/" className="flex items-center">
             <Building className="text-primary text-3xl mr-2" />
-            <span className="text-2xl font-bold text-primary">이가이버부동산</span>
+            <span className="text-2xl font-bold text-primary">강화도부동산</span>
           </Link>
           
           {/* Desktop Navigation */}

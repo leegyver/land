@@ -151,7 +151,7 @@ const HomeMap = () => {
       </div>
       
       {/* 지도 높이 조절 - 모바일에서는 더 작은 크기 */}
-      <div className="h-[18vh] md:h-[50vh] w-full rounded-lg overflow-hidden">
+      <div className="h-[25vh] md:h-[50vh] w-full rounded-lg overflow-hidden">
         <KakaoMap />
       </div>
 

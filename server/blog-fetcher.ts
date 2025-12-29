@@ -25,9 +25,11 @@ interface CategoryMapping {
 // 지정된 카테고리: 11(블로그 최신글)
 const CATEGORY_NAMES: CategoryMapping = {
   '0': '모든 글',
-  '11': '블로그 최신글',
+  '11': 'about 이가이버',
   '21': '일상다반사',
-  '36': '세상이야기'
+  '35': '나의 취미생활',
+  '36': '세상이야기',
+  '37': '부동산정보'
 };
 
 /**
@@ -416,7 +418,7 @@ export async function fetchBlogPosts(
   // - 11: 블로그 최신글 (하위 카테고리 포함)
   // - 21: 일상다반사
   // - 36: 세상이야기
-  categoryNos: string[] = ['0', '11', '21', '36'],
+  categoryNos: string[] = ['0', '35', '36', '37'],
   limit: number = 5 // 각 카테고리별 포스트 제한 수
 ): Promise<BlogPost[]> {
   try {

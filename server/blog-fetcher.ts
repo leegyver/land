@@ -24,9 +24,6 @@ interface CategoryMapping {
 // 카테고리 ID를 사람이 읽을 수 있는 이름으로 매핑
 // 지정된 카테고리: 11(블로그 최신글)
 const CATEGORY_NAMES: CategoryMapping = {
-  '0': '모든 글',
-  '11': 'about 이가이버',
-  '21': '일상다반사',
   '35': '나의 취미생활',
   '36': '세상이야기',
   '37': '부동산정보'

@@ -48,12 +48,15 @@ interface PropertyDetailProps {
   propertyId: string;
 }
 
-const formatPrice = (price: string | number) => {
+const formatPrice = (price: string | number | null | undefined, showDecimals: boolean = true) => {
+  if (price === null || price === undefined) return '';
   const numPrice = Number(price);
   if (numPrice >= 100000000) {
-    return `${(numPrice / 100000000).toFixed(2)}억 원`;
+    const value = numPrice / 100000000;
+    return showDecimals ? `${value.toFixed(2)}억 원` : `${Math.floor(value)}억 원`;
   } else if (numPrice >= 10000) {
-    return `${(numPrice / 10000).toFixed(2)}만원`;
+    const value = numPrice / 10000;
+    return showDecimals ? `${value.toFixed(2)}만원` : `${Math.floor(value)}만원`;
   }
   return numPrice.toLocaleString() + '원';
 };
@@ -687,25 +690,25 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                         {property.deposit && Number(property.deposit) > 0 && (
                           <tr className="border-b border-gray-100">
                             <td className="py-2 text-gray-600">전세금</td>
-                            <td className="py-2 font-medium">{formatPrice(property.deposit)}</td>
+                            <td className="py-2 font-medium">{formatPrice(property.deposit, false)}</td>
                           </tr>
                         )}
                         {property.depositAmount && Number(property.depositAmount) > 0 && (
                           <tr className="border-b border-gray-100">
                             <td className="py-2 text-gray-600">보증금</td>
-                            <td className="py-2 font-medium">{formatPrice(property.depositAmount)}</td>
+                            <td className="py-2 font-medium">{formatPrice(property.depositAmount, false)}</td>
                           </tr>
                         )}
                         {property.monthlyRent && Number(property.monthlyRent) > 0 && (
                           <tr className="border-b border-gray-100">
                             <td className="py-2 text-gray-600">월세</td>
-                            <td className="py-2 font-medium">{formatPrice(property.monthlyRent)}</td>
+                            <td className="py-2 font-medium">{formatPrice(property.monthlyRent, false)}</td>
                           </tr>
                         )}
                         {property.maintenanceFee && Number(property.maintenanceFee) > 0 && (
                           <tr className="border-b border-gray-100">
                             <td className="py-2 text-gray-600">관리비</td>
-                            <td className="py-2 font-medium">{formatPrice(property.maintenanceFee)}</td>
+                            <td className="py-2 font-medium">{formatPrice(property.maintenanceFee, false)}</td>
                           </tr>
                         )}
                       </tbody>
@@ -783,38 +786,8 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
           </div>
           
           <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
-            <h3 className="text-xl font-semibold mb-4">거래 정보</h3>
             <div className="space-y-4">
-              <div>
-                <span className="text-gray-500 text-sm">매물 가격</span>
-                <div className="text-2xl font-bold text-primary mt-1">{formatPrice(property.price)}</div>
-              </div>
-              {property.deposit && Number(property.deposit) > 0 && (
-                <div>
-                  <span className="text-gray-500 text-sm">전세금</span>
-                  <div className="text-lg font-medium mt-1">{formatPrice(property.deposit)}</div>
-                </div>
-              )}
-              {property.depositAmount && Number(property.depositAmount) > 0 && (
-                <div>
-                  <span className="text-gray-500 text-sm">보증금</span>
-                  <div className="text-lg font-medium mt-1">{formatPrice(property.depositAmount)}</div>
-                </div>
-              )}
-              {property.monthlyRent && Number(property.monthlyRent) > 0 && (
-                <div>
-                  <span className="text-gray-500 text-sm">월세</span>
-                  <div className="text-xl font-bold mt-1">{formatPrice(property.monthlyRent)}</div>
-                </div>
-              )}
-              {property.maintenanceFee && Number(property.maintenanceFee) > 0 && (
-                <div>
-                  <span className="text-gray-500 text-sm">관리비</span>
-                  <div className="text-lg font-medium mt-1">{formatPrice(property.maintenanceFee)}</div>
-                </div>
-              )}
-              
-              <div className="pt-4 mt-4 border-t border-gray-200">
+              <div className="pt-4">
                 {/* 카카오톡 문의 이미지 */}
                 <div className="w-full mb-2 cursor-pointer">
                   <img 

@@ -19,13 +19,15 @@ interface PropertyCardProps {
   property: Property;
 }
 
-const formatPrice = (price: string | number | null | undefined) => {
+const formatPrice = (price: string | number | null | undefined, showDecimals: boolean = true) => {
   if (price === null || price === undefined) return '';
   const numPrice = Number(price);
   if (numPrice >= 100000000) {
-    return `${(numPrice / 100000000).toFixed(2)}억 원`;
+    const value = numPrice / 100000000;
+    return showDecimals ? `${value.toFixed(2)}억 원` : `${Math.floor(value)}억 원`;
   } else if (numPrice >= 10000) {
-    return `${(numPrice / 10000).toFixed(2)}만원`;
+    const value = numPrice / 10000;
+    return showDecimals ? `${value.toFixed(2)}만원` : `${Math.floor(value)}만원`;
   }
   return numPrice.toLocaleString() + '원';
 };
@@ -205,22 +207,22 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
               )}
               {hasValidPrice(property.deposit) && (
                 <div className="text-xl font-bold text-primary">
-                  전세금: {formatPrice(property.deposit)}
+                  전세금: {formatPrice(property.deposit, false)}
                 </div>
               )}
               {hasValidPrice(property.depositAmount) && (
                 <div className="text-xl font-bold text-primary">
-                  보증금: {formatPrice(property.depositAmount)}
+                  보증금: {formatPrice(property.depositAmount, false)}
                 </div>
               )}
               {hasValidPrice(property.monthlyRent) && (
                 <div className="text-xl font-bold text-primary">
-                  월세: {formatPrice(property.monthlyRent)}
+                  월세: {formatPrice(property.monthlyRent, false)}
                 </div>
               )}
               {hasValidPrice(property.maintenanceFee) && (
                 <div className="text-xl font-bold text-primary">
-                  관리비: {formatPrice(property.maintenanceFee)}
+                  관리비: {formatPrice(property.maintenanceFee, false)}
                 </div>
               )}
             </div>

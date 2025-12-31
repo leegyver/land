@@ -19,7 +19,8 @@ interface PropertyCardProps {
   property: Property;
 }
 
-const formatPrice = (price: string | number) => {
+const formatPrice = (price: string | number | null | undefined) => {
+  if (price === null || price === undefined) return '';
   const numPrice = Number(price);
   if (numPrice >= 100000000) {
     return `${(numPrice / 100000000).toFixed(2)}억 원`;
@@ -27,6 +28,14 @@ const formatPrice = (price: string | number) => {
     return `${(numPrice / 10000).toFixed(2)}만원`;
   }
   return numPrice.toLocaleString() + '원';
+};
+
+const hasValidPrice = (value: string | number | null | undefined): boolean => {
+  if (value === null || value === undefined || value === '' || value === '0' || value === 0) {
+    return false;
+  }
+  const numValue = Number(value);
+  return !isNaN(numValue) && numValue > 0;
 };
 
 const PropertyCard = ({ property }: PropertyCardProps) => {
@@ -187,7 +196,34 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
                 </Badge>
               ))}
             </div>
-            <span className="text-xl font-bold text-primary">{formatPrice(property.price)}</span>
+            {/* 가격 정보 - 값이 있을 때만 표시 */}
+            <div className="space-y-1">
+              {hasValidPrice(property.price) && (
+                <div className="text-xl font-bold text-primary">
+                  매매가: {formatPrice(property.price)}
+                </div>
+              )}
+              {hasValidPrice(property.deposit) && (
+                <div className="text-sm text-gray-700">
+                  전세금: {formatPrice(property.deposit)}
+                </div>
+              )}
+              {hasValidPrice(property.depositAmount) && (
+                <div className="text-sm text-gray-700">
+                  보증금: {formatPrice(property.depositAmount)}
+                </div>
+              )}
+              {hasValidPrice(property.monthlyRent) && (
+                <div className="text-sm text-gray-700">
+                  월세: {formatPrice(property.monthlyRent)}
+                </div>
+              )}
+              {hasValidPrice(property.maintenanceFee) && (
+                <div className="text-sm text-gray-700">
+                  관리비: {formatPrice(property.maintenanceFee)}
+                </div>
+              )}
+            </div>
           </div>
           <button 
             className={cn(

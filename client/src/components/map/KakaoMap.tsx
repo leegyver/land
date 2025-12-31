@@ -12,13 +12,46 @@ declare global {
 }
 
 // 숫자를 한국어 표기법으로 변환 (예: 10000 -> 1만)
-function formatPrice(price: number): string {
-  if (price >= 100000000) {
-    return `${Math.floor(price / 100000000)}억 ${price % 100000000 > 0 ? Math.floor((price % 100000000) / 10000) + '만' : ''}원`;
-  } else if (price >= 10000) {
-    return `${Math.floor(price / 10000)}만원`;
+function formatPrice(price: number | string | null | undefined, showDecimals: boolean = false): string {
+  if (price === null || price === undefined) return '';
+  const numPrice = Number(price);
+  if (isNaN(numPrice)) return '';
+  if (numPrice >= 100000000) {
+    return `${Math.floor(numPrice / 100000000)}억 ${numPrice % 100000000 > 0 ? Math.floor((numPrice % 100000000) / 10000) + '만' : ''}원`;
+  } else if (numPrice >= 10000) {
+    return `${Math.floor(numPrice / 10000)}만원`;
   }
-  return `${price.toLocaleString()}원`;
+  return `${numPrice.toLocaleString()}원`;
+}
+
+// 가격 값이 유효한지 확인
+function hasValidPrice(value: string | number | null | undefined): boolean {
+  if (value === null || value === undefined || value === '' || value === '0' || value === 0) {
+    return false;
+  }
+  const numValue = Number(value);
+  return !isNaN(numValue) && numValue > 0;
+}
+
+// 가격 정보 HTML 생성 함수
+function buildPriceInfoHtml(property: Property): string {
+  let html = '';
+  if (hasValidPrice(property.price)) {
+    html += `<div style="color:#2563eb;font-weight:bold;font-size:13px;">매매가: ${formatPrice(property.price)}</div>`;
+  }
+  if (hasValidPrice(property.deposit)) {
+    html += `<div style="color:#2563eb;font-weight:bold;font-size:13px;">전세금: ${formatPrice(property.deposit)}</div>`;
+  }
+  if (hasValidPrice(property.depositAmount)) {
+    html += `<div style="color:#2563eb;font-weight:bold;font-size:13px;">보증금: ${formatPrice(property.depositAmount)}</div>`;
+  }
+  if (hasValidPrice(property.monthlyRent)) {
+    html += `<div style="color:#2563eb;font-weight:bold;font-size:13px;">월세: ${formatPrice(property.monthlyRent)}</div>`;
+  }
+  if (hasValidPrice(property.maintenanceFee)) {
+    html += `<div style="color:#2563eb;font-weight:bold;font-size:13px;">관리비: ${formatPrice(property.maintenanceFee)}</div>`;
+  }
+  return html;
 }
 
 interface KakaoMapProps {
@@ -197,7 +230,7 @@ export default function KakaoMap({ singleProperty, properties: externalPropertie
                 <div style="padding:12px;font-size:12px;max-width:300px;overflow:visible;">
                   <div style="font-weight:bold;margin-bottom:6px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${singleProperty.title}</div>
                   <div style="color:#666;font-size:12px;margin-bottom:6px;">${singleProperty.type} · ${singleProperty.dealType && Array.isArray(singleProperty.dealType) ? singleProperty.dealType.join(', ') : '매매'}</div>
-                  <div style="color:#2563eb;font-weight:bold;font-size:13px;margin-bottom:6px;">${formatPrice(Number(singleProperty.price) || 0)}</div>
+                  ${buildPriceInfoHtml(singleProperty)}
                   ${!isExactLocation ? `<div style="color:#888;font-size:11px;margin-top:4px;"><i>* 위치는 대략적인 지역 중심 기준</i></div>` : ''}
                 </div>
               `
@@ -235,7 +268,7 @@ export default function KakaoMap({ singleProperty, properties: externalPropertie
               <div style="padding:12px;font-size:12px;max-width:300px;overflow:visible;">
                 <div style="font-weight:bold;margin-bottom:6px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${singleProperty.title}</div>
                 <div style="color:#666;font-size:12px;margin-bottom:6px;">${singleProperty.type} · ${singleProperty.dealType && Array.isArray(singleProperty.dealType) ? singleProperty.dealType.join(', ') : '매매'}</div>
-                <div style="color:#2563eb;font-weight:bold;font-size:13px;margin-bottom:6px;">${formatPrice(Number(singleProperty.price) || 0)}</div>
+                ${buildPriceInfoHtml(singleProperty)}
                 <div style="color:#888;font-size:11px;margin-top:4px;"><i>* 위치는 대략적인 지역 중심 기준</i></div>
               </div>
             `
@@ -343,7 +376,7 @@ export default function KakaoMap({ singleProperty, properties: externalPropertie
                   <div style="padding:12px;font-size:12px;max-width:300px;overflow:visible;">
                     <div style="font-weight:bold;margin-bottom:6px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${property.title}</div>
                     <div style="color:#666;font-size:12px;margin-bottom:6px;">${property.type} · ${property.dealType && Array.isArray(property.dealType) ? property.dealType.join(', ') : '매매'}</div>
-                    <div style="color:#2563eb;font-weight:bold;font-size:13px;margin-bottom:6px;">${formatPrice(Number(property.price) || 0)}</div>
+                    ${buildPriceInfoHtml(property)}
                 `;
                 
                 // 대략적인 위치를 사용한 경우 알림 추가
@@ -450,12 +483,46 @@ export default function KakaoMap({ singleProperty, properties: externalPropertie
             {selectedProperty.type}, {selectedProperty.dealType && Array.isArray(selectedProperty.dealType) ? selectedProperty.dealType.join('/') : ''}
           </div>
           
-          <div className="flex items-center mb-1">
-            <span className="text-xs text-gray-500 mr-1">가격:</span>
-            <span className="text-xs font-semibold text-primary">
-              {formatPrice(Number(selectedProperty.price) || 0)}
-            </span>
-          </div>
+          {hasValidPrice(selectedProperty.price) && (
+            <div className="flex items-center mb-1">
+              <span className="text-xs text-gray-500 mr-1">매매가:</span>
+              <span className="text-xs font-semibold text-primary">
+                {formatPrice(selectedProperty.price)}
+              </span>
+            </div>
+          )}
+          {hasValidPrice(selectedProperty.deposit) && (
+            <div className="flex items-center mb-1">
+              <span className="text-xs text-gray-500 mr-1">전세금:</span>
+              <span className="text-xs font-semibold text-primary">
+                {formatPrice(selectedProperty.deposit)}
+              </span>
+            </div>
+          )}
+          {hasValidPrice(selectedProperty.depositAmount) && (
+            <div className="flex items-center mb-1">
+              <span className="text-xs text-gray-500 mr-1">보증금:</span>
+              <span className="text-xs font-semibold text-primary">
+                {formatPrice(selectedProperty.depositAmount)}
+              </span>
+            </div>
+          )}
+          {hasValidPrice(selectedProperty.monthlyRent) && (
+            <div className="flex items-center mb-1">
+              <span className="text-xs text-gray-500 mr-1">월세:</span>
+              <span className="text-xs font-semibold text-primary">
+                {formatPrice(selectedProperty.monthlyRent)}
+              </span>
+            </div>
+          )}
+          {hasValidPrice(selectedProperty.maintenanceFee) && (
+            <div className="flex items-center mb-1">
+              <span className="text-xs text-gray-500 mr-1">관리비:</span>
+              <span className="text-xs font-semibold text-primary">
+                {formatPrice(selectedProperty.maintenanceFee)}
+              </span>
+            </div>
+          )}
           
           <div className="flex items-center mb-1">
             <span className="text-xs text-gray-500 mr-1">지역:</span>

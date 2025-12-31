@@ -204,22 +204,22 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
                 </div>
               )}
               {hasValidPrice(property.deposit) && (
-                <div className="text-sm text-gray-700">
+                <div className="text-xl font-bold text-primary">
                   전세금: {formatPrice(property.deposit)}
                 </div>
               )}
               {hasValidPrice(property.depositAmount) && (
-                <div className="text-sm text-gray-700">
+                <div className="text-xl font-bold text-primary">
                   보증금: {formatPrice(property.depositAmount)}
                 </div>
               )}
               {hasValidPrice(property.monthlyRent) && (
-                <div className="text-sm text-gray-700">
+                <div className="text-xl font-bold text-primary">
                   월세: {formatPrice(property.monthlyRent)}
                 </div>
               )}
               {hasValidPrice(property.maintenanceFee) && (
-                <div className="text-sm text-gray-700">
+                <div className="text-xl font-bold text-primary">
                   관리비: {formatPrice(property.maintenanceFee)}
                 </div>
               )}

@@ -227,7 +227,7 @@ export default function KakaoMap({ singleProperty, properties: externalPropertie
             const infoWindow = new window.kakao.maps.InfoWindow({ 
               zIndex: 1,
               content: `
-                <div style="padding:12px;font-size:12px;max-width:300px;overflow:visible;">
+                <div style="padding:12px;font-size:12px;max-width:390px;overflow:visible;">
                   <div style="font-weight:bold;margin-bottom:6px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${singleProperty.title}</div>
                   <div style="color:#666;font-size:12px;margin-bottom:6px;">${singleProperty.type} · ${singleProperty.dealType && Array.isArray(singleProperty.dealType) ? singleProperty.dealType.join(', ') : '매매'}</div>
                   ${buildPriceInfoHtml(singleProperty)}
@@ -265,7 +265,7 @@ export default function KakaoMap({ singleProperty, properties: externalPropertie
           const infoWindow = new window.kakao.maps.InfoWindow({ 
             zIndex: 1,
             content: `
-              <div style="padding:12px;font-size:12px;max-width:300px;overflow:visible;">
+              <div style="padding:12px;font-size:12px;max-width:390px;overflow:visible;">
                 <div style="font-weight:bold;margin-bottom:6px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${singleProperty.title}</div>
                 <div style="color:#666;font-size:12px;margin-bottom:6px;">${singleProperty.type} · ${singleProperty.dealType && Array.isArray(singleProperty.dealType) ? singleProperty.dealType.join(', ') : '매매'}</div>
                 ${buildPriceInfoHtml(singleProperty)}
@@ -373,7 +373,7 @@ export default function KakaoMap({ singleProperty, properties: externalPropertie
                 
                 // 인포윈도우 내용 설정
                 let content = `
-                  <div style="padding:12px;font-size:12px;max-width:300px;overflow:visible;">
+                  <div style="padding:12px;font-size:12px;max-width:390px;overflow:visible;">
                     <div style="font-weight:bold;margin-bottom:6px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${property.title}</div>
                     <div style="color:#666;font-size:12px;margin-bottom:6px;">${property.type} · ${property.dealType && Array.isArray(property.dealType) ? property.dealType.join(', ') : '매매'}</div>
                     ${buildPriceInfoHtml(property)}

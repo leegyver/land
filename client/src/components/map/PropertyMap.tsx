@@ -169,7 +169,7 @@ const PropertyMap = () => {
         
         // 정보창 내용 구성
         const content = `
-          <div style="padding: 8px; max-width: 250px; font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;">
+          <div style="padding: 8px; max-width: 325px; font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;">
             <div style="font-weight: bold; margin-bottom: 4px; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${property.title}</div>
             <div style="color: #666; font-size: 12px; margin-bottom: 4px;">${property.type} · ${dealTypeText}</div>
             <div style="color: #2563eb; font-weight: bold; font-size: 13px;">${formatNumberToKorean(Number(property.price) || 0)}원</div>

@@ -180,23 +180,6 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
               <Badge variant="outline" className="text-xs font-medium px-2 py-0 border-primary text-primary">
                 {property.type}
               </Badge>
-              {property.dealType && Array.isArray(property.dealType) && property.dealType.map((type, index) => (
-                <Badge 
-                  key={index}
-                  variant="outline"
-                  className={cn(
-                    "text-xs font-medium px-2 py-0",
-                    type === "매매" ? "border-red-500 text-red-500" : 
-                    type === "전세" ? "border-amber-500 text-amber-500" : 
-                    type === "월세" ? "border-indigo-500 text-indigo-500" :
-                    type === "완료" ? "border-gray-500 text-gray-500" :
-                    type === "보류중" ? "border-pink-500 text-pink-500" :
-                    "border-secondary text-secondary"
-                  )}
-                >
-                  {type}
-                </Badge>
-              ))}
             </div>
             {/* 가격 정보 - 값이 있을 때만 표시 */}
             <div className="space-y-1">

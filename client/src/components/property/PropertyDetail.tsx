@@ -429,21 +429,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
             {property.type}
           </Badge>
           
-          {/* 거래 유형 뱃지들 */}
-          {property.dealType && Array.isArray(property.dealType) && property.dealType.map((type, index) => (
-            <Badge 
-              key={index}
-              className={`text-sm font-medium ${
-                type === "매매" ? "bg-red-600" : 
-                type === "전세" ? "bg-amber-600" : 
-                type === "월세" ? "bg-indigo-600" :
-                type === "완료" ? "bg-gray-600" :
-                type === "보류중" ? "bg-pink-600" : "bg-secondary"
-              }`}
-            >
-              {type}
-            </Badge>
-          ))}
+          {/* 거래 유형 뱃지들 제거 */}
         </div>
         <p className="text-gray-medium flex items-center text-base">
           <MapPin className="w-5 h-5 mr-1.5 text-primary" /> 

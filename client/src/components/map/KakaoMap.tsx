@@ -480,7 +480,7 @@ export default function KakaoMap({ singleProperty, properties: externalPropertie
           </Link>
           
           <div className="text-xs text-gray-500 mb-1">
-            {selectedProperty.type}, {selectedProperty.dealType && Array.isArray(selectedProperty.dealType) ? selectedProperty.dealType.join('/') : ''}
+            {selectedProperty.type}
           </div>
           
           {hasValidPrice(selectedProperty.price) && (

@@ -136,25 +136,6 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
           {property.type}
         </Badge>
         
-        {/* 거래 유형 표시: 모든 거래유형 (매매/전세/월세 등) */}
-        <div className="absolute top-3 right-3 z-10 flex flex-wrap gap-1 justify-end">
-          {property.dealType && Array.isArray(property.dealType) && property.dealType.map((type, index) => (
-            <Badge 
-              key={index}
-              className={cn(
-                "font-medium text-sm",
-                type === "매매" ? "bg-red-600" : 
-                type === "전세" ? "bg-amber-600" : 
-                type === "월세" ? "bg-indigo-600" :
-                type === "완료" ? "bg-gray-600" :
-                type === "보류중" ? "bg-pink-606" : "bg-secondary"
-              )}
-            >
-              {type}
-            </Badge>
-          ))}
-        </div>
-        
         <img 
           src={property.imageUrl || siteConfig.defaultImageUrl} 
           alt={property.title} 

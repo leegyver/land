@@ -229,7 +229,7 @@ export default function KakaoMap({ singleProperty, properties: externalPropertie
               content: `
                 <div style="padding:12px;font-size:12px;max-width:390px;overflow:visible;">
                   <div style="font-weight:bold;margin-bottom:6px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${singleProperty.title}</div>
-                  <div style="color:#666;font-size:12px;margin-bottom:6px;">${singleProperty.type}</div>
+                  <div style="color:#666;font-size:12px;margin-bottom:6px;">${singleProperty.type}${singleProperty.dealType && Array.isArray(singleProperty.dealType) ? ' · ' + singleProperty.dealType.filter((t: string) => ['매매', '전세', '월세'].includes(t)).join(', ') : ''}</div>
                   ${buildPriceInfoHtml(singleProperty)}
                   ${!isExactLocation ? `<div style="color:#888;font-size:11px;margin-top:4px;"><i>* 위치는 대략적인 지역 중심 기준</i></div>` : ''}
                 </div>
@@ -267,7 +267,7 @@ export default function KakaoMap({ singleProperty, properties: externalPropertie
             content: `
               <div style="padding:12px;font-size:12px;max-width:390px;overflow:visible;">
                 <div style="font-weight:bold;margin-bottom:6px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${singleProperty.title}</div>
-                <div style="color:#666;font-size:12px;margin-bottom:6px;">${singleProperty.type}</div>
+                <div style="color:#666;font-size:12px;margin-bottom:6px;">${singleProperty.type}${singleProperty.dealType && Array.isArray(singleProperty.dealType) ? ' · ' + singleProperty.dealType.filter((t: string) => ['매매', '전세', '월세'].includes(t)).join(', ') : ''}</div>
                 ${buildPriceInfoHtml(singleProperty)}
                 <div style="color:#888;font-size:11px;margin-top:4px;"><i>* 위치는 대략적인 지역 중심 기준</i></div>
               </div>
@@ -375,7 +375,7 @@ export default function KakaoMap({ singleProperty, properties: externalPropertie
                 let content = `
                   <div style="padding:12px;font-size:12px;max-width:390px;overflow:visible;">
                     <div style="font-weight:bold;margin-bottom:6px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${property.title}</div>
-                    <div style="color:#666;font-size:12px;margin-bottom:6px;">${property.type}</div>
+                    <div style="color:#666;font-size:12px;margin-bottom:6px;">${property.type}${property.dealType && Array.isArray(property.dealType) ? ' · ' + property.dealType.filter((t: string) => ['매매', '전세', '월세'].includes(t)).join(', ') : ''}</div>
                     ${buildPriceInfoHtml(property)}
                 `;
                 
@@ -480,7 +480,7 @@ export default function KakaoMap({ singleProperty, properties: externalPropertie
           </Link>
           
           <div className="text-xs text-gray-500 mb-1">
-            {selectedProperty.type}
+            {selectedProperty.type}{selectedProperty.dealType && Array.isArray(selectedProperty.dealType) && selectedProperty.dealType.filter((t) => ['매매', '전세', '월세'].includes(t)).length > 0 ? ` · ${selectedProperty.dealType.filter((t) => ['매매', '전세', '월세'].includes(t)).join('/')}` : ''}
           </div>
           
           {hasValidPrice(selectedProperty.price) && (

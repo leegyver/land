@@ -161,17 +161,18 @@ const PropertyMap = () => {
         // 클릭된 매물 정보 설정
         setSelectedProperty(property);
         
-        // 거래 유형 (매매/전세/월세) 판단
-        let dealTypeText = '매매';
+        // 거래 유형 (매매/전세/월세만 표시)
+        let dealTypeText = '';
         if (property.dealType && Array.isArray(property.dealType)) {
-          dealTypeText = property.dealType[0] || '매매';
+          const filteredTypes = property.dealType.filter(t => ['매매', '전세', '월세'].includes(t));
+          dealTypeText = filteredTypes.length > 0 ? filteredTypes.join(', ') : '';
         }
         
         // 정보창 내용 구성
         const content = `
           <div style="padding: 8px; max-width: 325px; font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;">
             <div style="font-weight: bold; margin-bottom: 4px; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${property.title}</div>
-            <div style="color: #666; font-size: 12px; margin-bottom: 4px;">${property.type}</div>
+            <div style="color: #666; font-size: 12px; margin-bottom: 4px;">${property.type}${dealTypeText ? ' · ' + dealTypeText : ''}</div>
             <div style="color: #2563eb; font-weight: bold; font-size: 13px;">${formatNumberToKorean(Number(property.price) || 0)}원</div>
           </div>
         `;
@@ -230,6 +231,22 @@ const PropertyMap = () => {
             <Badge variant="outline" className="bg-primary/10 text-primary">
               {selectedProperty.type}
             </Badge>
+            {selectedProperty.dealType && Array.isArray(selectedProperty.dealType) && selectedProperty.dealType
+              .filter(t => ['매매', '전세', '월세'].includes(t))
+              .map((type, idx) => (
+                <Badge 
+                  key={idx}
+                  variant="outline" 
+                  className={`${
+                    type === '매매' ? 'bg-red-100 text-red-800' : 
+                    type === '전세' ? 'bg-amber-100 text-amber-800' : 
+                    type === '월세' ? 'bg-indigo-100 text-indigo-800' : 
+                    'bg-gray-100 text-gray-800'
+                  }`}
+                >
+                  {type}
+                </Badge>
+              ))}
           </div>
           
           <div className="grid grid-cols-2 gap-x-2 gap-y-1 mb-3 text-sm">

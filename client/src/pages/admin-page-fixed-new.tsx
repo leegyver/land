@@ -943,32 +943,9 @@ export default function AdminPage() {
                                       <TableCell>{property.price}</TableCell>
                                       <TableCell>
                                         <div className="flex flex-wrap gap-1">
-                                          {Array.isArray(property.dealType) ? (
-                                            property.dealType.map((type, idx) => (
-                                              <span 
-                                                key={idx} 
-                                                className={`text-xs px-2 py-1 rounded ${
-                                                  type === '매매' ? 'bg-blue-100 text-blue-800' : 
-                                                  type === '전세' ? 'bg-green-100 text-green-800' : 
-                                                  type === '월세' ? 'bg-orange-100 text-orange-800' : 
-                                                  'bg-gray-100 text-gray-800'
-                                                }`}
-                                              >
-                                                {type}
-                                              </span>
-                                            ))
-                                          ) : (
-                                            <span 
-                                              className={`text-xs px-2 py-1 rounded ${
-                                                property.dealType === '매매' ? 'bg-blue-100 text-blue-800' : 
-                                                property.dealType === '전세' ? 'bg-green-100 text-green-800' : 
-                                                property.dealType === '월세' ? 'bg-orange-100 text-orange-800' : 
-                                                'bg-gray-100 text-gray-800'
-                                              }`}
-                                            >
-                                              {property.dealType}
-                                            </span>
-                                          )}
+                                          <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-primary text-primary whitespace-nowrap">
+                                            {property.type}
+                                          </Badge>
                                         </div>
                                       </TableCell>
                                       <TableCell>
@@ -1117,32 +1094,9 @@ export default function AdminPage() {
                               <TableCell>{property.price}</TableCell>
                               <TableCell>
                                 <div className="flex flex-wrap gap-1">
-                                  {Array.isArray(property.dealType) ? (
-                                    property.dealType.map((type, idx) => (
-                                      <span 
-                                        key={idx} 
-                                        className={`text-xs px-2 py-1 rounded ${
-                                          type === '매매' ? 'bg-blue-100 text-blue-800' : 
-                                          type === '전세' ? 'bg-green-100 text-green-800' : 
-                                          type === '월세' ? 'bg-orange-100 text-orange-800' : 
-                                          'bg-gray-100 text-gray-800'
-                                        }`}
-                                      >
-                                        {type}
-                                      </span>
-                                    ))
-                                  ) : (
-                                    <span 
-                                      className={`text-xs px-2 py-1 rounded ${
-                                        property.dealType === '매매' ? 'bg-blue-100 text-blue-800' : 
-                                        property.dealType === '전세' ? 'bg-green-100 text-green-800' : 
-                                        property.dealType === '월세' ? 'bg-orange-100 text-orange-800' : 
-                                        'bg-gray-100 text-gray-800'
-                                      }`}
-                                    >
-                                      {property.dealType}
-                                    </span>
-                                  )}
+                                  <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-primary text-primary whitespace-nowrap">
+                                    {property.type}
+                                  </Badge>
                                 </div>
                               </TableCell>
                               <TableCell>

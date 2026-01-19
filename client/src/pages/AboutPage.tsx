@@ -37,7 +37,7 @@ const AboutPage = () => {
   return (
     <div className="pt-20 pb-10 min-h-screen bg-gray-50">
       <Helmet>
-        <title>유튜브 채널 | 이가이버부동산</title>
+        <title>유튜브채널 | 이가이버부동산</title>
         <meta 
           name="description" 
           content="강화도 부동산 이야기 유튜브 채널 영상을 확인하세요."
@@ -46,7 +46,7 @@ const AboutPage = () => {
       
       <div className="container mx-auto px-4">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">유튜브 채널</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">유튜브채널</h1>
           <p className="text-gray-600">강화도부동산이야기 채널의 최신 영상을 확인하세요</p>
           <a 
             href="https://www.youtube.com/channel/UChvA8_nrczWDBYdHUum7Amw" 

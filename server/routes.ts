@@ -1029,23 +1029,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // 특정 유튜브 채널 영상 가져오기
+  // 특정 유튜브 채널 영상 가져오기 (일반 영상만, 쇼츠 제외)
   app.get("/api/youtube/channel/:channelId", async (req, res) => {
     try {
       const { channelId } = req.params;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      const refresh = req.query.refresh === 'true';
 
       // 캐시에서 확인
-      const cacheKey = `youtube_channel_${channelId}_${limit}`;
+      const cacheKey = `youtube_channel_videos_${channelId}_${limit}`;
+      
+      if (refresh) {
+        memoryCache.delete(cacheKey);
+      }
+      
       const cachedVideos = memoryCache.get(cacheKey);
 
       if (cachedVideos) {
         return res.json(cachedVideos);
       }
 
-      // 채널 URL 생성 후 영상 가져오기
-      const channelUrl = `https://www.youtube.com/channel/${channelId}`;
-      const videos = await getLatestYouTubeVideos(channelUrl, limit);
+      // 채널 ID로 직접 영상 가져오기 (일반 영상만 - medium/long duration)
+      const videos = await fetchLatestYouTubeVideosWithAPI(channelId, limit);
 
       // 캐시에 저장 (6시간)
       memoryCache.set(cacheKey, videos, 6 * 60 * 60 * 1000);

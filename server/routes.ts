@@ -1029,6 +1029,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 특정 유튜브 채널 영상 가져오기
+  app.get("/api/youtube/channel/:channelId", async (req, res) => {
+    try {
+      const { channelId } = req.params;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+
+      // 캐시에서 확인
+      const cacheKey = `youtube_channel_${channelId}_${limit}`;
+      const cachedVideos = memoryCache.get(cacheKey);
+
+      if (cachedVideos) {
+        return res.json(cachedVideos);
+      }
+
+      // 채널 URL 생성 후 영상 가져오기
+      const channelUrl = `https://www.youtube.com/channel/${channelId}`;
+      const videos = await getLatestYouTubeVideos(channelUrl, limit);
+
+      // 캐시에 저장 (6시간)
+      memoryCache.set(cacheKey, videos, 6 * 60 * 60 * 1000);
+
+      res.json(videos);
+    } catch (error) {
+      console.error("유튜브 채널 영상 가져오기 오류:", error);
+      res.status(500).json({ 
+        message: "유튜브 채널 영상을 불러오는데 실패했습니다",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // 네이버 블로그 최신 글 가져오기
   app.get("/api/blog/latest", async (req, res) => {
     try {

@@ -2,8 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet";
 import { Play, ExternalLink, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface YouTubeVideo {
   id: string;
@@ -31,26 +29,13 @@ const AboutPage = () => {
 
   const channelId = channelData?.channelId;
 
-  const { data: videos, isLoading: videosLoading } = useQuery<YouTubeVideo[]>({
-    queryKey: ["/api/youtube/channel", channelId],
+  const { data: allVideos, isLoading } = useQuery<YouTubeVideo[]>({
+    queryKey: ["/api/youtube/channel", channelId, "20"],
     queryFn: async () => {
       if (!channelId) return [];
-      const response = await fetch(`/api/youtube/channel/${channelId}?limit=20`);
+      const response = await fetch(`/api/youtube/channel/${channelId}?limit=20&refresh=true`);
       if (!response.ok) {
         throw new Error("Failed to fetch videos");
-      }
-      return response.json();
-    },
-    enabled: !!channelId,
-  });
-
-  const { data: shorts, isLoading: shortsLoading } = useQuery<YouTubeVideo[]>({
-    queryKey: ["/api/youtube/shorts", channelId],
-    queryFn: async () => {
-      if (!channelId) return [];
-      const response = await fetch(`/api/youtube/shorts/${channelId}?limit=20`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch shorts");
       }
       return response.json();
     },
@@ -66,8 +51,6 @@ const AboutPage = () => {
       day: "numeric",
     });
   };
-
-  const isLoading = videosLoading || shortsLoading;
 
   return (
     <div className="pt-20 pb-10 min-h-screen bg-gray-50">
@@ -101,105 +84,49 @@ const AboutPage = () => {
           </div>
         )}
 
-        {!isLoading && (
-          <Tabs defaultValue="videos" className="w-full">
-            <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
-              <TabsTrigger value="videos" className="text-base">
-                영상 ({videos?.length || 0})
-              </TabsTrigger>
-              <TabsTrigger value="shorts" className="text-base">
-                쇼츠 ({shorts?.length || 0})
-              </TabsTrigger>
-            </TabsList>
+        {!isLoading && allVideos && allVideos.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {allVideos.slice(0, 10).map((video) => (
+              <a
+                key={video.id}
+                href={video.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group"
+              >
+                <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                  <div className="relative aspect-video">
+                    <img
+                      src={video.thumbnail}
+                      alt={video.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                      <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
+                        <Play className="w-8 h-8 text-white fill-white ml-1" />
+                      </div>
+                    </div>
+                  </div>
+                  <CardContent className="p-4">
+                    <h3 className="font-medium text-gray-900 line-clamp-2 group-hover:text-primary transition-colors">
+                      {video.title}
+                    </h3>
+                    {video.publishedAt && (
+                      <p className="text-sm text-gray-500 mt-2">
+                        {formatDate(video.publishedAt)}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </a>
+            ))}
+          </div>
+        )}
 
-            <TabsContent value="videos">
-              {videos && videos.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {videos.map((video) => (
-                    <a
-                      key={video.id}
-                      href={video.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group"
-                    >
-                      <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                        <div className="relative aspect-video">
-                          <img
-                            src={video.thumbnail}
-                            alt={video.title}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                            <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
-                              <Play className="w-8 h-8 text-white fill-white ml-1" />
-                            </div>
-                          </div>
-                        </div>
-                        <CardContent className="p-4">
-                          <h3 className="font-medium text-gray-900 line-clamp-2 group-hover:text-primary transition-colors">
-                            {video.title}
-                          </h3>
-                          {video.publishedAt && (
-                            <p className="text-sm text-gray-500 mt-2">
-                              {formatDate(video.publishedAt)}
-                            </p>
-                          )}
-                        </CardContent>
-                      </Card>
-                    </a>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-20">
-                  <p className="text-gray-500">등록된 영상이 없습니다.</p>
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="shorts">
-              {shorts && shorts.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                  {shorts.map((short) => (
-                    <a
-                      key={short.id}
-                      href={short.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group"
-                    >
-                      <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                        <div className="relative aspect-[9/16]">
-                          <img
-                            src={short.thumbnail}
-                            alt={short.title}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                            <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center">
-                              <Play className="w-6 h-6 text-white fill-white ml-0.5" />
-                            </div>
-                          </div>
-                          <div className="absolute bottom-2 left-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
-                            Shorts
-                          </div>
-                        </div>
-                        <CardContent className="p-3">
-                          <h3 className="font-medium text-gray-900 text-sm line-clamp-2 group-hover:text-primary transition-colors">
-                            {short.title}
-                          </h3>
-                        </CardContent>
-                      </Card>
-                    </a>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-20">
-                  <p className="text-gray-500">등록된 쇼츠가 없습니다.</p>
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
+        {!isLoading && (!allVideos || allVideos.length === 0) && (
+          <div className="text-center py-20">
+            <p className="text-gray-500">등록된 영상이 없습니다.</p>
+          </div>
         )}
       </div>
     </div>

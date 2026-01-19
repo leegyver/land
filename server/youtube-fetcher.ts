@@ -44,6 +44,64 @@ interface YouTubePlaylistResponse {
 }
 
 /**
+ * YouTube 검색 응답 인터페이스
+ */
+interface YouTubeSearchResponse {
+  items: {
+    id: {
+      videoId: string;
+    };
+    snippet: {
+      title: string;
+      thumbnails: {
+        high?: { url: string; };
+        default?: { url: string; };
+      };
+      publishedAt: string;
+    };
+  }[];
+}
+
+/**
+ * 유튜브 채널 핸들(@username)에서 채널 ID를 가져옵니다.
+ * @param handle 유튜브 채널 핸들 (예: @강화도부동산이야기)
+ * @returns 채널 ID
+ */
+export async function getChannelIdByHandle(handle: string): Promise<string | null> {
+  try {
+    const apiKey = process.env.YOUTUBE_API_KEY;
+    if (!apiKey) {
+      throw new Error('YouTube API 키가 설정되지 않았습니다');
+    }
+
+    // @ 기호 제거
+    const cleanHandle = handle.startsWith('@') ? handle.substring(1) : handle;
+    
+    console.log(`YouTube 핸들로 채널 ID 조회: @${cleanHandle}`);
+    
+    const response = await fetch(
+      `https://www.googleapis.com/youtube/v3/channels?part=id,contentDetails&forHandle=${encodeURIComponent(cleanHandle)}&key=${apiKey}`
+    );
+    
+    if (!response.ok) {
+      throw new Error(`채널 조회 실패: ${response.status}`);
+    }
+    
+    const data = await response.json() as { items?: { id: string }[] };
+    
+    if (data.items && data.items.length > 0) {
+      console.log(`채널 ID 찾음: ${data.items[0].id}`);
+      return data.items[0].id;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('채널 ID 조회 오류:', error);
+    return null;
+  }
+}
+
+/**
  * 유튜브 채널 URL에서 채널 ID를 추출합니다.
  * @param channelUrl 유튜브 채널 URL
  * @returns 채널 ID
@@ -57,6 +115,59 @@ function extractChannelId(channelUrl: string): string {
   
   // 기본값 반환
   return 'UCCG3_JlKhgalqhict7tKkbA'; // 이가이버 유튜브 채널 ID
+}
+
+/**
+ * YouTube API를 사용하여 특정 채널의 쇼츠 영상을 가져옵니다.
+ * @param channelId 유튜브 채널 ID
+ * @param limit 가져올 영상 수량
+ * @returns 유튜브 쇼츠 정보 배열
+ */
+export async function fetchYouTubeShorts(channelId: string, limit: number = 10): Promise<YouTubeVideo[]> {
+  try {
+    const apiKey = process.env.YOUTUBE_API_KEY;
+    if (!apiKey) {
+      throw new Error('YouTube API 키가 설정되지 않았습니다');
+    }
+
+    console.log(`YouTube 쇼츠 검색: 채널 ${channelId}`);
+    
+    // 채널에서 쇼츠 검색 (짧은 영상 필터링)
+    const searchResponse = await fetch(
+      `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&videoDuration=short&maxResults=${limit}&order=date&key=${apiKey}`
+    );
+    
+    if (!searchResponse.ok) {
+      throw new Error(`쇼츠 검색 실패: ${searchResponse.status}`);
+    }
+    
+    const searchData = await searchResponse.json() as YouTubeSearchResponse;
+    
+    if (!searchData.items || searchData.items.length === 0) {
+      console.log('쇼츠를 찾을 수 없습니다.');
+      return [];
+    }
+    
+    console.log(`${searchData.items.length}개의 쇼츠를 찾았습니다.`);
+    
+    const shorts = searchData.items.map(item => {
+      const thumbnailUrl = item.snippet.thumbnails.high?.url || 
+                           item.snippet.thumbnails.default?.url || 
+                           `https://i.ytimg.com/vi/${item.id.videoId}/hqdefault.jpg`;
+      return {
+        id: item.id.videoId,
+        title: item.snippet.title,
+        thumbnail: thumbnailUrl,
+        url: `https://www.youtube.com/shorts/${item.id.videoId}`,
+        publishedAt: item.snippet.publishedAt
+      };
+    });
+    
+    return shorts;
+  } catch (error) {
+    console.error('YouTube 쇼츠 검색 오류:', error);
+    return [];
+  }
 }
 
 /**

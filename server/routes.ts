@@ -18,7 +18,7 @@ import { sendEmail, createInquiryEmailTemplate } from "./mailer";
 import { getRecentTransactions } from "./real-estate-api";
 import { testRealEstateAPI } from "./test-api";
 import { getLatestBlogPosts } from "./blog-fetcher";
-import { getLatestYouTubeVideos } from "./youtube-fetcher";
+import { getLatestYouTubeVideos, getChannelIdByHandle, fetchYouTubeShorts, fetchLatestYouTubeVideosWithAPI } from "./youtube-fetcher";
 import { importPropertiesFromSheet, checkDuplicatesFromSheet } from "./sheet-importer";
 import { log } from "./vite";
 
@@ -1055,6 +1055,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("유튜브 채널 영상 가져오기 오류:", error);
       res.status(500).json({ 
         message: "유튜브 채널 영상을 불러오는데 실패했습니다",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // 유튜브 핸들로 채널 ID 조회
+  app.get("/api/youtube/handle/:handle", async (req, res) => {
+    try {
+      const { handle } = req.params;
+      
+      // 캐시에서 확인
+      const cacheKey = `youtube_handle_${handle}`;
+      const cachedChannelId = memoryCache.get(cacheKey);
+      
+      if (cachedChannelId) {
+        return res.json({ channelId: cachedChannelId });
+      }
+      
+      const channelId = await getChannelIdByHandle(handle);
+      
+      if (!channelId) {
+        return res.status(404).json({ message: "채널을 찾을 수 없습니다" });
+      }
+      
+      // 캐시에 저장 (24시간)
+      memoryCache.set(cacheKey, channelId, 24 * 60 * 60 * 1000);
+      
+      res.json({ channelId });
+    } catch (error) {
+      console.error("유튜브 핸들 조회 오류:", error);
+      res.status(500).json({ 
+        message: "채널 ID 조회에 실패했습니다",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // 유튜브 쇼츠 가져오기
+  app.get("/api/youtube/shorts/:channelId", async (req, res) => {
+    try {
+      const { channelId } = req.params;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      
+      // 캐시에서 확인
+      const cacheKey = `youtube_shorts_${channelId}_${limit}`;
+      const cachedShorts = memoryCache.get(cacheKey);
+      
+      if (cachedShorts) {
+        return res.json(cachedShorts);
+      }
+      
+      const shorts = await fetchYouTubeShorts(channelId, limit);
+      
+      // 캐시에 저장 (6시간)
+      memoryCache.set(cacheKey, shorts, 6 * 60 * 60 * 1000);
+      
+      res.json(shorts);
+    } catch (error) {
+      console.error("유튜브 쇼츠 가져오기 오류:", error);
+      res.status(500).json({ 
+        message: "유튜브 쇼츠를 불러오는데 실패했습니다",
         error: error instanceof Error ? error.message : String(error)
       });
     }

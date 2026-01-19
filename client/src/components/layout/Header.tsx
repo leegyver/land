@@ -22,7 +22,7 @@ const Header = () => {
     { name: "홈", path: "/" },
     { name: "모든매물보기", path: "/properties" },
     { name: "강화도뉴스", path: "/news" },
-    { name: "실거래가(디스코)", path: "/about" },
+    { name: "유튜브 채널", path: "/about" },
     { name: "문의하기", path: "/contact" },
   ];
   

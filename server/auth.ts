@@ -81,6 +81,7 @@ export function setupAuth(app: Express) {
         },
         async (accessToken, refreshToken, profile, done) => {
           try {
+            console.log("Naver Auth Profile:", JSON.stringify(profile));
             // 네이버 ID를 사용자 이름으로 사용
             const naverId = profile.id;
             let user = await storage.getUserByUsername(`naver_${naverId}`);
@@ -348,17 +349,27 @@ export function setupAuth(app: Express) {
   // 네이버 로그인 라우트
   app.get('/api/auth/naver', passport.authenticate('naver'));
 
-  // 네이버 로그인 콜백 라우트
-  app.get(
-    '/api/auth/naver/callback',
-    passport.authenticate('naver', {
-      failureRedirect: '/auth?error=naver_login_failed',
-    }),
-    (req, res) => {
-      // 성공 시 홈페이지로 리다이렉트
-      res.redirect('/');
-    }
-  );
+  // 네이버 로그인 콜백 라우트 (커스텀 콜백으로 에러 디버깅)
+  app.get('/api/auth/naver/callback', (req, res, next) => {
+    passport.authenticate('naver', (err: any, user: Express.User, info: any) => {
+      if (err) {
+        console.error("Naver Login Callback Error:", err);
+        const errMsg = err.message || JSON.stringify(err);
+        return res.redirect(`/auth?error=naver_login_failed&details=${encodeURIComponent(errMsg)}`);
+      }
+      if (!user) {
+        console.error("Naver Login Failed: No User returned");
+        return res.redirect('/auth?error=naver_login_failed_no_user');
+      }
+      req.logIn(user, (loginErr) => {
+        if (loginErr) {
+          console.error("Session Login Error:", loginErr);
+          return next(loginErr);
+        }
+        res.redirect('/');
+      });
+    })(req, res, next);
+  });
 
   // 카카오 로그인 라우트
   app.get('/api/auth/kakao', passport.authenticate('kakao'));

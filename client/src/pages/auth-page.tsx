@@ -39,19 +39,22 @@ export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [, setLocation] = useLocation();
   const search = useSearch();
-  
+
   // URL에서 에러 파라미터 확인
   const [error, setError] = useState<string | null>(null);
-  
+
   useEffect(() => {
     // URL 에러 파라미터 확인
     const params = new URLSearchParams(search);
     const errorParam = params.get("error");
-    
+
     if (errorParam === "naver_login_failed") {
-      setError("네이버 로그인에 실패했습니다. 다시 시도해주세요.");
+      const details = params.get("details");
+      setError(`네이버 로그인 실패: ${details ? decodeURIComponent(details) : "다시 시도해주세요."}`);
     } else if (errorParam === "kakao_login_failed") {
       setError("카카오 로그인에 실패했습니다. 다시 시도해주세요.");
+    } else if (errorParam) {
+      setError(errorParam);
     } else {
       setError(null);
     }
@@ -133,7 +136,7 @@ export default function AuthPage() {
                       <AlertDescription>{error}</AlertDescription>
                     </Alert>
                   )}
-                  
+
                   <Form {...loginForm}>
                     <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-5">
                       <FormField
@@ -143,10 +146,10 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel className="text-base">사용자 이름</FormLabel>
                             <FormControl>
-                              <Input 
-                                placeholder="사용자 이름" 
-                                {...field} 
-                                className="h-11 rounded-lg" 
+                              <Input
+                                placeholder="사용자 이름"
+                                {...field}
+                                className="h-11 rounded-lg"
                               />
                             </FormControl>
                             <FormMessage />
@@ -160,11 +163,11 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel className="text-base">비밀번호</FormLabel>
                             <FormControl>
-                              <Input 
-                                type="password" 
-                                placeholder="비밀번호" 
-                                {...field} 
-                                className="h-11 rounded-lg" 
+                              <Input
+                                type="password"
+                                placeholder="비밀번호"
+                                {...field}
+                                className="h-11 rounded-lg"
                               />
                             </FormControl>
                             <FormMessage />
@@ -188,7 +191,7 @@ export default function AuthPage() {
                           </>
                         )}
                       </Button>
-                      
+
                       {/* 소셜 로그인 구분선 */}
                       <div className="relative my-6">
                         <div className="absolute inset-0 flex items-center">
@@ -198,7 +201,7 @@ export default function AuthPage() {
                           <span className="bg-white px-4 text-sm text-gray-500">소셜 계정으로 로그인</span>
                         </div>
                       </div>
-                      
+
                       {/* 소셜 로그인 버튼 */}
                       <div className="grid grid-cols-2 gap-4">
                         <a href="/api/auth/kakao" className="w-full">
@@ -374,7 +377,7 @@ export default function AuthPage() {
           <div className="absolute w-96 h-96 rounded-full bg-white/20 bottom-0 left-1/4"></div>
           <div className="absolute w-60 h-60 rounded-full bg-white/20 top-1/3 left-10"></div>
         </div>
-        
+
         <div className="max-w-xl relative z-10">
           <h2 className="text-4xl font-bold mb-6 leading-tight">이가이버 부동산과 함께<br />당신의 꿈의 집을 찾으세요</h2>
           <p className="text-lg mb-10 text-blue-100">

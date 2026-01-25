@@ -21,6 +21,7 @@ import ProfilePage from "@/pages/profile-page";
 import NewsPage from "@/pages/NewsPage";
 import NewsDetailPage from "@/pages/NewsDetailPage";
 import PropertyForm from "@/pages/PropertyForm";
+import DiagnosisPage from "@/pages/DiagnosisPage";
 import { SimpleProtectedRoute } from "@/components/auth/SimpleProtectedRoute";
 
 function AppRouter() {
@@ -39,6 +40,8 @@ function AppRouter() {
       <SimpleProtectedRoute path="/admin" component={AdminPage} admin={true} />
       <SimpleProtectedRoute path="/admin/properties/new" component={PropertyForm} admin={true} />
       <SimpleProtectedRoute path="/admin/properties/edit/:id" component={PropertyForm} admin={true} />
+      <SimpleProtectedRoute path="/admin/properties/edit/:id" component={PropertyForm} admin={true} />
+      <Route path="/diagnosis" component={DiagnosisPage} />
       <Route component={NotFound} />
     </Switch>
   );

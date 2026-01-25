@@ -53,6 +53,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         APP_URL: process.env.APP_URL, // 값 확인 필요 (http/https mismatch 확인용)
       };
 
+      const appUrl = (process.env.APP_URL || "http://localhost:5000").replace(/\/$/, "");
+      const authDebug = {
+        naverCallback: `${appUrl}/api/auth/naver/callback`,
+        kakaoCallback: `${appUrl}/api/auth/kakao/callback`
+      };
+
       // 2. DB 연결 및 데이터 개수 테스트
       let dbStatus = "Unknown";
       let propertyCount = -1;
@@ -72,6 +78,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "ok",
         timestamp: new Date().toISOString(),
         environment: envCheck,
+        authExpectedCallbacks: authDebug,
         database: {
           status: dbStatus,
           propertyCount,

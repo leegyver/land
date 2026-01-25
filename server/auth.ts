@@ -62,6 +62,9 @@ export function setupAuth(app: Express) {
     }),
   );
 
+  // APP_URL 정제 (말단 슬래시 제거)
+  const appUrl = (process.env.APP_URL || "http://localhost:5000").replace(/\/$/, "");
+
   // 네이버 로그인 전략
   if (process.env.NAVER_CLIENT_ID && process.env.NAVER_CLIENT_SECRET) {
     passport.use(
@@ -69,7 +72,7 @@ export function setupAuth(app: Express) {
         {
           clientID: process.env.NAVER_CLIENT_ID,
           clientSecret: process.env.NAVER_CLIENT_SECRET,
-          callbackURL: (process.env.APP_URL || "http://localhost:5000") + "/api/auth/naver/callback",
+          callbackURL: `${appUrl}/api/auth/naver/callback`,
         },
         async (accessToken, refreshToken, profile, done) => {
           try {
@@ -107,7 +110,7 @@ export function setupAuth(app: Express) {
       new KakaoStrategy(
         {
           clientID: process.env.KAKAO_API_KEY,
-          callbackURL: (process.env.APP_URL || "http://localhost:5000") + "/api/auth/kakao/callback",
+          callbackURL: `${appUrl}/api/auth/kakao/callback`,
         },
         async (accessToken, refreshToken, profile, done) => {
           try {

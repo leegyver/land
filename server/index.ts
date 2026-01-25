@@ -4,10 +4,11 @@ import path from "path";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { setupNewsScheduler } from "./news-fetcher";
+import { seedInitialData } from "./seeder";
 
 const app = express();
 
-// 정적 파일 제공: /uploads/ 경로로 접근 가능
+// ... existing code ...
 app.use('/uploads', express.static(path.join(process.cwd(), 'public/uploads')));
 // 파일 업로드 크기 제한 증가 (기본값 100kb → 10MB)
 app.use(express.json({ limit: '10mb' }));
@@ -75,5 +76,8 @@ app.use((req, res, next) => {
 
     // 뉴스 스케줄러 초기화
     setupNewsScheduler();
+
+    // 초기 데이터 시딩 (DB가 비어있을 경우)
+    seedInitialData().catch(console.error);
   });
 })();

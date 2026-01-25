@@ -3,10 +3,10 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { db } from "./db";
-import { 
-  insertInquirySchema, 
-  insertPropertySchema, 
-  insertNewsSchema, 
+import {
+  insertInquirySchema,
+  insertPropertySchema,
+  insertNewsSchema,
   insertPropertyInquirySchema,
   insertFavoriteSchema,
   news
@@ -36,6 +36,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // 사이트 설정 API
   app.get('/api/site/config', (req, res) => {
     res.json(siteConfig);
+  });
+
+  // 시스템 상태 진단 API (배포 디버깅용)
+  app.get('/api/status', async (req, res) => {
+    try {
+      // 1. 환경 변수 존재 여부 확인 (값은 숨김)
+      const envCheck = {
+        FIREBASE_JSON: !!process.env.FIREBASE_SERVICE_ACCOUNT_JSON,
+        YOUTUBE_KEY: !!process.env.YOUTUBE_API_KEY,
+        NAVER_ID: !!process.env.NAVER_CLIENT_ID,
+        NAVER_SECRET: !!process.env.NAVER_CLIENT_SECRET,
+        KAKAO_KEY: !!process.env.VITE_KAKAO_MAP_KEY,
+        NODE_ENV: process.env.NODE_ENV
+      };
+
+      // 2. DB 연결 테스트
+      let dbStatus = "Unknown";
+      let propertyCount = -1;
+      try {
+        const testProps = await storage.getProperties();
+        dbStatus = "Connected";
+        propertyCount = testProps.length;
+      } catch (dbError) {
+        dbStatus = `Error: ${dbError instanceof Error ? dbError.message : String(dbError)}`;
+      }
+
+      res.json({
+        status: "ok",
+        timestamp: new Date().toISOString(),
+        environment: envCheck,
+        database: {
+          status: dbStatus,
+          count: propertyCount
+        }
+      });
+    } catch (e) {
+      res.status(500).json({ status: "error", error: String(e) });
+    }
   });
 
   // API ROUTES
@@ -99,8 +137,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const properties = await storage.getFeaturedProperties(limit);
 
       // 디버깅용 로그 추가
-      console.log(`추천 매물 ${properties.length}개 조회됨:`, 
-                  properties.map(p => `${p.id}:${p.title}(${p.featured ? '추천' : '일반'})`));
+      console.log(`추천 매물 ${properties.length}개 조회됨:`,
+        properties.map(p => `${p.id}:${p.title}(${p.featured ? '추천' : '일반'})`));
 
       res.json(properties);
     } catch (error) {
@@ -225,7 +263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const id = parseInt(req.params.id);
       const agent = await storage.updateAgent(id, req.body);
-      
+
       if (!agent) {
         return res.status(404).json({ message: "Agent not found" });
       }
@@ -285,8 +323,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // 이메일 발송
         const emailSent = await sendEmail(
-          recipientEmail, 
-          `[이가이버부동산 웹사이트] ${validatedData.name}님의 새로운 문의가 등록되었습니다`, 
+          recipientEmail,
+          `[이가이버부동산 웹사이트] ${validatedData.name}님의 새로운 문의가 등록되었습니다`,
           emailTemplate
         );
 
@@ -573,10 +611,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const address = (p.address || '').toLowerCase();
           const district = (p.district || '').toLowerCase();
 
-          return title.includes(searchKeyword) || 
-                 description.includes(searchKeyword) || 
-                 address.includes(searchKeyword) ||
-                 district.includes(searchKeyword);
+          return title.includes(searchKeyword) ||
+            description.includes(searchKeyword) ||
+            address.includes(searchKeyword) ||
+            district.includes(searchKeyword);
         });
         console.log(`키워드 검색 결과: ${properties.length}개 매물`);
       }
@@ -679,8 +717,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // 이미지 URL 필드 처리
           imageUrls: Array.isArray(req.body.imageUrls) ? req.body.imageUrls : [],
           // dealType 처리 - 배열로 변환
-          dealType: Array.isArray(req.body.dealType) ? req.body.dealType : 
-                    (req.body.dealType ? [req.body.dealType] : ['매매']),
+          dealType: Array.isArray(req.body.dealType) ? req.body.dealType :
+            (req.body.dealType ? [req.body.dealType] : ['매매']),
           // 숫자 필드들 - 쉼표 제거 후 처리
           price: stripCommas(req.body.price) || "0",
           size: stripCommas(req.body.size) || "0",
@@ -691,7 +729,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           })(),
           supplyArea: stripCommas(req.body.supplyArea),
           privateArea: stripCommas(req.body.privateArea),
-          floor: req.body.floor === "" ? null : (req.body.floor ? parseInt(req.body.floor) || null : null), 
+          floor: req.body.floor === "" ? null : (req.body.floor ? parseInt(req.body.floor) || null : null),
           totalFloors: req.body.totalFloors === "" ? null : (req.body.totalFloors ? parseInt(req.body.totalFloors) || null : null),
           deposit: stripCommas(req.body.deposit),
           depositAmount: stripCommas(req.body.depositAmount),
@@ -749,8 +787,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // 이미지 URL 필드 처리
         imageUrls: Array.isArray(req.body.imageUrls) ? req.body.imageUrls : (req.body.imageUrls ? [req.body.imageUrls] : existingProperty.imageUrls || []),
         // dealType 처리 - 배열로 변환
-        dealType: Array.isArray(req.body.dealType) ? req.body.dealType : 
-                  (req.body.dealType ? [req.body.dealType] : (existingProperty.dealType || ['매매'])),
+        dealType: Array.isArray(req.body.dealType) ? req.body.dealType :
+          (req.body.dealType ? [req.body.dealType] : (existingProperty.dealType || ['매매'])),
         // 숫자 필드들 - 쉼표 제거 후 처리
         price: stripCommas(req.body.price) || existingProperty.price || "0",
         size: stripCommas(req.body.size) || existingProperty.size || "0",
@@ -761,7 +799,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })(),
         supplyArea: stripCommas(req.body.supplyArea),
         privateArea: stripCommas(req.body.privateArea),
-        floor: req.body.floor === "" ? null : (req.body.floor ? parseInt(req.body.floor) || null : null), 
+        floor: req.body.floor === "" ? null : (req.body.floor ? parseInt(req.body.floor) || null : null),
         totalFloors: req.body.totalFloors === "" ? null : (req.body.totalFloors ? parseInt(req.body.totalFloors) || null : null),
         deposit: stripCommas(req.body.deposit),
         depositAmount: stripCommas(req.body.depositAmount),
@@ -963,15 +1001,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/test-real-estate", async (req, res) => {
     try {
       await testRealEstateAPI();
-      res.json({ 
-        success: true, 
-        message: "API 테스트 완료, 서버 로그를 확인하세요" 
+      res.json({
+        success: true,
+        message: "API 테스트 완료, 서버 로그를 확인하세요"
       });
     } catch (error) {
       console.error("API 테스트 오류:", error);
-      res.status(500).json({ 
-        success: false, 
-        message: "API 테스트 중 오류 발생" 
+      res.status(500).json({
+        success: false,
+        message: "API 테스트 중 오류 발생"
       });
     }
   });
@@ -992,9 +1030,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("실거래가 데이터 조회 오류:", error);
-      res.status(500).json({ 
-        success: false, 
-        message: "실거래가 데이터를 가져오는 중 오류가 발생했습니다." 
+      res.status(500).json({
+        success: false,
+        message: "실거래가 데이터를 가져오는 중 오류가 발생했습니다."
       });
     }
   });
@@ -1022,7 +1060,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(videos);
     } catch (error) {
       console.error("유튜브 영상 가져오기 오류:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: "최신 유튜브 영상을 불러오는데 실패했습니다",
         error: error instanceof Error ? error.message : String(error)
       });
@@ -1038,11 +1076,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 캐시에서 확인
       const cacheKey = `youtube_channel_videos_${channelId}_${limit}`;
-      
+
       if (refresh) {
         memoryCache.delete(cacheKey);
       }
-      
+
       const cachedVideos = memoryCache.get(cacheKey);
 
       if (cachedVideos) {
@@ -1058,7 +1096,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(videos);
     } catch (error) {
       console.error("유튜브 채널 영상 가져오기 오류:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: "유튜브 채널 영상을 불러오는데 실패했습니다",
         error: error instanceof Error ? error.message : String(error)
       });
@@ -1069,28 +1107,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/youtube/handle/:handle", async (req, res) => {
     try {
       const { handle } = req.params;
-      
+
       // 캐시에서 확인
       const cacheKey = `youtube_handle_${handle}`;
       const cachedChannelId = memoryCache.get(cacheKey);
-      
+
       if (cachedChannelId) {
         return res.json({ channelId: cachedChannelId });
       }
-      
+
       const channelId = await getChannelIdByHandle(handle);
-      
+
       if (!channelId) {
         return res.status(404).json({ message: "채널을 찾을 수 없습니다" });
       }
-      
+
       // 캐시에 저장 (24시간)
       memoryCache.set(cacheKey, channelId, 24 * 60 * 60 * 1000);
-      
+
       res.json({ channelId });
     } catch (error) {
       console.error("유튜브 핸들 조회 오류:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: "채널 ID 조회에 실패했습니다",
         error: error instanceof Error ? error.message : String(error)
       });
@@ -1102,24 +1140,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { channelId } = req.params;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
-      
+
       // 캐시에서 확인
       const cacheKey = `youtube_shorts_${channelId}_${limit}`;
       const cachedShorts = memoryCache.get(cacheKey);
-      
+
       if (cachedShorts) {
         return res.json(cachedShorts);
       }
-      
+
       const shorts = await fetchYouTubeShorts(channelId, limit);
-      
+
       // 캐시에 저장 (6시간)
       memoryCache.set(cacheKey, shorts, 6 * 60 * 60 * 1000);
-      
+
       res.json(shorts);
     } catch (error) {
       console.error("유튜브 쇼츠 가져오기 오류:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: "유튜브 쇼츠를 불러오는데 실패했습니다",
         error: error instanceof Error ? error.message : String(error)
       });
@@ -1136,8 +1174,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // - 36: 부동산정보
       // - 37: 세상이야기
       const categories = req.query.categories
-                        ? (req.query.categories as string).split(',')
-                        : ['35', '36', '37'];
+        ? (req.query.categories as string).split(',')
+        : ['35', '36', '37'];
 
       // 캐시를 강제로 초기화하는 쿼리 파라미터 추가
       const refresh = req.query.refresh === 'true';
@@ -1211,11 +1249,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 데이터 검증 - 잘못된 형식 필터링
       if (Array.isArray(posts)) {
-        posts = posts.filter(post => 
-          post && 
-          typeof post === 'object' && 
-          post.id && 
-          post.title && 
+        posts = posts.filter(post =>
+          post &&
+          typeof post === 'object' &&
+          post.id &&
+          post.title &&
           post.link
         );
 
@@ -1409,9 +1447,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ message: "뉴스 업데이트 중 오류가 발생했습니다: " + fetchError.message });
       }
 
-      return res.json({ 
+      return res.json({
         success: true,
-        message: "뉴스가 성공적으로 업데이트되었습니다.", 
+        message: "뉴스가 성공적으로 업데이트되었습니다.",
         count: newsItems.length
       });
     } catch (error) {
@@ -1553,7 +1591,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 캐시 삭제
       memoryCache.deleteByPrefix("properties_");
 
-      res.status(200).json({ 
+      res.status(200).json({
         message: `총 ${ids.length}개 중 ${successCount}개의 매물이 삭제되었습니다.`,
         successCount,
         totalCount: ids.length
@@ -1599,7 +1637,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 캐시 삭제
       memoryCache.deleteByPrefix("news_");
 
-      res.status(200).json({ 
+      res.status(200).json({
         message: `총 ${ids.length}개 중 ${successCount}개의 뉴스가 삭제되었습니다.`,
         successCount,
         totalCount: ids.length
@@ -1649,7 +1687,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const successCount = results.filter(Boolean).length;
 
-      res.status(200).json({ 
+      res.status(200).json({
         message: `총 ${filteredIds.length}개 중 ${successCount}개의 사용자 계정이 삭제되었습니다.`,
         successCount,
         totalCount: filteredIds.length,
@@ -1728,8 +1766,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "지원되지 않는 유형입니다." });
       }
 
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: `${successCount}개의 항목이 삭제되었습니다.`,
         deletedCount: successCount,
         skippedSelf: type === 'users' && ids.includes(user.id)
@@ -1756,7 +1794,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { spreadsheetId, ranges, filterDate } = req.body;
       const apiKey = process.env.GOOGLE_API_KEY;
-      
+
       if (!apiKey) {
         return res.status(500).json({ success: false, error: "서버에 Google API 키가 설정되지 않았습니다." });
       }
@@ -1802,10 +1840,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { spreadsheetId, ranges, filterDate, skipAddresses } = req.body;
-      
+
       // 서버에 저장된 Google API 키 사용
       const apiKey = process.env.GOOGLE_API_KEY;
-      
+
       if (!apiKey) {
         return res.status(500).json({ success: false, error: "서버에 Google API 키가 설정되지 않았습니다." });
       }
@@ -1829,7 +1867,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let allImportedIds: number[] = [];
       let allErrors: string[] = [];
       const addressesToSkip: string[] = skipAddresses || [];
-      
+
       for (const range of sheetRanges) {
         try {
           log(`시트 처리 시작: ${range}`, 'info');
@@ -1853,8 +1891,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         count: totalCount,
         importedIds: allImportedIds,
         error: allErrors.length > 0 ? allErrors.join('; ') : undefined

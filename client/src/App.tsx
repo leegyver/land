@@ -50,28 +50,13 @@ function AppRouter() {
 import { useEffect } from "react";
 
 function App() {
-  // 카카오 SDK 및 지도 로드
+  // 카카오 SDK 및 지도 로드 (로그인 SDK만 여기서 로드, 지도는 index.html에 주입됨)
   useEffect(() => {
-    const kakaoKey = import.meta.env.VITE_KAKAO_MAP_KEY;
-    if (!kakaoKey) {
-      console.error("VITE_KAKAO_MAP_KEY is missing!");
-      // 화면에 에러 표시 (디버깅용)
-      const errorDiv = document.createElement("div");
-      errorDiv.style.position = "fixed";
-      errorDiv.style.bottom = "10px";
-      errorDiv.style.right = "10px";
-      errorDiv.style.background = "red";
-      errorDiv.style.color = "white";
-      errorDiv.style.padding = "10px";
-      errorDiv.style.zIndex = "9999";
-      errorDiv.style.fontSize = "12px";
-      errorDiv.innerText = "❌ 카카오 맵 API 키가 없습니다. Render 환경변수를 확인하고 재배포해주세요.";
-      document.body.appendChild(errorDiv);
-      return;
-    }
-
-    // SDK 로드
+    // SDK 로드 (Auth용)
     if (!document.getElementById("kakao-sdk")) {
+      const kakaoKey = import.meta.env.VITE_KAKAO_MAP_KEY;
+      if (!kakaoKey) return;
+
       const script = document.createElement("script");
       script.id = "kakao-sdk";
       script.src = "https://developers.kakao.com/sdk/js/kakao.js";
@@ -85,21 +70,6 @@ function App() {
             console.error("Kakao SDK Init Failed", e);
           }
         }
-      };
-      document.head.appendChild(script);
-    }
-
-    // 지도 로드
-    if (!document.getElementById("kakao-map-sdk")) {
-      const script = document.createElement("script");
-      script.id = "kakao-map-sdk";
-      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoKey}&libraries=services&autoload=false`;
-      script.async = true;
-      script.onload = () => {
-        window.kakao.maps.load(() => {
-          console.log("Kakao Maps Loaded");
-          window.kakaoMapLoaded = true;
-        });
       };
       document.head.appendChild(script);
     }

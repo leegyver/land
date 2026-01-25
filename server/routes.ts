@@ -76,6 +76,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 수동 시딩 API (데이터 복구용)
+  app.get('/api/admin/seed', async (req, res) => {
+    try {
+      const { seedInitialData } = await import("./seeder");
+      await seedInitialData();
+      res.json({ message: "Seeding executed. Check server logs for details or /api/status for count." });
+    } catch (e) {
+      res.status(500).json({ message: "Seeding failed", error: String(e) });
+    }
+  });
+
   // API ROUTES
 
   // Properties

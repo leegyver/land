@@ -50,7 +50,22 @@ function App() {
   // 카카오 SDK 및 지도 로드
   useEffect(() => {
     const kakaoKey = import.meta.env.VITE_KAKAO_MAP_KEY;
-    if (!kakaoKey) return;
+    if (!kakaoKey) {
+      console.error("VITE_KAKAO_MAP_KEY is missing!");
+      // 화면에 에러 표시 (디버깅용)
+      const errorDiv = document.createElement("div");
+      errorDiv.style.position = "fixed";
+      errorDiv.style.bottom = "10px";
+      errorDiv.style.right = "10px";
+      errorDiv.style.background = "red";
+      errorDiv.style.color = "white";
+      errorDiv.style.padding = "10px";
+      errorDiv.style.zIndex = "9999";
+      errorDiv.style.fontSize = "12px";
+      errorDiv.innerText = "❌ 카카오 맵 API 키가 없습니다. Render 환경변수를 확인하고 재배포해주세요.";
+      document.body.appendChild(errorDiv);
+      return;
+    }
 
     // SDK 로드
     if (!document.getElementById("kakao-sdk")) {
@@ -60,8 +75,12 @@ function App() {
       script.async = true;
       script.onload = () => {
         if (window.Kakao && !window.Kakao.isInitialized()) {
-          window.Kakao.init(kakaoKey);
-          console.log("Kakao SDK Initialized");
+          try {
+            window.Kakao.init(kakaoKey);
+            console.log("Kakao SDK Initialized");
+          } catch (e) {
+            console.error("Kakao SDK Init Failed", e);
+          }
         }
       };
       document.head.appendChild(script);

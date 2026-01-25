@@ -47,17 +47,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         YOUTUBE_KEY: !!process.env.YOUTUBE_API_KEY,
         NAVER_ID: !!process.env.NAVER_CLIENT_ID,
         NAVER_SECRET: !!process.env.NAVER_CLIENT_SECRET,
-        KAKAO_KEY: !!process.env.VITE_KAKAO_MAP_KEY,
-        NODE_ENV: process.env.NODE_ENV
+        // Server side doesn't see VITE_ keys usually, but helpful to check if passed
+        VITE_KAKAO_KEY: !!process.env.VITE_KAKAO_MAP_KEY,
+        NODE_ENV: process.env.NODE_ENV,
+        APP_URL: process.env.APP_URL, // 값 확인 필요 (http/https mismatch 확인용)
       };
 
-      // 2. DB 연결 테스트
+      // 2. DB 연결 및 데이터 개수 테스트
       let dbStatus = "Unknown";
       let propertyCount = -1;
+      let userCount = -1;
+
       try {
         const testProps = await storage.getProperties();
+        const testUsers = await storage.getAllUsers();
         dbStatus = "Connected";
         propertyCount = testProps.length;
+        userCount = testUsers.length;
       } catch (dbError) {
         dbStatus = `Error: ${dbError instanceof Error ? dbError.message : String(dbError)}`;
       }
@@ -68,7 +74,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         environment: envCheck,
         database: {
           status: dbStatus,
-          count: propertyCount
+          propertyCount,
+          userCount,
+          adminExists: userCount > 0 && (await storage.getUserByUsername('admin')) ? true : false
         }
       });
     } catch (e) {

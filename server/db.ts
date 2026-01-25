@@ -11,23 +11,37 @@ if (!admin.apps.length) {
 
     // 1. JSON 문자열 환경 변수 확인 (클라우드 배포용)
     if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+      console.log("Found FIREBASE_SERVICE_ACCOUNT_JSON env var");
       try {
         const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
-        credential = admin.credential.cert(serviceAccount);
+        // 간단한 검증: 필수 필드가 있는지 확인
+        if (serviceAccount.project_id && serviceAccount.private_key && serviceAccount.client_email) {
+          console.log(`Successfully parsed service account for project: ${serviceAccount.project_id}`);
+          credential = admin.credential.cert(serviceAccount);
+        } else {
+          console.error("FIREBASE_SERVICE_ACCOUNT_JSON is missing required fields (project_id, private_key, client_email)");
+        }
       } catch (e) {
-        console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON", e);
+        console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON:", e);
       }
+    } else {
+      console.log("FIREBASE_SERVICE_ACCOUNT_JSON env var not found");
     }
 
     // 2. 기본값 (파일 경로 GOOGLE_APPLICATION_CREDENTIALS 또는 로컬 인증)
     if (!credential) {
+      console.log("Attempting to use applicationDefault credentials...");
       credential = admin.credential.applicationDefault();
     }
 
-    admin.initializeApp({
-      credential
-    });
-    console.log("Firebase Admin Initialized");
+    if (credential) {
+      admin.initializeApp({
+        credential
+      });
+      console.log("Firebase Admin Initialized Successfully");
+    } else {
+      console.error("No valid credentials found for Firebase Admin");
+    }
   } catch (error) {
     console.error("Firebase Admin initialization failed:", error);
     console.log("Mocking Firestore/Auth for build process...");

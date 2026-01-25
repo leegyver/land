@@ -6,6 +6,8 @@ export const siteConfig = {
   siteTitle: "이가이버 부동산",
   siteDescription: "강화도 부동산 중개 서비스",
   contactEmail: "contact@ganghwaestate.com",
+  kakaoChannelUrl: "http://pf.kakao.com/_xaxbxlxfs/chat",
+  phoneNumber: "010-4787-3120",
   copyrightYear: new Date().getFullYear(),
   defaultImageUrl: defaultPropertyImage
 };

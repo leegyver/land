@@ -11,7 +11,7 @@ import { User as SelectUser, User } from "@shared/schema";
 
 declare global {
   namespace Express {
-    interface User extends SelectUser {}
+    interface User extends SelectUser { }
   }
 }
 
@@ -61,7 +61,7 @@ export function setupAuth(app: Express) {
       }
     }),
   );
-  
+
   // 네이버 로그인 전략
   if (process.env.NAVER_CLIENT_ID && process.env.NAVER_CLIENT_SECRET) {
     passport.use(
@@ -69,14 +69,14 @@ export function setupAuth(app: Express) {
         {
           clientID: process.env.NAVER_CLIENT_ID,
           clientSecret: process.env.NAVER_CLIENT_SECRET,
-          callbackURL: "/api/auth/naver/callback",
+          callbackURL: (process.env.APP_URL || "http://localhost:5000") + "/api/auth/naver/callback",
         },
         async (accessToken, refreshToken, profile, done) => {
           try {
             // 네이버 ID를 사용자 이름으로 사용
             const naverId = profile.id;
             let user = await storage.getUserByUsername(`naver_${naverId}`);
-            
+
             if (!user) {
               // 신규 사용자 등록
               const newUser = {
@@ -88,10 +88,10 @@ export function setupAuth(app: Express) {
                 provider: "naver",
                 providerId: naverId,
               };
-              
+
               user = await storage.createUser(newUser);
             }
-            
+
             return done(null, user);
           } catch (error) {
             return done(error as Error);
@@ -100,21 +100,21 @@ export function setupAuth(app: Express) {
       )
     );
   }
-  
+
   // 카카오 로그인 전략
   if (process.env.KAKAO_API_KEY) {
     passport.use(
       new KakaoStrategy(
         {
           clientID: process.env.KAKAO_API_KEY,
-          callbackURL: "/api/auth/kakao/callback",
+          callbackURL: (process.env.APP_URL || "http://localhost:5000") + "/api/auth/kakao/callback",
         },
         async (accessToken, refreshToken, profile, done) => {
           try {
             // 카카오 ID를 사용자 이름으로 사용
             const kakaoId = profile.id;
             let user = await storage.getUserByUsername(`kakao_${kakaoId}`);
-            
+
             if (!user) {
               // 신규 사용자 등록
               const newUser = {
@@ -126,10 +126,10 @@ export function setupAuth(app: Express) {
                 provider: "kakao",
                 providerId: kakaoId,
               };
-              
+
               user = await storage.createUser(newUser);
             }
-            
+
             return done(null, user);
           } catch (error) {
             return done(error as Error);
@@ -173,7 +173,7 @@ export function setupAuth(app: Express) {
     passport.authenticate("local", (err: Error, user: Express.User | false, info: { message: string }) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ message: "아이디 또는 비밀번호가 올바르지 않습니다." });
-      
+
       req.login(user, (err) => {
         if (err) return next(err);
         // 비밀번호 정보는 클라이언트에 반환하지 않음
@@ -196,7 +196,7 @@ export function setupAuth(app: Express) {
     const { password, ...userWithoutPassword } = req.user;
     res.json(userWithoutPassword);
   });
-  
+
   // 관리자 권한 검사 미들웨어
   const isAdmin = (req: Request, res: Response, next: NextFunction) => {
     if (!req.isAuthenticated() || req.user.role !== "admin") {
@@ -204,7 +204,7 @@ export function setupAuth(app: Express) {
     }
     next();
   };
-  
+
   // 관리자 전용 API 엔드포인트
   app.get("/api/admin/users", isAdmin, async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -229,7 +229,7 @@ export function setupAuth(app: Express) {
 
       const userId = req.user.id;
       const { currentPassword, password, email, phone } = req.body;
-      
+
       // 현재 사용자 정보 가져오기
       const user = await storage.getUser(userId);
       if (!user) {
@@ -283,31 +283,31 @@ export function setupAuth(app: Express) {
 
       const userId = req.user.id;
       const { currentPassword, newPassword } = req.body;
-      
+
       if (!currentPassword || !newPassword) {
         return res.status(400).json({ message: "현재 비밀번호와 새 비밀번호가 필요합니다." });
       }
-      
+
       // 현재 사용자 정보 가져오기
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
       }
-      
+
       // 현재 비밀번호 확인
       const isPasswordCorrect = await comparePasswords(currentPassword, user.password);
       if (!isPasswordCorrect) {
         return res.status(400).json({ message: "현재 비밀번호가 올바르지 않습니다." });
       }
-      
+
       // 새 비밀번호 해싱 및 업데이트
       const hashedPassword = await hashPassword(newPassword);
       const updatedUser = await storage.updateUser(userId, { password: hashedPassword });
-      
+
       if (!updatedUser) {
         return res.status(500).json({ message: "비밀번호 변경에 실패했습니다." });
       }
-      
+
       res.json({ message: "비밀번호가 성공적으로 변경되었습니다." });
     } catch (error) {
       next(error);
@@ -336,10 +336,10 @@ export function setupAuth(app: Express) {
       next(error);
     }
   });
-  
+
   // 네이버 로그인 라우트
   app.get('/api/auth/naver', passport.authenticate('naver'));
-  
+
   // 네이버 로그인 콜백 라우트
   app.get(
     '/api/auth/naver/callback',
@@ -351,10 +351,10 @@ export function setupAuth(app: Express) {
       res.redirect('/');
     }
   );
-  
+
   // 카카오 로그인 라우트
   app.get('/api/auth/kakao', passport.authenticate('kakao'));
-  
+
   // 카카오 로그인 콜백 라우트
   app.get(
     '/api/auth/kakao/callback',

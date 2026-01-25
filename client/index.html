@@ -27,34 +27,7 @@
     <meta name="twitter:description" content="강화도 부동산 전문 중개 - 토지, 주택, 아파트, 상가 매물 정보" />
     
     <link rel="canonical" href="https://leegyver.com/" />
-    <!-- 카카오 SDK 로드 -->
-    <script src="https://developers.kakao.com/sdk/js/kakao.js"></script>
-    <script>
-      // 카카오 SDK 초기화
-      window.Kakao = window.Kakao || {};
-      // 사용할 앱의 JavaScript 키를 설정
-      window.kakaoKey = "2f6ff1b2e516329499e3e785899159e9";
-      // 사이트 이름 전역 설정 (강제로 하드코딩)
-      window.siteName = "이가이버 부동산";
-      
-      // 문서 로드 후 초기화
-      document.addEventListener('DOMContentLoaded', function() {
-        if (window.Kakao && !window.Kakao.isInitialized()) {
-          window.Kakao.init("2f6ff1b2e516329499e3e785899159e9");
-          console.log('카카오 SDK 초기화 완료');
-        }
-      });
-    </script>
-    <!-- 카카오 지도 API -->
-    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=2f6ff1b2e516329499e3e785899159e9&libraries=services"></script>
-    <script>
-      // 카카오 맵 초기화가 완료되었는지 확인하기 위한 플래그
-      window.kakaoMapLoaded = false;
-      // Kakao Maps SDK 로드 완료 이벤트 처리
-      window.addEventListener('load', function() {
-        window.kakaoMapLoaded = true;
-      });
-    </script>
+    <!-- 카카오 SDK 및 맵은 App.tsx에서 동적으로 로드됩니다 -->
   </head>
   <body>
     <div id="root"></div>

@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Property } from '@shared/schema';
-import { Badge } from '@/components/ui/badge';
 import { Link } from 'wouter';
 
 // 전역 타입 선언
@@ -11,8 +10,8 @@ declare global {
   }
 }
 
-// 숫자를 한국어 표기법으로 변환 (예: 10000 -> 1만)
-function formatPrice(price: number | string | null | undefined, showDecimals: boolean = false): string {
+// 숫자를 한국어 표기법으로 변환
+function formatPrice(price: number | string | null | undefined): string {
   if (price === null || price === undefined) return '';
   const numPrice = Number(price);
   if (isNaN(numPrice)) return '';
@@ -56,41 +55,27 @@ function buildPriceInfoHtml(property: Property): string {
 
 interface KakaoMapProps {
   singleProperty?: Property;
-  properties?: Property[]; // 외부에서 필터된 매물 목록을 받을 수 있음
+  properties?: Property[];
   zoom?: number;
 }
 
 export default function KakaoMap({ singleProperty, properties: externalProperties, zoom = 3 }: KakaoMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
-  
-  // 매물 데이터 가져오기 - 단일 매물 또는 외부 매물 목록이 제공되지 않았을 때만 실행
+  const [sdkReady, setSdkReady] = useState(false);
+
+  // 매물 데이터 가져오기
   const { data: fetchedProperties, isLoading } = useQuery<Property[]>({
     queryKey: ['/api/properties'],
-    enabled: !singleProperty && !externalProperties // 단일 매물이나 외부 목록이 제공되면 이 쿼리는 실행되지 않음
+    enabled: !singleProperty && !externalProperties
   });
-  
-  // 외부에서 제공된 매물 목록 우선 사용
+
   const properties = externalProperties || fetchedProperties;
 
-  // 강화군 기본 좌표 (위도/경도)
-  const defaultLocation = { lat: 37.7466, lng: 126.4881 };
-
-  // 매물 위치 좌표 계산 함수
+  // 매물 위치 좌표 계산 함수 (Fallback용)
   const getPropertyLocation = (property: Property) => {
-    // 실제 위/경도 정보가 있는 경우 (property에 해당 필드가 있을 때만)
-    const propWithCoords = property as Property & { latitude?: number; longitude?: number };
-    if (propWithCoords.latitude !== undefined && propWithCoords.longitude !== undefined) {
-      const lat = Number(propWithCoords.latitude);
-      const lng = Number(propWithCoords.longitude);
-      
-      if (!isNaN(lat) && !isNaN(lng)) {
-        return { lat, lng };
-      }
-    }
-    
     // 지역에 따른 대략적인 위치 (강화군 내 주요 지역)
-    const districtLocations: {[key: string]: {lat: number, lng: number}} = {
+    const districtLocations: { [key: string]: { lat: number, lng: number } } = {
       '강화읍': { lat: 37.7466, lng: 126.4881 },
       '선원면': { lat: 37.7132, lng: 126.4777 },
       '불은면': { lat: 37.7049, lng: 126.5357 },
@@ -105,442 +90,154 @@ export default function KakaoMap({ singleProperty, properties: externalPropertie
       '삼산면': { lat: 37.7290, lng: 126.3368 },
       '서도면': { lat: 37.7504, lng: 126.2108 }
     };
-    
-    // 매물의 district에 포함된 지역명을 찾아서 좌표 반환
+
     for (const [district, location] of Object.entries(districtLocations)) {
-      if (property.district && property.district.includes(district)) {
-        return location;
-      }
+      if (property.district && property.district.includes(district)) return location;
     }
-    
-    // 일치하는 지역이 없으면 강화읍 좌표 반환
-    return defaultLocation;
+
+    return { lat: 37.7466, lng: 126.4881 }; // default
   };
 
-  // 지도 초기화
+  // 1. SDK 로딩 확인
   useEffect(() => {
-    if (!window.kakao || !window.kakao.maps) {
-      console.log("카카오맵 SDK가 로드되지 않았습니다");
-      return;
-    }
+    const timer = setInterval(() => {
+      if (window.kakao && window.kakao.maps && window.kakao.maps.Map && window.kakao.maps.services) {
+        setSdkReady(true);
+        clearInterval(timer);
+      }
+    }, 100);
+    return () => clearInterval(timer);
+  }, []);
 
-    if (!mapRef.current) {
-      console.log("지도 컨테이너가 없습니다");
-      return;
-    }
+  // 2. 지도 초기화 (SDK 준비 + 데이터 변경 시)
+  useEffect(() => {
+    if (!sdkReady || !mapRef.current) return;
 
-    console.log("카카오맵 초기화 시작");
-    
+    console.log("Kakao Map init with Geocoding...");
+
     try {
-      // 중심 좌표 및 줌 레벨 설정
       let center, mapLevel;
-      
+
+      // 초기 중심값 (나중에 setBounds로 변경됨)
       if (singleProperty) {
-        // 단일 매물 모드 - 해당 매물 중심
-        const location = getPropertyLocation(singleProperty);
-        center = new window.kakao.maps.LatLng(location.lat, location.lng);
-        mapLevel = zoom; // 기본값 3 또는 props로 전달된 값
+        const loc = getPropertyLocation(singleProperty);
+        center = new window.kakao.maps.LatLng(loc.lat, loc.lng);
+        mapLevel = zoom;
       } else {
-        // 다중 매물 모드 - 강화군 중심
         center = new window.kakao.maps.LatLng(37.7464, 126.4878);
         mapLevel = 9;
       }
-      
-      // 지도 옵션 설정
-      const mapOptions = {
-        center: center,
-        level: mapLevel
-      };
-      
+
+      const mapOptions = { center, level: mapLevel };
       const map = new window.kakao.maps.Map(mapRef.current, mapOptions);
-      
-      // 단일 매물이 제공된 경우 해당 매물만 표시
-      if (singleProperty) {
-        // 지오코더 생성
-        const geocoder = new window.kakao.maps.services.Geocoder();
-        const markers: any[] = [];
-        
-        // 지역 필드 + 주소 필드 형식으로 주소 구성 (멀티 매물 모드와 동일한 주소 구성 방식 사용)
-        const district = singleProperty.district || '';
-        const detailAddress = singleProperty.address || '';
-        
-        // 강화군 지역은 특별 처리
-        let address = '';
-        if (district.includes('강화')) {
-          // 강화군은 '인천광역시 강화군'으로 명시
-          address = `인천광역시 강화군 ${district} ${detailAddress}`.trim();
-        } 
-        // 서울 지역 처리
-        else if (district.includes('서울')) {
-          // 서울 지역은 '서울특별시'로 통일
-          const cleanDistrict = district.replace(/서울특별시|서울시|서울/g, '').trim();
-          address = `서울특별시 ${cleanDistrict} ${detailAddress}`.trim();
-        }
-        // 인천 지역 처리 (강화군 제외)
-        else if (district.includes('인천')) {
-          address = `인천광역시 ${district} ${detailAddress}`.trim();
-        }
-        // 기타 지역
-        else {
-          address = `인천광역시 ${district} ${detailAddress}`.trim();
-        }
-        
-        console.log(`[단일 매물] 주소 검색 시도: ${address}`);
-        
-        // 검색 옵션 설정 (정확도 향상)
-        const searchOptions = {
-          size: 1,  // 결과 개수 제한
-          analyze_type: 'similar'  // 유사 매칭 분석 타입
-        };
-        
-        // 주소 검색이 가능한 경우 실행
-        if (address.trim() && address.length > 5) {
-          // 주소 검색 실행
-          geocoder.addressSearch(address, (result: any, status: any) => {
-            let markerPosition;
-            let isExactLocation = false;
-            
-            if (status === window.kakao.maps.services.Status.OK) {
-              console.log(`[단일 매물] 주소 검색 성공: ${result[0].address_name}`);
-              
-              // 검색 성공한 좌표 사용
-              markerPosition = new window.kakao.maps.LatLng(result[0].y, result[0].x);
-              isExactLocation = true;
-            } else {
-              console.log(`[단일 매물] 주소를 찾을 수 없습니다. 대략적인 위치 사용: ${address}`);
-              
-              // 주소 검색 실패 시 대략적인 위치 사용
-              const location = getPropertyLocation(singleProperty);
-              markerPosition = new window.kakao.maps.LatLng(location.lat, location.lng);
-            }
-            
-            // 마커 생성
-            const marker = new window.kakao.maps.Marker({
-              map: map,
-              position: markerPosition,
-              title: singleProperty.title
-            });
-            
-            markers.push(marker);
-            
-            // 인포윈도우 생성
-            const infoWindow = new window.kakao.maps.InfoWindow({ 
-              zIndex: 1,
-              content: `
-                <div style="padding:12px;font-size:12px;max-width:390px;overflow:visible;">
-                  <div style="font-weight:bold;margin-bottom:6px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${singleProperty.title}</div>
-                  <div style="color:#666;font-size:12px;margin-bottom:6px;">${singleProperty.type}${singleProperty.dealType && Array.isArray(singleProperty.dealType) ? ' · ' + singleProperty.dealType.filter((t: string) => ['매매', '전세', '월세'].includes(t)).join(', ') : ''}</div>
-                  ${buildPriceInfoHtml(singleProperty)}
-                  ${!isExactLocation ? `<div style="color:#888;font-size:11px;margin-top:4px;"><i>* 위치는 대략적인 지역 중심 기준</i></div>` : ''}
-                </div>
-              `
-            });
-            
-            // 마커 클릭 시 인포윈도우 표시
-            window.kakao.maps.event.addListener(marker, 'click', function() {
-              infoWindow.open(map, marker);
-            });
-            
-            // 지도 로딩 완료 시 바로 인포윈도우 표시
-            infoWindow.open(map, marker);
-            
-            // 지도 중심 위치 조정
-            map.setCenter(markerPosition);
-          }, searchOptions);
-        } else {
-          // 주소가 없는 경우 대략적인 위치 사용
-          const location = getPropertyLocation(singleProperty);
-          const markerPosition = new window.kakao.maps.LatLng(location.lat, location.lng);
-          
-          // 마커 생성
-          const marker = new window.kakao.maps.Marker({
-            map: map,
-            position: markerPosition,
-            title: singleProperty.title
-          });
-          
-          markers.push(marker);
-          
-          // 인포윈도우 생성
-          const infoWindow = new window.kakao.maps.InfoWindow({ 
-            zIndex: 1,
-            content: `
-              <div style="padding:12px;font-size:12px;max-width:390px;overflow:visible;">
-                <div style="font-weight:bold;margin-bottom:6px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${singleProperty.title}</div>
-                <div style="color:#666;font-size:12px;margin-bottom:6px;">${singleProperty.type}${singleProperty.dealType && Array.isArray(singleProperty.dealType) ? ' · ' + singleProperty.dealType.filter((t: string) => ['매매', '전세', '월세'].includes(t)).join(', ') : ''}</div>
-                ${buildPriceInfoHtml(singleProperty)}
-                <div style="color:#888;font-size:11px;margin-top:4px;"><i>* 위치는 대략적인 지역 중심 기준</i></div>
-              </div>
-            `
-          });
-          
-          // 마커 클릭 시 인포윈도우 표시
-          window.kakao.maps.event.addListener(marker, 'click', function() {
-            infoWindow.open(map, marker);
-          });
-          
-          // 지도 로딩 완료 시 바로 인포윈도우 표시
+
+      // ---------- 마커 생성 로직 ----------
+      const bounds = new window.kakao.maps.LatLngBounds();
+      const geocoder = new window.kakao.maps.services.Geocoder();
+
+      const createMarker = (prop: Property, position: any, isExact = false) => {
+        const marker = new window.kakao.maps.Marker({
+          map: map,
+          position: position,
+          title: prop.title
+        });
+
+        // 인포윈도우
+        const content = `
+          <div style="padding:10px;font-size:12px;width:200px;">
+            <div style="font-weight:bold;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${prop.title}</div>
+            ${buildPriceInfoHtml(prop)}
+            ${!isExact ? '<div style="color:#888;font-size:10px;margin-top:3px;">* 지역 기준 위치</div>' : ''}
+          </div>
+        `;
+        const infoWindow = new window.kakao.maps.InfoWindow({ zIndex: 1, content });
+
+        window.kakao.maps.event.addListener(marker, 'click', () => {
+          if (!singleProperty) setSelectedProperty(prop);
           infoWindow.open(map, marker);
-        }
-        
-        // 컴포넌트 언마운트 시 마커 제거
-        return () => {
-          markers.forEach(marker => marker.setMap(null));
-        };
-      } 
-      // 다중 매물 모드
-      else {
-        // 매물 데이터가 없으면 중단
-        if (!properties || properties.length === 0) {
-          console.log("매물 데이터가 없습니다");
+        });
+
+        if (singleProperty) infoWindow.open(map, marker);
+      };
+
+      const propertiesToRender = singleProperty ? [singleProperty] : (properties || []);
+
+      propertiesToRender.forEach((prop) => {
+        // 1. 위경도 데이터가 DB에 있으면 최우선 사용
+        // @ts-ignore
+        if (prop.latitude && prop.longitude) {
+          // @ts-ignore
+          const coords = new window.kakao.maps.LatLng(prop.latitude, prop.longitude);
+          createMarker(prop, coords, true);
+          if (!singleProperty) bounds.extend(coords);
           return;
         }
-        
-        console.log(`${properties.length}개의 매물 데이터 로드됨`);
-        
-        // 지오코더 생성
-        const geocoder = new window.kakao.maps.services.Geocoder();
-        const bounds = new window.kakao.maps.LatLngBounds();
-        const infoWindow = new window.kakao.maps.InfoWindow({ zIndex: 1 });
-        const markers: any[] = [];
-        
-        // 인포윈도우 닫기 함수 (중복 방지)
-        const closeInfoWindow = () => {
-          infoWindow.close();
-        };
-        
-        // 지도 줌 변경 이벤트에 인포윈도우 닫기 추가
-        window.kakao.maps.event.addListener(map, 'zoom_changed', closeInfoWindow);
-        
-        // 드래그 완료 이벤트에도 인포윈도우 닫기 적용
-        window.kakao.maps.event.addListener(map, 'dragend', closeInfoWindow);
-        
-        // 각 매물의 주소를 좌표로 변환하여 마커 생성
-        properties.forEach((property, index) => {
-          // 지역 필드 + 주소 필드 형식으로 주소 구성
-          const district = property.district || '';
-          const detailAddress = property.address || '';
-          
-          // 강화군 지역은 특별 처리
-          let address = '';
-          if (district.includes('강화')) {
-            // 강화군은 '인천광역시 강화군'으로 명시
-            address = `인천광역시 강화군 ${district} ${detailAddress}`.trim();
-          } 
-          // 서울 지역 처리
-          else if (district.includes('서울')) {
-            // 서울 지역은 '서울특별시'로 통일
-            const cleanDistrict = district.replace(/서울특별시|서울시|서울/g, '').trim();
-            address = `서울특별시 ${cleanDistrict} ${detailAddress}`.trim();
-          }
-          // 인천 지역 처리 (강화군 제외)
-          else if (district.includes('인천')) {
-            address = `인천광역시 ${district} ${detailAddress}`.trim();
-          }
-          // 기타 지역
-          else {
-            address = `인천광역시 ${district} ${detailAddress}`.trim();
-          }
-          
-          console.log(`주소 검색 시도: ${address}`);
-          
-          // 주소가 있고 최소 길이 조건을 만족하면 검색 시도
-          if (address.trim() && address.length > 5) {
-            // 검색 옵션 설정 (정확도 향상)
-            const searchOptions = {
-              size: 1,  // 결과 개수 제한
-              analyze_type: 'similar'  // 유사 매칭 분석 타입
-            };
-            
-            // 마커 생성 함수
-            const createMarker = (coords: any, isExactLocation: boolean = true) => {
-              const marker = new window.kakao.maps.Marker({
-                map: map,
-                position: coords,
-                title: property.title
-              });
-              
-              markers.push(marker);
+
+        // 2. 주소 검색 시도 (상세 주소가 있는 경우)
+        let fullAddress = `인천광역시 강화군 ${prop.district || ''} ${prop.address || ''}`.trim();
+
+        // 예외처리
+        if (prop.district && (prop.district.includes("서울") || prop.district.includes("인천"))) {
+          fullAddress = `${prop.district} ${prop.address || ''}`.trim();
+        }
+
+        geocoder.addressSearch(fullAddress, (result: any, status: any) => {
+          if (status === window.kakao.maps.services.Status.OK) {
+            const coords = new window.kakao.maps.LatLng(result[0].y, result[0].x);
+            createMarker(prop, coords, true);
+            if (!singleProperty) {
               bounds.extend(coords);
-              
-              // 마커 클릭 이벤트
-              window.kakao.maps.event.addListener(marker, 'click', () => {
-                // 기존 인포윈도우 닫기 (중복 방지)
-                infoWindow.close();
-                
-                // 선택된 매물 설정
-                setSelectedProperty(property);
-                
-                // 인포윈도우 내용 설정
-                let content = `
-                  <div style="padding:12px;font-size:12px;max-width:390px;overflow:visible;">
-                    <div style="font-weight:bold;margin-bottom:6px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${property.title}</div>
-                    <div style="color:#666;font-size:12px;margin-bottom:6px;">${property.type}${property.dealType && Array.isArray(property.dealType) ? ' · ' + property.dealType.filter((t: string) => ['매매', '전세', '월세'].includes(t)).join(', ') : ''}</div>
-                    ${buildPriceInfoHtml(property)}
-                `;
-                
-                // 대략적인 위치를 사용한 경우 알림 추가
-                if (!isExactLocation) {
-                  content += `<div style="color:#888;font-size:11px;margin-top:4px;"><i>* 위치는 대략적인 지역 중심 기준</i></div>`;
-                }
-                
-                content += `</div>`;
-                
-                // 인포윈도우 표시
-                infoWindow.setContent(content);
-                infoWindow.open(map, marker);
-                
-                // 지도 중심 이동 및 확대 (정확한 위치인 경우만)
-                if (isExactLocation) {
-                  map.setCenter(coords);
-                  map.setLevel(3);
-                }
-              });
-            };
-            
-            // 카카오맵 API에 주소 검색 요청 (옵션 전달)
-            geocoder.addressSearch(address, (result: any, status: any) => {
-              if (status === window.kakao.maps.services.Status.OK) {
-                console.log(`주소 검색 성공: ${result[0].address_name}`);
-                
-                // 좌표 생성 및 마커 표시
-                const coords = new window.kakao.maps.LatLng(result[0].y, result[0].x);
-                createMarker(coords, true);
-                
-                // 마지막 매물 처리 후 지도 범위 조정
-                if (index === properties.length - 1) {
-                  map.setBounds(bounds);
-                }
-              } else {
-                console.log(`주소를 찾을 수 없습니다: ${address}`);
-                
-                // 주소 검색 실패 시 대체 좌표 사용
-                let fallbackCoords;
-                
-                // 지역에 따른 중심 좌표 사용
-                if (district.includes('강화')) {
-                  fallbackCoords = new window.kakao.maps.LatLng(37.7464, 126.4878); // 강화군 중심
-                } else if (district.includes('서울')) {
-                  fallbackCoords = new window.kakao.maps.LatLng(37.5665, 126.9780); // 서울 중심
-                } else if (district.includes('인천')) {
-                  fallbackCoords = new window.kakao.maps.LatLng(37.4563, 126.7052); // 인천 중심
-                } else {
-                  // 기본 위치에 약간의 랜덤성 추가 (마커 중첩 방지)
-                  fallbackCoords = new window.kakao.maps.LatLng(
-                    37.7464 + (Math.random() * 0.02 - 0.01), 
-                    126.4878 + (Math.random() * 0.02 - 0.01)
-                  );
-                }
-                
-                // 대략적인 위치에 마커 생성
-                createMarker(fallbackCoords, false);
-              }
-            }, searchOptions); // 검색 옵션 전달
+              map.setBounds(bounds);
+            } else {
+              map.setCenter(coords); // 단일 매물은 검색된 위치로 이동
+            }
+          } else {
+            // 3. 검색 실패 시 지역 중심 좌표 사용
+            const loc = getPropertyLocation(prop);
+            const coords = new window.kakao.maps.LatLng(loc.lat, loc.lng);
+
+            // 목록 모드에서는 겹침 방지
+            if (!singleProperty) {
+              const offsetLat = (Math.random() - 0.5) * 0.002;
+              const offsetLng = (Math.random() - 0.5) * 0.002;
+              const randomCoords = new window.kakao.maps.LatLng(loc.lat + offsetLat, loc.lng + offsetLng);
+              createMarker(prop, randomCoords, false);
+              bounds.extend(randomCoords);
+              map.setBounds(bounds);
+            } else {
+              createMarker(prop, coords, false);
+              map.setCenter(coords);
+            }
           }
         });
-        
-        // 컴포넌트 언마운트 시 마커 제거
-        return () => {
-          markers.forEach(marker => marker.setMap(null));
-        };
-      }
-    } catch (error) {
-      console.error("카카오맵 초기화 오류:", error);
-    }
-  }, [properties, singleProperty, zoom]);
+      });
 
-  // 로딩 화면 표시 - 외부 매물 목록이 제공되지 않고 로딩 중일 때만
+    } catch (e) {
+      console.error("Map render error:", e);
+    }
+  }, [sdkReady, properties, singleProperty]);
+
   if (!singleProperty && !externalProperties && isLoading) {
-    return (
-      <div className="flex items-center justify-center h-[60vh] bg-gray-100">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <div className="flex items-center justify-center h-[60vh] bg-gray-100">로딩중...</div>;
   }
 
   return (
     <div className={`relative w-full ${singleProperty ? 'h-full' : 'h-[60vh]'}`}>
-      {/* 지도 컨테이너 */}
-      <div ref={mapRef} className="w-full h-full"></div>
-      
-      {/* 선택된 매물 정보 패널 - 다중 매물 모드에서만 표시 */}
+      <div ref={mapRef} className="w-full h-full bg-gray-100" style={{ minHeight: '300px' }}></div>
+
+      {/* 선택된 매물 정보 패널 (다중 매물 모드) */}
       {!singleProperty && selectedProperty && (
-        <div className="absolute top-4 right-4 md:w-52 bg-white rounded-lg shadow-lg p-2 z-10 max-h-[200px] overflow-y-auto">
-          <button 
-            className="absolute top-1 right-1 text-gray-400 hover:text-gray-600"
+        <div className="absolute top-4 right-4 md:w-64 bg-white rounded-lg shadow-lg p-3 z-10">
+          <button
+            className="absolute top-2 right-2 text-gray-500"
             onClick={() => setSelectedProperty(null)}
-          >
-            ✕
-          </button>
-          
+          >✕</button>
           <Link href={`/properties/${selectedProperty.id}`}>
-            <h3 className="font-bold text-base mb-1 hover:text-primary transition-colors truncate">
-              {selectedProperty.title}
-            </h3>
+            <h3 className="font-bold text-sm mb-2 hover:text-blue-600 truncate pr-4 cursor-pointer">{selectedProperty.title}</h3>
           </Link>
-          
-          <div className="text-xs text-gray-500 mb-1">
-            {selectedProperty.type}{selectedProperty.dealType && Array.isArray(selectedProperty.dealType) && selectedProperty.dealType.filter((t) => ['매매', '전세', '월세'].includes(t)).length > 0 ? ` · ${selectedProperty.dealType.filter((t) => ['매매', '전세', '월세'].includes(t)).join('/')}` : ''}
-          </div>
-          
-          {hasValidPrice(selectedProperty.price) && (
-            <div className="flex items-center mb-1">
-              <span className="text-xs text-gray-500 mr-1">매매가:</span>
-              <span className="text-xs font-semibold text-primary">
-                {formatPrice(selectedProperty.price)}
-              </span>
-            </div>
-          )}
-          {hasValidPrice(selectedProperty.deposit) && (
-            <div className="flex items-center mb-1">
-              <span className="text-xs text-gray-500 mr-1">전세금:</span>
-              <span className="text-xs font-semibold text-primary">
-                {formatPrice(selectedProperty.deposit)}
-              </span>
-            </div>
-          )}
-          {hasValidPrice(selectedProperty.depositAmount) && (
-            <div className="flex items-center mb-1">
-              <span className="text-xs text-gray-500 mr-1">보증금:</span>
-              <span className="text-xs font-semibold text-primary">
-                {formatPrice(selectedProperty.depositAmount)}
-              </span>
-            </div>
-          )}
-          {hasValidPrice(selectedProperty.monthlyRent) && (
-            <div className="flex items-center mb-1">
-              <span className="text-xs text-gray-500 mr-1">월세:</span>
-              <span className="text-xs font-semibold text-primary">
-                {formatPrice(selectedProperty.monthlyRent)}
-              </span>
-            </div>
-          )}
-          {hasValidPrice(selectedProperty.maintenanceFee) && (
-            <div className="flex items-center mb-1">
-              <span className="text-xs text-gray-500 mr-1">관리비:</span>
-              <span className="text-xs font-semibold text-primary">
-                {formatPrice(selectedProperty.maintenanceFee)}
-              </span>
-            </div>
-          )}
-          
-          <div className="flex items-center mb-1">
-            <span className="text-xs text-gray-500 mr-1">지역:</span>
-            <span className="text-xs truncate">{selectedProperty.district}</span>
-          </div>
-          
-          <div className="flex items-center mb-1">
-            <span className="text-xs text-gray-500 mr-1">면적:</span>
-            <span className="text-xs">
-              {selectedProperty.size}m²
-              {Number(selectedProperty.size) > 0 && `(${(Number(selectedProperty.size) * 0.3025).toFixed(1)}평)`}
-            </span>
-          </div>
-          
-          <Link 
-            href={`/properties/${selectedProperty.id}`}
-            className="block w-full bg-primary hover:bg-secondary text-white text-center py-1 rounded text-sm transition-colors"
-          >
+          <div className="text-xs text-gray-600 mb-2">{selectedProperty.district} · {selectedProperty.type}</div>
+          <div dangerouslySetInnerHTML={{ __html: buildPriceInfoHtml(selectedProperty) }} />
+          <Link href={`/properties/${selectedProperty.id}`} className="block mt-2 text-center bg-blue-600 text-white text-xs py-1.5 rounded hover:bg-blue-700">
             상세보기
           </Link>
         </div>

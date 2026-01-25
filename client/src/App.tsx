@@ -44,7 +44,45 @@ function AppRouter() {
   );
 }
 
+import { useEffect } from "react";
+
 function App() {
+  // 카카오 SDK 및 지도 로드
+  useEffect(() => {
+    const kakaoKey = import.meta.env.VITE_KAKAO_MAP_KEY;
+    if (!kakaoKey) return;
+
+    // SDK 로드
+    if (!document.getElementById("kakao-sdk")) {
+      const script = document.createElement("script");
+      script.id = "kakao-sdk";
+      script.src = "https://developers.kakao.com/sdk/js/kakao.js";
+      script.async = true;
+      script.onload = () => {
+        if (window.Kakao && !window.Kakao.isInitialized()) {
+          window.Kakao.init(kakaoKey);
+          console.log("Kakao SDK Initialized");
+        }
+      };
+      document.head.appendChild(script);
+    }
+
+    // 지도 로드
+    if (!document.getElementById("kakao-map-sdk")) {
+      const script = document.createElement("script");
+      script.id = "kakao-map-sdk";
+      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoKey}&libraries=services&autoload=false`;
+      script.async = true;
+      script.onload = () => {
+        window.kakao.maps.load(() => {
+          console.log("Kakao Maps Loaded");
+          window.kakaoMapLoaded = true;
+        });
+      };
+      document.head.appendChild(script);
+    }
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light">

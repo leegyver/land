@@ -53,7 +53,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         APP_URL: process.env.APP_URL, // 값 확인 필요 (http/https mismatch 확인용)
       };
 
-      const appUrl = (process.env.APP_URL || "http://localhost:5000").replace(/\/$/, "");
+      const defaultUrl = process.env.NODE_ENV === "production"
+        ? "https://land-5y3o.onrender.com"
+        : "http://localhost:5000";
+      const appUrl = (process.env.APP_URL || defaultUrl).replace(/\/$/, "");
+
       const authDebug = {
         naverCallback: `${appUrl}/api/auth/naver/callback`,
         kakaoCallback: `${appUrl}/api/auth/kakao/callback`

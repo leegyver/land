@@ -63,7 +63,12 @@ export function setupAuth(app: Express) {
   );
 
   // APP_URL 정제 (말단 슬래시 제거)
-  const appUrl = (process.env.APP_URL || "http://localhost:5000").replace(/\/$/, "");
+  // 사용자가 환경변수를 설정하지 않아도 작동하도록 프로덕션 도메인을 기본값으로 설정
+  const defaultUrl = process.env.NODE_ENV === "production"
+    ? "https://land-5y3o.onrender.com"
+    : "http://localhost:5000";
+
+  const appUrl = (process.env.APP_URL || defaultUrl).replace(/\/$/, "");
 
   // 네이버 로그인 전략
   if (process.env.NAVER_CLIENT_ID && process.env.NAVER_CLIENT_SECRET) {

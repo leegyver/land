@@ -87,6 +87,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Replit 데이터 가져오기 API (마이그레이션)
+  app.get('/api/admin/import-from-replit', async (req, res) => {
+    try {
+      const REMOTE_URL = 'https://real-estate-hub-mino312044.replit.app';
+
+      // 동적 import로 fetch 사용
+      const response = await fetch(`${REMOTE_URL}/api/properties`);
+      if (!response.ok) throw new Error(`Failed to fetch from Replit: ${response.statusText}`);
+
+      const properties: any[] = await response.json();
+      let count = 0;
+
+      for (const prop of properties) {
+        // ID 충돌 방지를 위해 기존 ID 무시하거나 체크
+        // 여기선 단순 생성을 시도
+        const { id, createdAt, updatedAt, ...newProp } = prop;
+
+        // 데이터 정제
+        newProp.price = String(newProp.price || "0");
+        newProp.size = String(newProp.size || "0");
+        newProp.imageUrls = newProp.imageUrls || [];
+
+        await storage.createProperty(newProp);
+        count++;
+        // Firestore 쿼터 제한 고려 딜레이
+        await new Promise(r => setTimeout(r, 50));
+      }
+
+      res.json({
+        message: "Migration started/completed.",
+        source: REMOTE_URL,
+        importedCount: count
+      });
+    } catch (e) {
+      res.status(500).json({ message: "Migration failed", error: String(e) });
+    }
+  });
+
   // API ROUTES
 
   // Properties

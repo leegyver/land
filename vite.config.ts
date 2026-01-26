@@ -11,9 +11,12 @@ export default defineConfig({
     {
       name: "html-transform",
       transformIndexHtml(html) {
-        const kakaoKey = process.env.VITE_KAKAO_MAP_KEY;
+        // 사용자가 VITE_KAKAO_MAP_KEY를 지우고 KAKAO_API_KEY를 같이 쓰기로 함
+        // 둘 중 하나라도 있으면 사용
+        const kakaoKey = process.env.VITE_KAKAO_MAP_KEY || process.env.KAKAO_API_KEY;
+
         if (!kakaoKey) {
-          console.warn("⚠️ VITE_KAKAO_MAP_KEY environment variable is missing during build!");
+          console.warn("⚠️ Kakao API Key is missing! Maps will not work.");
           return html;
         }
         return html.replace(

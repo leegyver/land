@@ -10,9 +10,12 @@ echo "[1/5] 기존 설치된 모듈 정리 중..."
 rm -rf node_modules
 rm -f package-lock.json
 
-# 2. 필수 빌드 도구 설치 (글로벌)
-echo "[2/5] 빌드 도구(node-gyp) 설치 중..."
+# 2. 필수 빌드 도구 및 라이브러리 설치 (글로벌)
+echo "[2/5] 빌드 도구(node-gyp) 및 이미지 라이브러리(libvips) 설치 중..."
 npm install -g node-gyp
+# sharp 빌드를 위한 필수 시스템 라이브러리
+apt-get update
+apt-get install -y libvips-dev
 
 # 3. 프로젝트 의존성 설치 (스크립트 실행 방지)
 echo "[3/5] 프로젝트 패키지 설치 중 (기반 설치)..."

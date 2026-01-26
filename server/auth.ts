@@ -62,21 +62,33 @@ export function setupAuth(app: Express) {
     }),
   );
 
-  // APP_URL 정제 (말단 슬래시 제거)
+  // APP_URL 정제 (말단 슬래시 제거, 프로토콜 강제)
   // 사용자가 환경변수를 설정하지 않아도 작동하도록 프로덕션 도메인을 기본값으로 설정
   const defaultUrl = process.env.NODE_ENV === "production"
     ? "https://land-5y3o.onrender.com"
     : "http://localhost:5000";
 
-  const appUrl = (process.env.APP_URL || defaultUrl).replace(/\/$/, "");
+  let rawAppUrl = (process.env.APP_URL || defaultUrl).replace(/\/$/, "");
+  if (process.env.NODE_ENV === "production" && !rawAppUrl.startsWith("https")) {
+    rawAppUrl = rawAppUrl.replace(/^http:\/\//, "https://");
+    if (!rawAppUrl.startsWith("http")) {
+      rawAppUrl = `https://${rawAppUrl}`;
+    }
+  }
+  const appUrl = rawAppUrl;
+
+  console.log("Auth Callback Base URL:", appUrl);
 
   // 네이버 로그인 전략
-  if (process.env.NAVER_CLIENT_ID && process.env.NAVER_CLIENT_SECRET) {
+  const naverClientId = process.env.NAVER_CLIENT_ID?.trim();
+  const naverClientSecret = process.env.NAVER_CLIENT_SECRET?.trim();
+
+  if (naverClientId && naverClientSecret) {
     passport.use(
       new NaverStrategy(
         {
-          clientID: process.env.NAVER_CLIENT_ID,
-          clientSecret: process.env.NAVER_CLIENT_SECRET,
+          clientID: naverClientId,
+          clientSecret: naverClientSecret,
           callbackURL: `${appUrl}/api/auth/naver/callback`,
         },
         async (accessToken, refreshToken, profile, done) => {

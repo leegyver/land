@@ -54,7 +54,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const defaultUrl = process.env.NODE_ENV === "production"
-        ? "https://land-5y3o.onrender.com"
+        ? "http://1.234.53.82"
         : "http://localhost:5000";
       const appUrl = (process.env.APP_URL || defaultUrl).replace(/\/$/, "");
 

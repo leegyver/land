@@ -332,17 +332,18 @@ export default function AuthPage() {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel className="text-base">생년월일 (선택)</FormLabel>
-                              <div className="flex gap-2">
+                              <div className="flex flex-col gap-2">
                                 <FormControl>
-                                  <Input type="date" {...field} className="h-11 rounded-lg flex-1" />
+                                  <Input type="date" {...field} className="h-11 rounded-lg w-full" />
                                 </FormControl>
                                 <FormField
                                   control={registerForm.control}
                                   name="isLunar"
                                   render={({ field: isLunarField }) => (
-                                    <FormItem className="flex items-center space-x-2 space-y-0 rounded-md border p-2 h-11">
+                                    <FormItem className="flex items-center space-x-2 space-y-0 rounded-md border p-2">
                                       <FormControl>
                                         <div className="flex items-center gap-2">
+                                          <span className="text-sm text-muted-foreground mr-2">달력 구분:</span>
                                           <label className="flex items-center gap-1 cursor-pointer">
                                             <input
                                               type="radio"

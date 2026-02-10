@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "wouter";
-import { Heart, Maximize, Bed, Bath, Loader2, Phone, X } from "lucide-react";
+import { Heart, Maximize, Bed, Bath, Loader2, Phone, X, MapPin } from "lucide-react";
 import { SiKakaotalk } from "react-icons/si";
 import { type Property } from "@shared/schema";
 import { Card } from "@/components/ui/card";
@@ -11,6 +11,10 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { siteConfig } from "@/config/siteConfig";
+import { formatKoreanPrice } from "@/lib/formatter";
+import { useSaju } from "@/contexts/SajuContext";
+import { getCompatibilityScore } from "@/lib/saju";
+import { Sparkles } from "lucide-react";
 
 const phoneNumber = siteConfig.phoneNumber;
 const kakaoChannelUrl = siteConfig.kakaoChannelUrl;
@@ -18,19 +22,6 @@ const kakaoChannelUrl = siteConfig.kakaoChannelUrl;
 interface PropertyCardProps {
   property: Property;
 }
-
-const formatPrice = (price: string | number | null | undefined, showDecimals: boolean = true) => {
-  if (price === null || price === undefined) return '';
-  const numPrice = Number(price);
-  if (numPrice >= 100000000) {
-    const value = numPrice / 100000000;
-    return showDecimals ? `${value.toFixed(2)}억 원` : `${Math.floor(value)}억 원`;
-  } else if (numPrice >= 10000) {
-    const value = numPrice / 10000;
-    return showDecimals ? `${value.toFixed(2)}만원` : `${Math.floor(value)}만원`;
-  }
-  return numPrice.toLocaleString() + '원';
-};
 
 const hasValidPrice = (value: string | number | null | undefined): boolean => {
   if (value === null || value === undefined || value === '' || value === '0' || value === 0) {
@@ -43,8 +34,19 @@ const hasValidPrice = (value: string | number | null | undefined): boolean => {
 const PropertyCard = ({ property }: PropertyCardProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { sajuData } = useSaju();
   const queryClient = useQueryClient();
   const [showPhonePopup, setShowPhonePopup] = useState(false);
+
+  // Saju compatibility calc
+  const compatibility = useMemo(() => {
+    if (!user || !sajuData || !property) return null;
+    return getCompatibilityScore(sajuData, {
+      id: property.id,
+      direction: property.direction,
+      floor: property.floor
+    });
+  }, [user, sajuData, property]);
 
   // 관심매물 상태 조회
   const { data: favoriteData, isLoading: favoriteLoading } = useQuery<{ isFavorite: boolean }>({
@@ -119,23 +121,8 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
   };
 
   return (
-    <Card className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group border-none ring-1 ring-gray-100">
-      <div className="relative aspect-[16/9] overflow-hidden">
-        {/* 부동산 유형 표시 */}
-        <div className="absolute top-3 left-3 z-20 flex flex-col gap-1">
-          <Badge
-            className={cn(
-              "font-medium shadow-sm border-0",
-              property.type === "아파트" || property.type === "아파트연립다세대" ? "bg-blue-600" :
-                property.type === "주택" ? "bg-emerald-600" :
-                  property.type === "오피스텔" || property.type === "원투룸" ? "bg-purple-600" :
-                    property.type === "토지" ? "bg-amber-600" : "bg-gray-800"
-            )}
-          >
-            {property.type}
-          </Badge>
-        </div>
-
+    <Card className="bg-white rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300 group border border-slate-200 h-full flex flex-col">
+      <div className="relative aspect-[16/9] overflow-hidden shrink-0">
         {/* 거래 유형 표시 */}
         <div className="absolute top-3 right-3 z-20 flex flex-wrap gap-1 justify-end">
           {property.dealType && Array.isArray(property.dealType) && property.dealType
@@ -144,16 +131,26 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
               <Badge
                 key={index}
                 className={cn(
-                  "font-medium shadow-sm border-0",
-                  type === "매매" ? "bg-rose-500" :
-                    type === "전세" ? "bg-orange-500" :
-                      type === "월세" ? "bg-indigo-500" : "bg-gray-500"
+                  "font-medium shadow-none border px-2.5 py-1 rounded-full text-xs backdrop-blur-md",
+                  type === "매매" ? "bg-rose-500/90 text-white border-rose-600/20" :
+                    type === "전세" ? "bg-orange-500/90 text-white border-orange-600/20" :
+                      type === "월세" ? "bg-indigo-500/90 text-white border-indigo-600/20" : "bg-gray-500 text-white"
                 )}
               >
                 {type}
               </Badge>
             ))}
         </div>
+
+        {/* 사주 궁합 배지 */}
+        {compatibility && (
+          <div className="absolute top-3 left-3 z-20">
+            <Badge className="bg-purple-600/90 text-white border-purple-400/20 font-bold shadow-sm px-2.5 py-1 rounded-full text-[11px] backdrop-blur-md flex items-center gap-1">
+              <Sparkles className="w-3 h-3" />
+              사주 궁합 {compatibility.score}점
+            </Badge>
+          </div>
+        )}
 
         {/* 이미지와 그라데이션 오버레이 */}
         <Link href={`/properties/${property.id}`}>
@@ -163,24 +160,66 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
               alt={property.title}
               className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent opacity-40" />
+          </div>
+        </Link>
+      </div>
 
-            {/* 이미지 하단에 지역 정보 표시 */}
-            <div className="absolute bottom-3 left-3 text-white z-10 flex items-center text-sm font-medium">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                <circle cx="12" cy="10" r="3"></circle>
-              </svg>
-              {property.district}
+      <div className="p-4 flex flex-col flex-grow relative">
+        <Link href={`/properties/${property.id}`}>
+          <div>
+            <h3 className="text-xl font-bold mb-2 text-slate-900 line-clamp-2 leading-tight">
+              {property.title}
+            </h3>
+
+            {/* 위치 및 배지 - 한 줄로 배치 시도하거나 간격 최소화 */}
+            <div className="flex flex-wrap items-center gap-1 mb-2">
+              <div className="flex items-center text-sm text-slate-500">
+                <MapPin className="h-3.5 w-3.5 mr-1" />
+                {property.district}
+              </div>
+            </div>
+
+            <div className="mb-3">
+              <Badge
+                variant="outline"
+                className="font-normal text-blue-600 border-blue-600 bg-blue-50 hover:bg-blue-100 text-xs h-6 px-2"
+              >
+                {property.type}
+              </Badge>
+            </div>
+
+            {/* 가격 정보 (리스트 형태) - 간격 최소화 */}
+            <div className="flex flex-col gap-1 mb-0">
+              {hasValidPrice(property.price) && (
+                <div className="text-lg font-bold text-blue-600 leading-snug">
+                  매매가: {formatKoreanPrice(property.price)}
+                </div>
+              )}
+              {hasValidPrice(property.deposit) && (
+                <div className="text-lg font-bold text-blue-600 leading-snug">
+                  전세: {formatKoreanPrice(property.deposit)}
+                </div>
+              )}
+              {hasValidPrice(property.depositAmount) && (
+                <div className="text-lg font-bold text-blue-600 leading-snug">
+                  보증금: {formatKoreanPrice(property.depositAmount)}
+                </div>
+              )}
+              {hasValidPrice(property.monthlyRent) && (
+                <div className="text-lg font-bold text-blue-600 leading-snug">
+                  월세: {formatKoreanPrice(property.monthlyRent)}
+                </div>
+              )}
             </div>
           </div>
         </Link>
 
-        {/* 찜하기 버튼 (이미지 위에 배치) */}
+        {/* 찜하기 버튼 (콘텐츠 영역 우측) */}
         <button
           className={cn(
-            "absolute bottom-3 right-3 z-20 w-9 h-9 rounded-full flex items-center justify-center transition-all shadow-md",
-            favoriteData?.isFavorite ? "bg-white text-rose-500" : "bg-black/30 text-white hover:bg-white hover:text-rose-500 backdrop-blur-sm"
+            "absolute top-[4.5rem] right-3 z-20 w-8 h-8 flex items-center justify-center transition-all bg-white/50 backdrop-blur-sm rounded-full",
+            favoriteData?.isFavorite ? "text-rose-500" : "text-slate-400 hover:text-rose-500"
           )}
           onClick={(e) => {
             e.stopPropagation();
@@ -189,45 +228,18 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
           disabled={favoriteLoading || addFavoriteMutation.isPending || removeFavoriteMutation.isPending}
         >
           {favoriteLoading ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
             <Heart className={cn("w-5 h-5", favoriteData?.isFavorite && "fill-current")} />
           )}
         </button>
-      </div>
 
-      <div className="p-5 flex flex-col h-[180px]">
-        <Link href={`/properties/${property.id}`}>
-          <h3 className="text-lg font-bold mb-2 text-gray-800 hover:text-primary transition-colors cursor-pointer line-clamp-2 h-[3.5rem] leading-snug">
-            {property.title}
-          </h3>
-        </Link>
-
-        {/* 가격 정보 */}
-        <div className="mt-1 mb-4 flex-grow">
-          {hasValidPrice(property.price) && (
-            <div className="text-2xl font-extrabold text-gray-900">
-              {formatPrice(property.price)}
-            </div>
-          )}
-          {!hasValidPrice(property.price) && hasValidPrice(property.deposit) && (
-            <div className="text-2xl font-extrabold text-gray-900">
-              전세 {formatPrice(property.deposit, false)}
-            </div>
-          )}
-          {!hasValidPrice(property.price) && !hasValidPrice(property.deposit) && hasValidPrice(property.monthlyRent) && (
-            <div className="text-2xl font-extrabold text-gray-900">
-              월세 {formatPrice(property.depositAmount, false)} / {formatPrice(property.monthlyRent, false)}
-            </div>
-          )}
-        </div>
-
-        <div className="flex gap-2 mt-auto">
+        <div className="flex gap-2 mt-auto pt-2 border-t border-slate-100">
           <button
             onClick={() => setShowPhonePopup(true)}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-gray-50 text-gray-700 py-2.5 rounded-lg hover:bg-primary hover:text-white transition-all text-sm font-semibold border border-gray-200 hover:border-primary"
+            className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 text-white py-2.5 rounded-xl hover:bg-blue-700 transition-all text-sm font-bold shadow-sm hover:shadow-md"
           >
-            <Phone className="w-4 h-4" />
+            <Phone className="w-4 h-4 fill-current" />
             <span>전화문의</span>
           </button>
 
@@ -235,7 +247,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
             href={kakaoChannelUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-12 flex items-center justify-center bg-[#FEE500] text-[#191919] rounded-lg hover:bg-[#FDD835] transition-all"
+            className="w-12 flex items-center justify-center bg-blue-50 text-blue-600 border border-blue-100 rounded-xl hover:bg-blue-100 transition-all shadow-sm"
             title="카카오톡 상담"
           >
             <SiKakaotalk className="w-5 h-5" />

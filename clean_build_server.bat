@@ -1,0 +1,13 @@
+@echo off
+echo Cleaning dist...
+ssh -i deploy_key -o StrictHostKeyChecking=no -p 22 root@1.234.53.82 "rm -rf land/dist"
+echo.
+echo Running Server Build (ESBuild only)...
+ssh -i deploy_key -o StrictHostKeyChecking=no -p 22 root@1.234.53.82 "cd land && ./node_modules/.bin/esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist"
+echo.
+echo Checking dist/index.js...
+ssh -i deploy_key -o StrictHostKeyChecking=no -p 22 root@1.234.53.82 "ls -l land/dist/index.js"
+echo.
+echo Restarting PM2...
+ssh -i deploy_key -o StrictHostKeyChecking=no -p 22 root@1.234.53.82 "pm2 restart land-app"
+pause

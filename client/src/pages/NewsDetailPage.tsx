@@ -67,7 +67,7 @@ export default function NewsDetailPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-20">
+    <div className="container mx-auto px-4 pt-0 pb-8">
       <Helmet>
         <title>{news.title} | 부동산뉴스 | 이가이버 부동산</title>
         <meta name="description" content={news.description} />
@@ -99,7 +99,7 @@ export default function NewsDetailPage() {
                 paragraph ? <p key={idx}>{paragraph}</p> : <br key={idx} />
               ))}
             </div>
-            
+
             <div className="mt-8 pt-4 border-t">
               <Button variant="outline" className="flex items-center" asChild>
                 <a href={news.sourceUrl} target="_blank" rel="noopener noreferrer">

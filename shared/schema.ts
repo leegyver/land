@@ -18,6 +18,13 @@ export const propertySchema = z.object({
   agentId: z.number(),
   featured: z.boolean().default(false).optional(),
   displayOrder: z.number().default(0).optional(),
+
+  // New fields for Urgent and Negotiable sections
+  isUrgent: z.boolean().default(false).optional(),
+  urgentOrder: z.number().default(0).optional(),
+  isNegotiable: z.boolean().default(false).optional(),
+  negotiableOrder: z.number().default(0).optional(),
+
   isVisible: z.boolean().default(true).optional(),
   createdAt: z.date().or(z.string()).optional(),
   updatedAt: z.date().or(z.string()).optional(),
@@ -54,6 +61,8 @@ export const propertySchema = z.object({
   propertyDescription: z.string().optional().nullable(),
   privateNote: z.string().optional().nullable(),
   youtubeUrl: z.string().optional().nullable(),
+  latitude: z.number().optional().nullable(),
+  longitude: z.number().optional().nullable(),
   isSold: z.boolean().default(false).optional(),
   viewCount: z.number().default(0).optional(),
 });
@@ -110,7 +119,10 @@ export const userSchema = z.object({
   phone: z.string().optional().nullable(),
   role: z.string().default("user").optional(),
   provider: z.string().optional().nullable(),
-  providerId: z.string().or(z.number()).optional().nullable()
+  providerId: z.string().or(z.number()).optional().nullable(),
+  birthDate: z.string().optional().nullable(), // YYYY-MM-DD
+  birthTime: z.string().optional().nullable(),  // HH:MM
+  isLunar: z.boolean().default(false).optional() // Added: Lunar Calendar flag
 });
 export type User = z.infer<typeof userSchema>;
 export const insertUserSchema = userSchema.pick({
@@ -120,7 +132,10 @@ export const insertUserSchema = userSchema.pick({
   phone: true,
   role: true,
   provider: true,
-  providerId: true
+  providerId: true,
+  birthDate: true,
+  birthTime: true,
+  isLunar: true // Added
 });
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
@@ -169,3 +184,17 @@ export const favoriteSchema = z.object({
 export type Favorite = z.infer<typeof favoriteSchema>;
 export const insertFavoriteSchema = favoriteSchema.omit({ id: true, createdAt: true });
 export type InsertFavorite = z.infer<typeof insertFavoriteSchema>;
+
+// --- Banner ---
+export const bannerSchema = z.object({
+  id: z.number(),
+  location: z.string(), // 'left' or 'right'
+  imageUrl: z.string(),
+  linkUrl: z.string().optional().nullable(),
+  openNewWindow: z.boolean().default(false),
+  displayOrder: z.number().default(0),
+  createdAt: z.date().optional()
+});
+export type Banner = z.infer<typeof bannerSchema>;
+export const insertBannerSchema = bannerSchema.omit({ id: true, createdAt: true });
+export type InsertBanner = z.infer<typeof insertBannerSchema>;

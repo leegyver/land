@@ -9,7 +9,7 @@ import { z } from "zod";
 import PropertyCard from "@/components/property/PropertyCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MapIcon, Mic, MicOff, Search, X } from "lucide-react";
-import KakaoMap from "@/components/map/KakaoMap";
+import PropertyMap from "@/components/map/PropertyMap";
 import { Input } from "@/components/ui/input";
 import {
   Form,
@@ -82,7 +82,7 @@ declare global {
 const PropertiesPage = () => {
   const [location, setLocation] = useLocation();
   const search = useSearch();
-  
+
   // useSearch 훅에서 초기값 파싱 (wouter의 반응형 쿼리 문자열 사용)
   const initialParams = new URLSearchParams(search);
   const initialDistrict = initialParams.get("district") || "all";
@@ -90,7 +90,7 @@ const PropertiesPage = () => {
   const initialMinPrice = initialParams.get("minPrice");
   const initialMaxPrice = initialParams.get("maxPrice");
   const initialKeyword = initialParams.get("keyword") || "";
-  
+
   let initialPriceRange = "all";
   if (initialMinPrice && initialMaxPrice) {
     initialPriceRange = `${initialMinPrice}-${initialMaxPrice}`;
@@ -103,13 +103,13 @@ const PropertiesPage = () => {
     maxPrice: initialMaxPrice,
     keyword: initialKeyword,
   });
-  
+
   // 음성검색 관련 상태
   const [searchKeyword, setSearchKeyword] = useState(initialKeyword);
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  
+
   // 음성인식 지원 여부 확인
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -119,52 +119,52 @@ const PropertiesPage = () => {
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = false;
       recognitionRef.current.lang = 'ko-KR'; // 한국어 설정
-      
+
       recognitionRef.current.onstart = () => {
         setIsListening(true);
       };
-      
+
       recognitionRef.current.onend = () => {
         setIsListening(false);
       };
-      
+
       recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
         const transcript = event.results[0][0].transcript;
         setSearchKeyword(transcript);
         // 음성인식 완료 후 자동 검색
         handleVoiceSearch(transcript);
       };
-      
+
       recognitionRef.current.onerror = () => {
         setIsListening(false);
       };
     }
-    
+
     return () => {
       if (recognitionRef.current) {
         recognitionRef.current.abort();
       }
     };
   }, []);
-  
+
   // 음성인식 시작/중지
   const toggleListening = useCallback(() => {
     if (!recognitionRef.current) return;
-    
+
     if (isListening) {
       recognitionRef.current.stop();
     } else {
       recognitionRef.current.start();
     }
   }, [isListening]);
-  
+
   // 음성검색 실행 (기존 필터 유지)
   const handleVoiceSearch = useCallback((keyword: string) => {
     if (!keyword.trim()) return;
-    
+
     const newParams = new URLSearchParams();
     newParams.append("keyword", keyword.trim());
-    
+
     // 기존 필터 값 유지
     if (filterParams.district && filterParams.district !== "all") {
       newParams.append("district", filterParams.district);
@@ -176,23 +176,23 @@ const PropertiesPage = () => {
       newParams.append("minPrice", filterParams.minPrice);
       newParams.append("maxPrice", filterParams.maxPrice);
     }
-    
+
     setLocation(`/properties?${newParams.toString()}`);
   }, [setLocation, filterParams]);
-  
+
   // form 객체가 초기화된 후에 handleKeywordSearch를 정의해야 하므로,
   // form.getValues()를 사용하기 위한 간접 호출 패턴을 사용
-  const getFormValues = useRef<() => FormValues | null>(null);
-  
+  const getFormValues = useRef<any>(null);
+
   // 키워드 검색 실행 (현재 폼 필터 값 사용)
   const handleKeywordSearch = useCallback(() => {
     const newParams = new URLSearchParams();
-    
+
     // 키워드가 있으면 추가
     if (searchKeyword.trim()) {
       newParams.append("keyword", searchKeyword.trim());
     }
-    
+
     // 현재 폼 값을 직접 사용 (간접 호출)
     const formValues = getFormValues.current?.();
     if (formValues) {
@@ -210,17 +210,17 @@ const PropertiesPage = () => {
         }
       }
     }
-    
+
     const newUrl = newParams.toString() ? `/properties?${newParams.toString()}` : '/properties';
     setLocation(newUrl);
   }, [searchKeyword, setLocation]);
-  
+
   // 키워드 검색 초기화 (현재 폼 필터 값 유지)
   const clearKeyword = useCallback(() => {
     setSearchKeyword("");
-    
+
     const newParams = new URLSearchParams();
-    
+
     // 현재 폼 값을 직접 사용
     const formValues = getFormValues.current?.();
     if (formValues) {
@@ -238,7 +238,7 @@ const PropertiesPage = () => {
         }
       }
     }
-    
+
     const newUrl = newParams.toString() ? `/properties?${newParams.toString()}` : '/properties';
     setLocation(newUrl);
   }, [setLocation]);
@@ -251,7 +251,7 @@ const PropertiesPage = () => {
       priceRange: initialPriceRange,
     },
   });
-  
+
   // getFormValues ref 설정 (handleKeywordSearch에서 사용)
   getFormValues.current = () => form.getValues();
 
@@ -264,22 +264,22 @@ const PropertiesPage = () => {
     const minPrice = params.get("minPrice");
     const maxPrice = params.get("maxPrice");
     const keyword = params.get("keyword") || "";
-    
+
     let priceRange = "all";
     if (minPrice && maxPrice) {
       priceRange = `${minPrice}-${maxPrice}`;
     }
-    
+
     console.log("URL에서 파싱된 파라미터:", { district, type, minPrice, maxPrice, priceRange, keyword });
-    
+
     form.reset({
       district,
       type,
       priceRange,
     });
-    
+
     setSearchKeyword(keyword);
-    
+
     setFilterParams({
       district,
       type,
@@ -294,33 +294,34 @@ const PropertiesPage = () => {
     queryFn: async () => {
       // 검색 파라미터 구성
       const searchParams = new URLSearchParams();
-      
+
       // 키워드 검색
       if (filterParams.keyword && filterParams.keyword.trim() !== "") {
         searchParams.append("keyword", filterParams.keyword.trim());
       }
-      
+
       if (filterParams.district && filterParams.district !== "all") {
         searchParams.append("district", filterParams.district);
       }
-      
+
       if (filterParams.type && filterParams.type !== "all") {
         searchParams.append("type", filterParams.type);
       }
-      
+
       if (filterParams.minPrice && filterParams.maxPrice) {
         searchParams.append("minPrice", filterParams.minPrice);
         searchParams.append("maxPrice", filterParams.maxPrice);
       }
-      
+
       // URL 생성 및 요청
       const url = `/api/search?${searchParams.toString()}`;
       console.log("검색 요청 URL:", url);
-      
+
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch properties");
       return res.json();
     },
+    placeholderData: (previousData) => previousData,
   });
 
   const onSubmit = (data: FormValues) => {
@@ -359,11 +360,10 @@ const PropertiesPage = () => {
         <meta property="og:title" content="매물 검색 | 이가이버부동산" />
         <meta property="og:description" content="강화도 토지, 주택, 아파트, 상가 매물 검색" />
       </Helmet>
-    <div className="pt-16"> {/* Offset for fixed header */}
-      <div className="bg-primary/10 py-4">
+      <div className="bg-primary/10 py-4 mt-0">
         <div className="container mx-auto px-4">
           <h1 className="text-2xl font-bold mb-3">매물 검색</h1>
-          
+
           {/* 음성검색 입력창 */}
           <div className="bg-white p-4 rounded-lg shadow-md mb-4">
             <div className="flex items-center gap-2">
@@ -394,7 +394,7 @@ const PropertiesPage = () => {
                   </button>
                 )}
               </div>
-              
+
               {speechSupported && (
                 <Button
                   type="button"
@@ -412,7 +412,7 @@ const PropertiesPage = () => {
                   )}
                 </Button>
               )}
-              
+
               <Button
                 type="button"
                 onClick={handleKeywordSearch}
@@ -423,20 +423,20 @@ const PropertiesPage = () => {
                 검색
               </Button>
             </div>
-            
+
             {isListening && (
               <div className="mt-3 flex items-center gap-2 text-sm text-primary">
                 <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                 <span>음성을 듣고 있습니다... 말씀해 주세요</span>
               </div>
             )}
-            
+
             {searchKeyword && filterParams.keyword && (
               <div className="mt-3 text-sm text-gray-600">
                 <span className="font-medium">"{filterParams.keyword}"</span> 검색 결과
               </div>
             )}
-            
+
             {/* 읍면별 드롭다운 */}
             <div className="mt-3">
               <Select onValueChange={(value) => {
@@ -468,7 +468,7 @@ const PropertiesPage = () => {
               </Select>
             </div>
           </div>
-          
+
           {/* 카테고리 필터 숨김 - 음성검색만 사용 */}
           <div className="hidden">
             <Form {...form}>
@@ -479,8 +479,8 @@ const PropertiesPage = () => {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>지역</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <Select
+                        onValueChange={field.onChange}
                         value={field.value}
                       >
                         <FormControl>
@@ -611,7 +611,7 @@ const PropertiesPage = () => {
                           <SelectItem value="화도면 여차리">화도면 여차리</SelectItem>
                           <SelectItem value="화도면 장화리">화도면 장화리</SelectItem>
                           <SelectItem value="화도면 흥왕리">화도면 흥왕리</SelectItem>
-                          
+
                           {/* 기타 옵션 */}
                           <SelectItem value="기타지역">기타지역</SelectItem>
                         </SelectContent>
@@ -619,15 +619,15 @@ const PropertiesPage = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="type"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>유형</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <Select
+                        onValueChange={field.onChange}
                         value={field.value}
                       >
                         <FormControl>
@@ -647,15 +647,15 @@ const PropertiesPage = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="priceRange"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>가격대</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <Select
+                        onValueChange={field.onChange}
                         value={field.value}
                       >
                         <FormControl>
@@ -675,7 +675,7 @@ const PropertiesPage = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <div className="flex items-end">
                   <Button type="submit" className="w-full bg-primary hover:bg-secondary text-white">
                     검색
@@ -686,19 +686,20 @@ const PropertiesPage = () => {
           </div>
         </div>
       </div>
-      
-      <div className="container mx-auto px-4 py-8">
+
+      <div className="container mx-auto px-4 py-4">
         {/* Map Section */}
-        <div className="mb-8">
+        <div className="mb-4">
           <div className="mb-3 flex items-center">
             <MapIcon className="h-5 w-5 mr-2 text-primary" />
             <h2 className="text-lg font-bold">지도로 부동산찾기</h2>
           </div>
-          <div className="h-[40vh] w-full rounded-lg overflow-hidden mb-6">
-            <KakaoMap properties={properties} />
+          {/* 메인 페이지 모델을 따라 props 없이 호출하여 데이터 갱신 시의 재로딩 현상을 해결합니다. */}
+          <div className="h-[400px] md:h-[500px] w-full rounded-2xl overflow-hidden shadow-lg border border-[#EBE5CE] relative">
+            <PropertyMap />
           </div>
         </div>
-        
+
         {/* Properties Results */}
         <div className="mb-6 flex justify-between items-center">
           <h2 className="text-2xl font-bold">
@@ -710,7 +711,7 @@ const PropertiesPage = () => {
             <p className="text-gray-medium">총 {properties.length}개의 매물</p>
           )}
         </div>
-        
+
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[...Array(6)].map((_, index) => (
@@ -753,7 +754,7 @@ const PropertiesPage = () => {
           </div>
         )}
       </div>
-    </div>
+
     </>
   );
 };

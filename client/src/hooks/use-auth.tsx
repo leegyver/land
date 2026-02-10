@@ -20,6 +20,8 @@ type LoginData = {
 export const registerSchema = insertUserSchema.extend({
   email: z.string().email("유효한 이메일 주소를 입력해주세요").optional(),
   phone: z.string().optional(),
+  birthDate: z.string().optional(),
+  birthTime: z.string().optional(),
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "비밀번호가 일치하지 않습니다",
@@ -88,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     mutationFn: async (data: RegisterData) => {
       // 비밀번호 확인 필드 제외
       const { confirmPassword, ...registerData } = data;
-      
+
       const res = await apiRequest("POST", "/api/register", registerData);
       if (!res.ok) {
         const errorData = await res.json();

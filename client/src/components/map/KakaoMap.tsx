@@ -1,167 +1,195 @@
-import { useState, useEffect, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
+
+import { useEffect, useRef, useState } from 'react';
 import { Property } from '@shared/schema';
-import { Link } from 'wouter';
-
-// 전역 타입 선언
-declare global {
-  interface Window {
-    kakao: any;
-  }
-}
-
-// 숫자를 한국어 표기법으로 변환
-function formatPrice(price: number | string | null | undefined): string {
-  if (price === null || price === undefined) return '';
-  const numPrice = Number(price);
-  if (isNaN(numPrice)) return '';
-  if (numPrice >= 100000000) {
-    return `${Math.floor(numPrice / 100000000)}억 ${numPrice % 100000000 > 0 ? Math.floor((numPrice % 100000000) / 10000) + '만' : ''}원`;
-  } else if (numPrice >= 10000) {
-    return `${Math.floor(numPrice / 10000)}만원`;
-  }
-  return `${numPrice.toLocaleString()}원`;
-}
-
-// 가격 값이 유효한지 확인
-function hasValidPrice(value: string | number | null | undefined): boolean {
-  if (value === null || value === undefined || value === '' || value === '0' || value === 0) {
-    return false;
-  }
-  const numValue = Number(value);
-  return !isNaN(numValue) && numValue > 0;
-}
-
-// 가격 정보 HTML 생성 함수
-function buildPriceInfoHtml(property: Property): string {
-  let html = '';
-  if (hasValidPrice(property.price)) {
-    html += `<div style="color:#2563eb;font-weight:bold;font-size:13px;">매매가: ${formatPrice(property.price)}</div>`;
-  }
-  if (hasValidPrice(property.deposit)) {
-    html += `<div style="color:#2563eb;font-weight:bold;font-size:13px;">전세금: ${formatPrice(property.deposit)}</div>`;
-  }
-  if (hasValidPrice(property.depositAmount)) {
-    html += `<div style="color:#2563eb;font-weight:bold;font-size:13px;">보증금: ${formatPrice(property.depositAmount)}</div>`;
-  }
-  if (hasValidPrice(property.monthlyRent)) {
-    html += `<div style="color:#2563eb;font-weight:bold;font-size:13px;">월세: ${formatPrice(property.monthlyRent)}</div>`;
-  }
-  if (hasValidPrice(property.maintenanceFee)) {
-    html += `<div style="color:#2563eb;font-weight:bold;font-size:13px;">관리비: ${formatPrice(property.maintenanceFee)}</div>`;
-  }
-  return html;
-}
+import { useQuery } from '@tanstack/react-query';
 
 interface KakaoMapProps {
-  singleProperty?: Property;
-  properties?: Property[];
   zoom?: number;
+  properties?: Property[];
+  singleProperty?: Property;
 }
 
-export default function KakaoMap({ singleProperty, properties: externalProperties, zoom = 3 }: KakaoMapProps) {
-  const mapRef = useRef<HTMLDivElement>(null);
+const KakaoMap = ({ zoom = 8, properties: externalProperties, singleProperty }: KakaoMapProps) => {
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const mapInstance = useRef<any>(null);
+  const markers = useRef<any[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
-  const [sdkReady, setSdkReady] = useState(false);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
 
-  // 매물 데이터 가져오기
-  const { data: fetchedProperties, isLoading } = useQuery<Property[]>({
+  // 데이터 가져오기 (props가 없을 경우 대비)
+  const { data: fetchedProperties } = useQuery<Property[]>({
     queryKey: ['/api/properties'],
     enabled: !singleProperty && !externalProperties
   });
 
-  const properties = externalProperties || fetchedProperties;
+  const properties = singleProperty ? [singleProperty] : (externalProperties || fetchedProperties || []);
 
-  // 매물 위치 좌표 계산 함수 (Fallback용)
-  const getPropertyLocation = (property: Property) => {
-    // 지역에 따른 대략적인 위치 (강화군 내 주요 지역)
-    const districtLocations: { [key: string]: { lat: number, lng: number } } = {
-      '강화읍': { lat: 37.7466, lng: 126.4881 },
-      '선원면': { lat: 37.7132, lng: 126.4777 },
-      '불은면': { lat: 37.7049, lng: 126.5357 },
-      '길상면': { lat: 37.6390, lng: 126.5306 },
-      '화도면': { lat: 37.6254, lng: 126.4273 },
-      '양도면': { lat: 37.6629, lng: 126.4003 },
-      '내가면': { lat: 37.7098, lng: 126.3767 },
-      '하점면': { lat: 37.7627, lng: 126.4274 },
-      '양사면': { lat: 37.7825, lng: 126.3799 },
-      '송해면': { lat: 37.7639, lng: 126.4615 },
-      '교동면': { lat: 37.8103, lng: 126.2724 },
-      '삼산면': { lat: 37.7290, lng: 126.3368 },
-      '서도면': { lat: 37.7504, lng: 126.2108 }
+  // 1. 지도 인스턴스 초기화 (최초 1회)
+  useEffect(() => {
+    if (!mapContainer.current || mapInstance.current) return;
+
+    let isMounted = true;
+
+    const initMap = () => {
+      if (!isMounted || !mapContainer.current || mapInstance.current) return;
+
+      console.log("KakaoMap: 엔진 초기화");
+      const options = {
+        center: new window.kakao.maps.LatLng(37.7466, 126.4881),
+        level: zoom,
+        draggable: true,
+        scrollwheel: true
+      };
+
+      try {
+        const map = new window.kakao.maps.Map(mapContainer.current, options);
+        mapInstance.current = map;
+        setIsMapLoaded(true);
+
+        setTimeout(() => {
+          if (map && isMounted) {
+            map.relayout();
+            map.setCenter(options.center);
+          }
+        }, 100);
+      } catch (err) {
+        console.error("KakaoMap: 생성 실패, 재시도", err);
+        setTimeout(initMap, 500);
+      }
     };
 
-    for (const [district, location] of Object.entries(districtLocations)) {
-      if (property.district && property.district.includes(district)) return location;
-    }
+    const loadKakao = () => {
+      if (window.kakao && window.kakao.maps && window.kakao.maps.load) {
+        window.kakao.maps.load(initMap);
+      } else {
+        setTimeout(loadKakao, 100);
+      }
+    };
 
-    return { lat: 37.7466, lng: 126.4881 }; // default
-  };
+    loadKakao();
 
-  // 1. SDK 로딩 확인
+    return () => {
+      isMounted = false;
+    };
+  }, []); // 마운트 시 최초 1회만 실행
+
+  // 2. 마커 렌더링 로직 (데이터 변경 시)
   useEffect(() => {
-    // 10초 타임아웃
-    const timeout = setTimeout(() => {
-      if (!sdkReady) {
-        console.warn("Kakao SDK load timeout");
+    const map = mapInstance.current;
+    if (!isMapLoaded || !map || !properties) return;
+
+    // 기존 마커 클린업
+    markers.current.forEach(m => m.setMap(null));
+    markers.current = [];
+
+    console.log(`KakaoMap: ${properties.length}개 마커 렌더링`);
+
+    const geocoder = new window.kakao.maps.services.Geocoder();
+    const bounds = new window.kakao.maps.LatLngBounds();
+    let isMounted = true;
+    let processedCount = 0;
+
+    if (properties.length === 0) return;
+
+    properties.forEach((prop) => {
+      const addMarker = (coords: any) => {
+        if (!isMounted || !mapInstance.current) return;
+
+        const marker = new window.kakao.maps.Marker({
+          map: map,
+          position: coords,
+          title: prop.title,
+          clickable: true
+        });
+
+        window.kakao.maps.event.addListener(marker, 'click', () => {
+          if (isMounted) setSelectedProperty(prop);
+        });
+
+        markers.current.push(marker);
+        bounds.extend(coords);
+
+        processedCount++;
+        if (processedCount === properties.length && !bounds.isEmpty()) {
+          if (singleProperty) {
+            map.setCenter(coords);
+          } else {
+            map.setBounds(bounds);
+          }
+        }
+      };
+
+      if (prop.latitude && prop.longitude) {
+        addMarker(new window.kakao.maps.LatLng(prop.latitude, prop.longitude));
+      } else {
+        const district = prop.district || "";
+        const detailAddress = prop.address || "";
+        const query = `${district.includes("강화") || district.includes("서울") ? district : "인천광역시 " + district} ${detailAddress}`.trim().replace(/\s+/g, ' ');
+
+        if (query.length > 2) {
+          geocoder.addressSearch(query, (result: any, status: any) => {
+            if (status === window.kakao.maps.services.Status.OK && isMounted) {
+              addMarker(new window.kakao.maps.LatLng(result[0].y, result[0].x));
+            } else {
+              processedCount++;
+            }
+          });
+        } else {
+          processedCount++;
+        }
       }
-    }, 10000);
+    });
 
-    const timer = setInterval(() => {
-      // @ts-ignore
-      if (window.kakao && window.kakao.maps && window.kakao.maps.Map && window.kakao.maps.services) {
-        setSdkReady(true);
-        clearInterval(timer);
-        clearTimeout(timeout);
-      }
-    }, 500); // 0.5초 간격 체크
-    return () => { clearInterval(timer); clearTimeout(timeout); };
-  }, [sdkReady]);
-
-  // 2. 지도 초기화 ... (중략) ...
-
-  // 렌더링
-  if (!singleProperty && !externalProperties && isLoading) {
-    return <div className="flex items-center justify-center h-[60vh] bg-gray-100">매물 정보 로딩중...</div>;
-  }
+    return () => {
+      isMounted = false;
+      markers.current.forEach(m => m.setMap(null));
+      setSelectedProperty(null);
+    };
+  }, [isMapLoaded, properties, zoom, singleProperty]);
 
   return (
-    <div className={`relative w-full ${singleProperty ? 'h-full' : 'h-[60vh]'}`}>
+    <div
+      className="relative w-full h-full bg-slate-100"
+      data-no-swipe="true"
+      style={{ touchAction: 'none' }}
+    >
+      <div ref={mapContainer} className="w-full h-full" />
 
-      {/* 디버그 상태 오버레이 (지도가 안 뜰 때만 보임) */}
-      {!sdkReady && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100/80 z-20 text-sm">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-2"></div>
-          <p>카카오 맵 불러오는 중...</p>
-          <p className="text-xs text-gray-500 mt-2">10초 이상 걸리면 새로고침 해주세요.</p>
-          <div className="text-xs text-red-500 mt-4 px-4 text-center">
-            지도가 계속 안 나오나요?<br />
-            1. 카카오 개발자 센터 &gt; 플랫폼 &gt; Web &gt; 사이트 도메인 등록 확인<br />
-            2. 현재 주소({window.location.origin})가 등록되어 있어야 합니다.
-          </div>
+      {/* 로딩 오버레이 */}
+      {!isMapLoaded && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10 p-4 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mb-2"></div>
+          <span className="text-slate-500 text-sm font-medium">지도를 불러오고 있습니다...</span>
         </div>
       )}
 
-      <div ref={mapRef} className="w-full h-full bg-gray-100" style={{ minHeight: '300px' }}></div>
-
-
-      {/* 선택된 매물 정보 패널 (다중 매물 모드) */}
       {!singleProperty && selectedProperty && (
-        <div className="absolute top-4 right-4 md:w-64 bg-white rounded-lg shadow-lg p-3 z-10">
+        <div className="absolute top-4 right-4 bg-white p-4 rounded-lg shadow-xl z-20 w-72 border border-slate-200 animate-in fade-in slide-in-from-top-2"
+          onClick={(e) => e.stopPropagation()}
+        >
           <button
-            className="absolute top-2 right-2 text-gray-500"
+            className="absolute top-2 right-2 text-slate-400 hover:text-black p-1"
             onClick={() => setSelectedProperty(null)}
-          >✕</button>
-          <Link href={`/properties/${selectedProperty.id}`}>
-            <h3 className="font-bold text-sm mb-2 hover:text-blue-600 truncate pr-4 cursor-pointer">{selectedProperty.title}</h3>
-          </Link>
-          <div className="text-xs text-gray-600 mb-2">{selectedProperty.district} · {selectedProperty.type}</div>
-          <div dangerouslySetInnerHTML={{ __html: buildPriceInfoHtml(selectedProperty) }} />
-          <Link href={`/properties/${selectedProperty.id}`} className="block mt-2 text-center bg-blue-600 text-white text-xs py-1.5 rounded hover:bg-blue-700">
-            상세보기
-          </Link>
+          >
+            ✕
+          </button>
+          <h4 className="font-bold text-lg mb-1 truncate text-slate-900 pr-6">{selectedProperty.title}</h4>
+          <p className="text-slate-500 text-xs mb-3 truncate">{selectedProperty.address}</p>
+          <div className="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-100">
+            <span className="text-primary font-bold text-base">
+              {selectedProperty.price}
+            </span>
+            <a
+              href={`/properties/${selectedProperty.id}`}
+              className="text-xs text-blue-600 hover:underline font-bold"
+            >
+              상세보기 &gt;
+            </a>
+          </div>
         </div>
       )}
     </div>
   );
-}
+};
+
+export default KakaoMap;

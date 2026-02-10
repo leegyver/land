@@ -78,6 +78,9 @@ export default function AuthPage() {
       confirmPassword: "",
       email: "",
       phone: "",
+      birthDate: "",
+      birthTime: "",
+      isLunar: false, // Added
       role: "user",
     },
   });
@@ -318,6 +321,67 @@ export default function AuthPage() {
                               <FormLabel className="text-base">연락처</FormLabel>
                               <FormControl>
                                 <Input placeholder="010-1234-5678" {...field} className="h-11 rounded-lg" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={registerForm.control}
+                          name="birthDate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-base">생년월일 (선택)</FormLabel>
+                              <div className="flex gap-2">
+                                <FormControl>
+                                  <Input type="date" {...field} className="h-11 rounded-lg flex-1" />
+                                </FormControl>
+                                <FormField
+                                  control={registerForm.control}
+                                  name="isLunar"
+                                  render={({ field: isLunarField }) => (
+                                    <FormItem className="flex items-center space-x-2 space-y-0 rounded-md border p-2 h-11">
+                                      <FormControl>
+                                        <div className="flex items-center gap-2">
+                                          <label className="flex items-center gap-1 cursor-pointer">
+                                            <input
+                                              type="radio"
+                                              className="w-4 h-4 text-blue-600"
+                                              checked={!isLunarField.value}
+                                              onChange={() => isLunarField.onChange(false)}
+                                            />
+                                            <span className="text-sm">양력</span>
+                                          </label>
+                                          <label className="flex items-center gap-1 cursor-pointer">
+                                            <input
+                                              type="radio"
+                                              className="w-4 h-4 text-blue-600"
+                                              checked={isLunarField.value === true}
+                                              onChange={() => isLunarField.onChange(true)}
+                                            />
+                                            <span className="text-sm">음력</span>
+                                          </label>
+                                        </div>
+                                      </FormControl>
+                                    </FormItem>
+                                  )}
+                                />
+                              </div>
+                              <FormDescription>
+                                사주 궁합 분석에 사용됩니다.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={registerForm.control}
+                          name="birthTime"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-base">태어난 시간 (선택)</FormLabel>
+                              <FormControl>
+                                <Input type="time" {...field} className="h-11 rounded-lg" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>

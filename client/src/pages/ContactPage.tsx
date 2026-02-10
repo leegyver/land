@@ -4,11 +4,11 @@ import { Helmet } from "react-helmet";
 
 const ContactPage = () => {
   return (
-    <div className="pt-16"> {/* Offset for fixed header */}
+    <div className=""> {/* Offset removed for sticky header */}
       <Helmet>
         <title>문의하기 | 이가이버부동산</title>
-        <meta 
-          name="description" 
+        <meta
+          name="description"
           content="이가이버부동산에 문의하세요. 부동산 매매, 임대, 투자에 관한 모든 궁금증을 전문가가 상담해 드립니다."
         />
         <meta property="og:title" content="문의하기 | 이가이버부동산" />
@@ -24,7 +24,7 @@ const ContactPage = () => {
           </p>
         </div>
       </div>
-      
+
       <section className="py-4">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -32,10 +32,10 @@ const ContactPage = () => {
               <h3 className="text-xl font-bold mb-3">상담 신청</h3>
               <ContactForm />
             </div>
-            
+
             <div className="bg-white p-4 rounded-lg shadow-md">
               <h3 className="text-xl font-bold mb-3">연락처 정보</h3>
-              
+
               <div className="space-y-1">
                 <div className="flex items-start">
                   <MapPin className="text-primary text-xl mt-1 w-8" />
@@ -44,7 +44,7 @@ const ContactPage = () => {
                     <p className="text-gray-medium">인천광역시 강화군 강화읍 남문로51, 1호</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start">
                   <Phone className="text-primary text-xl mt-1 w-8" />
                   <div>
@@ -52,7 +52,7 @@ const ContactPage = () => {
                     <p className="text-gray-medium">032-934-3120 / 010-4787-3120</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start">
                   <Mail className="text-primary text-xl mt-1 w-8" />
                   <div>
@@ -60,7 +60,7 @@ const ContactPage = () => {
                     <p className="text-gray-medium">9551304@naver.com</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-start">
                   <Clock className="text-primary text-xl mt-1 w-8" />
                   <div>
@@ -74,7 +74,7 @@ const ContactPage = () => {
           </div>
         </div>
       </section>
-      
+
 
     </div>
   );

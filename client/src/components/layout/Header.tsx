@@ -17,7 +17,7 @@ const Header = () => {
   const [location, setLocation] = useLocation();
   const { user, logoutMutation } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
+
   const navItems = [
     { name: "홈", path: "/" },
     { name: "모든매물보기", path: "/properties" },
@@ -25,35 +25,34 @@ const Header = () => {
     { name: "유튜브채널", path: "/about" },
     { name: "문의하기", path: "/contact" },
   ];
-  
+
   const handleLogout = () => {
     logoutMutation.mutate();
   };
 
   return (
-    <header className="bg-white shadow-md fixed w-full z-50">
+    <header className="bg-white/95 backdrop-blur-sm shadow-sm sticky top-0 w-full z-50 border-b border-slate-200">
       <div className="container mx-auto px-4 py-3">
         <div className="flex justify-between items-center">
           <Link href="/" className="flex items-center">
-            <Building className="text-primary text-3xl mr-2" />
-            <span className="text-2xl font-bold text-primary">강화도부동산</span>
+            <Building className="text-blue-600 text-3xl mr-2" />
+            <span className="text-lg md:text-2xl font-bold text-slate-900">강화도부동산-이가이버</span>
           </Link>
-          
+
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">
             {navItems.map((item) => (
-              <Link 
-                key={item.path} 
+              <Link
+                key={item.path}
                 href={item.path}
-                className={`font-medium hover:text-primary transition-colors ${
-                  location === item.path ? "text-primary" : "text-neutral-800"
-                }`}
+                className={`font-medium hover:text-primary transition-colors ${location === item.path ? "text-primary" : "text-neutral-800"
+                  }`}
               >
                 {item.name}
               </Link>
             ))}
           </nav>
-          
+
           {/* Auth Buttons (Desktop) */}
           <div className="hidden md:flex items-center space-x-2">
             {user ? (
@@ -97,25 +96,24 @@ const Header = () => {
           {/* Mobile Navigation */}
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" className="md:hidden px-3 py-2 text-sm font-medium">
+              <Button variant="default" className="md:hidden px-3 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white shadow-md animate-pulse">
                 모든매물보기
               </Button>
             </SheetTrigger>
             <SheetContent>
               <div className="flex flex-col space-y-4 mt-8">
                 {navItems.map((item) => (
-                  <Link 
-                    key={item.path} 
+                  <Link
+                    key={item.path}
                     href={item.path}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`text-lg font-medium hover:text-primary transition-colors ${
-                      location === item.path ? "text-primary" : "text-neutral-800"
-                    }`}
+                    className={`text-lg font-medium hover:text-primary transition-colors ${location === item.path ? "text-primary" : "text-neutral-800"
+                      }`}
                   >
                     {item.name}
                   </Link>
                 ))}
-                
+
                 {/* Auth Items (Mobile) */}
                 <div className="pt-4 border-t">
                   {user ? (
@@ -129,19 +127,19 @@ const Header = () => {
                           </span>
                         )}
                       </div>
-                      
-                      <Link 
-                        href="/profile" 
+
+                      <Link
+                        href="/profile"
                         onClick={() => setMobileMenuOpen(false)}
                         className="flex items-center py-2 text-lg font-medium text-neutral-800 hover:text-primary"
                       >
                         <User className="mr-2 h-5 w-5" />
                         내 프로필
                       </Link>
-                      
+
                       {user.role === "admin" && (
-                        <Link 
-                          href="/admin" 
+                        <Link
+                          href="/admin"
                           onClick={() => setMobileMenuOpen(false)}
                           className="flex items-center py-2 text-lg font-medium text-neutral-800 hover:text-primary"
                         >
@@ -149,7 +147,7 @@ const Header = () => {
                           관리자 패널
                         </Link>
                       )}
-                      
+
                       <button
                         onClick={() => {
                           handleLogout();

@@ -3,13 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { News } from "@shared/schema";
 import { Helmet } from "react-helmet";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  Pagination, 
-  PaginationContent, 
-  PaginationItem, 
-  PaginationLink, 
-  PaginationNext, 
-  PaginationPrevious 
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious
 } from "@/components/ui/pagination";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -71,8 +71,8 @@ export default function NewsPage() {
     for (let i = startPage; i <= endPage; i++) {
       links.push(
         <PaginationItem key={i}>
-          <PaginationLink 
-            isActive={currentPage === i} 
+          <PaginationLink
+            isActive={currentPage === i}
             onClick={() => goToPage(i)}
           >
             {i}
@@ -90,7 +90,7 @@ export default function NewsPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-20">
+    <div className="container mx-auto px-4 pt-0 pb-8">
       <Helmet>
         <title>부동산뉴스 | 이가이버 부동산</title>
         <meta name="description" content="강화군과 수도권의 최신 부동산뉴스와 정보를 확인하세요." />
@@ -105,7 +105,7 @@ export default function NewsPage() {
         {/* 최신 뉴스 (갤러리 형식) */}
         <div>
           <h2 className="text-2xl font-bold mb-6">최신 부동산뉴스</h2>
-          
+
           {isLoadingLatest ? (
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6 animate-pulse">
               {[...Array(6)].map((_, index) => (
@@ -117,9 +117,9 @@ export default function NewsPage() {
               {latestNews.map((news) => (
                 <Card key={news.id} className="overflow-hidden h-full flex flex-col">
                   <div className="h-48 overflow-hidden relative">
-                    <img 
-                      src={news.imageUrl || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500'} 
-                      alt={news.title} 
+                    <img
+                      src={news.imageUrl || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500'}
+                      alt={news.title}
                       className="w-full h-full object-cover"
                     />
                     {news.isPinned && (
@@ -171,7 +171,7 @@ export default function NewsPage() {
         {/* 전체 뉴스 (게시판 형식) */}
         <div>
           <h2 className="text-2xl font-bold mb-6">전체 부동산뉴스</h2>
-          
+
           {isLoadingAll ? (
             <div className="space-y-2 animate-pulse">
               {[...Array(10)].map((_, index) => (
@@ -210,9 +210,9 @@ export default function NewsPage() {
                           </div>
                         </td>
                         <td className="py-3 px-4 text-center">
-                          <a 
-                            href={news.sourceUrl} 
-                            target="_blank" 
+                          <a
+                            href={news.sourceUrl}
+                            target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center text-primary hover:text-primary/80"
                           >
@@ -229,24 +229,24 @@ export default function NewsPage() {
               <Pagination className="mt-6">
                 <PaginationContent>
                   <PaginationItem>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={goToPreviousPage} 
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={goToPreviousPage}
                       disabled={currentPage === 1}
                       className="flex items-center gap-1"
                     >
                       이전
                     </Button>
                   </PaginationItem>
-                  
+
                   {renderPaginationLinks()}
-                  
+
                   <PaginationItem>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={goToNextPage} 
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={goToNextPage}
                       disabled={currentPage === totalPages}
                       className="flex items-center gap-1"
                     >

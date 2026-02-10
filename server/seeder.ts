@@ -1,5 +1,5 @@
 import { storage } from "./storage";
-import { InsertProperty, InsertUser } from "@shared/schema";
+import { InsertProperty, InsertUser, InsertBanner } from "@shared/schema";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
 
@@ -88,6 +88,53 @@ const sampleProperties: InsertProperty[] = [
         dealType: ["매매"],
         landType: "전",
         zoneType: "보전관리지역"
+    }
+];
+
+const sampleBanners: InsertBanner[] = [
+    // Left Slider Banners
+    {
+        location: "left",
+        imageUrl: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+        linkUrl: "https://www.ganghwa.go.kr/", // 강화군청
+        openNewWindow: true,
+        displayOrder: 1
+    },
+    {
+        location: "left",
+        imageUrl: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+        linkUrl: "",
+        openNewWindow: false,
+        displayOrder: 2
+    },
+    {
+        location: "left",
+        imageUrl: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+        linkUrl: "",
+        openNewWindow: false,
+        displayOrder: 3
+    },
+    // Right Slider Banners
+    {
+        location: "right",
+        imageUrl: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+        linkUrl: "https://www.youtube.com/",
+        openNewWindow: true,
+        displayOrder: 1
+    },
+    {
+        location: "right",
+        imageUrl: "https://images.unsplash.com/photo-1513584685908-2274653dbf29?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+        linkUrl: "",
+        openNewWindow: false,
+        displayOrder: 2
+    },
+    {
+        location: "right",
+        imageUrl: "https://images.unsplash.com/photo-1502005229766-52835791e80d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+        linkUrl: "",
+        openNewWindow: false,
+        displayOrder: 3
     }
 ];
 

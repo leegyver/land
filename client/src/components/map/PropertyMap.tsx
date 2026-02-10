@@ -1,9 +1,19 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Property } from '@shared/schema';
 import { Link } from 'wouter';
+import { useAuth } from '@/hooks/use-auth';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useSaju } from '@/contexts/SajuContext';
+import { getCompatibilityScore } from '@/lib/saju';
+import SajuFormModal from '@/components/saju/SajuFormModal';
+import SajuDetailModal from '@/components/saju/SajuDetailModal';
+import TarotModal from '@/components/tarot/TarotModal';
+import { Sparkles, HelpCircle } from 'lucide-react';
+import { formatKoreanPrice } from '@/lib/formatter';
 
 declare global {
   interface Window {
@@ -13,266 +23,313 @@ declare global {
   }
 }
 
-// 숫자를 한국어 표기법으로 변환 (예: 10000 -> 1만)
-const formatNumberToKorean = (num: number): string => {
-  if (num >= 100000000) {
-    return `${(num / 100000000).toFixed(2)}억`;
-  } else if (num >= 10000) {
-    return `${(num / 10000).toFixed(2)}만`;
-  }
-  return num.toLocaleString();
-};
+interface PropertyMapProps {
+  properties?: Property[];
+}
 
-const PropertyMap = () => {
+const PropertyMap = ({ properties: passedProperties }: PropertyMapProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<any>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const markersRef = useRef<any[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
-  const [infoWindow, setInfoWindow] = useState<any>(null);
+  const infoWindowRef = useRef<any>(null);
+  const { user } = useAuth(); // useAuth 훅 사용
 
-  // 모든 매물 데이터 가져오기
-  const { data: properties, isLoading } = useQuery<Property[]>({
+  // Saju & Tarot Logic
+  const { sajuData, openSajuModal } = useSaju();
+  const [isTarotOpen, setIsTarotOpen] = useState(false);
+  const [isSajuDetailOpen, setIsSajuDetailOpen] = useState(false);
+  const [compatibility, setCompatibility] = useState<{
+    score: number,
+    comment: string,
+    details?: {
+      investment: { style: string, advice: string },
+      styling: { colors: string, tip: string },
+      location: string
+    }
+  } | null>(null);
+
+  // 모든 매물 데이터 가져오기 (props가 없을 때만) - 캐시 적극 활용
+  const { data: fetchedProperties, isLoading } = useQuery<Property[]>({
     queryKey: ['/api/properties'],
+    enabled: !passedProperties,
+    staleTime: 1000 * 60 * 5, // 5분간 캐시 유지
   });
 
-  // 카카오맵 초기화
+  const properties = passedProperties || fetchedProperties;
+  const isMapDataLoading = !passedProperties && isLoading;
+
+  // 1. 지도 엔진 초기화 (최초 1회만, 절대 재실행 금지)
   useEffect(() => {
-    // HTML에 이미 삽입된 카카오맵 SDK 스크립트를 확인
-    const waitForKakaoSDK = () => {
-      if (window.kakao && window.kakao.maps) {
-        console.log("카카오맵 SDK 감지됨, 초기화 시작");
-        initializeMap();
-        return;
-      }
-      
-      console.log("카카오맵 SDK 로딩 대기 중...");
-      // 일정 시간 후 다시 확인
-      setTimeout(waitForKakaoSDK, 500);
-    };
-    
-    waitForKakaoSDK();
-  }, []);
+    // 이미 초기화 작업이 시작되었거나 컨테이너가 없으면 실행 중단
+    if (isInitialized || mapInstanceRef.current || !mapRef.current) return;
 
-  // 맵 초기화 함수
-  const initializeMap = () => {
-    if (!mapRef.current) {
-      console.error("맵 컨테이너 요소가 없습니다");
-      return;
-    }
+    let isMounted = true;
+    console.log("PropertyMap: 엔진 초기화 시퀀스 시작");
 
-    try {
-      console.log("카카오맵 초기화 시작");
-      
-      // 기본 위치를 강화군 중심으로 설정
-      const options = {
-        center: new window.kakao.maps.LatLng(37.7464, 126.4878), // 강화군 중심 좌표
-        level: 9 // 확대 레벨 (숫자가 작을수록 확대)
-      };
+    const initMap = () => {
+      if (!isMounted || !mapRef.current || mapInstanceRef.current) return;
 
-      const kakaoMap = new window.kakao.maps.Map(mapRef.current, options);
-      setMap(kakaoMap);
-      console.log("카카오맵 생성 성공");
+      try {
+        const options = {
+          center: new window.kakao.maps.LatLng(37.7464, 126.4878),
+          level: 9
+        };
 
-      // 정보 윈도우 생성
-      const kakaoInfoWindow = new window.kakao.maps.InfoWindow({ zIndex: 1 });
-      setInfoWindow(kakaoInfoWindow);
-    } catch (error) {
-      console.error("카카오맵 초기화 오류:", error);
-    }
-  };
+        const map = new window.kakao.maps.Map(mapRef.current, options);
+        mapInstanceRef.current = map;
+        infoWindowRef.current = new window.kakao.maps.InfoWindow({ zIndex: 1 });
 
-  // 매물 마커 표시
-  useEffect(() => {
-    if (!map || !properties || properties.length === 0) {
-      console.log("매물 데이터 또는 지도 객체가 없습니다");
-      return;
-    }
+        setIsInitialized(true);
+        console.log("PropertyMap: 지도 엔진 로드 완료");
 
-    try {
-      console.log("매물 마커 표시 시작, 매물 수:", properties.length);
-      
-      // 지오코더 서비스 객체 생성
-      const geocoder = new window.kakao.maps.services.Geocoder();
-      const bounds = new window.kakao.maps.LatLngBounds();
-      const markers: any[] = [];
-      
-      // 매물들의 좌표를 얻기 위한 함수
-      const getCoordinates = (property: Property, index: number) => {
-        try {
-          // 주소 정보로 위치 찾기 (주소 형식 개선)
-          let address = '';
-          
-          // 강화군 지역 주소 최적화
-          if (property.district && property.district.includes('강화')) {
-            address = `인천광역시 강화군 ${property.address || ''}`;
-          } else {
-            address = `인천광역시 ${property.district || ''} ${property.address || ''}`;
+        // 렌더링 타이밍 이슈 대응
+        setTimeout(() => {
+          if (map && isMounted) {
+            map.relayout();
+            map.setCenter(options.center);
           }
-          
-          // 주소에서 중복되는 지역명 제거
-          address = address.replace(/인천광역시 인천광역시/g, '인천광역시');
-          address = address.replace(/서울특별시 서울특별시/g, '서울특별시');
-          address = address.replace(/서울 서울/g, '서울');
-          
-          console.log(`주소 검색 시도: ${address}`);
-          
-          geocoder.addressSearch(address, (result: any, status: any) => {
-            if (status === window.kakao.maps.services.Status.OK) {
-              console.log(`주소 검색 성공: ${address}`);
-              const position = new window.kakao.maps.LatLng(result[0].y, result[0].x);
-              createMarker(property, position, index);
-              bounds.extend(position);
-              
-              // 마지막 매물 처리 후 지도 범위 재설정
-              if (index === properties.length - 1) {
-                map.setBounds(bounds);
-              }
-            } else {
-              console.log(`주소를 찾을 수 없습니다: ${address}`);
-              
-              // 주소를 찾을 수 없는 경우 임의의 포인트 지정 (테스트용)
-              if (property.id) {
-                // 강화군 중심에서 약간씩 위치를 변경하여 임시 마커 생성
-                const lat = 37.7464 + (Math.random() * 0.05 - 0.025);
-                const lng = 126.4878 + (Math.random() * 0.05 - 0.025);
-                const position = new window.kakao.maps.LatLng(lat, lng);
-                createMarker(property, position, index);
-                bounds.extend(position);
-              }
-            }
-          });
-        } catch (error) {
-          console.error("주소 검색 오류:", error);
-        }
-      };
-
-    // 마커 생성 함수
-    const createMarker = (property: Property, position: any, index: number) => {
-      // 마커 생성
-      const marker = new window.kakao.maps.Marker({
-        map: map,
-        position: position,
-        title: property.title,
-      });
-      
-      markers.push(marker);
-
-      // 마커 클릭 이벤트
-      window.kakao.maps.event.addListener(marker, 'click', () => {
-        // 클릭된 매물 정보 설정
-        setSelectedProperty(property);
-        
-        // 거래 유형 (매매/전세/월세만 표시)
-        let dealTypeText = '';
-        if (property.dealType && Array.isArray(property.dealType)) {
-          const filteredTypes = property.dealType.filter(t => ['매매', '전세', '월세'].includes(t));
-          dealTypeText = filteredTypes.length > 0 ? filteredTypes.join(', ') : '';
-        }
-        
-        // 정보창 내용 구성
-        const content = `
-          <div style="padding: 8px; max-width: 325px; font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;">
-            <div style="font-weight: bold; margin-bottom: 4px; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${property.title}</div>
-            <div style="color: #666; font-size: 12px; margin-bottom: 4px;">${property.type}${dealTypeText ? ' · ' + dealTypeText : ''}</div>
-            <div style="color: #2563eb; font-weight: bold; font-size: 13px;">${formatNumberToKorean(Number(property.price) || 0)}원</div>
-          </div>
-        `;
-        
-        // 정보창 표시
-        infoWindow.setContent(content);
-        infoWindow.open(map, marker);
-      });
+        }, 150);
+      } catch (err) {
+        console.error("PropertyMap: 카카오맵 API 에러 - 재시도", err);
+        setTimeout(initMap, 500);
+      }
     };
 
-    // 각 매물에 대해 좌표 획득 및 마커 생성
-    properties.forEach((property, index) => {
-      getCoordinates(property, index);
+    const loadKakao = () => {
+      if (window.kakao && window.kakao.maps && window.kakao.maps.load) {
+        window.kakao.maps.load(initMap);
+      } else {
+        setTimeout(loadKakao, 200);
+      }
+    };
+
+    loadKakao();
+
+    return () => { isMounted = false; };
+  }, []); // 의존성 없음: 컴포넌트 생애 주기 내 단 1회 실행 보장
+
+  // 2. 매물 마커 렌더링 (데이터 변경 시 엔진을 건드리지 않고 마커만 조작)
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!isInitialized || !map || !properties) return;
+
+    // 기존 마커 즉시 클린업
+    markersRef.current.forEach(m => m.setMap(null));
+    markersRef.current = [];
+
+    const geocoder = new window.kakao.maps.services.Geocoder();
+    const bounds = new window.kakao.maps.LatLngBounds();
+    let isMounted = true;
+    let processedCount = 0;
+
+    if (properties.length === 0) return;
+
+    console.log(`PropertyMap: ${properties.length}개 매물 정보 처리 중...`);
+
+    properties.forEach((property) => {
+      const district = property.district || "";
+      const detailAddress = property.address || "";
+      const query = (district.includes("강화") || district.includes("서울")
+        ? `${district} ${detailAddress}`
+        : `인천광역시 ${district} ${detailAddress}`).trim().replace(/\s+/g, ' ');
+
+      if (query.length > 2) {
+        geocoder.addressSearch(query, (result: any, status: any) => {
+          if (!isMounted || !mapInstanceRef.current) return;
+          processedCount++;
+
+          if (status === window.kakao.maps.services.Status.OK) {
+            const position = new window.kakao.maps.LatLng(result[0].y, result[0].x);
+            const marker = new window.kakao.maps.Marker({
+              map: map,
+              position: position,
+              title: property.title,
+            });
+
+            markersRef.current.push(marker);
+            bounds.extend(position);
+
+            window.kakao.maps.event.addListener(marker, 'click', () => {
+              if (isMounted) {
+                setSelectedProperty(property);
+                const dealTypeText = (property.dealType || []).filter(t => ['매매', '전세', '월세'].includes(t)).join(', ');
+                const content = `
+                  <div style="padding: 10px; min-width: 200px; font-family: 'Malgun Gothic', sans-serif;">
+                    <div style="font-weight: 800; font-size: 15px; margin-bottom: 2px;">${property.title}</div>
+                    <div style="color: #4b5563; font-size: 13px; margin-bottom: 5px;">${property.type}${dealTypeText ? ' · ' + dealTypeText : ''}</div>
+                    <div style="color: #2563eb; font-weight: 800; font-size: 14px;">${formatKoreanPrice(property.price || 0)}</div>
+                  </div>
+                `;
+                infoWindowRef.current?.setContent(content);
+                infoWindowRef.current?.open(map, marker);
+              }
+            });
+          }
+
+          // 비동기 루프 종료 시점 판정
+          if (processedCount === properties.length && !bounds.isEmpty()) {
+            map.setBounds(bounds);
+          }
+        });
+      } else {
+        processedCount++;
+      }
     });
 
-    // 컴포넌트 언마운트 시 마커 제거
     return () => {
-      markers.forEach(marker => marker.setMap(null));
+      isMounted = false;
+      // 마커를 지우는 동작은 렌더링 주기에만 (데이터가 다시 들어오면 자동 클린업됨)
     };
-    
-    } catch (error) {
-      console.error("매물 마커 생성 중 오류 발생:", error);
-      return () => {};
-    }
-  }, [map, properties, infoWindow]);
+  }, [isInitialized, properties]); // properties가 바뀔 때만 마커 리프레시
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-[60vh] bg-gray-100">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+  // 3. 궁합 계산
+  useEffect(() => {
+    if (selectedProperty && sajuData) {
+      const result = getCompatibilityScore(sajuData, {
+        id: selectedProperty.id,
+        direction: selectedProperty.direction || '남향',
+        floor: selectedProperty.floor || 5
+      });
+      setCompatibility(result);
+    } else {
+      setCompatibility(null);
+    }
+  }, [selectedProperty, sajuData]);
+
 
   return (
-    <div className="relative h-[60vh] w-full">
-      <div ref={mapRef} className="w-full h-full"></div>
-      
-      {/* 선택된 매물 정보 패널 */}
+    <div className="relative h-full w-full bg-slate-50 border border-slate-200">
+      {/* 지도 컨테이너 - 항상 존재하도록 하여 인스턴스 파괴 방지 */}
+      <div ref={mapRef} className="w-full h-full" style={{ visibility: isInitialized ? 'visible' : 'hidden' }}></div>
+
+      {/* 로딩 오버레이 */}
+      {(isMapDataLoading || !isInitialized) && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/90 z-20 backdrop-blur-sm">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-slate-200 border-t-primary mb-3"></div>
+          <span className="text-sm text-slate-500 font-bold">지도를 불러오는 중입니다...</span>
+        </div>
+      )}
+
+      {/* 매물 정보 패널 */}
       {selectedProperty && (
-        <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 bg-white rounded-lg shadow-lg p-4 z-10">
-          <button 
-            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
-            onClick={() => setSelectedProperty(null)}
+        <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 bg-white rounded-xl shadow-2xl p-5 z-30 animate-in slide-in-from-bottom-5 border border-slate-200">
+          <button
+            className="absolute top-3 right-3 text-slate-400 hover:text-slate-900 transition-colors p-1"
+            onClick={() => {
+              setSelectedProperty(null);
+              infoWindowRef.current?.close();
+            }}
           >
             ✕
           </button>
-          
+
           <Link href={`/properties/${selectedProperty.id}`}>
-            <h3 className="font-bold text-lg mb-2 hover:text-primary transition-colors">
+            <h3 className="font-extrabold text-lg mb-2 hover:text-primary transition-colors cursor-pointer pr-8 leading-tight">
               {selectedProperty.title}
             </h3>
           </Link>
-          
-          <div className="flex flex-wrap gap-2 mb-2">
-            <Badge variant="outline" className="bg-primary/10 text-primary">
+
+          <div className="flex flex-wrap gap-2 mb-3">
+            <Badge className="bg-primary/10 text-primary border-none text-[11px] px-2 py-0.5 font-bold">
               {selectedProperty.type}
             </Badge>
             {selectedProperty.dealType && Array.isArray(selectedProperty.dealType) && selectedProperty.dealType
               .filter(t => ['매매', '전세', '월세'].includes(t))
               .map((type, idx) => (
-                <Badge 
+                <Badge
                   key={idx}
-                  variant="outline" 
-                  className={`${
-                    type === '매매' ? 'bg-red-100 text-red-800' : 
-                    type === '전세' ? 'bg-amber-100 text-amber-800' : 
-                    type === '월세' ? 'bg-indigo-100 text-indigo-800' : 
-                    'bg-gray-100 text-gray-800'
-                  }`}
+                  className={cn("border-none text-[11px] px-2 py-0.5 font-bold",
+                    type === '매매' ? 'bg-red-50 text-red-600' :
+                      type === '전세' ? 'bg-blue-50 text-blue-600' :
+                        type === '월세' ? 'bg-indigo-50 text-indigo-600' :
+                          'bg-slate-50 text-slate-600'
+                  )}
                 >
                   {type}
                 </Badge>
               ))}
           </div>
-          
-          <div className="grid grid-cols-2 gap-x-2 gap-y-1 mb-3 text-sm">
-            <div className="text-gray-500">지역:</div>
-            <div>{selectedProperty.district}</div>
-            
-            <div className="text-gray-500">면적:</div>
-            <div>
-              {selectedProperty.size} m² 
-              {Number(selectedProperty.size) > 0 && ` (${(Number(selectedProperty.size) * 0.3025).toFixed(1)} 평)`}
-            </div>
-            
-            <div className="text-gray-500">가격:</div>
-            <div className="font-semibold text-primary">
-              {formatNumberToKorean(Number(selectedProperty.price) || 0)}원
-            </div>
+
+          <div className="mb-4 p-4 bg-slate-50 rounded-lg border border-slate-100">
+            {sajuData && compatibility ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-slate-700 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-purple-600" /> 사주 궁합 분석
+                  </span>
+                  <span className={`text-sm font-black ${compatibility.score >= 80 ? 'text-green-600' : compatibility.score >= 50 ? 'text-amber-600' : 'text-red-500'}`}>
+                    {compatibility.score}점
+                  </span>
+                </div>
+                <div className="p-3 bg-purple-50/50 rounded-lg text-xs leading-relaxed text-slate-700 font-medium border border-purple-100/30">
+                  {compatibility.comment}
+                </div>
+                <div className="pt-2 flex gap-3">
+                  <button
+                    className="flex-1 text-[11px] bg-purple-600 text-white font-bold py-1.5 rounded hover:bg-purple-700 transition-colors"
+                    onClick={() => setIsSajuDetailOpen(true)}
+                  >
+                    보고서 보기
+                  </button>
+                  <button
+                    className="flex-1 text-[11px] bg-white text-purple-600 border border-purple-200 font-bold py-1.5 rounded hover:bg-purple-50 transition-colors"
+                    onClick={() => setIsTarotOpen(true)}
+                  >
+                    타로 조언
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div
+                onClick={user ? openSajuModal : undefined}
+                className="flex items-center justify-between cursor-pointer group"
+              >
+                <span className="text-xs text-slate-500 font-bold flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-slate-300 group-hover:text-purple-400 transition-colors" /> 내 운세와 맞을까?
+                </span>
+                {user ? (
+                  <span className="text-[11px] font-black text-purple-600 group-hover:underline">분석하기 &gt;</span>
+                ) : (
+                  <Link href="/auth">
+                    <span className="text-[11px] font-black text-purple-600 group-hover:underline">회원가입 후 확인 &gt;</span>
+                  </Link>
+                )}
+              </div>
+            )}
           </div>
-          
-          <Link 
-            href={`/properties/${selectedProperty.id}`}
-            className="block w-full bg-primary hover:bg-secondary text-white text-center py-2 rounded transition-colors"
-          >
-            상세보기
-          </Link>
+
+          <div className="flex flex-col gap-3">
+            <div className="flex justify-between items-end border-b border-slate-100 pb-2">
+              <span className="text-xs text-slate-400 font-bold">매매가</span>
+              <span className="text-xl font-black text-primary leading-none">
+                {formatKoreanPrice(selectedProperty.price || 0)}
+              </span>
+            </div>
+            <Link href={`/properties/${selectedProperty.id}`} className="w-full">
+              <Button className="w-full h-11 bg-slate-900 hover:bg-black text-white font-black text-sm rounded-lg">
+                상세 정보 확인하기
+              </Button>
+            </Link>
+          </div>
         </div>
       )}
+
+      {/* Modals */}
+      <SajuFormModal />
+      {selectedProperty && (
+        <TarotModal
+          isOpen={isTarotOpen}
+          onClose={() => setIsTarotOpen(false)}
+          propertyTitle={selectedProperty.title}
+        />
+      )}
+      <SajuDetailModal
+        isOpen={isSajuDetailOpen}
+        onClose={() => setIsSajuDetailOpen(false)}
+        sajuData={sajuData}
+      />
     </div>
   );
 };

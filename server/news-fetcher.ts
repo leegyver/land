@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
 import { storage } from './storage';
-import { db } from './db'; // Firestore instance
+
 import { log } from './vite';
 import * as cheerio from 'cheerio';
 
@@ -16,14 +16,19 @@ const REAL_ESTATE_IMAGES = [
   'https://images.unsplash.com/photo-1602941525421-8f8b81d3edbb?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=500'
 ];
 
-// 검색 키워드 목록
 const SEARCH_KEYWORDS = [
-  '강화군',
-  '부동산',
-  '정책',
-  '인천',
-  '개발',
-  '강화도'
+  '강화군 부동산',
+  '강화도 부동산',
+  '강화군 개발',
+  '강화도 전원주택',
+  '강화도 토지',
+  '인천 강화 개발',
+  '강화군 뉴스',
+  '강화군 소식',
+  '강화도 축제',
+  '강화군 교통',
+  '강화군청',
+  '강화도 관광'
 ];
 
 // 검색 키워드 검증용 배열
@@ -89,8 +94,8 @@ function stripHtmlTags(html: string): string {
 
 // 중복 체크 함수 - 정확한 제목 매칭
 async function isNewsAlreadyExists(title: string): Promise<boolean> {
-  const snapshot = await db.collection('news').where('title', '==', title).limit(1).get();
-  return !snapshot.empty;
+  const news = await storage.getNewsByTitle(title);
+  return !!news;
 }
 
 // 전역 중복 방지 집합
@@ -331,10 +336,44 @@ let eveningJobScheduled = false;
 export function setupNewsScheduler() {
   log(`[info] 뉴스 자동 업데이트 스케줄러 초기화`, 'info');
 
-  // 스케줄러 로직 간소화: API 키 없으면 실행 안 함
-  if (!process.env.NAVER_CLIENT_ID) return;
+  if (!process.env.NAVER_CLIENT_ID || !process.env.NAVER_CLIENT_SECRET) {
+    log('[warn] 네이버 API 키가 설정되지 않아 뉴스 자동 수집이 비활성화됩니다.', 'warn');
+    return;
+  }
 
-  // ... (스케줄러 타이머 로직) ...
-  // 일단 한 번 실행
+  // 1. 서버 시작 시 즉시 실행 (최초 데이터 확보용)
   fetchAndSaveNews().catch(err => log(`초기 뉴스 수집 실패: ${err}`, 'error'));
+
+  // 2. 매 분마다 시간 체크하여 8시/17시에 실행
+  // KST 기준 08:00, 17:00에 실행되도록 설정
+  const CHECK_INTERVAL = 60 * 1000; // 1분
+
+  // 중복 실행 방지용 변수 (해당 시간대 실행 여부 체크)
+  let lastRunIdentifier = "";
+
+  setInterval(() => {
+    // 현재 시간을 KST로 변환
+    const now = new Date();
+    const utcNow = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
+    const kstOffset = 9 * 60 * 60 * 1000;
+    const kstDate = new Date(utcNow + kstOffset);
+
+    const currentHour = kstDate.getHours();
+    const currentMinute = kstDate.getMinutes();
+
+    // 실행 조건: 3시간마다 (0시, 3시, 6시 ...), 0분~5분 사이
+    // 한번 실행되면 해당 시간대에는 다시 실행되지 않도록 함
+    if (currentHour % 3 === 0 && currentMinute < 20) {
+      const currentIdentifier = `${kstDate.getFullYear()}-${kstDate.getMonth()}-${kstDate.getDate()}-${currentHour}`;
+
+      if (lastRunIdentifier !== currentIdentifier) {
+        log(`[scheduler] 정기 뉴스 수집 시작 (KST ${currentHour}시 - 3시간 간격)`, 'info');
+        lastRunIdentifier = currentIdentifier;
+
+        fetchAndSaveNews().catch(err => log(`정기 뉴스 수집 실패: ${err}`, 'error'));
+      }
+    }
+  }, CHECK_INTERVAL);
+
+  log(`[info] 뉴스 스케줄러 설정 완료 (매 3시간마다 실행)`, 'info');
 }

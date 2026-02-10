@@ -6,7 +6,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["MaruBuri", "sans-serif"],
+        sans: ["Noto Sans KR", "sans-serif"],
       },
       borderRadius: {
         lg: "var(--radius)",

@@ -1,22 +1,24 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { formatKoreanPrice } from "@/lib/formatter";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getQueryFn, apiRequest } from "@/lib/queryClient";
-import { Property, News, User } from "@shared/schema";
+import { Property, News, User, Banner } from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Loader2, Trash2, RefreshCw, Edit, Plus, Eye, FileSpreadsheet, GripVertical } from "lucide-react";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { ImportFromSheetModal } from "@/components/admin/ImportFromSheetModal";
 import InquiryNotifications from "@/components/admin/InquiryNotifications";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
+import { BannerColumn } from "@/components/admin/BannerColumn";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -42,33 +44,43 @@ export default function AdminPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   // 선택된 항목 관리
   const [selectedProperties, setSelectedProperties] = useState<number[]>([]);
   const [selectedNews, setSelectedNews] = useState<number[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
-  
+
   // 삭제 확인 대화 상자 상태
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [currentDeleteType, setCurrentDeleteType] = useState<'properties' | 'news' | 'users' | null>(null);
-  
+
   // 개별 삭제 확인 대화 상자 상태
   const [isIndividualDeleteOpen, setIsIndividualDeleteOpen] = useState(false);
   const [individualDeleteId, setIndividualDeleteId] = useState<number | null>(null);
   const [individualDeleteType, setIndividualDeleteType] = useState<'property' | 'news' | 'user' | null>(null);
-  
+
   // 데이터 로드를 위한 쿼리 매개변수
   const [skipCache, setSkipCache] = useState(false);
-  
+
   // 필터링 상태 (초기값은 "all"로 모든 항목을 표시)
   const [filterType, setFilterType] = useState<string>("all");
   const [filterDistrict, setFilterDistrict] = useState<string>("all");
   const [filterDealType, setFilterDealType] = useState<string>("all");
   const [filterAgent, setFilterAgent] = useState<string>("all");
-  
+
   // 스프레드시트 가져오기 모달 상태
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  
+
+  // 탭 상태 저장을 위한 로직 (새로고침 해도 유지되도록)
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem("adminActiveTab") || "properties";
+  });
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    localStorage.setItem("adminActiveTab", value);
+  };
+
   // 필터 옵션 - 부동산 등록 폼과 동일하게 설정
   const propertyTypes = [
     { value: "토지", label: "토지" },
@@ -82,7 +94,7 @@ export default function AdminPage() {
     { value: "오피스텔", label: "오피스텔" },
     { value: "기타", label: "기타" },
   ];
-  
+
   const dealTypes = [
     { value: "매매", label: "매매" },
     { value: "전세", label: "전세" },
@@ -90,7 +102,7 @@ export default function AdminPage() {
     { value: "완료", label: "완료" },
     { value: "보류중", label: "보류중" },
   ];
-  
+
   // 지역 필터 - 제공된 정확한 위치 목록 사용
   const districts = [
     { value: "강화읍 갑곳리", label: "강화읍 갑곳리" },
@@ -191,13 +203,13 @@ export default function AdminPage() {
     { value: "화도면 흥왕리", label: "화도면 흥왕리" },
     { value: "기타지역", label: "기타지역" }
   ];
-  
+
   // 최신 부동산 유형 및 거래 유형 배열
   const propertyTypeArray = ["토지", "주택", "아파트연립다세대", "원투룸", "상가공장창고펜션"];
   const dealTypeArray = ["매매", "전세", "월세", "단기임대", "완료", "보류중"];
-  
+
   // 데이터 로드 - 관리자용 모든 매물 조회
-  const { 
+  const {
     data: properties,
     isLoading: isLoadingProperties,
     refetch: refetchProperties
@@ -205,7 +217,7 @@ export default function AdminPage() {
     queryKey: ["/api/admin/properties", skipCache],
     queryFn: getQueryFn({ on401: "throw" })
   });
-  
+
   const {
     data: news,
     isLoading: isLoadingNews,
@@ -214,36 +226,36 @@ export default function AdminPage() {
     queryKey: ["/api/news"],
     queryFn: getQueryFn({ on401: "throw" })
   });
-  
+
   // 간소화된 부동산 필터링 함수
   const filterProperties = (props: Property[]) => {
     if (!props) return [];
-    
+
     // 필터링 로그
     console.log("필터링 적용: ", { filterType, filterDistrict, filterDealType, filterAgent });
-    
+
     return props.filter(property => {
       // 유형 필터
       if (filterType && filterType !== 'all' && property.type !== filterType) {
         return false;
       }
-      
+
       // 지역 필터
       if (filterDistrict && filterDistrict !== 'all' && property.district !== filterDistrict) {
         return false;
       }
-      
+
       // 거래유형 필터 - 간소화된 로직으로 타입 오류 회피
       if (filterDealType && filterDealType !== 'all' && property.dealType) {
         // 배열 케이스만 처리
         try {
           // JSON 문자열인 경우 파싱 시도
-          const dealTypesArray = Array.isArray(property.dealType) 
+          const dealTypesArray = Array.isArray(property.dealType)
             ? property.dealType
             : (typeof property.dealType === 'string' && property.dealType.includes(','))
               ? property.dealType.replace('{', '').replace('}', '').split(',')
               : [property.dealType.toString()];
-              
+
           if (!dealTypesArray.some(type => type.includes(filterDealType))) {
             return false;
           }
@@ -252,22 +264,22 @@ export default function AdminPage() {
           return false;
         }
       }
-      
+
       // 담당중개사 필터
       if (filterAgent && filterAgent !== 'all' && property.agentName !== filterAgent) {
         return false;
       }
-      
+
       return true;
     });
   };
-  
+
   // 담당중개사 목록 추출
   const agentNames = [...new Set(properties?.map(p => p.agentName).filter(Boolean) || [])];
-  
+
   // 필터링된 부동산 목록
   const filteredProperties = filterProperties(properties || []);
-  
+
   const {
     data: users,
     isLoading: isLoadingUsers,
@@ -288,20 +300,42 @@ export default function AdminPage() {
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: user?.role === "admin"
   });
-  
+
+  // 급매물 데이터 조회
+  const {
+    data: urgentProperties,
+    isLoading: isLoadingUrgent,
+    refetch: refetchUrgent
+  } = useQuery<Property[]>({
+    queryKey: ["/api/properties/urgent"],
+    queryFn: getQueryFn({ on401: "throw" }),
+    enabled: user?.role === "admin"
+  });
+
+  // 흥정 매물 데이터 조회
+  const {
+    data: negotiableProperties,
+    isLoading: isLoadingNegotiable,
+    refetch: refetchNegotiable
+  } = useQuery<Property[]>({
+    queryKey: ["/api/properties/negotiable"],
+    queryFn: getQueryFn({ on401: "throw" }),
+    enabled: user?.role === "admin"
+  });
+
   // 데이터 로드 시 선택 초기화
   useEffect(() => {
     setSelectedProperties([]);
   }, [properties]);
-  
+
   useEffect(() => {
     setSelectedNews([]);
   }, [news]);
-  
+
   useEffect(() => {
     setSelectedUsers([]);
   }, [users]);
-  
+
   // 단일 부동산 삭제 뮤테이션
   const deletePropertyMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -323,7 +357,7 @@ export default function AdminPage() {
       });
     },
   });
-  
+
   // 단일 뉴스 삭제 뮤테이션
   const deleteNewsMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -345,7 +379,7 @@ export default function AdminPage() {
       });
     },
   });
-  
+
   // 단일 사용자 삭제 뮤테이션
   const deleteUserMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -440,20 +474,68 @@ export default function AdminPage() {
     },
   });
 
+  // 급매물 토글 뮤테이션
+  const toggleUrgentMutation = useMutation({
+    mutationFn: async ({ propertyId, isUrgent }: { propertyId: number; isUrgent: boolean }) => {
+      const res = await apiRequest("PATCH", `/api/properties/${propertyId}/urgent`, { isUrgent });
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/properties"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/properties/urgent"] });
+      toast({ title: "급매물 상태 변경 성공", description: "상태가 변경되었습니다." });
+    },
+  });
+
+  // 흥정 매물 토글 뮤테이션
+  const toggleNegotiableMutation = useMutation({
+    mutationFn: async ({ propertyId, isNegotiable }: { propertyId: number; isNegotiable: boolean }) => {
+      const res = await apiRequest("PATCH", `/api/properties/${propertyId}/negotiable`, { isNegotiable });
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/properties"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/properties/negotiable"] });
+      toast({ title: "흥정 매물 상태 변경 성공", description: "상태가 변경되었습니다." });
+    },
+  });
+
+  // 급매물 순서 변경 뮤테이션
+  const updateUrgentOrderMutation = useMutation({
+    mutationFn: async ({ propertyId, urgentOrder }: { propertyId: number; urgentOrder: number }) => {
+      const res = await apiRequest("PUT", `/api/properties/${propertyId}/urgent-order`, { urgentOrder });
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/properties/urgent"] });
+    },
+  });
+
+  // 흥정 매물 순서 변경 뮤테이션
+  const updateNegotiableOrderMutation = useMutation({
+    mutationFn: async ({ propertyId, negotiableOrder }: { propertyId: number; negotiableOrder: number }) => {
+      const res = await apiRequest("PUT", `/api/properties/${propertyId}/negotiable-order`, { negotiableOrder });
+      return res;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/properties/negotiable"] });
+    },
+  });
+
   // 추천 매물 드래그앤드롭 핸들러
   const handleDragEnd = (result: any) => {
     if (!result.destination || !featuredProperties) return;
-    
+
     const sourceIndex = result.source.index;
     const destinationIndex = result.destination.index;
-    
+
     if (sourceIndex === destinationIndex) return;
-    
+
     // 배열 재정렬
     const reorderedProperties = Array.from(featuredProperties);
     const [movedProperty] = reorderedProperties.splice(sourceIndex, 1);
     reorderedProperties.splice(destinationIndex, 0, movedProperty);
-    
+
     // 모든 매물의 displayOrder를 새로운 인덱스로 업데이트
     reorderedProperties.forEach((property, index) => {
       if (property.displayOrder !== index) {
@@ -468,7 +550,7 @@ export default function AdminPage() {
   // 일반 매물 드래그앤드롭 핸들러
   const handleAllPropertiesDragEnd = (result: any) => {
     if (!result.destination || !properties) return;
-    
+
     // 필터가 활성화되어 있으면 드래그 차단
     if (filterType !== 'all' || filterDistrict !== 'all' || filterDealType !== 'all' || filterAgent !== 'all') {
       toast({
@@ -478,20 +560,20 @@ export default function AdminPage() {
       });
       return;
     }
-    
+
     const sourceIndex = result.source.index;
     const destinationIndex = result.destination.index;
-    
+
     if (sourceIndex === destinationIndex) return;
-    
+
     // 배열 재정렬
     const reorderedProperties = Array.from(properties);
     const [movedProperty] = reorderedProperties.splice(sourceIndex, 1);
     reorderedProperties.splice(destinationIndex, 0, movedProperty);
-    
+
     // Optimistic update: 즉시 캐시 업데이트
     queryClient.setQueryData(["/api/admin/properties", skipCache], reorderedProperties);
-    
+
     // 모든 매물의 displayOrder를 새로운 인덱스로 업데이트
     reorderedProperties.forEach((property, index) => {
       if (property.displayOrder !== index) {
@@ -501,6 +583,33 @@ export default function AdminPage() {
         });
       }
     });
+  };
+
+  const handleUrgentDragEnd = (result: any) => {
+    if (!result.destination || !urgentProperties) return;
+    const items = Array.from(urgentProperties);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    items.forEach((item, index) => {
+      updateUrgentOrderMutation.mutate({ propertyId: item.id, urgentOrder: index });
+    });
+
+    // Optimistic UI update could be added here
+    queryClient.setQueryData(["/api/properties/urgent"], items);
+  };
+
+  const handleNegotiableDragEnd = (result: any) => {
+    if (!result.destination || !negotiableProperties) return;
+    const items = Array.from(negotiableProperties);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    items.forEach((item, index) => {
+      updateNegotiableOrderMutation.mutate({ propertyId: item.id, negotiableOrder: index });
+    });
+
+    queryClient.setQueryData(["/api/properties/negotiable"], items);
   };
 
   // 개별 삭제 핸들러 함수들
@@ -528,7 +637,7 @@ export default function AdminPage() {
     setIndividualDeleteId(null);
     setIndividualDeleteType(null);
   };
-  
+
   // 일괄 삭제 뮤테이션
   const batchDeleteMutation = useMutation({
     mutationFn: async ({ type, ids }: { type: 'properties' | 'news' | 'users', ids: number[] }) => {
@@ -545,7 +654,7 @@ export default function AdminPage() {
       } else if (currentDeleteType === 'users') {
         queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       }
-      
+
       // 선택 초기화
       if (currentDeleteType === 'properties') {
         setSelectedProperties([]);
@@ -554,12 +663,12 @@ export default function AdminPage() {
       } else if (currentDeleteType === 'users') {
         setSelectedUsers([]);
       }
-      
+
       toast({
         title: "일괄 삭제 성공",
         description: "선택한 항목이 성공적으로 삭제되었습니다.",
       });
-      
+
       // 모달 닫기
       setIsDeleteAlertOpen(false);
       setCurrentDeleteType(null);
@@ -570,13 +679,13 @@ export default function AdminPage() {
         description: error.message,
         variant: "destructive",
       });
-      
+
       // 모달 닫기
       setIsDeleteAlertOpen(false);
       setCurrentDeleteType(null);
     },
   });
-  
+
   // 뉴스 업데이트 뮤테이션
   const updateNewsMutation = useMutation({
     mutationFn: async () => {
@@ -598,7 +707,7 @@ export default function AdminPage() {
       });
     },
   });
-  
+
   // 다중 선택 핸들러
   const handleSelectProperty = (id: number, checked: boolean) => {
     if (checked) {
@@ -607,7 +716,7 @@ export default function AdminPage() {
       setSelectedProperties(selectedProperties.filter(propId => propId !== id));
     }
   };
-  
+
   const handleSelectNews = (id: number, checked: boolean) => {
     if (checked) {
       setSelectedNews([...selectedNews, id]);
@@ -615,7 +724,7 @@ export default function AdminPage() {
       setSelectedNews(selectedNews.filter(newsId => newsId !== id));
     }
   };
-  
+
   const handleSelectUser = (id: number, checked: boolean) => {
     if (checked) {
       setSelectedUsers([...selectedUsers, id]);
@@ -623,7 +732,7 @@ export default function AdminPage() {
       setSelectedUsers(selectedUsers.filter(userId => userId !== id));
     }
   };
-  
+
   // 전체 선택 핸들러
   const handleSelectAllProperties = (checked: boolean) => {
     if (checked && filteredProperties.length > 0) {
@@ -632,7 +741,7 @@ export default function AdminPage() {
       setSelectedProperties([]);
     }
   };
-  
+
   const handleSelectAllNews = (checked: boolean) => {
     if (checked && news) {
       setSelectedNews(news.map(n => n.id));
@@ -640,7 +749,7 @@ export default function AdminPage() {
       setSelectedNews([]);
     }
   };
-  
+
   const handleSelectAllUsers = (checked: boolean) => {
     if (checked && users) {
       setSelectedUsers(users.map(u => u.id));
@@ -648,20 +757,20 @@ export default function AdminPage() {
       setSelectedUsers([]);
     }
   };
-  
+
   // 삭제 확인 모달 열기
   const openDeleteConfirm = (type: 'properties' | 'news' | 'users') => {
     setCurrentDeleteType(type);
     setIsDeleteAlertOpen(true);
   };
-  
+
   // 일괄 삭제 실행
   const handleBatchDelete = () => {
     if (!currentDeleteType) return;
-    
+
     console.log(`handleBatchDelete 호출: currentDeleteType=${currentDeleteType}`);
     console.log(`selectedProperties:`, selectedProperties);
-    
+
     switch (currentDeleteType) {
       case 'properties':
         if (selectedProperties.length === 0) {
@@ -675,7 +784,7 @@ export default function AdminPage() {
         console.log(`삭제할 부동산 IDs: ${selectedProperties.join(', ')}`);
         batchDeleteMutation.mutate({ type: 'properties', ids: [...selectedProperties] });
         break;
-        
+
       case 'news':
         if (selectedNews.length === 0) {
           toast({
@@ -687,7 +796,7 @@ export default function AdminPage() {
         }
         batchDeleteMutation.mutate({ type: 'news', ids: selectedNews });
         break;
-        
+
       case 'users':
         if (selectedUsers.length === 0) {
           toast({
@@ -701,7 +810,7 @@ export default function AdminPage() {
         break;
     }
   };
-  
+
   // 페이지 렌더링 시 재로드
   useEffect(() => {
     if (skipCache) {
@@ -711,18 +820,22 @@ export default function AdminPage() {
       setSkipCache(false);
     }
   }, [skipCache, refetchProperties, refetchNews, refetchUsers]);
-  
+
   const handleRefreshClick = () => {
     setSkipCache(true);
   };
-  
+
   return (
     <div className="container mx-auto py-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">관리자 대시보드</h1>
-        <p className="text-gray-500">부동산, 뉴스, 사용자를 관리할 수 있습니다.</p>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">관리자 페이지</h1>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => window.location.href = '/'}>
+            홈으로
+          </Button>
+        </div>
       </div>
-      
+
       <div className="mb-4 flex justify-end items-center gap-2">
         <InquiryNotifications />
         <Button variant="outline" onClick={handleRefreshClick}>
@@ -730,13 +843,16 @@ export default function AdminPage() {
           새로고침
         </Button>
       </div>
-      
-      <Tabs defaultValue="properties">
-        <TabsList className="mb-4">
-          <TabsTrigger value="properties">부동산</TabsTrigger>
+
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full space-y-6">
+        <TabsList className="grid w-full grid-cols-5 bg-gray-100 p-1">
+          <TabsTrigger value="properties">부동산 매물 관리</TabsTrigger>
+          <TabsTrigger value="urgent">급매물 순서</TabsTrigger>
+          <TabsTrigger value="negotiable">흥정 매물 순서</TabsTrigger>
           <TabsTrigger value="featured">추천 매물 순서</TabsTrigger>
-          <TabsTrigger value="news">뉴스</TabsTrigger>
-          <TabsTrigger value="users">사용자</TabsTrigger>
+          <TabsTrigger value="banners">배너 관리</TabsTrigger>
+          <TabsTrigger value="news">뉴스 관리</TabsTrigger>
+          <TabsTrigger value="users">사용자 관리</TabsTrigger>
         </TabsList>
 
         {/* 부동산 탭 */}
@@ -746,23 +862,23 @@ export default function AdminPage() {
               <h2 className="text-xl font-bold">부동산 관리</h2>
               <div className="flex space-x-2">
                 {selectedProperties.length > 0 && (
-                  <Button 
-                    variant="destructive" 
+                  <Button
+                    variant="destructive"
                     onClick={() => openDeleteConfirm('properties')}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     선택 삭제 ({selectedProperties.length})
                   </Button>
                 )}
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="border-blue-500 text-blue-500 hover:bg-blue-50 mr-2"
                   onClick={() => setIsImportModalOpen(true)}
                 >
                   <FileSpreadsheet className="h-4 w-4 mr-2" />
                   스프레드시트에서 가져오기
                 </Button>
-                <a 
+                <a
                   href="/admin/properties/new"
                   className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md inline-flex items-center"
                 >
@@ -771,7 +887,7 @@ export default function AdminPage() {
                 </a>
               </div>
             </div>
-            
+
             {/* 필터 UI */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
               <div>
@@ -790,7 +906,7 @@ export default function AdminPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium mb-1">지역</label>
                 <Select value={filterDistrict} onValueChange={setFilterDistrict}>
@@ -807,7 +923,7 @@ export default function AdminPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium mb-1">거래 유형</label>
                 <Select value={filterDealType} onValueChange={setFilterDealType}>
@@ -824,7 +940,7 @@ export default function AdminPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium mb-1">담당중개사</label>
                 <Select value={filterAgent} onValueChange={setFilterAgent}>
@@ -842,7 +958,7 @@ export default function AdminPage() {
                 </Select>
               </div>
             </div>
-            
+
             {isLoadingProperties ? (
               <div className="flex justify-center py-10">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -854,163 +970,187 @@ export default function AdminPage() {
                   <>
                     <DragDropContext onDragEnd={handleAllPropertiesDragEnd}>
                       <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[40px]">
-                            <GripVertical className="h-4 w-4 text-gray-400" />
-                          </TableHead>
-                        <TableHead className="w-[40px]">
-                          <Checkbox 
-                            checked={filteredProperties && filteredProperties.length > 0 && selectedProperties.length === filteredProperties.length}
-                            onCheckedChange={handleSelectAllProperties}
-                          />
-                        </TableHead>
-                        <TableHead className="w-[80px]">번호</TableHead>
-                        <TableHead className="min-w-[200px]">제목/이미지</TableHead>
-                        <TableHead className="w-[120px]">유형</TableHead>
-                        <TableHead className="min-w-[150px]">위치</TableHead>
-                        <TableHead className="w-[120px]">가격</TableHead>
-                        <TableHead className="w-[100px]">거래유형</TableHead>
-                        <TableHead className="w-[100px]">추천매물</TableHead>
-                        <TableHead className="w-[100px]">노출상태</TableHead>
-                        <TableHead className="w-[100px]">작업</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <Droppable droppableId="all-properties">
-                      {(provided) => (
-                        <TableBody ref={provided.innerRef} {...provided.droppableProps}>
-                          {!filteredProperties || filteredProperties.length === 0 ? (
-                            <TableRow>
-                              <TableCell colSpan={10} className="text-center py-4">
-                                {properties && properties.length > 0 
-                                  ? "필터링 조건에 맞는 부동산이 없습니다." 
-                                  : "등록된 부동산이 없습니다."}
-                              </TableCell>
-                            </TableRow>
-                          ) : (
-                            <>
-                              {filteredProperties.map((property, index) => (
-                                <Draggable key={property.id} draggableId={property.id.toString()} index={index}>
-                                  {(provided, snapshot) => (
-                                    <TableRow 
-                                      ref={provided.innerRef}
-                                      {...provided.draggableProps}
-                                      className={snapshot.isDragging ? 'bg-gray-50' : ''}
-                                    >
-                                      <TableCell {...provided.dragHandleProps}>
-                                        <GripVertical className="h-4 w-4 text-gray-400 cursor-grab active:cursor-grabbing" />
-                                      </TableCell>
-                                      <TableCell>
-                                        <Checkbox 
-                                          checked={selectedProperties.includes(property.id)}
-                                          onCheckedChange={(checked) => 
-                                            handleSelectProperty(property.id, checked === true)
-                                          }
-                                        />
-                                      </TableCell>
-                                      <TableCell>{property.id}</TableCell>
-                                      <TableCell>
-                                        <div className="flex items-center gap-3">
-                                          {property.imageUrls && property.imageUrls.length > 0 ? (
-                                            <div className="relative w-16 aspect-[16/9] overflow-hidden rounded">
-                                              <img 
-                                                src={property.imageUrls[0]} 
-                                                alt={property.title} 
-                                                className="h-full w-full object-cover"
-                                              />
-                                              {property.imageUrls.length > 1 && (
-                                                <span className="absolute bottom-0 right-0 bg-black/50 text-white text-xs px-1">
-                                                  +{property.imageUrls.length - 1}
-                                                </span>
-                                              )}
-                                            </div>
-                                          ) : (
-                                            <div className="w-16 aspect-[16/9] bg-gray-200 rounded flex items-center justify-center">
-                                              <span className="text-gray-400 text-xs">No Image</span>
-                                            </div>
-                                          )}
-                                          <div>
-                                            <div className="font-medium">{property.title}</div>
-                                            <div className="text-xs text-gray-500 truncate max-w-[200px]">
-                                              {property.description}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </TableCell>
-                                      <TableCell>{property.type}</TableCell>
-                                      <TableCell>
-                                        <div className="truncate max-w-[150px]">{property.district} {property.address}</div>
-                                      </TableCell>
-                                      <TableCell>{property.price}</TableCell>
-                                      <TableCell>
-                                        <div className="flex flex-wrap gap-1">
-                                          <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-primary text-primary whitespace-nowrap">
-                                            {property.type}
-                                          </Badge>
-                                        </div>
-                                      </TableCell>
-                                      <TableCell>
-                                        <Checkbox
-                                          checked={property.featured}
-                                          onCheckedChange={(checked) => {
-                                            toggleFeaturedMutation.mutate({
-                                              propertyId: property.id,
-                                              featured: checked === true
-                                            });
-                                          }}
-                                        />
-                                      </TableCell>
-                                      <TableCell>
-                                        <Button
-                                          size="sm"
-                                          variant={property.isVisible ? "default" : "secondary"}
-                                          onClick={() => 
-                                            toggleVisibilityMutation.mutate({
-                                              propertyId: property.id,
-                                              isVisible: !property.isVisible
-                                            })
-                                          }
-                                          disabled={toggleVisibilityMutation.isPending}
-                                          className="text-xs"
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[40px]">
+                              <GripVertical className="h-4 w-4 text-gray-400" />
+                            </TableHead>
+                            <TableHead className="w-[40px]">
+                              <Checkbox
+                                checked={filteredProperties && filteredProperties.length > 0 && selectedProperties.length === filteredProperties.length}
+                                onCheckedChange={handleSelectAllProperties}
+                              />
+                            </TableHead>
+                            <TableHead className="w-[80px]">번호</TableHead>
+                            <TableHead className="min-w-[200px]">제목/이미지</TableHead>
+                            <TableHead className="w-[120px]">유형</TableHead>
+                            <TableHead className="min-w-[150px]">위치</TableHead>
+                            <TableHead className="w-[120px]">가격</TableHead>
+                            <TableHead className="w-[80px]">급매</TableHead>
+                            <TableHead className="w-[80px]">흥정</TableHead>
+                            <TableHead className="w-[100px]">추천매물</TableHead>
+                            <TableHead className="w-[100px]">노출상태</TableHead>
+                            <TableHead className="w-[100px]">작업</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <Droppable droppableId="all-properties">
+                          {(provided) => (
+                            <TableBody ref={provided.innerRef} {...provided.droppableProps}>
+                              {!filteredProperties || filteredProperties.length === 0 ? (
+                                <TableRow>
+                                  <TableCell colSpan={10} className="text-center py-4">
+                                    {properties && properties.length > 0
+                                      ? "필터링 조건에 맞는 부동산이 없습니다."
+                                      : "등록된 부동산이 없습니다."}
+                                  </TableCell>
+                                </TableRow>
+                              ) : (
+                                <>
+                                  {filteredProperties.map((property, index) => (
+                                    <Draggable key={property.id} draggableId={property.id.toString()} index={index}>
+                                      {(provided, snapshot) => (
+                                        <TableRow
+                                          ref={provided.innerRef}
+                                          {...provided.draggableProps}
+                                          className={snapshot.isDragging ? 'bg-gray-50' : ''}
                                         >
-                                          {property.isVisible ? "노출" : "미노출"}
-                                        </Button>
-                                      </TableCell>
-                                      <TableCell>
-                                        <div className="flex space-x-1">
-                                          <a 
-                                            href={`/properties/${property.id}`} 
-                                            className="p-2 text-gray-500 hover:text-primary"
-                                            title="보기"
-                                          >
-                                            <Eye className="h-4 w-4" />
-                                          </a>
-                                          <a 
-                                            href={`/admin/properties/edit/${property.id}`} 
-                                            className="p-2 text-gray-500 hover:text-primary"
-                                            title="수정"
-                                          >
-                                            <Edit className="h-4 w-4" />
-                                          </a>
-                                          <button 
-                                            onClick={() => handleIndividualDelete(property.id, 'property')}
-                                            className="p-2 text-gray-500 hover:text-red-500"
-                                            title="삭제"
-                                          >
-                                            <Trash2 className="h-4 w-4" />
-                                          </button>
-                                        </div>
-                                      </TableCell>
-                                    </TableRow>
-                                  )}
-                                </Draggable>
-                              ))}
-                              {provided.placeholder}
-                            </>
+                                          <TableCell {...provided.dragHandleProps}>
+                                            <GripVertical className="h-4 w-4 text-gray-400 cursor-grab active:cursor-grabbing" />
+                                          </TableCell>
+                                          <TableCell>
+                                            <Checkbox
+                                              checked={selectedProperties.includes(property.id)}
+                                              onCheckedChange={(checked) =>
+                                                handleSelectProperty(property.id, checked === true)
+                                              }
+                                            />
+                                          </TableCell>
+                                          <TableCell>{property.id}</TableCell>
+                                          <TableCell>
+                                            <div className="flex items-center gap-3">
+                                              {property.imageUrls && property.imageUrls.length > 0 ? (
+                                                <div className="relative w-16 aspect-[16/9] overflow-hidden rounded">
+                                                  <img
+                                                    src={property.imageUrls[0]}
+                                                    alt={property.title}
+                                                    className="h-full w-full object-cover"
+                                                  />
+                                                  {property.imageUrls.length > 1 && (
+                                                    <span className="absolute bottom-0 right-0 bg-black/50 text-white text-xs px-1">
+                                                      +{property.imageUrls.length - 1}
+                                                    </span>
+                                                  )}
+                                                </div>
+                                              ) : (
+                                                <div className="w-16 aspect-[16/9] bg-gray-200 rounded flex items-center justify-center">
+                                                  <span className="text-gray-400 text-xs">No Image</span>
+                                                </div>
+                                              )}
+                                              <div>
+                                                <div className="font-medium">{property.title}</div>
+                                                <div className="text-xs text-gray-500 truncate max-w-[200px]">
+                                                  {property.description}
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </TableCell>
+                                          <TableCell>{property.type}</TableCell>
+                                          <TableCell>
+                                            <div className="truncate max-w-[150px]">{property.district} {property.address}</div>
+                                          </TableCell>
+                                          <TableCell>{formatKoreanPrice(property.price)}</TableCell>
+                                          <TableCell>
+                                            <Checkbox
+                                              checked={property.isUrgent}
+                                              onCheckedChange={(checked) => {
+                                                if (checked === true && (urgentProperties?.length || 0) >= 4) {
+                                                  alert("선택할수 있는 개수가 초과되었습니다");
+                                                  return;
+                                                }
+                                                toggleUrgentMutation.mutate({
+                                                  propertyId: property.id,
+                                                  isUrgent: checked === true
+                                                });
+                                              }}
+                                            />
+                                          </TableCell>
+                                          <TableCell>
+                                            <Checkbox
+                                              checked={property.isNegotiable}
+                                              onCheckedChange={(checked) => {
+                                                if (checked === true && (negotiableProperties?.length || 0) >= 4) {
+                                                  alert("선택할수 있는 개수가 초과되었습니다");
+                                                  return;
+                                                }
+                                                toggleNegotiableMutation.mutate({
+                                                  propertyId: property.id,
+                                                  isNegotiable: checked === true
+                                                });
+                                              }}
+                                            />
+                                          </TableCell>
+                                          <TableCell>
+                                            <Checkbox
+                                              checked={property.featured}
+                                              onCheckedChange={(checked) => {
+                                                toggleFeaturedMutation.mutate({
+                                                  propertyId: property.id,
+                                                  featured: checked === true
+                                                });
+                                              }}
+                                            />
+                                          </TableCell>
+                                          <TableCell>
+                                            <Button
+                                              size="sm"
+                                              variant={property.isVisible ? "default" : "secondary"}
+                                              onClick={() =>
+                                                toggleVisibilityMutation.mutate({
+                                                  propertyId: property.id,
+                                                  isVisible: !property.isVisible
+                                                })
+                                              }
+                                              disabled={toggleVisibilityMutation.isPending}
+                                              className="text-xs"
+                                            >
+                                              {property.isVisible ? "노출" : "미노출"}
+                                            </Button>
+                                          </TableCell>
+                                          <TableCell>
+                                            <div className="flex space-x-1">
+                                              <a
+                                                href={`/properties/${property.id}`}
+                                                className="p-2 text-gray-500 hover:text-primary"
+                                                title="보기"
+                                              >
+                                                <Eye className="h-4 w-4" />
+                                              </a>
+                                              <a
+                                                href={`/admin/properties/edit/${property.id}`}
+                                                className="p-2 text-gray-500 hover:text-primary"
+                                                title="수정"
+                                              >
+                                                <Edit className="h-4 w-4" />
+                                              </a>
+                                              <button
+                                                onClick={() => handleIndividualDelete(property.id, 'property')}
+                                                className="p-2 text-gray-500 hover:text-red-500"
+                                                title="삭제"
+                                              >
+                                                <Trash2 className="h-4 w-4" />
+                                              </button>
+                                            </div>
+                                          </TableCell>
+                                        </TableRow>
+                                      )}
+                                    </Draggable>
+                                  ))}
+                                  {provided.placeholder}
+                                </>
+                              )}
+                            </TableBody>
                           )}
-                        </TableBody>
-                      )}
-                    </Droppable>
+                        </Droppable>
                       </Table>
                     </DragDropContext>
                   </>
@@ -1023,7 +1163,7 @@ export default function AdminPage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead className="w-[40px]">
-                            <Checkbox 
+                            <Checkbox
                               checked={filteredProperties && filteredProperties.length > 0 && selectedProperties.length === filteredProperties.length}
                               onCheckedChange={handleSelectAllProperties}
                             />
@@ -1033,8 +1173,9 @@ export default function AdminPage() {
                           <TableHead className="w-[120px]">유형</TableHead>
                           <TableHead className="min-w-[150px]">위치</TableHead>
                           <TableHead className="w-[120px]">가격</TableHead>
-                          <TableHead className="w-[100px]">거래유형</TableHead>
-                          <TableHead className="w-[100px]">추천매물</TableHead>
+                          <TableHead className="w-[80px]">급매</TableHead>
+                          <TableHead className="w-[80px]">흥정</TableHead>
+                          <TableHead className="w-[80px]">추천</TableHead>
                           <TableHead className="w-[100px]">노출상태</TableHead>
                           <TableHead className="w-[100px]">작업</TableHead>
                         </TableRow>
@@ -1043,8 +1184,8 @@ export default function AdminPage() {
                         {!filteredProperties || filteredProperties.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={10} className="text-center py-4">
-                              {properties && properties.length > 0 
-                                ? "필터링 조건에 맞는 부동산이 없습니다." 
+                              {properties && properties.length > 0
+                                ? "필터링 조건에 맞는 부동산이 없습니다."
                                 : "등록된 부동산이 없습니다."}
                             </TableCell>
                           </TableRow>
@@ -1052,9 +1193,9 @@ export default function AdminPage() {
                           filteredProperties.map((property) => (
                             <TableRow key={property.id}>
                               <TableCell>
-                                <Checkbox 
+                                <Checkbox
                                   checked={selectedProperties.includes(property.id)}
-                                  onCheckedChange={(checked) => 
+                                  onCheckedChange={(checked) =>
                                     handleSelectProperty(property.id, checked === true)
                                   }
                                 />
@@ -1064,9 +1205,9 @@ export default function AdminPage() {
                                 <div className="flex items-center gap-3">
                                   {property.imageUrls && property.imageUrls.length > 0 ? (
                                     <div className="relative w-16 aspect-[16/9] overflow-hidden rounded">
-                                      <img 
-                                        src={property.imageUrls[0]} 
-                                        alt={property.title} 
+                                      <img
+                                        src={property.imageUrls[0]}
+                                        alt={property.title}
                                         className="h-full w-full object-cover"
                                       />
                                       {property.imageUrls.length > 1 && (
@@ -1092,20 +1233,46 @@ export default function AdminPage() {
                               <TableCell>
                                 <div className="truncate max-w-[150px]">{property.district} {property.address}</div>
                               </TableCell>
-                              <TableCell>{property.price}</TableCell>
+                              <TableCell>{formatKoreanPrice(property.price)}</TableCell>
+
                               <TableCell>
-                                <div className="flex flex-wrap gap-1">
-                                  <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-primary text-primary whitespace-nowrap">
-                                    {property.type}
-                                  </Badge>
-                                </div>
+                                <Checkbox
+                                  checked={property.isUrgent}
+                                  onCheckedChange={(checked) => {
+                                    if (checked === true && (urgentProperties?.length || 0) >= 4) {
+                                      alert("선택할수 있는 개수가 초과되었습니다");
+                                      return;
+                                    }
+                                    toggleUrgentMutation.mutate({
+                                      propertyId: property.id,
+                                      isUrgent: checked === true
+                                    });
+                                  }}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Checkbox
+                                  checked={property.isNegotiable}
+                                  onCheckedChange={(checked) => {
+                                    if (checked === true && (negotiableProperties?.length || 0) >= 4) {
+                                      alert("선택할수 있는 개수가 초과되었습니다");
+                                      return;
+                                    }
+                                    toggleNegotiableMutation.mutate({
+                                      propertyId: property.id,
+                                      isNegotiable: checked === true
+                                    });
+                                  }}
+                                />
                               </TableCell>
                               <TableCell>
                                 <Checkbox
                                   checked={property.featured}
                                   onCheckedChange={(checked) => {
-                                    // TODO: featured 토글 mutation 추가
-                                    console.log('Toggle featured:', property.id, checked);
+                                    toggleFeaturedMutation.mutate({
+                                      propertyId: property.id,
+                                      featured: checked === true
+                                    });
                                   }}
                                 />
                               </TableCell>
@@ -1113,7 +1280,7 @@ export default function AdminPage() {
                                 <Button
                                   size="sm"
                                   variant={property.isVisible ? "default" : "secondary"}
-                                  onClick={() => 
+                                  onClick={() =>
                                     toggleVisibilityMutation.mutate({
                                       propertyId: property.id,
                                       isVisible: !property.isVisible
@@ -1127,21 +1294,21 @@ export default function AdminPage() {
                               </TableCell>
                               <TableCell>
                                 <div className="flex space-x-1">
-                                  <a 
-                                    href={`/properties/${property.id}`} 
+                                  <a
+                                    href={`/properties/${property.id}`}
                                     className="p-2 text-gray-500 hover:text-primary"
                                     title="보기"
                                   >
                                     <Eye className="h-4 w-4" />
                                   </a>
-                                  <a 
-                                    href={`/admin/properties/edit/${property.id}`} 
+                                  <a
+                                    href={`/admin/properties/edit/${property.id}`}
                                     className="p-2 text-gray-500 hover:text-primary"
                                     title="수정"
                                   >
                                     <Edit className="h-4 w-4" />
                                   </a>
-                                  <button 
+                                  <button
                                     onClick={() => handleIndividualDelete(property.id, 'property')}
                                     className="p-2 text-gray-500 hover:text-red-500"
                                     title="삭제"
@@ -1162,6 +1329,154 @@ export default function AdminPage() {
           </div>
         </TabsContent>
 
+        {/* 급매물 순서 관리 탭 */}
+        <TabsContent value="urgent">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">급매물 순서 관리</h2>
+              <p className="text-sm text-gray-500">드래그하여 순서를 변경하세요 (최대 4개 표시)</p>
+            </div>
+
+            {isLoadingUrgent ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <DragDropContext onDragEnd={handleUrgentDragEnd}>
+                <Droppable droppableId="urgent-list">
+                  {(provided) => (
+                    <div
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      className="space-y-3"
+                    >
+                      {urgentProperties && urgentProperties.map((property, index) => (
+                        <Draggable key={property.id} draggableId={property.id.toString()} index={index}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={`bg-white border rounded-lg p-4 flex items-center space-x-4 transition-shadow ${snapshot.isDragging ? 'shadow-lg' : 'shadow-sm hover:shadow-md'
+                                }`}
+                            >
+                              <div
+                                {...provided.dragHandleProps}
+                                className="text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing"
+                              >
+                                <GripVertical className="h-5 w-5" />
+                              </div>
+
+                              <div className="flex-shrink-0 w-16 aspect-[16/9] bg-gray-200 rounded-lg overflow-hidden">
+                                {property.imageUrls && property.imageUrls.length > 0 ? (
+                                  <img
+                                    src={property.imageUrls[0]}
+                                    alt={property.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                    <Eye className="h-6 w-6" />
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-medium text-lg truncate mb-1">{property.title}</h3>
+                                <div className="flex items-center space-x-4 text-sm text-gray-500">
+                                  <span>{property.type}</span>
+                                  <span>{property.district}</span>
+                                  <span className="font-medium text-primary">
+                                    {formatKoreanPrice(property.price)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* 흥정 매물 순서 관리 탭 */}
+        <TabsContent value="negotiable">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">흥정 매물 순서 관리</h2>
+              <p className="text-sm text-gray-500">드래그하여 순서를 변경하세요 (최대 4개 표시)</p>
+            </div>
+
+            {isLoadingNegotiable ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <DragDropContext onDragEnd={handleNegotiableDragEnd}>
+                <Droppable droppableId="negotiable-list">
+                  {(provided) => (
+                    <div
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      className="space-y-3"
+                    >
+                      {negotiableProperties && negotiableProperties.map((property, index) => (
+                        <Draggable key={property.id} draggableId={property.id.toString()} index={index}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              className={`bg-white border rounded-lg p-4 flex items-center space-x-4 transition-shadow ${snapshot.isDragging ? 'shadow-lg' : 'shadow-sm hover:shadow-md'
+                                }`}
+                            >
+                              <div
+                                {...provided.dragHandleProps}
+                                className="text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing"
+                              >
+                                <GripVertical className="h-5 w-5" />
+                              </div>
+
+                              <div className="flex-shrink-0 w-16 aspect-[16/9] bg-gray-200 rounded-lg overflow-hidden">
+                                {property.imageUrls && property.imageUrls.length > 0 ? (
+                                  <img
+                                    src={property.imageUrls[0]}
+                                    alt={property.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                    <Eye className="h-6 w-6" />
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-medium text-lg truncate mb-1">{property.title}</h3>
+                                <div className="flex items-center space-x-4 text-sm text-gray-500">
+                                  <span>{property.type}</span>
+                                  <span>{property.district}</span>
+                                  <span className="font-medium text-primary">
+                                    {formatKoreanPrice(property.price)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
+            )}
+          </div>
+        </TabsContent>
+
         {/* 추천 매물 순서 관리 탭 */}
         <TabsContent value="featured">
           <div className="bg-white rounded-lg shadow p-6">
@@ -1169,7 +1484,7 @@ export default function AdminPage() {
               <h2 className="text-xl font-bold">추천 매물 순서 관리</h2>
               <p className="text-sm text-gray-500">드래그하여 순서를 변경하세요</p>
             </div>
-            
+
             {isLoadingFeatured ? (
               <div className="flex justify-center py-10">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -1188,15 +1503,14 @@ export default function AdminPage() {
                       ref={provided.innerRef}
                       className="space-y-3"
                     >
-                      {featuredProperties.map((property, index) => (
+                      {featuredProperties.slice(0, 4).map((property, index) => (
                         <Draggable key={property.id} draggableId={property.id.toString()} index={index}>
                           {(provided, snapshot) => (
                             <div
                               ref={provided.innerRef}
                               {...provided.draggableProps}
-                              className={`bg-white border rounded-lg p-4 flex items-center space-x-4 transition-shadow ${
-                                snapshot.isDragging ? 'shadow-lg' : 'shadow-sm hover:shadow-md'
-                              }`}
+                              className={`bg-white border rounded-lg p-4 flex items-center space-x-4 transition-shadow ${snapshot.isDragging ? 'shadow-lg' : 'shadow-sm hover:shadow-md'
+                                }`}
                             >
                               <div
                                 {...provided.dragHandleProps}
@@ -1204,12 +1518,12 @@ export default function AdminPage() {
                               >
                                 <GripVertical className="h-5 w-5" />
                               </div>
-                              
+
                               <div className="flex-shrink-0 w-16 aspect-[16/9] bg-gray-200 rounded-lg overflow-hidden">
-                                {property.images && property.images.length > 0 ? (
-                                  <img 
-                                    src={property.images[0]} 
-                                    alt={property.title} 
+                                {property.imageUrls && property.imageUrls.length > 0 ? (
+                                  <img
+                                    src={property.imageUrls[0]}
+                                    alt={property.title}
                                     className="w-full h-full object-cover"
                                   />
                                 ) : (
@@ -1218,25 +1532,25 @@ export default function AdminPage() {
                                   </div>
                                 )}
                               </div>
-                              
+
                               <div className="flex-1 min-w-0">
                                 <h3 className="font-medium text-lg truncate mb-1">{property.title}</h3>
                                 <div className="flex items-center space-x-4 text-sm text-gray-500">
-                                  <span>{property.propertyType}</span>
+                                  <span>{property.type}</span>
                                   <span>{property.district}</span>
                                   <span className="font-medium text-primary">
-                                    {property.price.toLocaleString()}만원
+                                    {formatKoreanPrice(property.price)}
                                   </span>
                                 </div>
                               </div>
-                              
+
                               <div className="flex-shrink-0 text-sm text-gray-500">
                                 순서: {index + 1}
                               </div>
-                              
+
                               <div className="flex-shrink-0">
-                                <a 
-                                  href={`/properties/${property.id}`} 
+                                <a
+                                  href={`/properties/${property.id}`}
                                   className="p-2 text-gray-500 hover:text-primary"
                                   title="보기"
                                 >
@@ -1256,6 +1570,23 @@ export default function AdminPage() {
           </div>
         </TabsContent>
 
+        {/* 배너 관리 탭 */}
+        <TabsContent value="banners">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="mb-6">
+              <h2 className="text-xl font-bold mb-2">메인 배너 관리</h2>
+              <p className="text-gray-500 text-sm">
+                메인 페이지 지도 상단에 표시되는 배너를 관리합니다. (권장 사이즈: 1000x500, 2:1 비율)
+              </p>
+            </div>
+
+            <div className="flex flex-col md:flex-row gap-6">
+              <BannerColumn location="left" title="왼쪽 슬라이더" />
+              <BannerColumn location="right" title="오른쪽 슬라이더" />
+            </div>
+          </div>
+        </TabsContent>
+
         {/* 뉴스 탭 */}
         <TabsContent value="news">
           <div className="bg-white rounded-lg shadow p-6">
@@ -1263,21 +1594,21 @@ export default function AdminPage() {
               <h2 className="text-xl font-bold">뉴스 관리</h2>
               <div className="flex space-x-2">
                 {selectedNews.length > 0 && (
-                  <Button 
-                    variant="destructive" 
+                  <Button
+                    variant="destructive"
                     onClick={() => openDeleteConfirm('news')}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     선택 삭제 ({selectedNews.length})
                   </Button>
                 )}
-                <Button variant="outline" onClick={() => updateNewsMutation.mutate()}>
+                <Button variant="outline" type="button" onClick={(e) => { e.preventDefault(); updateNewsMutation.mutate(); }}>
                   <RefreshCw className="h-4 w-4 mr-2" />
                   뉴스 업데이트
                 </Button>
               </div>
             </div>
-            
+
             {isLoadingNews ? (
               <div className="flex justify-center py-10">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -1288,7 +1619,7 @@ export default function AdminPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-[40px]">
-                        <Checkbox 
+                        <Checkbox
                           checked={news && news.length > 0 && selectedNews.length === news.length}
                           onCheckedChange={handleSelectAllNews}
                         />
@@ -1311,9 +1642,9 @@ export default function AdminPage() {
                       news.map((newsItem) => (
                         <TableRow key={newsItem.id}>
                           <TableCell>
-                            <Checkbox 
+                            <Checkbox
                               checked={selectedNews.includes(newsItem.id)}
-                              onCheckedChange={(checked) => 
+                              onCheckedChange={(checked) =>
                                 handleSelectNews(newsItem.id, checked === true)
                               }
                             />
@@ -1323,9 +1654,9 @@ export default function AdminPage() {
                             <div className="flex items-center gap-3">
                               {newsItem.imageUrl ? (
                                 <div className="w-16 aspect-[16/9] overflow-hidden rounded">
-                                  <img 
-                                    src={newsItem.imageUrl} 
-                                    alt={newsItem.title} 
+                                  <img
+                                    src={newsItem.imageUrl}
+                                    alt={newsItem.title}
                                     className="h-full w-full object-cover"
                                   />
                                 </div>
@@ -1348,14 +1679,14 @@ export default function AdminPage() {
                           </TableCell>
                           <TableCell>
                             <div className="flex space-x-1">
-                              <a 
-                                href={`/news/${newsItem.id}`} 
+                              <a
+                                href={`/news/${newsItem.id}`}
                                 className="p-2 text-gray-500 hover:text-primary"
                                 title="보기"
                               >
                                 <Eye className="h-4 w-4" />
                               </a>
-                              <button 
+                              <button
                                 onClick={() => handleIndividualDelete(newsItem.id, 'news')}
                                 className="p-2 text-gray-500 hover:text-red-500"
                                 title="삭제"
@@ -1380,8 +1711,8 @@ export default function AdminPage() {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">사용자 관리</h2>
               {selectedUsers.length > 0 && (
-                <Button 
-                  variant="destructive" 
+                <Button
+                  variant="destructive"
                   onClick={() => openDeleteConfirm('users')}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
@@ -1389,7 +1720,7 @@ export default function AdminPage() {
                 </Button>
               )}
             </div>
-            
+
             {isLoadingUsers ? (
               <div className="flex justify-center py-10">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -1400,7 +1731,7 @@ export default function AdminPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-[40px]">
-                        <Checkbox 
+                        <Checkbox
                           checked={users && users.length > 0 && selectedUsers.length === users.length}
                           onCheckedChange={handleSelectAllUsers}
                         />
@@ -1409,6 +1740,8 @@ export default function AdminPage() {
                       <TableHead className="min-w-[200px]">사용자명</TableHead>
                       <TableHead className="min-w-[150px]">전화번호</TableHead>
                       <TableHead className="min-w-[200px]">이메일</TableHead>
+                      <TableHead className="w-[120px]">생년월일</TableHead>
+                      <TableHead className="w-[100px]">태어난시간</TableHead>
                       <TableHead className="w-[100px]">역할</TableHead>
                       <TableHead className="w-[100px]">작업</TableHead>
                     </TableRow>
@@ -1416,7 +1749,7 @@ export default function AdminPage() {
                   <TableBody>
                     {!users || users.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-4">
+                        <TableCell colSpan={8} className="text-center py-4">
                           등록된 사용자가 없습니다.
                         </TableCell>
                       </TableRow>
@@ -1424,9 +1757,9 @@ export default function AdminPage() {
                       users.map((user) => (
                         <TableRow key={user.id}>
                           <TableCell>
-                            <Checkbox 
+                            <Checkbox
                               checked={selectedUsers.includes(user.id)}
-                              onCheckedChange={(checked) => 
+                              onCheckedChange={(checked) =>
                                 handleSelectUser(user.id, checked === true)
                               }
                             />
@@ -1434,24 +1767,25 @@ export default function AdminPage() {
                           <TableCell>{user.id}</TableCell>
                           <TableCell>{user.username}</TableCell>
                           <TableCell>
-                            {user.id === 1 ? "010-4787-3120" : 
-                             user.id === 3 ? "01047873120" : 
-                             user.id === 4 ? "미제공" : 
-                             user.phone || "전화번호 없음"}
+                            {user.id === 1 ? "010-4787-3120" :
+                              user.id === 3 ? "01047873120" :
+                                user.id === 4 ? "미제공" :
+                                  user.phone || "전화번호 없음"}
                           </TableCell>
                           <TableCell>{user.email}</TableCell>
+                          <TableCell>{user.birthDate || "-"}</TableCell>
+                          <TableCell>{user.birthTime || "-"}</TableCell>
                           <TableCell>
-                            <span 
-                              className={`text-xs px-2 py-1 rounded ${
-                                user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
-                              }`}
+                            <span
+                              className={`text-xs px-2 py-1 rounded ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                                }`}
                             >
                               {user.role}
                             </span>
                           </TableCell>
                           <TableCell>
                             <div className="flex space-x-1">
-                              <button 
+                              <button
                                 onClick={() => handleIndividualDelete(user.id, 'user')}
                                 className="p-2 text-gray-500 hover:text-red-500"
                                 title="삭제"
@@ -1470,10 +1804,10 @@ export default function AdminPage() {
           </div>
         </TabsContent>
       </Tabs>
-      
+
       {/* 개별 삭제 확인 대화 상자 */}
-      <AlertDialog 
-        open={isIndividualDeleteOpen} 
+      <AlertDialog
+        open={isIndividualDeleteOpen}
         onOpenChange={setIsIndividualDeleteOpen}
       >
         <AlertDialogContent>
@@ -1495,7 +1829,7 @@ export default function AdminPage() {
             }}>
               취소
             </AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={confirmIndividualDelete}
               className="bg-red-600 hover:bg-red-700"
             >
@@ -1504,10 +1838,10 @@ export default function AdminPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
+
       {/* 일괄 삭제 확인 대화 상자 */}
-      <AlertDialog 
-        open={isDeleteAlertOpen} 
+      <AlertDialog
+        open={isDeleteAlertOpen}
         onOpenChange={setIsDeleteAlertOpen}
       >
         <AlertDialogContent>
@@ -1523,7 +1857,7 @@ export default function AdminPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>취소</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleBatchDelete}
               className="bg-red-500 hover:bg-red-600"
             >
@@ -1532,12 +1866,12 @@ export default function AdminPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
+
       {/* 스프레드시트에서 데이터 가져오기 모달 */}
-      <ImportFromSheetModal 
-        isOpen={isImportModalOpen} 
-        onClose={() => setIsImportModalOpen(false)} 
+      <ImportFromSheetModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
       />
-    </div>
+    </div >
   );
 }

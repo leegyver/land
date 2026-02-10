@@ -27,7 +27,7 @@ export default defineConfig(async ({ mode }) => {
           }
           return html.replace(
             "<!-- %KAKAO_MAP_SCRIPT% -->",
-            `<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoKey}&libraries=services"></script>`
+            `<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoKey}&libraries=services&autoload=false"></script>`
           );
         },
       },

@@ -19,9 +19,9 @@ const FeaturedProperties = () => {
               <Skeleton className="h-6 w-full" />
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[...Array(6)].map((_, index) => (
-              <div key={index} className="bg-white rounded-lg overflow-hidden shadow-md">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[...Array(4)].map((_, index) => (
+              <div key={index} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200">
                 <Skeleton className="h-60 w-full" />
                 <div className="p-6">
                   <Skeleton className="h-6 w-3/4 mb-2" />
@@ -58,16 +58,13 @@ const FeaturedProperties = () => {
   }
 
   return (
-    <section id="properties" className="py-2">
+    <section id="properties" className="pt-3 pb-0">
       <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-xl font-bold">추천 매물</h2>
-          <Link href="/properties" className="text-primary font-medium hover:text-secondary">
-            모든매물보기 <span aria-hidden="true">→</span>
-          </Link>
+        <div className="text-left mb-2">
+          <h2 className="text-2xl font-bold text-slate-900">추천 매물</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {properties && properties.map((property) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {properties && properties.slice(0, 4).map((property) => (
             <PropertyCard key={property.id} property={property} />
           ))}
         </div>

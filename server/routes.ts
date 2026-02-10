@@ -3,13 +3,18 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { db } from "./db";
+import multer from "multer";
+import fs from "fs";
+import path from "path";
+import express from "express";
+import { Jimp } from "jimp";
 import {
   insertInquirySchema,
   insertPropertySchema,
   insertNewsSchema,
   insertPropertyInquirySchema,
   insertFavoriteSchema,
-  news
+  insertBannerSchema
 } from "@shared/schema";
 import { memoryCache } from "./cache";
 import { setupAuth } from "./auth";
@@ -30,6 +35,32 @@ const siteConfig = {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Ensure uploads directory exists
+  const uploadDir = path.join(process.cwd(), "public/uploads");
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+
+  // Serve the uploads directory at /uploads path
+  app.use('/uploads', express.static(uploadDir));
+
+  const uploadStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+      // 한글 파일명 깨짐 방지를 위해 safe-name 처리 또는 timestamp 사용
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      cb(null, uniqueSuffix + ext);
+    }
+  });
+
+  const upload = multer({
+    storage: uploadStorage,
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB 제한
+  });
+
   // 인증 시스템 설정
   setupAuth(app);
 
@@ -215,6 +246,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/properties/urgent", async (req, res) => {
+    try {
+      const properties = await storage.getUrgentProperties(4);
+      res.json(properties);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch urgent properties" });
+    }
+  });
+
+  app.get("/api/properties/negotiable", async (req, res) => {
+    try {
+      const properties = await storage.getNegotiableProperties(4);
+      res.json(properties);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch negotiable properties" });
+    }
+  });
+
   app.get("/api/properties/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -224,9 +273,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Property not found" });
       }
 
-      res.json(property);
+      // 개인정보 및 민감정보 필터링 (클라이언트로 전송되지 않도록 제거)
+      // 단, 관리자는 모든 정보를 볼 수 있어야 함
+      let isAdmin = false;
+      if (req.isAuthenticated()) {
+        const user = req.user as Express.User;
+        isAdmin = user.role === "admin";
+      }
+
+      if (isAdmin) {
+        return res.json(property);
+      }
+
+      const {
+        // address는 지도 표시를 위해 허용 (단, 상세 주소인 unitNumber는 숨김)
+        buildingName,
+        unitNumber, // 동호수 (노출금지)
+        ownerName, ownerPhone, // 소유자 정보 (노출금지)
+        tenantName, tenantPhone, // 임차인 정보 (노출금지)
+        clientName, clientPhone, // 의뢰인 정보 (노출금지)
+        privateNote, // 비공개 메모 (노출금지)
+        ...safeProperty
+      } = property;
+
+      res.json(safeProperty);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch property" });
+    }
+  });
+
+  app.patch("/api/properties/:id/featured", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || req.user?.role !== "admin") {
+        return res.status(403).send("Unauthorized");
+      }
+      const id = parseInt(req.params.id);
+      const { featured } = req.body;
+      await storage.togglePropertyFeatured(id, featured);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to toggle property featured status" });
+    }
+  });
+
+  app.patch("/api/properties/:id/urgent", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || req.user?.role !== "admin") {
+        return res.status(403).send("Unauthorized");
+      }
+      const id = parseInt(req.params.id);
+      const { isUrgent } = req.body;
+      await storage.togglePropertyUrgent(id, isUrgent);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to toggle property urgent status" });
+    }
+  });
+
+  app.patch("/api/properties/:id/negotiable", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || req.user?.role !== "admin") {
+        return res.status(403).send("Unauthorized");
+      }
+      const id = parseInt(req.params.id);
+      const { isNegotiable } = req.body;
+      await storage.togglePropertyNegotiable(id, isNegotiable);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to toggle property negotiable status" });
+    }
+  });
+
+  app.put("/api/properties/:id/urgent-order", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || req.user?.role !== "admin") {
+        return res.status(403).send("Unauthorized");
+      }
+      const id = parseInt(req.params.id);
+      const { urgentOrder } = req.body;
+      await storage.updatePropertyUrgentOrder(id, urgentOrder);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update property urgent order" });
+    }
+  });
+
+  app.put("/api/properties/:id/negotiable-order", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || req.user?.role !== "admin") {
+        return res.status(403).send("Unauthorized");
+      }
+      const id = parseInt(req.params.id);
+      const { negotiableOrder } = req.body;
+      await storage.updatePropertyNegotiableOrder(id, negotiableOrder);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update property negotiable order" });
     }
   });
 
@@ -523,6 +665,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const validatedData = insertPropertyInquirySchema.parse(inquiryData);
       const inquiry = await storage.createPropertyInquiry(validatedData);
+
+      // 이메일 알림 발송 (답변이 아닌 경우에만 관리자에게 알림)
+      if (!inquiry.isReply) {
+        try {
+          const recipientEmail = '9551304@naver.com';
+          const emailSubject = `[이가이버부동산] 매물 문의: ${property.title}`;
+          const emailContent = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e1e1; border-radius: 5px;">
+              <h2 style="color: #3b82f6; margin-bottom: 20px;">새로운 매물 문의가 등록되었습니다</h2>
+              
+              <div style="margin-bottom: 15px; background-color: #f0f9ff; padding: 15px; border-radius: 5px;">
+                <strong>매물 정보:</strong><br>
+                [${property.type}] ${property.title}<br>
+                ${property.district} / ${Number(property.price) > 0 ? (Number(property.price) / 10000) + '만원' : '가격문의'}
+              </div>
+              
+              <div style="margin-bottom: 15px;">
+                <strong>문의자 정보:</strong><br>
+                이름: ${user.username}<br>
+                연락처: ${user.phone || '없음'}<br>
+                이메일: ${user.email || '없음'}
+              </div>
+              
+              <div style="margin-bottom: 15px;">
+                <strong>문의 제목:</strong> ${inquiry.title}
+              </div>
+              
+              <div style="margin-bottom: 15px;">
+                <strong>문의 내용:</strong>
+                <p style="background-color: #f9f9f9; padding: 10px; border-radius: 4px;">${inquiry.content.replace(/\n/g, '<br>')}</p>
+              </div>
+              
+              <div style="font-size: 12px; color: #666; margin-top: 30px; padding-top: 10px; border-top: 1px solid #e1e1e1;">
+                <p>관리자 페이지에서 답글을 작성할 수 있습니다.</p>
+              </div>
+            </div>
+          `;
+
+          console.log(`매물 문의 알림 이메일 발송 준비: ${recipientEmail}`);
+          await sendEmail(recipientEmail, emailSubject, emailContent);
+        } catch (emailError) {
+          console.error("매물 문의 알림 이메일 발송 실패:", emailError);
+          // 이메일 실패해도 API 요청은 성공 처리
+        }
+      }
+
       res.status(201).json(inquiry);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -921,30 +1109,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // 관리자 전용 사용자 목록 조회
-  app.get("/api/admin/users", async (req, res) => {
-    try {
-      // 인증 및 관리자 권한 확인
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
-      const user = req.user;
-      if (!user || user.role !== "admin") {
-        return res.status(403).json({ message: "Admin permission required" });
-      }
-
-      const users = await storage.getAllUsers();
-
-      // 비밀번호 정보 제외하고 반환
-      const usersWithoutPasswords = users.map(({ password, ...userData }) => userData);
-
-      res.json(usersWithoutPasswords);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch users" });
-    }
-  });
-
   // 관심매물 APIs
   // 사용자의 관심매물 목록 조회
   app.get("/api/favorites", async (req, res) => {
@@ -1251,11 +1415,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 캐시에서 확인
       const cacheKey = `blog_latest_${blogId}_${categories.join('_')}_${limit}`;
 
-      // 현재 시간 기준으로 캐시가 10분 이상 지났으면 자동 갱신
+      // 현재 시간 기준으로 캐시가 1분 이상 지났으면 자동 갱신 (즉시성 강화)
       const now = Date.now();
       const cacheTimestamp = memoryCache.getTimestamp(cacheKey);
       const cacheAge = cacheTimestamp ? now - cacheTimestamp : Infinity;
-      const shouldRefresh = refresh || !cacheTimestamp || cacheAge > 10 * 60 * 1000; // 10분
+      const shouldRefresh = refresh || !cacheTimestamp || cacheAge > 1 * 60 * 1000; // 1분으로 단축
 
       // 캐시 초기화가 필요하면 캐시 삭제
       if (shouldRefresh) {
@@ -1340,10 +1504,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // 캐시에 저장 (30분)
+      // 캐시에 저장 (1분)
       if (Array.isArray(posts) && posts.length > 0) {
-        console.log(`${posts.length}개의 블로그 포스트를 캐시에 저장 (30분)`);
-        memoryCache.set(cacheKey, posts, 30 * 60 * 1000);
+        console.log(`${posts.length}개의 블로그 포스트를 캐시에 저장 (1분)`);
+        memoryCache.set(cacheKey, posts, 1 * 60 * 1000);
       } else {
         console.log('유효한 블로그 포스트가 없습니다.');
       }
@@ -1847,6 +2011,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // 블로그 포스트 관련 API 제거됨
+
+  // --- 배너 관리 API ---
+  app.get("/api/banners", async (req, res) => {
+    try {
+      const location = req.query.location as string | undefined;
+      const banners = await storage.getBanners(location);
+      res.json(banners);
+    } catch (error) {
+      console.error("배너 조회 오류:", error);
+      res.status(500).json({ message: "배너를 불러오는 중 오류가 발생했습니다." });
+    }
+  });
+
+  app.post("/api/banners", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+        return res.status(403).json({ message: "관리자 권한이 필요합니다." });
+      }
+
+      const parsed = insertBannerSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "잘못된 데이터입니다.", errors: parsed.error });
+      }
+
+      const banner = await storage.createBanner(parsed.data);
+      res.status(201).json(banner);
+    } catch (error) {
+      console.error("배너 생성 오류:", error);
+      res.status(500).json({ message: "배너 생성 중 오류가 발생했습니다." });
+    }
+  });
+
+  // 배너 순서 변경 API
+  app.put("/api/banners/order", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+        return res.status(403).json({ message: "관리자 권한이 필요합니다." });
+      }
+
+      const { items } = req.body;
+      if (!Array.isArray(items)) {
+        return res.status(400).json({ message: "잘못된 데이터 형식입니다." });
+      }
+
+      // 순서 업데이트
+      for (const item of items) {
+        if (item.id && typeof item.displayOrder === 'number') {
+          await storage.updateBannerOrder(item.id, item.displayOrder);
+        }
+      }
+
+      res.json({ message: "배너 순서가 업데이트되었습니다." });
+    } catch (error) {
+      console.error("배너 순서 변경 오류:", error);
+      res.status(500).json({ message: "배너 순서 변경 중 오류가 발생했습니다." });
+    }
+  });
+
+  // 파일 업로드 API (이미지 리사이징 적용)
+  app.post("/api/upload", upload.single("file"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "파일이 업로드되지 않았습니다." });
+      }
+
+      const originalPath = req.file.path;
+      const filename = req.file.filename;
+
+      console.log(`[Upload DEBUG] File: ${filename}, Type: ${req.file.mimetype}, Size: ${req.file.size}`);
+
+      // 이미지 파일인 경우 리사이징 수행
+      if (req.file.mimetype.startsWith('image/')) {
+        const tempPath = path.join(uploadDir, `temp_${filename}`);
+
+        try {
+          // Jimp로 리사이징 및 최적화
+          // 가로 400px로 제한, 비율 유지
+          const image = await Jimp.read(originalPath);
+          const currentWidth = image.bitmap.width;
+
+          console.log(`[Upload] Width: ${currentWidth}px`);
+
+          if (currentWidth > 400) {
+            console.log(`[Upload] Resizing from ${currentWidth}px to 400px`);
+            await image
+              .resize({ w: 400 }); // Jimp v1.x requires object syntax
+            // .quality(80); // Skipping quality to avoid API mismatch risk
+
+            // Get Buffer manually (Promise mode for Jimp v1.x)
+            const resizedBuffer = await image.getBuffer(req.file.mimetype);
+
+            console.log(`[Upload] Resized buffer size: ${resizedBuffer.length} bytes`);
+
+            // Write buffer to temp path
+            fs.writeFileSync(tempPath, resizedBuffer);
+
+            // 원본 파일을 리사이징된 파일로 교체
+            if (fs.existsSync(originalPath)) {
+              fs.unlinkSync(originalPath);
+            }
+            fs.renameSync(tempPath, originalPath);
+
+            console.log(`[Upload] 이미지 리사이징 완료(Jimp): ${filename}`);
+          } else {
+            // 400px 이하인 경우 리사이징 스킵
+            console.log(`[Upload] 이미지 리사이징 스킵(너비 ${currentWidth}px): ${filename}`);
+          }
+        } catch (resizeError) {
+          console.error(`[Upload] 이미지 리사이징 실패 (원본 유지):`, resizeError);
+          // 리사이징 실패 시 temp 파일 정리
+          if (fs.existsSync(tempPath)) {
+            fs.unlinkSync(tempPath);
+          }
+        }
+      } else {
+        console.log(`[Upload] Not an image, skipping resize. Mimetype: ${req.file.mimetype}`);
+      }
+
+      const fileUrl = `/uploads/${req.file.filename}`;
+      res.json({ url: fileUrl });
+    } catch (error) {
+      console.error("파일 업로드 오류:", error);
+      res.status(500).json({ message: "파일 업로드 중 오류가 발생했습니다." });
+    }
+  });
+
+  app.delete("/api/banners/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+        return res.status(403).json({ message: "관리자 권한이 필요합니다." });
+      }
+
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteBanner(id);
+      if (success) {
+        res.json({ message: "배너가 삭제되었습니다." });
+      } else {
+        res.status(404).json({ message: "배너를 찾을 수 없습니다." });
+      }
+    } catch (error) {
+      console.error("배너 삭제 오류:", error);
+      res.status(500).json({ message: "배너 삭제 중 오류가 발생했습니다." });
+    }
+  });
 
   // 구글 스프레드시트 중복 매물 확인 API
   app.post("/api/admin/check-sheet-duplicates", async (req, res) => {

@@ -114,15 +114,15 @@ const AboutPage = () => {
   );
 
   return (
-    <div className="pt-20 pb-10 min-h-screen bg-gray-50">
+    <div className="pt-0 pb-10 min-h-screen bg-gray-50">
       <Helmet>
         <title>유튜브채널 | 이가이버부동산</title>
-        <meta 
-          name="description" 
+        <meta
+          name="description"
           content="강화도 부동산 이야기 유튜브 채널 영상을 확인하세요."
         />
       </Helmet>
-      
+
       <div className="container mx-auto px-4">
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">유튜브채널</h1>
@@ -136,9 +136,9 @@ const AboutPage = () => {
               <Youtube className="h-6 w-6 text-red-600" />
               강화도부동산이야기
             </h2>
-            <a 
+            <a
               href={NEW_CHANNEL_URL}
-              target="_blank" 
+              target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center text-red-600 hover:text-red-700 text-sm"
             >
@@ -169,9 +169,9 @@ const AboutPage = () => {
               <Youtube className="h-6 w-6 text-red-600" />
               이가이버 유튜브
             </h2>
-            <a 
+            <a
               href={OLD_CHANNEL_URL}
-              target="_blank" 
+              target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center text-red-600 hover:text-red-700 text-sm"
             >

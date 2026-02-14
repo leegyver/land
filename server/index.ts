@@ -7,6 +7,7 @@ import { setupNewsScheduler } from "./news-fetcher";
 import { seedInitialData } from "./seeder";
 
 const app = express();
+console.log("SERVER_STARTUP_ENV:", app.get("env"), "PROCESS_ENV:", process.env.NODE_ENV);
 
 // ... existing code ...
 app.use('/uploads', express.static(path.join(process.cwd(), 'public/uploads')));

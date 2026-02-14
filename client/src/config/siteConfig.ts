@@ -1,12 +1,14 @@
 import defaultPropertyImage from "@assets/강화도부동산sample_1766916360262.png";
 
+import { KAKAO_CHANNEL_URL } from "@/lib/constants";
+
 // 사이트 전역 설정
 export const siteConfig = {
   siteName: "이가이버 부동산",
   siteTitle: "이가이버 부동산",
   siteDescription: "강화도 부동산 중개 서비스",
   contactEmail: "contact@ganghwaestate.com",
-  kakaoChannelUrl: "http://pf.kakao.com/_xaxbxlxfs/chat",
+  kakaoChannelUrl: KAKAO_CHANNEL_URL,
   phoneNumber: "010-4787-3120",
   copyrightYear: new Date().getFullYear(),
   defaultImageUrl: defaultPropertyImage

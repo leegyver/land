@@ -143,15 +143,55 @@ const KakaoMap = ({ zoom = 8, properties: externalProperties, singleProperty }: 
     return () => {
       isMounted = false;
       markers.current.forEach(m => m.setMap(null));
-      setSelectedProperty(null);
     };
   }, [isMapLoaded, properties, zoom, singleProperty]);
+
+  const [useSkyview, setUseSkyview] = useState(false);
+  useEffect(() => {
+    if (mapInstance.current && window.kakao) {
+      if (useSkyview) {
+        mapInstance.current.addOverlayMapTypeId(window.kakao.maps.MapTypeId.HYBRID);
+      } else {
+        mapInstance.current.removeOverlayMapTypeId(window.kakao.maps.MapTypeId.HYBRID);
+      }
+    }
+  }, [useSkyview, isMapLoaded]);
+
+  // Handle Geolocation
+  const handleFindNearMe = () => {
+    if (!navigator.geolocation) {
+      alert("이 브라우저에서는 위치 정보를 지원하지 않습니다.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        const map = mapInstance.current;
+        if (map) {
+          const locPosition = new window.kakao.maps.LatLng(latitude, longitude);
+          map.setCenter(locPosition);
+          map.setLevel(5);
+
+          new window.kakao.maps.Marker({
+            map: map,
+            position: locPosition,
+            title: "내 위치"
+          });
+        }
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        alert("위치 정보를 가져올 수 없습니다. 권한을 확인해주세요.");
+      }
+    );
+  };
 
   return (
     <div
       className="relative w-full h-full bg-slate-100"
       data-no-swipe="true"
-      style={{ touchAction: 'none' }}
+      style={{ touchAction: 'manipulation' }}
     >
       <div ref={mapContainer} className="w-full h-full" />
 
@@ -160,6 +200,50 @@ const KakaoMap = ({ zoom = 8, properties: externalProperties, singleProperty }: 
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 z-10 p-4 text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mb-2"></div>
           <span className="text-slate-500 text-sm font-medium">지도를 불러오고 있습니다...</span>
+        </div>
+      )}
+
+      {/* Map Controls */}
+      {isMapLoaded && (
+        <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
+          {/* Zoom Controls */}
+          <div className="flex flex-col rounded shadow-md border overflow-hidden">
+            <button
+              onClick={() => {
+                if (mapInstance.current) {
+                  mapInstance.current.setLevel(mapInstance.current.getLevel() - 1, { animate: true });
+                }
+              }}
+              className="w-10 h-10 md:w-8 md:h-8 flex items-center justify-center bg-white text-slate-800 hover:bg-slate-100 border-b transition-colors font-bold text-xl md:text-lg"
+              title="확대"
+            >
+              +
+            </button>
+            <button
+              onClick={() => {
+                if (mapInstance.current) {
+                  mapInstance.current.setLevel(mapInstance.current.getLevel() + 1, { animate: true });
+                }
+              }}
+              className="w-10 h-10 md:w-8 md:h-8 flex items-center justify-center bg-white text-slate-800 hover:bg-slate-100 transition-colors font-bold text-xl md:text-lg"
+              title="축소"
+            >
+              -
+            </button>
+          </div>
+
+          <button
+            onClick={() => setUseSkyview(!useSkyview)}
+            className={`px-3 py-2 text-xs font-bold rounded shadow-md border bg-white text-gray-700 hover:bg-gray-100 transition-colors ${useSkyview ? 'bg-blue-600 text-white hover:bg-blue-700 border-transparent' : ''}`}
+          >
+            스카이뷰
+          </button>
+          <button
+            onClick={handleFindNearMe}
+            className="px-3 py-2 text-xs font-bold rounded shadow-md border bg-white text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-1"
+          >
+            📍 내 위치
+          </button>
         </div>
       )}
 
@@ -173,11 +257,23 @@ const KakaoMap = ({ zoom = 8, properties: externalProperties, singleProperty }: 
           >
             ✕
           </button>
+
+          {selectedProperty.imageUrl && (
+            <div className="h-32 mb-3 rounded-md overflow-hidden bg-gray-100">
+              <img
+                src={selectedProperty.imageUrl}
+                alt={selectedProperty.title}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+
           <h4 className="font-bold text-lg mb-1 truncate text-slate-900 pr-6">{selectedProperty.title}</h4>
           <p className="text-slate-500 text-xs mb-3 truncate">{selectedProperty.address}</p>
-          <div className="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-100">
+
+          <div className="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-100 mb-3">
             <span className="text-primary font-bold text-base">
-              {selectedProperty.price}
+              {typeof selectedProperty.price === 'string' ? selectedProperty.price : selectedProperty.price?.toLocaleString() + '만원'}
             </span>
             <a
               href={`/properties/${selectedProperty.id}`}
@@ -185,6 +281,21 @@ const KakaoMap = ({ zoom = 8, properties: externalProperties, singleProperty }: 
             >
               상세보기 &gt;
             </a>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              className="flex-1 py-1.5 text-xs border border-green-500 text-green-600 hover:bg-green-50 rounded bg-white font-bold"
+              onClick={() => window.open(`https://map.naver.com/v5/search/${encodeURIComponent(selectedProperty.address)}`, '_blank')}
+            >
+              네이버 지도
+            </button>
+            <button
+              className="flex-1 py-1.5 text-xs border border-yellow-400 text-yellow-700 hover:bg-yellow-50 rounded bg-white font-bold"
+              onClick={() => window.open(`https://map.kakao.com/link/search/${encodeURIComponent(selectedProperty.address)}`, '_blank')}
+            >
+              카카오맵
+            </button>
           </div>
         </div>
       )}

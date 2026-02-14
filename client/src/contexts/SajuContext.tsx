@@ -2,13 +2,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { calculateSaju, SajuData } from '@/lib/saju';
 import { useAuth } from '@/hooks/use-auth';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 
 interface SajuContextType {
     userBirthDate: Date | null;
     userBirthTime: string | null; // "HH:MM"
     isLunar: boolean; // Added
     sajuData: SajuData | null;
-    saveUserSaju: (date: Date, time: string, isLunar: boolean) => void;
+    saveUserSaju: (date: Date, time: string, isLunar: boolean) => Promise<void>;
     clearUserSaju: () => void;
     isModalOpen: boolean;
     openSajuModal: () => void;
@@ -51,34 +52,39 @@ export const SajuProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return;
         }
 
-        // 2. Fallback to Local Storage
-        const storedDate = localStorage.getItem('saju_birthDate');
-        const storedTime = localStorage.getItem('saju_birthTime');
-        const storedIsLunar = localStorage.getItem('saju_isLunar') === 'true';
-
-        if (storedDate) {
-            const date = new Date(storedDate);
-            setUserBirthDate(date);
-            if (storedTime) setUserBirthTime(storedTime);
-            setIsLunar(storedIsLunar);
-
-            const data = calculateSaju(date, storedTime || undefined, storedIsLunar);
-            setSajuData(data);
-        }
+        // 2. Guest users (unauthenticated) should not have sajuData
+        setUserBirthDate(null);
+        setUserBirthTime(null);
+        setIsLunar(false);
+        setSajuData(null);
     }, [user]);
 
-    const saveUserSaju = (date: Date, time: string, isLunar: boolean) => {
+    const saveUserSaju = async (date: Date, time: string, isLunar: boolean) => {
         setUserBirthDate(date);
         setUserBirthTime(time);
         setIsLunar(isLunar);
 
-        // Save to local storage
+        // Save to local storage (as backup/temporary)
         localStorage.setItem('saju_birthDate', date.toISOString());
         if (time) localStorage.setItem('saju_birthTime', time);
         localStorage.setItem('saju_isLunar', String(isLunar));
 
         const data = calculateSaju(date, time, isLunar);
         setSajuData(data);
+
+        // Save to User Profile if logged in
+        if (user) {
+            try {
+                await apiRequest("PATCH", "/api/users/profile", {
+                    birthDate: date.toISOString().split('T')[0],
+                    birthTime: time,
+                    isLunar: isLunar
+                });
+                queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+            } catch (error) {
+                console.error("Failed to update user profile:", error);
+            }
+        }
     };
 
     const clearUserSaju = () => {

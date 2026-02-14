@@ -12,7 +12,7 @@ type PropertyInquiryWithAuthor = PropertyInquiry & {
   authorUsername?: string;
 };
 
-import { 
+import {
   Form,
   FormControl,
   FormField,
@@ -54,22 +54,22 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
   const [activeTab, setActiveTab] = useState("view");
   const [replyToId, setReplyToId] = useState<number | null>(null);
   const [selectedInquiryId, setSelectedInquiryId] = useState<number | null>(null);
-  
+
   // 문의글 목록 조회
-  const { 
-    data: inquiries, 
+  const {
+    data: inquiries,
     isLoading: inquiriesLoading,
     refetch: refetchInquiries
   } = useQuery<PropertyInquiryWithAuthor[]>({
     queryKey: [`/api/properties/${propertyId}/inquiries`],
     enabled: !!propertyId,
   });
-  
+
   // 선택된 문의글 찾기
   const selectedInquiry = selectedInquiryId && inquiries
     ? inquiries.find(inquiry => inquiry.id === selectedInquiryId)
     : null;
-  
+
   // 문의글 작성을 위한 폼
   const inquiryForm = useForm<InquiryFormValues>({
     resolver: zodResolver(inquiryFormSchema),
@@ -78,7 +78,7 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
       content: ""
     }
   });
-  
+
   // 답변 작성을 위한 폼
   const replyForm = useForm<ReplyFormValues>({
     resolver: zodResolver(replyFormSchema),
@@ -86,7 +86,7 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
       content: ""
     }
   });
-  
+
   // 문의글 작성 뮤테이션
   const inquiryMutation = useMutation({
     mutationFn: (values: InquiryFormValues) => {
@@ -116,7 +116,7 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
       console.error("Inquiry submission error:", error);
     }
   });
-  
+
   // 답변 작성 뮤테이션
   const replyMutation = useMutation({
     mutationFn: (values: ReplyFormValues) => {
@@ -146,7 +146,7 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
       console.error("Reply submission error:", error);
     }
   });
-  
+
   // 문의글 삭제 뮤테이션
   const deleteMutation = useMutation({
     mutationFn: (inquiryId: number) => {
@@ -170,23 +170,23 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
       console.error("Delete error:", error);
     }
   });
-  
+
   // 문의글 제출 핸들러
   const onInquirySubmit = (data: InquiryFormValues) => {
     inquiryMutation.mutate(data);
   };
-  
+
   // 답변 제출 핸들러
   const onReplySubmit = (data: ReplyFormValues) => {
     replyMutation.mutate(data);
   };
-  
+
   // 답변 작성 모드로 전환하는 핸들러
   const handleReply = (inquiryId: number) => {
     setReplyToId(inquiryId);
     replyForm.reset();
   };
-  
+
   // 문의글 선택 핸들러
   const handleInquirySelect = (inquiryId: number) => {
     if (selectedInquiryId === inquiryId) {
@@ -195,22 +195,22 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
       setSelectedInquiryId(inquiryId);
     }
   };
-  
+
   // 문의글 삭제 핸들러
   const handleDelete = (inquiryId: number) => {
     if (window.confirm("정말로 이 글을 삭제하시겠습니까?")) {
       deleteMutation.mutate(inquiryId);
     }
   };
-  
+
   // 사용자 권한 체크 (본인이 작성한 글이거나 관리자인 경우)
   const canManageInquiry = (inquiry: PropertyInquiry) => {
     return user?.id === inquiry.userId || user?.role === "admin";
   };
-  
+
   // 로그인하지 않은 사용자에게는 제한된 뷰를 제공, 문의 작성 제한
   const isLoggedIn = !!user;
-  
+
   return (
     <div>
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -224,7 +224,7 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
             </TabsTrigger>
           )}
         </TabsList>
-        
+
         <TabsContent value="view" className="py-4">
           {inquiriesLoading ? (
             <div className="flex justify-center py-10">
@@ -244,8 +244,8 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
                   </thead>
                   <tbody>
                     {inquiries.map(inquiry => (
-                      <tr 
-                        key={inquiry.id} 
+                      <tr
+                        key={inquiry.id}
                         className={`border-t hover:bg-muted/20 cursor-pointer ${selectedInquiryId === inquiry.id ? 'bg-muted/30' : ''} ${inquiry.isReply ? 'bg-muted/10' : ''}`}
                         onClick={() => handleInquirySelect(inquiry.id)}
                       >
@@ -262,8 +262,8 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
                         <td className="p-3">
                           <div className="flex space-x-1">
                             {!inquiry.isReply && user?.role === "admin" && (
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 size="icon"
                                 className="h-8 w-8"
                                 onClick={(e) => {
@@ -275,8 +275,8 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
                               </Button>
                             )}
                             {canManageInquiry(inquiry) && (
-                              <Button 
-                                variant="destructive" 
+                              <Button
+                                variant="destructive"
                                 size="icon"
                                 className="h-8 w-8"
                                 onClick={(e) => {
@@ -294,14 +294,14 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
                   </tbody>
                 </table>
               </div>
-              
+
               {selectedInquiryId && selectedInquiry && (
                 <div className="mt-4 border rounded-lg p-4">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="font-bold text-lg">{selectedInquiry.title}</h3>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setSelectedInquiryId(null)}
                     >
                       닫기
@@ -314,7 +314,7 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
                   </div>
                 </div>
               )}
-              
+
               {replyToId && user?.role === "admin" && (
                 <Card className="mt-6">
                   <CardContent className="pt-6">
@@ -328,7 +328,7 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
                             <FormItem>
                               <FormLabel>답변 내용</FormLabel>
                               <FormControl>
-                                <Textarea 
+                                <Textarea
                                   placeholder="답변 내용을 작성해주세요"
                                   rows={5}
                                   {...field}
@@ -338,16 +338,16 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
                             </FormItem>
                           )}
                         />
-                        
+
                         <div className="flex justify-end gap-2">
-                          <Button 
-                            type="button" 
+                          <Button
+                            type="button"
                             variant="outline"
                             onClick={() => setReplyToId(null)}
                           >
                             취소
                           </Button>
-                          <Button 
+                          <Button
                             type="submit"
                             disabled={replyMutation.isPending}
                           >
@@ -366,7 +366,7 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
             </div>
           )}
         </TabsContent>
-        
+
         <TabsContent value="write" className="py-4">
           <Form {...inquiryForm}>
             <form onSubmit={inquiryForm.handleSubmit(onInquirySubmit)} className="space-y-4">
@@ -383,7 +383,7 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={inquiryForm.control}
                 name="content"
@@ -391,7 +391,7 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
                   <FormItem>
                     <FormLabel>내용</FormLabel>
                     <FormControl>
-                      <Textarea 
+                      <Textarea
                         placeholder="문의 내용을 상세히 작성해주세요"
                         rows={6}
                         {...field}
@@ -401,13 +401,13 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
                   </FormItem>
                 )}
               />
-              
-              <Button 
-                type="submit" 
-                className="w-full"
+
+              <Button
+                type="submit"
+                className="w-full btn-primary-cta h-12"
                 disabled={inquiryMutation.isPending}
               >
-                {inquiryMutation.isPending ? "제출 중..." : "문의 등록"}
+                {inquiryMutation.isPending ? "제출 중..." : "문의 등록하기"}
               </Button>
             </form>
           </Form>

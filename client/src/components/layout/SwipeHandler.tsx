@@ -52,21 +52,23 @@ export const SwipeHandler: React.FC<SwipeHandlerProps> = ({ children }) => {
             // 초기화
             setTouchStart(null);
 
-            // 시간 제한 체크 (너무 느린 스와이프는 무시)
-            if (deltaTime > MAX_SWIPE_TIME) return;
+            // 시간 제한 체크 (너무 느린 스와이프는 무시 - 드래그 형식이므로 시간 제한을 좀 더 넉넉하게 하거나 제거 가능하지만 오동작 방지를 위해 유지)
+            // if (deltaTime > MAX_SWIPE_TIME) return;
 
             // 수직 스크롤 의도가 강하면 무시 (Y축 이동이 X축 이동보다 크면 스크롤로 간주)
             if (Math.abs(deltaY) > Math.abs(deltaX)) return;
 
-            // 최소 거리 체크
-            if (Math.abs(deltaX) < SWIPE_THRESHOLD) return;
+            // 화면 너비의 50% 이상 드래그 해야 동작
+            const screenWidth = window.innerWidth;
+            const threshold = screenWidth * 0.5;
+
+            if (Math.abs(deltaX) < threshold) return;
 
             // 현재 페이지 인덱스 찾기
             // (쿼리 파라미터 제외하고 순수 경로만 비교)
             const currentPath = location.split('?')[0];
 
             // 상세 페이지 등은 순서에 없으므로 스와이프 네비게이션 동작 안함
-            // 혹은 상세 페이지에서는 '목록으로' 등의 동작을 커스텀 할 수 있음 (여기서는 제외)
             const currentIndex = PAGE_ORDER.indexOf(currentPath);
 
             if (currentIndex === -1) return;

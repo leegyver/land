@@ -33,7 +33,7 @@ const InquiryNotifications = () => {
   const [selectedInquiry, setSelectedInquiry] = useState<UnreadInquiry | null>(null);
 
   // 미읽은 문의글 수 조회
-  const { data: unreadCount = 0 } = useQuery<{ count: number }>({
+  const { data: unreadCount = { count: 0 } } = useQuery<{ count: number }>({
     queryKey: ["/api/admin/inquiries/unread/count"],
     refetchInterval: 30000, // 30초마다 자동 새로고침
   });
@@ -46,7 +46,7 @@ const InquiryNotifications = () => {
 
   // 개별 문의글 읽음 처리
   const markAsReadMutation = useMutation({
-    mutationFn: (inquiryId: number) => 
+    mutationFn: (inquiryId: number) =>
       apiRequest("PUT", `/api/admin/inquiries/${inquiryId}/read`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/inquiries/unread"] });
@@ -86,6 +86,17 @@ const InquiryNotifications = () => {
     }
   });
 
+  const safeFormat = (dateStr: string | undefined, formatStr: string) => {
+    if (!dateStr) return "-";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return "날짜 오류";
+      return format(d, formatStr, { locale: ko });
+    } catch (e) {
+      return "날짜 오류";
+    }
+  };
+
   const handleInquiryClick = (inquiry: UnreadInquiry) => {
     setSelectedInquiry(inquiry);
     // 클릭 시 자동으로 읽음 처리
@@ -110,8 +121,8 @@ const InquiryNotifications = () => {
         <Bell className="h-4 w-4 mr-2" />
         문의 알림
         {unreadCount.count > 0 && (
-          <Badge 
-            variant="destructive" 
+          <Badge
+            variant="destructive"
             className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs"
           >
             {unreadCount.count > 99 ? '99+' : unreadCount.count}
@@ -154,8 +165,8 @@ const InquiryNotifications = () => {
             ) : (
               <div className="space-y-4">
                 {unreadInquiries.map((inquiry) => (
-                  <Card 
-                    key={inquiry.id} 
+                  <Card
+                    key={inquiry.id}
                     className="cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => handleInquiryClick(inquiry)}
                   >
@@ -168,7 +179,7 @@ const InquiryNotifications = () => {
                           <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                             <span>{inquiry.authorUsername}</span>
                             <Separator orientation="vertical" className="h-3" />
-                            <span>{format(new Date(inquiry.createdAt), "M월 d일 HH:mm", { locale: ko })}</span>
+                            <span>{safeFormat(inquiry.createdAt, "M월 d일 HH:mm")}</span>
                             {inquiry.isReply && (
                               <>
                                 <Separator orientation="vertical" className="h-3" />
@@ -220,13 +231,13 @@ const InquiryNotifications = () => {
                 )}
               </DialogTitle>
             </DialogHeader>
-            
+
             <div className="space-y-4">
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <span>작성자: {selectedInquiry.authorUsername}</span>
                   <Separator orientation="vertical" className="h-3" />
-                  <span>{format(new Date(selectedInquiry.createdAt), "yyyy년 M월 d일 HH:mm", { locale: ko })}</span>
+                  <span>{safeFormat(selectedInquiry.createdAt, "yyyy년 M월 d일 HH:mm")}</span>
                 </div>
                 <Button
                   variant="outline"
@@ -237,21 +248,21 @@ const InquiryNotifications = () => {
                   매물 보기
                 </Button>
               </div>
-              
+
               <div className="p-4 bg-muted/30 rounded-lg">
                 <div className="text-sm font-medium mb-2">매물 정보</div>
                 <div className="text-sm text-muted-foreground">
                   {selectedInquiry.propertyTitle}
                 </div>
               </div>
-              
+
               <div className="p-4 border rounded-lg">
                 <div className="text-sm font-medium mb-2">문의 내용</div>
                 <div className="text-sm whitespace-pre-wrap">
                   {selectedInquiry.content}
                 </div>
               </div>
-              
+
               <div className="flex justify-end gap-2">
                 <Button
                   variant="outline"

@@ -1,5 +1,6 @@
 import { useParams } from "wouter";
 import PropertyDetail from "@/components/property/PropertyDetail";
+import NaverPropertyOverlay from "@/components/property/NaverPropertyOverlay";
 import { Helmet } from "react-helmet";
 import { useQuery } from "@tanstack/react-query";
 import { Property } from "@shared/schema";
@@ -7,10 +8,25 @@ import { Property } from "@shared/schema";
 const PropertyDetailPage = () => {
   const { id } = useParams<{ id: string }>();
 
-  const { data: property } = useQuery<Property>({
+  const { data: property, isLoading } = useQuery<Property>({
     queryKey: [`/api/properties/${id}`],
     enabled: !!id,
   });
+
+  // Naver Property Check
+  const isNaverProperty = property?.source === 'naver' || (id && id.startsWith('naver-'));
+
+  if (isNaverProperty && property) {
+    return (
+      <div className="pt-0">
+        <Helmet>
+          <title>매물 상세 | 이가이버 부동산</title>
+          <meta name="robots" content="noindex" />
+        </Helmet>
+        <NaverPropertyOverlay property={property} />
+      </div>
+    );
+  }
 
   return (
     <div className="pt-0"> {/* Offset removed for sticky header */}

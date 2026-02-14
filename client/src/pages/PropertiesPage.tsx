@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Helmet } from "react-helmet";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useSearch } from "wouter";
@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import PropertyCard from "@/components/property/PropertyCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapIcon, Mic, MicOff, Search, X } from "lucide-react";
+import { MapIcon, Mic, MicOff, Search, X, Sparkles, ArrowLeft } from "lucide-react";
 import PropertyMap from "@/components/map/PropertyMap";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,6 +26,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { useSaju } from "@/contexts/SajuContext";
+import { useAuth } from "@/hooks/use-auth";
+import { getCompatibilityScore } from "@/lib/saju";
+import { Badge } from "@/components/ui/badge";
 
 const formSchema = z.object({
   district: z.string(),
@@ -82,6 +86,8 @@ declare global {
 const PropertiesPage = () => {
   const [location, setLocation] = useLocation();
   const search = useSearch();
+  const { sajuData } = useSaju();
+  const { user } = useAuth();
 
   // useSearch 훅에서 초기값 파싱 (wouter의 반응형 쿼리 문자열 사용)
   const initialParams = new URLSearchParams(search);
@@ -89,7 +95,9 @@ const PropertiesPage = () => {
   const initialType = initialParams.get("type") || "all";
   const initialMinPrice = initialParams.get("minPrice");
   const initialMaxPrice = initialParams.get("maxPrice");
+  const initialTag = initialParams.get("tag");
   const initialKeyword = initialParams.get("keyword") || "";
+  const isRecommend = initialParams.get("recommend") === "true";
 
   let initialPriceRange = "all";
   if (initialMinPrice && initialMaxPrice) {
@@ -102,6 +110,7 @@ const PropertiesPage = () => {
     minPrice: initialMinPrice,
     maxPrice: initialMaxPrice,
     keyword: initialKeyword,
+    tag: initialTag,
   });
 
   // 음성검색 관련 상태
@@ -176,9 +185,15 @@ const PropertiesPage = () => {
       newParams.append("minPrice", filterParams.minPrice);
       newParams.append("maxPrice", filterParams.maxPrice);
     }
+    if (filterParams.tag) {
+      newParams.append("tag", filterParams.tag);
+    }
+
+    // 추천 상태 유지 여부 결정 (현재는 검색시 추천 해제하는 것이 자연스러움)
+    // if (isRecommend) newParams.append("recommend", "true");
 
     setLocation(`/properties?${newParams.toString()}`);
-  }, [setLocation, filterParams]);
+  }, [setLocation, filterParams, isRecommend]);
 
   // form 객체가 초기화된 후에 handleKeywordSearch를 정의해야 하므로,
   // form.getValues()를 사용하기 위한 간접 호출 패턴을 사용
@@ -239,9 +254,14 @@ const PropertiesPage = () => {
       }
     }
 
+    // 태그 유지
+    if (filterParams.tag) {
+      newParams.append("tag", filterParams.tag);
+    }
+
     const newUrl = newParams.toString() ? `/properties?${newParams.toString()}` : '/properties';
     setLocation(newUrl);
-  }, [setLocation]);
+  }, [setLocation, filterParams]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -264,6 +284,7 @@ const PropertiesPage = () => {
     const minPrice = params.get("minPrice");
     const maxPrice = params.get("maxPrice");
     const keyword = params.get("keyword") || "";
+    const tag = params.get("tag");
 
     let priceRange = "all";
     if (minPrice && maxPrice) {
@@ -286,11 +307,12 @@ const PropertiesPage = () => {
       minPrice: minPrice,
       maxPrice: maxPrice,
       keyword: keyword,
+      tag: tag,
     });
   }, [search]);
 
   const { data: properties, isLoading, error } = useQuery<Property[]>({
-    queryKey: ["/api/search", filterParams.district, filterParams.type, filterParams.minPrice, filterParams.maxPrice, filterParams.keyword],
+    queryKey: ["/api/search", filterParams.district, filterParams.type, filterParams.minPrice, filterParams.maxPrice, filterParams.keyword, filterParams.tag, false], // includeCrawled=false for list
     queryFn: async () => {
       // 검색 파라미터 구성
       const searchParams = new URLSearchParams();
@@ -313,8 +335,12 @@ const PropertiesPage = () => {
         searchParams.append("maxPrice", filterParams.maxPrice);
       }
 
+      if (filterParams.tag) {
+        searchParams.append("tag", filterParams.tag);
+      }
+
       // URL 생성 및 요청
-      const url = `/api/search?${searchParams.toString()}`;
+      const url = `/api/search?${searchParams.toString()}&includeCrawled=false`;
       console.log("검색 요청 URL:", url);
 
       const res = await fetch(url);
@@ -347,10 +373,70 @@ const PropertiesPage = () => {
       searchParams.append("maxPrice", newParams.maxPrice);
     }
 
+    // 태그 유지
+    if (filterParams.tag) {
+      searchParams.append("tag", filterParams.tag);
+    }
+
+    // 필터 적용 시 추천 해제? 
+    // 사용자가 직접 필터를 걸었으므로 추천 모드를 유지할지 해제할지 결정해야 함.
+    // 여기서는 사용자의 명시적 필터링 의도를 존중하여 추천 모드를 유지하지 않음(파라미터 미포함)
+
     // wouter의 setLocation을 사용하여 URL 업데이트
     const newUrl = searchParams.toString() ? `/properties?${searchParams.toString()}` : '/properties';
     setLocation(newUrl);
   };
+
+  // Saju-based Sorting
+  const sortedProperties = useMemo(() => {
+    if (!properties) return [];
+
+    if (isRecommend && sajuData) {
+      // Clone and sort by score
+      return [...properties].sort((a, b) => {
+        const scoreA = getCompatibilityScore(sajuData, { id: a.id, direction: a.direction, floor: a.floor }).score;
+        const scoreB = getCompatibilityScore(sajuData, { id: b.id, direction: b.direction, floor: b.floor }).score;
+        return scoreB - scoreA; // Descending
+      });
+    }
+
+    return properties;
+  }, [properties, isRecommend, sajuData]);
+
+  // Client-side safety filter: Ensure NO Naver properties (source='naver' or district='수집매물') are shown in the list
+  // irrespective of what the API returns.
+  const filteredList = sortedProperties?.filter((p: any) =>
+    p.source !== 'naver' &&
+    p.district !== '수집매물' &&
+    !String(p.id).startsWith('naver-')
+  );
+
+  // Backward compatibility for other references if any (though we updated JSX)
+  const listProperties = filteredList;
+
+
+  // Map Data: Fetch matching properties INCLUDING Naver crawled data
+  const { data: mapProperties } = useQuery<Property[]>({
+    queryKey: ["/api/search", filterParams.district, filterParams.type, filterParams.minPrice, filterParams.maxPrice, filterParams.keyword, filterParams.tag, true], // includeCrawled=true for MAP
+    queryFn: async () => {
+      const searchParams = new URLSearchParams();
+      if (filterParams.keyword && filterParams.keyword.trim() !== "") searchParams.append("keyword", filterParams.keyword.trim());
+      if (filterParams.district && filterParams.district !== "all") searchParams.append("district", filterParams.district);
+      if (filterParams.type && filterParams.type !== "all") searchParams.append("type", filterParams.type);
+      if (filterParams.minPrice && filterParams.maxPrice) {
+        searchParams.append("minPrice", filterParams.minPrice);
+        searchParams.append("maxPrice", filterParams.maxPrice);
+      }
+      if (filterParams.tag) searchParams.append("tag", filterParams.tag);
+
+      // Request WITH crawled data for the map
+      const url = `/api/search?${searchParams.toString()}&includeCrawled=true`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to fetch map properties");
+      return res.json();
+    },
+    staleTime: 1000 * 60 * 2, // 2 minutes cache for map data
+  });
 
   return (
     <>
@@ -362,7 +448,20 @@ const PropertiesPage = () => {
       </Helmet>
       <div className="bg-primary/10 py-4 mt-0">
         <div className="container mx-auto px-4">
-          <h1 className="text-2xl font-bold mb-3">매물 검색</h1>
+          <h1 className="text-2xl font-bold mb-3">
+            {filterParams.tag === 'urgent' ? '🔥 급매물' :
+              filterParams.tag === 'negotiable' ? '🤝 가격 협의 가능' :
+                filterParams.tag === 'long-term' ? '📈 장기투자 추천' :
+                  filterParams.tag === 'recommended' ? '👍 추천 매물' :
+                    (filterParams.maxPrice === "100000000") ? '1억미만 부동산' :
+                      (
+                        <>
+                          {filterParams.district !== "all" && `${filterParams.district} `}
+                          {filterParams.type !== "all" && `${filterParams.type} `}
+                          매물
+                        </>
+                      )}
+          </h1>
 
           {/* 음성검색 입력창 */}
           <div className="bg-white p-4 rounded-lg shadow-md mb-4">
@@ -688,6 +787,34 @@ const PropertiesPage = () => {
       </div>
 
       <div className="container mx-auto px-4 py-4">
+
+        {/* Saju Recommendation Banner */}
+        {isRecommend && sajuData && (
+          <div className="bg-gradient-to-r from-violet-100 to-purple-100 border border-violet-200 rounded-xl p-6 mb-8 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="flex items-center gap-4">
+              <div className="bg-white p-3 rounded-full shadow-md text-purple-600">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">
+                  {user?.username || '게스트'}님을 위한 사주 맞춤 추천 매물
+                </h2>
+                <p className="text-gray-600 mt-1">
+                  사주 분석 결과(행운의 방향, 층수 등)를 바탕으로 가장 기운이 좋은 매물부터 보여드립니다.
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              className="whitespace-nowrap bg-white hover:bg-gray-50 border-purple-200 text-purple-700 hover:text-purple-800"
+              onClick={() => setLocation('/properties')}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              전체 매물 보기
+            </Button>
+          </div>
+        )}
+
         {/* Map Section */}
         <div className="mb-4">
           <div className="mb-3 flex items-center">
@@ -696,20 +823,36 @@ const PropertiesPage = () => {
           </div>
           {/* 메인 페이지 모델을 따라 props 없이 호출하여 데이터 갱신 시의 재로딩 현상을 해결합니다. */}
           <div className="h-[400px] md:h-[500px] w-full rounded-2xl overflow-hidden shadow-lg border border-[#EBE5CE] relative">
-            <PropertyMap />
+            <PropertyMap properties={mapProperties} showCrawled={true} />
           </div>
         </div>
 
         {/* Properties Results */}
         <div className="mb-6 flex justify-between items-center">
           <h2 className="text-2xl font-bold">
-            {filterParams.district !== "all" && `${filterParams.district} `}
-            {filterParams.type !== "all" && `${filterParams.type} `}
-            매물
+            {filterParams.tag === 'urgent' ? '🔥 급매물' :
+              filterParams.tag === 'negotiable' ? '🤝 가격 협의 가능' :
+                filterParams.tag === 'long-term' ? '📈 장기투자 추천' :
+                  filterParams.tag === 'recommended' ? '👍 추천 매물' :
+                    (filterParams.maxPrice === "100000000") ? '1억미만 부동산' :
+                      (
+                        <>
+                          {filterParams.district !== "all" && `${filterParams.district} `}
+                          {filterParams.type !== "all" && `${filterParams.type} `}
+                          매물
+                        </>
+                      )}
           </h2>
-          {properties && (
-            <p className="text-gray-medium">총 {properties.length}개의 매물</p>
-          )}
+          <div className="flex items-center gap-3">
+            {isRecommend && sajuData && (
+              <Badge variant="secondary" className="bg-purple-100 text-purple-700 border-purple-200">
+                ✨ 사주 맞춤 정렬 중
+              </Badge>
+            )}
+            {filteredList && (
+              <p className="text-gray-medium">총 {filteredList.length}개의 매물</p>
+            )}
+          </div>
         </div>
 
         {isLoading ? (
@@ -723,9 +866,9 @@ const PropertiesPage = () => {
             <h3 className="text-xl font-bold mb-2">매물을 불러오는 중 오류가 발생했습니다</h3>
             <p>잠시 후 다시 시도해주세요.</p>
           </div>
-        ) : properties && properties.length > 0 ? (
+        ) : filteredList && filteredList.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {properties.map((property) => (
+            {filteredList.map((property) => (
               <PropertyCard key={property.id} property={property} />
             ))}
           </div>
@@ -746,6 +889,7 @@ const PropertiesPage = () => {
                 minPrice: null,
                 maxPrice: null,
                 keyword: "",
+                tag: null,
               });
               setLocation('/properties');
             }}>

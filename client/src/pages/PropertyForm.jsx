@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useParams } from "wouter";
 import { Loader2, ArrowLeft, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ErrorBoundary } from "@/components/layout/ErrorBoundary";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,7 +33,7 @@ import {
 // 기본 이미지 경로 (public 폴더에서 제공)
 const defaultPropertyImage = "/uploads/default-property.png";
 
-function PropertyForm() {
+function PropertyFormContent() {
   const { user } = useAuth();
   const { toast } = useToast();
   const params = useParams();
@@ -156,11 +157,11 @@ function PropertyForm() {
 
   // 용도지역 옵션 목록
   const zoneTypeOptions = [
-    "제1종전용주거", "제2종전용주거", "제1종일반주거", "제2종일반주거", "제3종일반주거", 
-    "준주거", "중심상업", "일반상업", "근린상업", "유통상업", 
-    "전용공업", "일반공업", "준공업", 
-    "보전녹지", "생산녹지", "자연녹지", 
-    "계획관리", "보전관리", "생산관리", 
+    "제1종전용주거", "제2종전용주거", "제1종일반주거", "제2종일반주거", "제3종일반주거",
+    "준주거", "중심상업", "일반상업", "근린상업", "유통상업",
+    "전용공업", "일반공업", "준공업",
+    "보전녹지", "생산녹지", "자연녹지",
+    "계획관리", "보전관리", "생산관리",
     "농업보호", "농업진흥", "농림지역", "자연환경보전"
   ];
 
@@ -179,6 +180,7 @@ function PropertyForm() {
     imageUrls: [], // 다중 이미지 저장용 배열
     agentId: 4, // 기본 에이전트 ID 설정 (정현우 중개사)
     featured: false,
+    isLongTerm: false,
 
     // 위치 정보
     buildingName: "",
@@ -251,15 +253,16 @@ function PropertyForm() {
               ...restData,
               // 필수 필드 데이터 보완
               agentId: data.agentId || 4, // 기본값 4 (정현우 중개사)
-              dealType: data.dealType || ["매매"],
+              dealType: Array.isArray(data.dealType) ? data.dealType : (typeof data.dealType === 'string' ? [data.dealType] : ["매매"]),
               deposit: data.deposit ? data.deposit.toString() : "",
               depositAmount: data.depositAmount ? data.depositAmount.toString() : "",
               monthlyRent: data.monthlyRent ? data.monthlyRent.toString() : "",
               maintenanceFee: data.maintenanceFee ? data.maintenanceFee.toString() : "",
-              imageUrls: data.imageUrls || [],
+              imageUrls: Array.isArray(data.imageUrls) ? data.imageUrls : [],
               elevator: Boolean(data.elevator),
               coListing: Boolean(data.coListing),
               featured: Boolean(data.featured),
+              isLongTerm: Boolean(data.isLongTerm),
               agentName: data.agentName || "",
             });
 
@@ -269,7 +272,7 @@ function PropertyForm() {
             if (data.imageUrls && Array.isArray(data.imageUrls) && data.imageUrls.length > 0) {
               // 이미지 배열 사용
               imageList = [...data.imageUrls];
-            } 
+            }
             else if (data.imageUrl) {
               // 단일 이미지가 있으면 배열에 추가
               imageList = [data.imageUrl];
@@ -300,7 +303,7 @@ function PropertyForm() {
             }
           } else {
             toast({
-              title: "오류", 
+              title: "오류",
               description: "부동산 정보를 불러올 수 없습니다",
               variant: "destructive",
             });
@@ -366,7 +369,7 @@ function PropertyForm() {
         description: "필수 입력 필드를 모두 작성해주세요 (제목, 주소)",
         variant: "destructive",
       });
-      
+
       // 오류 필드로 스크롤 및 포커스
       const firstEmptyField = !formData.title ? 'title' : 'address';
       const errorElement = document.querySelector(`[name="${firstEmptyField}"]`);
@@ -417,8 +420,8 @@ function PropertyForm() {
       // 디버깅용 로그
       console.log("부동산 수정 요청 데이터:", submissionData);
 
-      const url = isEditMode 
-        ? `/api/properties/${params.id}` 
+      const url = isEditMode
+        ? `/api/properties/${params.id}`
         : "/api/properties";
 
       const method = isEditMode ? "PATCH" : "POST";
@@ -435,8 +438,8 @@ function PropertyForm() {
         const result = await response.json();
         toast({
           title: "성공",
-          description: isEditMode 
-            ? "부동산 정보가 수정되었습니다" 
+          description: isEditMode
+            ? "부동산 정보가 수정되었습니다"
             : "부동산 정보가 등록되었습니다",
         });
         window.location.href = "/admin";
@@ -456,6 +459,7 @@ function PropertyForm() {
     }
   };
 
+  // Ensure all Hooks are called before this early return
   if (loading) {
     return (
       <div className="container mx-auto p-6 flex justify-center items-center min-h-[60vh]">
@@ -464,12 +468,13 @@ function PropertyForm() {
     );
   }
 
+
   return (
     <div className="container mx-auto p-4">
       <div className="flex items-center mb-6">
-        <Button 
-          variant="outline" 
-          size="sm" 
+        <Button
+          variant="outline"
+          size="sm"
           onClick={() => window.location.href = "/admin"}
           className="mr-4"
         >
@@ -516,8 +521,8 @@ function PropertyForm() {
 
                   <div className="space-y-2">
                     <Label htmlFor="type">부동산 유형 *</Label>
-                    <Select 
-                      name="type" 
+                    <Select
+                      name="type"
                       value={formData.type}
                       onValueChange={(value) => handleSelectChange("type", value)}
                     >
@@ -659,201 +664,311 @@ function PropertyForm() {
 
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <Label>이미지 업로드 (최대 5장)</Label>
-                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                          별표(⭐) 버튼을 클릭하여 대표 이미지를 지정할 수 있습니다
-                        </span>
-                      </div>
-                      <div className="flex flex-col gap-4">
-                        <div className="border rounded-md p-4 bg-gray-50">
-                          <div className="flex items-center justify-center w-full">
-                            <label 
-                              htmlFor="imageUpload" 
-                              className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 border-gray-300"
-                            >
-                              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                <svg className="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                                  <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
-                                </svg>
-                                <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">클릭하여 업로드</span></p>
-                                <p className="text-xs text-gray-500">PNG, JPG 또는 GIF (최대 10MB, 자동 압축됨)</p>
-                              </div>
-                              <input 
-                                id="imageUpload" 
-                                type="file" 
-                                accept="image/*" 
-                                className="hidden" 
-                                onChange={(e) => {
-                                  if (uploadedImages.length >= 5) {
-                                    toast({
-                                      title: "최대 5장까지 업로드 가능합니다",
-                                      variant: "destructive"
-                                    });
-                                    return;
-                                  }
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <Label>이미지 업로드 (최대 20장, 드래그앤드롭 가능)</Label>
+                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                              별표(⭐) 버튼을 클릭하여 대표 이미지를 지정할 수 있습니다
+                            </span>
+                          </div>
+                          <div className="flex flex-col gap-4">
+                            <div className="border rounded-md p-4 bg-gray-50">
+                              <div className="flex items-center justify-center w-full">
+                                <div
+                                  onClick={() => document.getElementById('imageUpload').click()}
+                                  className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer transition-colors
+                                ${isUploading ? 'bg-gray-100 border-gray-300' : 'bg-gray-50 hover:bg-gray-100 border-gray-300'}
+                              `}
+                                  onDragOver={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    e.currentTarget.classList.add('border-primary', 'bg-blue-50');
+                                  }}
+                                  onDragEnter={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    e.currentTarget.classList.add('border-primary', 'bg-blue-50');
+                                  }}
+                                  onDragLeave={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    e.currentTarget.classList.remove('border-primary', 'bg-blue-50');
+                                  }}
+                                  onDrop={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    e.currentTarget.classList.remove('border-primary', 'bg-blue-50');
 
-                                  const file = e.target.files[0];
-                                  if (!file) return;
-
-                                  setIsUploading(true);
-
-                                  // 이미지 압축 함수
-                                  const compressImage = (file) => {
-                                    return new Promise((resolve) => {
-                                      const reader = new FileReader();
-                                      reader.onload = (event) => {
-                                        const img = new Image();
-                                        img.src = event.target.result;
-                                        img.onload = () => {
-                                          // 이미지 리사이징을 위한 캔버스 생성
-                                          const canvas = document.createElement('canvas');
-                                          // 최대 너비/높이 설정 (800px로 제한)
-                                          const MAX_SIZE = 800;
-                                          let width = img.width;
-                                          let height = img.height;
-
-                                          // 이미지 크기 조정
-                                          if (width > height) {
-                                            if (width > MAX_SIZE) {
-                                              height *= MAX_SIZE / width;
-                                              width = MAX_SIZE;
-                                            }
-                                          } else {
-                                            if (height > MAX_SIZE) {
-                                              width *= MAX_SIZE / height;
-                                              height = MAX_SIZE;
-                                            }
-                                          }
-
-                                          canvas.width = width;
-                                          canvas.height = height;
-
-                                          // 캔버스에 이미지 그리기
-                                          const ctx = canvas.getContext('2d');
-                                          ctx.drawImage(img, 0, 0, width, height);
-
-                                          // 이미지 포맷 및 품질 설정 (0.7 = 70% 품질)
-                                          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                                          resolve(compressedDataUrl);
-                                        };
-                                      };
-                                      reader.readAsDataURL(file);
-                                    });
-                                  };
-
-                                  // 이미지 압축 실행
-                                  compressImage(file).then(compressedDataUrl => {
-                                    const newImage = {
-                                      id: Date.now(), // 임시 ID
-                                      url: compressedDataUrl,
-                                      file: file
-                                    };
-
-                                    // 기존 이미지에 추가
-                                    const updatedImages = [...uploadedImages, newImage];
-                                    setUploadedImages(updatedImages);
-
-                                    // 첫 번째 이미지일 경우 대표 이미지로 설정
-                                    if (uploadedImages.length === 0) {
-                                      setFeaturedImageIndex(0);
+                                    if (uploadedImages.length >= 20) {
+                                      toast({
+                                        title: "최대 20장까지 업로드 가능합니다",
+                                        variant: "destructive"
+                                      });
+                                      return;
                                     }
 
-                                    // formData의 imageUrls 업데이트
-                                    setFormData(prev => ({
-                                      ...prev,
-                                      imageUrls: updatedImages.map(img => img.url)
-                                    }));
+                                    const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+                                    if (files.length === 0) return;
 
-                                    // 업로드 완료 상태로 변경
-                                    setIsUploading(false);
-                                  }).catch(error => {
-                                    console.error("이미지 압축 중 오류:", error);
-                                    setIsUploading(false);
-                                    toast({
-                                      title: "이미지 처리 실패",
-                                      description: "이미지 업로드 중 오류가 발생했습니다.",
-                                      variant: "destructive"
-                                    });
-                                  });
+                                    setIsUploading(true);
 
-                                  // input 초기화
-                                  e.target.value = '';
-                                }}
-                                disabled={isUploading || uploadedImages.length >= 5}
-                              />
-                            </label>
+                                    // 이미지 압축 함수 (재사용)
+                                    const compressImage = (file) => {
+                                      return new Promise((resolve) => {
+                                        const reader = new FileReader();
+                                        reader.onload = (event) => {
+                                          const img = new Image();
+                                          img.src = event.target.result;
+                                          img.onload = () => {
+                                            const canvas = document.createElement('canvas');
+                                            const MAX_SIZE = 1200; // 해상도 상향
+                                            let width = img.width;
+                                            let height = img.height;
+
+                                            if (width > height) {
+                                              if (width > MAX_SIZE) {
+                                                height *= MAX_SIZE / width;
+                                                width = MAX_SIZE;
+                                              }
+                                            } else {
+                                              if (height > MAX_SIZE) {
+                                                width *= MAX_SIZE / height;
+                                                height = MAX_SIZE;
+                                              }
+                                            }
+
+                                            canvas.width = width;
+                                            canvas.height = height;
+                                            const ctx = canvas.getContext('2d');
+                                            ctx.drawImage(img, 0, 0, width, height);
+                                            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8); // 품질 상향
+                                            resolve({
+                                              id: Date.now() + Math.random(),
+                                              url: compressedDataUrl,
+                                              file: file
+                                            });
+                                          };
+                                        };
+                                        reader.readAsDataURL(file);
+                                      });
+                                    };
+
+                                    // 병렬 처리
+                                    Promise.all(files.map(file => compressImage(file)))
+                                      .then(newImages => {
+                                        const updatedImages = [...uploadedImages, ...newImages];
+
+                                        // 20장 제한 확인
+                                        if (updatedImages.length > 20) {
+                                          toast({
+                                            title: "이미지는 최대 20장까지만 저장됩니다.",
+                                            description: `초과된 ${updatedImages.length - 20}장은 제외되었습니다.`,
+                                            variant: "warning"
+                                          });
+                                          updatedImages.splice(20);
+                                        }
+
+                                        setUploadedImages(updatedImages);
+                                        if (uploadedImages.length === 0 && newImages.length > 0) {
+                                          setFeaturedImageIndex(0);
+                                        }
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          imageUrls: updatedImages.map(img => img.url)
+                                        }));
+                                        setIsUploading(false);
+                                      })
+                                      .catch(error => {
+                                        console.error("이미지 처리 중 오류:", error);
+                                        setIsUploading(false);
+                                      });
+                                  }}
+                                >
+                                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                    {isUploading ? (
+                                      <div className="flex flex-col items-center">
+                                        <Loader2 className="w-8 h-8 mb-2 animate-spin text-primary" />
+                                        <p className="text-sm text-gray-500">이미지 처리 중...</p>
+                                      </div>
+                                    ) : (
+                                      <>
+                                        <svg className="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                                          <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
+                                        </svg>
+                                        <p className="mb-2 text-sm text-gray-500"><span className="font-semibold">클릭 또는 드래그하여 업로드</span></p>
+                                        <p className="text-xs text-gray-500">여러 장 선택 가능 (최대 20장, 장당 10MB)</p>
+                                      </>
+                                    )}
+                                  </div>
+                                  <input
+                                    id="imageUpload"
+                                    type="file"
+                                    accept="image/*"
+                                    multiple // 다중 선택 허용
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      if (uploadedImages.length >= 20) {
+                                        toast({
+                                          title: "최대 20장까지 업로드 가능합니다",
+                                          variant: "destructive"
+                                        });
+                                        return;
+                                      }
+
+                                      const files = Array.from(e.target.files);
+                                      if (files.length === 0) return;
+
+                                      setIsUploading(true);
+
+                                      const compressImage = (file) => {
+                                        return new Promise((resolve) => {
+                                          const reader = new FileReader();
+                                          reader.onload = (event) => {
+                                            const img = new Image();
+                                            img.src = event.target.result;
+                                            img.onload = () => {
+                                              const canvas = document.createElement('canvas');
+                                              const MAX_SIZE = 1200;
+                                              let width = img.width;
+                                              let height = img.height;
+
+                                              if (width > height) {
+                                                if (width > MAX_SIZE) {
+                                                  height *= MAX_SIZE / width;
+                                                  width = MAX_SIZE;
+                                                }
+                                              } else {
+                                                if (height > MAX_SIZE) {
+                                                  width *= MAX_SIZE / height;
+                                                  height = MAX_SIZE;
+                                                }
+                                              }
+
+                                              canvas.width = width;
+                                              canvas.height = height;
+                                              const ctx = canvas.getContext('2d');
+                                              ctx.drawImage(img, 0, 0, width, height);
+                                              const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                                              resolve({
+                                                id: Date.now() + Math.random(),
+                                                url: compressedDataUrl,
+                                                file: file
+                                              });
+                                            };
+                                          };
+                                          reader.readAsDataURL(file);
+                                        });
+                                      };
+
+                                      Promise.all(files.map(file => compressImage(file)))
+                                        .then(newImages => {
+                                          const updatedImages = [...uploadedImages, ...newImages];
+
+                                          if (updatedImages.length > 20) {
+                                            toast({
+                                              title: "이미지는 최대 20장까지만 저장됩니다.",
+                                              description: `초과된 ${updatedImages.length - 20}장은 제외되었습니다.`,
+                                              variant: "warning"
+                                            });
+                                            updatedImages.splice(20);
+                                          }
+
+                                          setUploadedImages(updatedImages);
+                                          if (uploadedImages.length === 0 && newImages.length > 0) {
+                                            setFeaturedImageIndex(0);
+                                          }
+                                          setFormData(prev => ({
+                                            ...prev,
+                                            imageUrls: updatedImages.map(img => img.url)
+                                          }));
+                                          setIsUploading(false);
+                                        })
+                                        .catch(error => {
+                                          console.error("이미지 처리 중 오류:", error);
+                                          setIsUploading(false);
+                                          toast({
+                                            title: "이미지 처리 실패",
+                                            description: "이미지 업로드 중 오류가 발생했습니다.",
+                                            variant: "destructive"
+                                          });
+                                        });
+
+                                      e.target.value = '';
+                                    }}
+                                    disabled={isUploading || uploadedImages.length >= 20}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* 업로드된 이미지 미리보기 */}
+                            {uploadedImages.length > 0 && (
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3"> {/* 4열로 변경 */}
+                                {uploadedImages.map((image, index) => (
+                                  <div key={image.id} className="relative group">
+                                    <img
+                                      src={image.url}
+                                      alt={`이미지 ${index + 1}`}
+                                      className={`h-24 w-full object-cover rounded-md border-2 ${featuredImageIndex === index ? 'border-primary ring-2 ring-primary ring-offset-1' : 'border-transparent'
+                                        }`}
+                                    />
+                                    <div className="absolute top-1 right-1 flex space-x-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => setFeaturedImageIndex(index)}
+                                        className={`p-1 rounded-full ${featuredImageIndex === index
+                                          ? 'bg-primary text-white'
+                                          : 'bg-black bg-opacity-50 text-white hover:bg-primary'
+                                          }`}
+                                        title="대표 이미지로 설정"
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill={featuredImageIndex === index ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                        </svg>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="p-1 bg-red-500 text-white rounded-full"
+                                        onClick={() => {
+                                          // 이미지 제거
+                                          const updatedImages = uploadedImages.filter(img => img.id !== image.id);
+                                          setUploadedImages(updatedImages);
+
+                                          // formData 업데이트
+                                          setFormData(prev => ({
+                                            ...prev,
+                                            imageUrls: updatedImages.map(img => img.url)
+                                          }));
+
+                                          // 대표 이미지 인덱스 조정
+                                          if (featuredImageIndex >= updatedImages.length && updatedImages.length > 0) {
+                                            setFeaturedImageIndex(0);
+                                          }
+                                        }}
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                      </button>
+
+                                    </div>
+                                    {/* 대표 이미지 표시 라벨 */}
+                                    {index === featuredImageIndex && (
+                                      <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-green-500 bg-opacity-90 text-white text-xs px-2 py-1 rounded-md font-medium shadow-sm z-10 pointer-events-none">
+                                        대표이미지
+                                      </span>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
 
-                        {/* 업로드된 이미지 미리보기 */}
-                        {uploadedImages.length > 0 && (
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-3">
-                            {uploadedImages.map((image, index) => (
-                              <div key={image.id} className="relative group">
-                                <img 
-                                  src={image.url} 
-                                  alt={`이미지 ${index + 1}`} 
-                                  className="h-24 w-full object-cover rounded-md border"
-                                />
-                                <div className="absolute inset-0 bg-black bg-opacity-30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-md">
-                                  <button
-                                    type="button"
-                                    className="p-1 bg-red-500 text-white rounded-full"
-                                    onClick={() => {
-                                      // 이미지 제거
-                                      const updatedImages = uploadedImages.filter(img => img.id !== image.id);
-                                      setUploadedImages(updatedImages);
-
-                                      // formData 업데이트
-                                      setFormData(prev => ({
-                                        ...prev,
-                                        imageUrls: updatedImages.map(img => img.url)
-                                      }));
-
-                                      // 대표 이미지 인덱스 조정
-                                      if (featuredImageIndex >= updatedImages.length && updatedImages.length > 0) {
-                                        setFeaturedImageIndex(0);
-                                      }
-                                    }}
-                                  >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                  </button>
-                                  {/* 대표 이미지 선택 버튼 */}
-                                  <button
-                                    type="button"
-                                    className={`absolute bottom-1 right-1 p-1.5 text-white rounded-full ${
-                                      index === featuredImageIndex 
-                                        ? 'bg-green-500 ring-2 ring-white' 
-                                        : 'bg-gray-500 bg-opacity-70 hover:bg-gray-500'
-                                    }`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setFeaturedImageIndex(index);
-                                    }}
-                                    title={index === featuredImageIndex ? "현재 대표 이미지입니다" : "대표 이미지로 설정"}
-                                  >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill={index === featuredImageIndex ? "currentColor" : "none"} viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={index === featuredImageIndex ? 0 : 2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                                    </svg>
-                                  </button>
-                                </div>
-                                {/* 대표 이미지 표시 라벨 */}
-                                {index === featuredImageIndex && (
-                                  <span className="absolute top-0 left-0 bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-tr-md rounded-bl-md font-medium">
-                                    대표이미지
-                                  </span>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        {/* 대표 이미지 URL 입력 필드는 제거됨 */}
                       </div>
                     </div>
-
-                    {/* 대표 이미지 URL 입력 필드는 제거됨 */}
                   </div>
 
 
@@ -863,7 +978,7 @@ function PropertyForm() {
                       id="featured"
                       name="featured"
                       checked={formData.featured}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setFormData({ ...formData, featured: checked })
                       }
                     />
@@ -995,7 +1110,7 @@ function PropertyForm() {
                       id="elevator"
                       name="elevator"
                       checked={formData.elevator}
-                      onCheckedChange={(checked) => 
+                      onCheckedChange={(checked) =>
                         setFormData({ ...formData, elevator: checked })
                       }
                     />
@@ -1050,9 +1165,9 @@ function PropertyForm() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="landType">지목</Label>
-                    <Select 
-                      value={formData.landType} 
-                      onValueChange={(value) => setFormData({...formData, landType: value})}
+                    <Select
+                      value={formData.landType}
+                      onValueChange={(value) => setFormData({ ...formData, landType: value })}
                     >
                       <SelectTrigger id="landType">
                         <SelectValue placeholder="지목 선택" />
@@ -1068,9 +1183,9 @@ function PropertyForm() {
 
                   <div className="space-y-2">
                     <Label htmlFor="zoneType">용도지역</Label>
-                    <Select 
-                      value={formData.zoneType} 
-                      onValueChange={(value) => setFormData({...formData, zoneType: value})}
+                    <Select
+                      value={formData.zoneType}
+                      onValueChange={(value) => setFormData({ ...formData, zoneType: value })}
                     >
                       <SelectTrigger id="zoneType">
                         <SelectValue placeholder="용도지역 선택" />
@@ -1105,7 +1220,7 @@ function PropertyForm() {
                         <Checkbox
                           id={`dealType-${type}`}
                           checked={formData.dealType.includes(type)}
-                          onCheckedChange={(checked) => 
+                          onCheckedChange={(checked) =>
                             handleDealTypeChange(type, checked)
                           }
                         />
@@ -1137,7 +1252,7 @@ function PropertyForm() {
                       onChange={handleChange}
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="monthlyRent">월세</Label>
                     <Input
@@ -1278,13 +1393,25 @@ function PropertyForm() {
                         id="coListing"
                         name="coListing"
                         checked={formData.coListing}
-                        onCheckedChange={(checked) => 
+                        onCheckedChange={(checked) =>
                           setFormData({ ...formData, coListing: checked })
                         }
                       />
                       <Label htmlFor="coListing">공동중개</Label>
                     </div>
-                    
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="isLongTerm"
+                        name="isLongTerm"
+                        checked={formData.isLongTerm}
+                        onCheckedChange={(checked) =>
+                          setFormData({ ...formData, isLongTerm: checked })
+                        }
+                      />
+                      <Label htmlFor="isLongTerm">장기투자</Label>
+                    </div>
+
                     <div className="flex items-center space-x-2 flex-1">
                       <Label htmlFor="agentName" className="whitespace-nowrap">담당중개사</Label>
                       <Input
@@ -1341,6 +1468,15 @@ function PropertyForm() {
         </div>
       </form>
     </div>
+  );
+}
+
+
+function PropertyForm() {
+  return (
+    <ErrorBoundary>
+      <PropertyFormContent />
+    </ErrorBoundary>
   );
 }
 

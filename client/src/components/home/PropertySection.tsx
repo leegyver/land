@@ -2,6 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import PropertyCard from "@/components/property/PropertyCard";
 import { Property } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+    Carousel,
+    CarouselContent,
+    CarouselItem,
+    CarouselNext,
+    CarouselPrevious,
+} from "@/components/ui/carousel";
 
 interface PropertySectionProps {
     title: React.ReactNode;
@@ -60,15 +67,40 @@ const PropertySection = ({ title, queryKey, bgColor = "bg-white", limit = 4 }: P
     }
 
     return (
-        <section className={`pt-3 pb-3 ${bgColor}`}>
+        <section className={`py-4 ${bgColor}`}>
             <div className="container mx-auto px-4">
-                <div className="text-left mb-4">
-                    <h2 className="text-2xl font-bold text-slate-900">{title}</h2>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {title && (
+                    <div className="text-left mb-4">
+                        <h2 className="text-xl md:text-2xl font-bold text-slate-900">{title}</h2>
+                    </div>
+                )}
+
+                {/* Desktop Grid View */}
+                <div className="hidden lg:grid grid-cols-4 gap-4">
                     {properties.slice(0, limit).map((property) => (
                         <PropertyCard key={property.id} property={property} />
                     ))}
+                </div>
+
+                {/* Mobile/Tablet Carousel View */}
+                <div className="lg:hidden">
+                    <Carousel
+                        opts={{
+                            align: "start",
+                            loop: true,
+                        }}
+                        className="w-full"
+                    >
+                        <CarouselContent className="-ml-2 md:-ml-4">
+                            {properties.slice(0, limit).map((property) => (
+                                <CarouselItem key={property.id} className="pl-2 md:pl-4 basis-[85%] md:basis-[45%]">
+                                    <PropertyCard property={property} />
+                                </CarouselItem>
+                            ))}
+                        </CarouselContent>
+                        {/* <CarouselPrevious className="hidden md:flex" />
+                        <CarouselNext className="hidden md:flex" /> */}
+                    </Carousel>
                 </div>
             </div>
         </section>

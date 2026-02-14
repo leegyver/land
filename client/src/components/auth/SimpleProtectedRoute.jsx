@@ -1,42 +1,43 @@
-// 단순화된 보호 라우트 컴포넌트 - JSX 확장자 사용, 타입 제거
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
-import { Route } from "wouter";
+import { Route, useLocation } from "wouter";
+import { useEffect } from "react";
 
-// 간단한 HTML을 이용한 보호 컴포넌트
-export function SimpleProtectedRoute({ path, component: Component, admin = false }) {
+/**
+ * SimpleProtectedRoute handles authentication and authorization.
+ * Refactored in V7 to be a LOGICAL WRAPPER (no Route component inside)
+ * to prevent nested route matching conflicts and Error #300.
+ */
+export function SimpleProtectedRoute({ component: Component, admin = false, ...rest }) {
   const { user, isLoading } = useAuth();
-  
-  // 보호된 컴포넌트를 간단한 래퍼로 감싸기
-  const ProtectedContent = () => {
-    // 로딩 중
-    if (isLoading) {
-      return (
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    console.log("[SimpleProtectedRoute] Mounted/Updated", { isLoading, user: !!user, admin });
+
+    if (!isLoading) {
+      if (!user) {
+        console.log("[SimpleProtectedRoute] Redirecting to /auth");
+        setLocation("/auth");
+      } else if (admin && user.role !== "admin") {
+        console.log("[SimpleProtectedRoute] Redirecting to / (not admin)");
+        setLocation("/");
+      }
+    }
+  }, [user, isLoading, admin, setLocation]);
+
+  // Use a stable loading/blank state while redirecting or resolving auth
+  if (isLoading || (!user) || (admin && user?.role !== "admin")) {
+    return (
+      <div className="flex items-center justify-center min-h-screen border-b bg-slate-50/30">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-sm font-medium text-slate-500">인증 상태 확인 중...</p>
         </div>
-      );
-    }
-    
-    // 인증되지 않은 경우
-    if (!user) {
-      // window 객체를 사용해 리다이렉트 (React 컴포넌트 렌더링 X)
-      window.location.href = "/auth";
-      return <div>인증 필요...</div>;
-    }
-    
-    // 관리자 권한 필요하지만 일반 사용자인 경우
-    if (admin && user.role !== "admin") {
-      // window 객체를 사용해 리다이렉트 (React 컴포넌트 렌더링 X)
-      window.location.href = "/";
-      return <div>권한 체크 중...</div>;
-    }
-    
-    // 권한 있음 - 컴포넌트 렌더링
-    return <Component />;
-  };
-  
-  return (
-    <Route path={path} component={ProtectedContent} />
-  );
+      </div>
+    );
+  }
+
+  // Authorization passed, render the component directly
+  return <Component {...rest} />;
 }

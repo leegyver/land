@@ -1,10 +1,13 @@
-import { Link } from "wouter";
 import { Building, Facebook, Instagram, Youtube } from "lucide-react";
+import NewsletterForm from "./NewsletterForm";
 
 const Footer = () => {
   return (
-    <footer className="bg-slate-900 text-white pt-0 pb-16 md:py-6">
+    <footer className="bg-slate-900 text-white pt-10 pb-16 md:py-12">
       <div className="container mx-auto px-4">
+        <div className="mb-12">
+          <NewsletterForm />
+        </div>
         <div className="mb-0">
           <div>
             <h3 className="text-xl font-bold mb-2 mt-3 md:mt-0 text-white">이가이버부동산</h3>

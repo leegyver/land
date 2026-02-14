@@ -25,9 +25,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { useEffect } from "react";
 
 interface ContactFormProps {
   propertyId?: number;
+  atclNo?: string;
+  propertyTitle?: string;
 }
 
 const formSchema = insertInquirySchema.extend({
@@ -38,22 +42,37 @@ const formSchema = insertInquirySchema.extend({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const ContactForm = ({ propertyId }: ContactFormProps) => {
+const ContactForm = ({ propertyId, atclNo, propertyTitle }: ContactFormProps) => {
+  const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
+  // Construct default message for crawled properties
+  const defaultMessage = atclNo && propertyTitle
+    ? `[네이버 매물 문의]\n- 매물번호: ${atclNo}\n- 매물명: ${propertyTitle}\n\n문의 내용: `
+    : "";
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       email: "",
       phone: "",
-      message: "",
+      message: defaultMessage,
       inquiryType: "매물 구매 문의",
       propertyId: propertyId,
       agreeToTerms: false
     },
   });
-  
+
+  // Auto-fill form if user is logged in
+  useEffect(() => {
+    if (user) {
+      if (user.username) form.setValue("name", user.username);
+      if (user.email) form.setValue("email", user.email);
+      if (user.phone) form.setValue("phone", user.phone);
+    }
+  }, [user, form]);
+
   const mutation = useMutation({
     mutationFn: (values: Omit<FormValues, "agreeToTerms">) => {
       return apiRequest("POST", "/api/inquiries", values);
@@ -74,13 +93,13 @@ const ContactForm = ({ propertyId }: ContactFormProps) => {
       console.error("Form submission error:", error);
     }
   });
-  
+
   const onSubmit = (data: FormValues) => {
     setIsSubmitting(true);
-    
+
     // Remove agreeToTerms as it's not part of the inquiry schema
     const { agreeToTerms, ...inquiryData } = data;
-    
+
     mutation.mutate(inquiryData);
     setIsSubmitting(false);
   };
@@ -102,7 +121,7 @@ const ContactForm = ({ propertyId }: ContactFormProps) => {
               </FormItem>
             )}
           />
-          
+
           <FormField
             control={form.control}
             name="phone"
@@ -117,7 +136,7 @@ const ContactForm = ({ propertyId }: ContactFormProps) => {
             )}
           />
         </div>
-        
+
         <FormField
           control={form.control}
           name="email"
@@ -131,7 +150,7 @@ const ContactForm = ({ propertyId }: ContactFormProps) => {
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
           name="inquiryType"
@@ -155,7 +174,7 @@ const ContactForm = ({ propertyId }: ContactFormProps) => {
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
           name="message"
@@ -163,17 +182,17 @@ const ContactForm = ({ propertyId }: ContactFormProps) => {
             <FormItem>
               <FormLabel>문의 내용 *</FormLabel>
               <FormControl>
-                <Textarea 
-                  placeholder="문의 내용을 자세히 입력해 주세요" 
-                  rows={5} 
-                  {...field} 
+                <Textarea
+                  placeholder="문의 내용을 자세히 입력해 주세요"
+                  rows={5}
+                  {...field}
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
           name="agreeToTerms"
@@ -194,13 +213,13 @@ const ContactForm = ({ propertyId }: ContactFormProps) => {
             </FormItem>
           )}
         />
-        
-        <Button 
-          type="submit" 
-          className="w-full bg-primary hover:bg-secondary"
+
+        <Button
+          type="submit"
+          className="w-full btn-primary-cta h-12 text-lg"
           disabled={isSubmitting}
         >
-          {isSubmitting ? "제출 중..." : "문의하기"}
+          {isSubmitting ? "제출 중..." : "지금 상담 신청하기"}
         </Button>
       </form>
     </Form>

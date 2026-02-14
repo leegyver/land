@@ -44,7 +44,7 @@ const TarotModal: React.FC<TarotModalProps> = ({ isOpen, onClose, propertyTitle,
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="my-6 perspective-1000 w-48 h-80 relative cursor-pointer" onClick={!card ? handleDraw : undefined}>
+                <div className="my-6 perspective-1000 w-48 h-[450px] relative cursor-pointer" onClick={!card ? handleDraw : undefined}>
                     {!card ? (
                         <div className="w-full h-full bg-slate-800 rounded-lg shadow-xl flex items-center justify-center border-4 border-slate-600 hover:scale-105 transition-transform">
                             <span className="text-slate-400 font-serif text-4xl">?</span>
@@ -52,8 +52,8 @@ const TarotModal: React.FC<TarotModalProps> = ({ isOpen, onClose, propertyTitle,
                     ) : (
                         <div className={`w-full h-full transition-all duration-700 transform ${isFlipped ? 'rotate-y-0' : 'rotate-y-180'} relative transform-style-3d`}>
                             <div className="absolute w-full h-full bg-white rounded-lg shadow-xl overflow-hidden border border-slate-200 flex flex-col">
-                                <img src={card.image} alt={card.name} className="w-full h-48 object-cover object-top" />
-                                <div className="p-4 bg-white flex-1 flex flex-col items-center text-center">
+                                <img src={card.image} alt={card.name} className="w-full h-56 object-cover object-top" />
+                                <div className="p-4 bg-white flex-1 flex flex-col items-center text-center overflow-y-auto custom-scrollbar">
                                     <h3 className="font-bold text-lg text-slate-800">{card.nameKr}</h3>
                                     <p className="text-xs text-slate-500 mb-2">{card.name}</p>
                                     <p className="text-sm font-medium text-slate-700 leading-snug">

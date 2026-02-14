@@ -3,5 +3,7 @@ export const PAGE_ORDER = [
     '/properties',
     '/news',
     '/about',
-    '/contact'
+    '/contact',
+    '/admin',
+    '/profile'
 ];

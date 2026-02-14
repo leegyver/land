@@ -174,7 +174,14 @@ export default function ProfilePage() {
         <meta name="description" content="회원 정보 관리, 비밀번호 변경 등 계정 설정을 할 수 있습니다." />
       </Helmet>
 
-      <h1 className="text-3xl font-bold mb-8">내 프로필</h1>
+      <h1 className="text-3xl font-bold mb-8">
+        내 프로필
+        {user.provider && (
+          <span className="ml-2 text-xl font-medium text-slate-400">
+            ({user.provider === 'naver' ? '네이버 로그인' : user.provider === 'kakao' ? '카카오 로그인' : user.provider + ' 로그인'})
+          </span>
+        )}
+      </h1>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">

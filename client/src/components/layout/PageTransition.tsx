@@ -41,22 +41,18 @@ export const PageTransition: React.FC<PageTransitionProps> = ({ children }) => {
     const currentIndex = PAGE_ORDER.indexOf(currentPath);
 
     useEffect(() => {
-        if (currentIndex === -1) {
-            // 순서에 없는 페이지(상세페이지 등)는 방향성 없이 제자리 페이드인하거나
-            // 직전 상태 유지 (여기서는 0으로 처리)
-            setDirection(0);
-            return;
-        }
-
-        if (currentIndex > prevIndex) {
-            setDirection(1); // 오른쪽으로 이동 (다음 페이지)
-        } else if (currentIndex < prevIndex) {
-            setDirection(-1); // 왼쪽으로 이동 (이전 페이지)
+        if (currentIndex !== -1) {
+            if (currentIndex > prevIndex) {
+                setDirection(1);
+            } else if (currentIndex < prevIndex) {
+                setDirection(-1);
+            } else {
+                setDirection(0);
+            }
+            setPrevIndex(currentIndex);
         } else {
             setDirection(0);
         }
-
-        setPrevIndex(currentIndex);
     }, [currentIndex, prevIndex]);
 
     // 키 값은 전체 location을 사용 (쿼리 파라미터 변경 시에도 반응할지 여부 결정 필요)

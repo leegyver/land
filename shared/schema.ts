@@ -24,6 +24,8 @@ export const propertySchema = z.object({
   urgentOrder: z.number().default(0).optional(),
   isNegotiable: z.boolean().default(false).optional(),
   negotiableOrder: z.number().default(0).optional(),
+  isLongTerm: z.boolean().default(false).optional(),
+  longTermOrder: z.number().default(0).optional(),
 
   isVisible: z.boolean().default(true).optional(),
   createdAt: z.date().or(z.string()).optional(),
@@ -198,3 +200,54 @@ export const bannerSchema = z.object({
 export type Banner = z.infer<typeof bannerSchema>;
 export const insertBannerSchema = bannerSchema.omit({ id: true, createdAt: true });
 export type InsertBanner = z.infer<typeof insertBannerSchema>;
+
+// --- Notice ---
+export const noticeSchema = z.object({
+  id: z.number(),
+  title: z.string(),
+  content: z.string(),
+  imageUrls: z.array(z.string()).optional().default([]),
+  isPinned: z.boolean().default(false).optional(),
+  authorId: z.number().optional().nullable(),
+  viewCount: z.number().default(0).optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional()
+});
+export type Notice = z.infer<typeof noticeSchema>;
+export const insertNoticeSchema = noticeSchema.omit({ id: true, createdAt: true, updatedAt: true, viewCount: true });
+export type InsertNotice = z.infer<typeof insertNoticeSchema>;
+
+// --- Crawled Property ---
+export const crawledPropertySchema = z.object({
+  id: z.number(),
+  atclNo: z.string(), // Naver Article ID
+  atclNm: z.string(), // Title/Name
+  rletTpNm: z.string(), // Real Estate Type Name (e.g. 토지)
+  tradTpNm: z.string(), // Trade Type Name (e.g. 매매)
+  flrInfo: z.string().optional().nullable(), // Floor Info
+  prc: z.string().or(z.number()), // Price (Man Won or string)
+  spc1: z.string().or(z.number()).optional().nullable(), // Area 1
+  spc2: z.string().or(z.number()).optional().nullable(), // Area 2
+  direction: z.string().optional().nullable(),
+  lat: z.number().optional().nullable(),
+  lng: z.number().optional().nullable(),
+  imgUrl: z.string().optional().nullable(),
+  rltrNm: z.string().optional().nullable(), // Realtor Name
+  landType: z.string().optional().nullable(), // Land Category (지목)
+  zoneType: z.string().optional().nullable(), // Zone Type (용도지역)
+  crawledAt: z.date().optional()
+});
+export type CrawledProperty = z.infer<typeof crawledPropertySchema>;
+export const insertCrawledPropertySchema = crawledPropertySchema.omit({ id: true, crawledAt: true });
+export type InsertCrawledProperty = z.infer<typeof insertCrawledPropertySchema>;
+
+// --- Newsletter Subscription ---
+export const newsletterSubscriptionSchema = z.object({
+  id: z.number(),
+  email: z.string().email(),
+  createdAt: z.date().or(z.string()).optional()
+});
+export type NewsletterSubscription = z.infer<typeof newsletterSubscriptionSchema>;
+
+export const insertNewsletterSubscriptionSchema = newsletterSubscriptionSchema.omit({ id: true, createdAt: true });
+export type InsertNewsletterSubscription = z.infer<typeof insertNewsletterSubscriptionSchema>;

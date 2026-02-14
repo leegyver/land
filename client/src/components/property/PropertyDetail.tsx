@@ -8,7 +8,7 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import { useState, useEffect } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import {
   Maximize,
   Bed,
@@ -38,7 +38,6 @@ import { formatKoreanPrice } from "@/lib/formatter";
 import { useSaju } from "@/contexts/SajuContext";
 import { getCompatibilityScore } from "@/lib/saju";
 import SajuFormModal from "@/components/saju/SajuFormModal";
-import SajuDetailModal from "@/components/saju/SajuDetailModal";
 import TarotModal from "@/components/tarot/TarotModal";
 
 // 타입 문제를 위한 전역 선언
@@ -82,11 +81,11 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
   const [api, setApi] = useState<CarouselApi>();
   const { user } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation(); // hook added
 
   // Saju & Tarot Logic
   const { sajuData, openSajuModal } = useSaju();
   const [isTarotOpen, setIsTarotOpen] = useState(false);
-  const [isSajuDetailOpen, setIsSajuDetailOpen] = useState(false);
   const [compatibility, setCompatibility] = useState<{
     score: number,
     comment: string,
@@ -370,10 +369,10 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                 {sajuData && compatibility ? (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1">
-                        <Sparkles className="w-4 h-4 text-purple-600" /> 사주 궁합 점수
+                      <h4 className="text-sm md:text-base font-bold text-slate-800 flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 md:w-5 md:h-5 text-purple-600" /> 사주 궁합 점수
                       </h4>
-                      <span className={`text-xl font-black ${compatibility.score >= 80 ? 'text-green-600' : compatibility.score >= 50 ? 'text-amber-600' : 'text-red-500'}`}>
+                      <span className={`text-xl md:text-2xl font-black ${compatibility.score >= 80 ? 'text-green-600' : compatibility.score >= 50 ? 'text-amber-600' : 'text-red-500'}`}>
                         {compatibility.score}점
                       </span>
                     </div>
@@ -391,27 +390,27 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                           {/* Investment/Living Advice */}
                           <div className="space-y-1">
                             <div className="flex items-center gap-1.5">
-                              <div className="p-1 px-2 bg-blue-50 text-blue-600 rounded text-[10px] font-bold">부동산 운</div>
-                              <span className="text-xs font-bold text-slate-800">{compatibility.details.investment.style}</span>
+                              <div className="p-1 px-2 bg-blue-50 text-blue-600 rounded text-[11px] md:text-xs font-bold">부동산 운</div>
+                              <span className="text-xs md:text-sm font-bold text-slate-800">{compatibility.details.investment.style}</span>
                             </div>
-                            <p className="text-[11px] text-slate-500 pl-1">{compatibility.details.investment.advice}</p>
+                            <p className="text-xs text-slate-500 pl-1">{compatibility.details.investment.advice}</p>
                           </div>
 
                           {/* Styling Advice */}
                           <div className="space-y-1">
                             <div className="flex items-center gap-1.5">
-                              <div className="p-1 px-2 bg-green-50 text-green-600 rounded text-[10px] font-bold">인테리어</div>
-                              <span className="text-xs font-bold text-slate-800">추천 색상: {compatibility.details.styling.colors}</span>
+                              <div className="p-1 px-2 bg-green-50 text-green-600 rounded text-[11px] md:text-xs font-bold">인테리어</div>
+                              <span className="text-xs md:text-sm font-bold text-slate-800">추천 색상: {compatibility.details.styling.colors}</span>
                             </div>
-                            <p className="text-[11px] text-slate-500 pl-1">{compatibility.details.styling.tip}</p>
+                            <p className="text-xs text-slate-500 pl-1">{compatibility.details.styling.tip}</p>
                           </div>
 
                           {/* Location Advice */}
                           <div className="space-y-1">
                             <div className="flex items-center gap-1.5">
-                              <div className="p-1 px-2 bg-orange-50 text-orange-600 rounded text-[10px] font-bold">입지 조언</div>
+                              <div className="p-1 px-2 bg-orange-50 text-orange-600 rounded text-[11px] md:text-xs font-bold">입지 조언</div>
                             </div>
-                            <p className="text-[11px] text-slate-500 pl-1">{compatibility.details.location}</p>
+                            <p className="text-xs text-slate-500 pl-1">{compatibility.details.location}</p>
                           </div>
                         </>
                       )}
@@ -420,7 +419,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                     <div className="pt-3 border-t border-slate-100 flex justify-between items-center bg-slate-50/30 -mx-4 -mb-4 p-3 px-4 rounded-b-lg">
                       <button
                         className="text-[11px] text-purple-600 font-bold hover:underline"
-                        onClick={() => setIsSajuDetailOpen(true)}
+                        onClick={() => setLocation("/saju")}
                       >
                         상세 분석 더보기 &gt;
                       </button>
@@ -501,10 +500,10 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
 
           {/* 카카오톡 배너 */}
           <a href={siteConfig.kakaoChannelUrl} target="_blank" rel="noopener noreferrer" className="block w-full">
-            <div className="bg-[#FEE500] rounded-xl p-4 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+            <div className="bg-[#FEE500] rounded-xl p-4 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow cursor-pointer hover:scale-[1.02] transition-transform">
               <div>
-                <div className="font-bold text-[#191919] text-lg">1:1 상담 시작하기</div>
-                <div className="text-xs text-gray-700 opacity-80">카카오톡 오픈채팅으로 빠르고 편리하게</div>
+                <div className="font-bold text-[#191919] text-lg">1:1 상담 신청하기</div>
+                <div className="text-xs text-gray-700 opacity-80">카카오톡으로 빠르고 편리하게</div>
               </div>
               <SiKakaotalk className="w-10 h-10 text-[#191919]" />
             </div>
@@ -710,12 +709,6 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
           propertyTitle={property.title}
         />
       )}
-      <SajuDetailModal
-        isOpen={isSajuDetailOpen}
-        onClose={() => setIsSajuDetailOpen(false)}
-        sajuData={sajuData}
-        username={user?.username}
-      />
     </div>
   );
 };

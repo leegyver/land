@@ -14,7 +14,9 @@ import {
   insertNewsSchema,
   insertPropertyInquirySchema,
   insertFavoriteSchema,
-  insertBannerSchema
+  insertBannerSchema,
+  insertNoticeSchema,
+  insertNewsletterSubscriptionSchema
 } from "@shared/schema";
 import { memoryCache } from "./cache";
 import { setupAuth } from "./auth";
@@ -25,6 +27,7 @@ import { testRealEstateAPI } from "./test-api";
 import { getLatestBlogPosts } from "./blog-fetcher";
 import { getLatestYouTubeVideos, getChannelIdByHandle, fetchYouTubeShorts, fetchLatestYouTubeVideosWithAPI } from "./youtube-fetcher";
 import { importPropertiesFromSheet, checkDuplicatesFromSheet } from "./sheet-importer";
+import { naverCrawler } from "./services/naver-crawler";
 import { log } from "./vite";
 
 // 사이트 설정 (필요시 환경변수나 설정 파일로 이동 가능)
@@ -35,6 +38,12 @@ const siteConfig = {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Global request logger for debugging
+  app.use((req, res, next) => {
+    console.log(`[REQ] ${new Date().toLocaleTimeString()} - ${req.method} ${req.url}`);
+    next();
+  });
+
   // Ensure uploads directory exists
   const uploadDir = path.join(process.cwd(), "public/uploads");
   if (!fs.existsSync(uploadDir)) {
@@ -177,6 +186,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // API ROUTES
 
+  // Search Properties
+  app.get("/api/search", async (req, res) => {
+    try {
+      const { keyword, district, type, minPrice, maxPrice, tag } = req.query;
+      const includeCrawled = req.query.includeCrawled === 'true';
+
+      console.log("검색 요청 수신:", { keyword, district, type, minPrice, maxPrice, tag, includeCrawled });
+
+      // Fetch internal sources (always needed)
+      const internalProps = await storage.getAllProperties();
+      let naverProps: any[] = [];
+
+      // Fetch naver sources only if requested
+      if (includeCrawled) {
+        naverProps = await storage.getCrawledProperties();
+      }
+
+      // Map internal properties
+      const mappedInternal = internalProps
+        .filter(p => p.isVisible) // Internal only visible ones
+        .map(p => ({ ...p, source: 'internal' }));
+
+      // Map naver properties to same structure
+      const mappedNaver = naverProps.map(p => ({
+        id: `naver-${p.atclNo}`,
+        atclNo: p.atclNo,
+        title: p.atclNm,
+        type: p.rletTpNm,
+        price: String(Number(p.prc) * 10000), // Map to string Won
+        address: `인천광역시 강화군 ${p.flrInfo}`,
+        district: '수집매물',
+        size: p.spc1,
+        latitude: p.lat,
+        longitude: p.lng,
+        imageUrls: p.imgUrl ? [p.imgUrl] : [],
+        dealType: [p.tradTpNm],
+        source: 'naver',
+        direction: p.direction,
+        rltrNm: p.rltrNm,
+        description: "",
+        isUrgent: false,
+        isNegotiable: false,
+        isLongTerm: false,
+        featured: false
+      }));
+
+      // Combine
+      let combined: any[] = [...mappedInternal];
+      if (includeCrawled) {
+        combined = [...combined, ...mappedNaver];
+      }
+
+      // Safety check: Filter out anything that looks like naver if includeCrawled is false
+      if (!includeCrawled) {
+        combined = (combined as any[]).filter(p => String(p.id).startsWith('naver-') === false && p.district !== '수집매물' && p.source !== 'naver');
+      }
+
+      // 1. 키워드 검색
+      if (keyword && typeof keyword === 'string' && keyword.trim() !== '') {
+        const term = keyword.toLowerCase().trim();
+        combined = combined.filter(p =>
+          (p.title && p.title.toLowerCase().includes(term)) ||
+          (p.address && p.address.toLowerCase().includes(term)) ||
+          (p.description && p.description.toLowerCase().includes(term)) ||
+          (p.district && p.district.toLowerCase().includes(term))
+        );
+      }
+
+      // 2. 지역 필터링
+      if (district && district !== 'all') {
+        const searchDistrict = (district as string).toLowerCase();
+        combined = combined.filter(p => {
+          const propertyDistrict = (p.district || "").toLowerCase();
+
+          if (p.source === 'naver') {
+            return searchDistrict === '수집매물';
+          }
+
+          // 내부 매물용 특수 매칭 (기존 로직 유지)
+          if (propertyDistrict === searchDistrict) return true;
+          if (searchDistrict === '기타지역') {
+            return !propertyDistrict.includes('강화') || propertyDistrict === '';
+          }
+          return false;
+        });
+      }
+
+      // 3. 유형 필터링
+      if (type && type !== 'all') {
+        const searchType = (type as string).toLowerCase();
+        combined = combined.filter(p => (p.type || "").toLowerCase().includes(searchType));
+      }
+
+      // 4. 가격 범위 필터링 (매매가, 전세금, 보증금 중 하나라도 매칭)
+      if (minPrice && maxPrice) {
+        const min = Number(minPrice);
+        const max = Number(maxPrice);
+        combined = combined.filter(p => {
+          const price = Number(p.price || 0);
+          const deposit = Number((p as any).deposit || 0);
+          const depositAmount = Number((p as any).depositAmount || 0);
+
+          return (price >= min && price <= max) ||
+            (deposit >= min && deposit <= max) ||
+            (depositAmount >= min && depositAmount <= max);
+        });
+      } else if (minPrice) {
+        const min = Number(minPrice);
+        combined = combined.filter(p => Number(p.price || 0) >= min || Number((p as any).deposit || 0) >= min || Number((p as any).depositAmount || 0) >= min);
+      } else if (maxPrice) {
+        const max = Number(maxPrice);
+        combined = combined.filter(p => Number(p.price || 0) <= max && Number(p.price || 0) > 0);
+      }
+
+      // 5. 태그 필터링
+      if (tag) {
+        if (tag === 'urgent') combined = combined.filter(p => (p as any).isUrgent);
+        if (tag === 'negotiable') combined = combined.filter(p => (p as any).isNegotiable);
+        if (tag === 'long-term') combined = combined.filter(p => (p as any).isLongTerm);
+        if (tag === 'recommended') combined = combined.filter(p => (p as any).featured);
+      }
+
+      console.log(`검색 완료: ${combined.length}개 반환 (Naver 포함 여부: ${includeCrawled})`);
+      res.json(combined);
+    } catch (error) {
+      console.error("Search API failed:", error);
+      res.status(500).json({ message: "Search failed" });
+    }
+  });
+
   // Properties
   app.get("/api/properties", async (req, res) => {
     try {
@@ -205,6 +344,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(properties);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch properties" });
+    }
+  });
+
+  // Integrated Properties (Internal + Crawled)
+  app.get("/api/properties/integrated", async (req, res) => {
+    try {
+      const includeCrawled = req.query.includeCrawled === 'true';
+
+      const internalPropsAction = storage.getProperties();
+      const crawledPropsAction = includeCrawled ? storage.getCrawledProperties() : Promise.resolve([]);
+
+      const [internalProps, crawledProps] = await Promise.all([
+        internalPropsAction,
+        crawledPropsAction
+      ]);
+
+      const integrated = [
+        ...internalProps.map(p => ({ ...p, source: 'internal' })),
+        ...crawledProps.map(p => ({
+          id: `naver-${p.atclNo}`, // Unique ID for frontend key
+          atclNo: p.atclNo, // Keep original ID for reference
+          title: p.atclNm,
+          type: p.rletTpNm,
+          price: Number(p.prc) * 10000, // Convert Man-Won to Won
+          // Essential map fields only
+          latitude: p.lat,
+          longitude: p.lng,
+          dealType: [p.tradTpNm] || [],
+          source: 'naver',
+          // Omit detailed fields for list to keep homepage fast
+          address: ``,
+          district: '수집매물',
+          size: '',
+          imageUrls: [],
+          direction: '',
+          rltrNm: ''
+        }))
+      ];
+
+      console.log(`[API] Integrated fetch: ${integrated.length} items (Internal: ${internalProps.length}, Crawled: ${crawledProps.length})`);
+      res.json(integrated);
+    } catch (error) {
+      console.error("Integrated fetch failed:", error);
+      res.status(500).json({ message: "Failed to fetch integrated properties" });
     }
   });
 
@@ -248,7 +431,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/properties/urgent", async (req, res) => {
     try {
-      const properties = await storage.getUrgentProperties(4);
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const properties = await storage.getUrgentProperties(limit);
       res.json(properties);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch urgent properties" });
@@ -257,16 +441,156 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/properties/negotiable", async (req, res) => {
     try {
-      const properties = await storage.getNegotiableProperties(4);
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const properties = await storage.getNegotiableProperties(limit);
       res.json(properties);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch negotiable properties" });
     }
   });
 
+  app.get("/api/properties/long-term", async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const properties = await storage.getLongTermProperties(limit);
+      res.json(properties);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch long-term properties" });
+    }
+  });
+
+  // Toggle Property Status (Urgent, Negotiable, Long-term)
+  app.patch("/api/properties/:id/urgent", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+        return res.status(403).send("Unauthorized");
+      }
+      const id = parseInt(req.params.id);
+      const { isUrgent } = req.body;
+      await storage.togglePropertyUrgent(id, isUrgent);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to toggle urgent status" });
+    }
+  });
+
+  app.patch("/api/properties/:id/negotiable", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+        return res.status(403).send("Unauthorized");
+      }
+      const id = parseInt(req.params.id);
+      const { isNegotiable } = req.body;
+      await storage.togglePropertyNegotiable(id, isNegotiable);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to toggle negotiable status" });
+    }
+  });
+
+  app.patch("/api/properties/:id/long-term", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+        return res.status(403).send("Unauthorized");
+      }
+      const id = parseInt(req.params.id);
+      const { isLongTerm } = req.body;
+      await storage.togglePropertyLongTerm(id, isLongTerm);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to toggle long-term status" });
+    }
+  });
+
+  // Reorder Properties
+  app.put("/api/properties/urgent/order", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+        return res.status(403).send("Unauthorized");
+      }
+      const { items } = req.body; // Array of { id, order }
+      for (const item of items) {
+        await storage.updatePropertyUrgentOrder(item.id, item.order);
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update urgent order" });
+    }
+  });
+
+  app.put("/api/properties/negotiable/order", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+        return res.status(403).send("Unauthorized");
+      }
+      const { items } = req.body;
+      for (const item of items) {
+        await storage.updatePropertyNegotiableOrder(item.id, item.order);
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update negotiable order" });
+    }
+  });
+
+  app.put("/api/properties/long-term/order", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+        return res.status(403).send("Unauthorized");
+      }
+      const { items } = req.body;
+      for (const item of items) {
+        await storage.updatePropertyLongTermOrder(item.id, item.order);
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update long-term order" });
+    }
+  });
+
   app.get("/api/properties/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const idParam = req.params.id;
+
+      // Check for Naver Property ID
+      if (idParam.startsWith('naver-')) {
+        const atclNo = idParam.replace('naver-', '');
+        const crawledProp = await storage.getCrawledProperty(atclNo);
+
+        if (!crawledProp) {
+          return res.status(404).json({ message: "Crawled property not found" });
+        }
+
+        // Map to Property interface locally for frontend compatibility
+        const mapped: any = {
+          id: `naver-${crawledProp.atclNo}`,
+          atclNo: crawledProp.atclNo,
+          title: crawledProp.atclNm,
+          type: crawledProp.rletTpNm,
+          price: String(Number(crawledProp.prc) * 10000),
+          address: `인천광역시 강화군 ${crawledProp.flrInfo}`, // Approximate
+          district: '수집매물',
+          size: crawledProp.spc1,
+          imageUrls: crawledProp.imgUrl ? [crawledProp.imgUrl] : [],
+          dealType: [crawledProp.tradTpNm],
+          source: 'naver',
+          direction: crawledProp.direction,
+          rltrNm: crawledProp.rltrNm,
+          description: "네이버 부동산에서 수집된 매물입니다.",
+          isUrgent: false,
+          isNegotiable: false,
+          isLongTerm: false,
+          featured: false
+        };
+
+        return res.json(mapped);
+      }
+
+      const id = parseInt(idParam);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid property ID" });
+      }
+
       const property = await storage.getProperty(id);
 
       if (!property) {
@@ -344,6 +668,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/properties/:id/long-term", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || req.user?.role !== "admin") {
+        return res.status(403).send("Unauthorized");
+      }
+      const id = parseInt(req.params.id);
+      const { isLongTerm } = req.body;
+      await storage.togglePropertyLongTerm(id, isLongTerm);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to toggle property long-term status" });
+    }
+  });
+
   app.put("/api/properties/:id/urgent-order", async (req, res) => {
     try {
       if (!req.isAuthenticated() || req.user?.role !== "admin") {
@@ -369,6 +707,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: "Failed to update property negotiable order" });
+    }
+  });
+
+  app.put("/api/properties/:id/long-term-order", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || req.user?.role !== "admin") {
+        return res.status(403).send("Unauthorized");
+      }
+      const id = parseInt(req.params.id);
+      const { longTermOrder } = req.body;
+      await storage.updatePropertyLongTermOrder(id, longTermOrder);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update property long-term order" });
     }
   });
 
@@ -845,101 +1197,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error marking all inquiries as read:", error);
       res.status(500).json({ message: "읽음 처리 중 오류가 발생했습니다." });
-    }
-  });
-
-  // Search properties
-  app.get("/api/search", async (req, res) => {
-    try {
-      const { district, type, minPrice, maxPrice, keyword } = req.query;
-      console.log("검색 파라미터:", { district, type, minPrice, maxPrice, keyword });
-
-      let properties = await storage.getProperties();
-
-      // 키워드 검색 (제목, 설명, 주소에서 검색)
-      if (keyword && typeof keyword === 'string' && keyword.trim() !== '') {
-        const searchKeyword = keyword.toLowerCase().trim();
-        console.log(`키워드 검색: "${searchKeyword}"`);
-
-        properties = properties.filter(p => {
-          const title = (p.title || '').toLowerCase();
-          const description = (p.description || '').toLowerCase();
-          const address = (p.address || '').toLowerCase();
-          const district = (p.district || '').toLowerCase();
-
-          return title.includes(searchKeyword) ||
-            description.includes(searchKeyword) ||
-            address.includes(searchKeyword) ||
-            district.includes(searchKeyword);
-        });
-        console.log(`키워드 검색 결과: ${properties.length}개 매물`);
-      }
-
-      // 지역 필터링 (district 값이 존재하고 "all"이 아닌 경우)
-      if (district && district !== "all") {
-        console.log(`지역 필터링: ${district}`);
-
-        properties = properties.filter(p => {
-          // 매물의 district 필드가 없는 경우를 대비한 안전 처리
-          const propertyDistrict = (p.district || "").toLowerCase();
-          // 검색 조건의 district를 소문자로 변환
-          const searchDistrict = (district as string).toLowerCase();
-
-          // 이 부분에서 로그를 추가하여 디버깅
-          console.log(`매물 ID ${p.id}의 지역: "${propertyDistrict}", 검색 지역: "${searchDistrict}"`);
-
-          // 검색 조건 분석: 정확한 일치 검색 (등록 시와 동일한 지역명 사용)
-          let isMatch = false;
-
-          // 정확한 일치 케이스 
-          if (propertyDistrict === searchDistrict) {
-            isMatch = true;
-          }
-          // 기타지역 특수 케이스 (district 필드가 비어있거나 '강화'가 포함되지 않은 경우)
-          else if (searchDistrict === '기타지역') {
-            isMatch = !propertyDistrict.includes('강화') || propertyDistrict === '';
-          }
-          // all인 경우 모든 매물 표시
-          else if (searchDistrict === 'all') {
-            isMatch = true;
-          }
-
-          if (isMatch) {
-            console.log(`✓ 매칭 매물 발견: ${p.id}, ${p.title}, ${p.district}`);
-          }
-
-          return isMatch;
-        });
-      }
-
-      // 유형 필터링 (type 값이 존재하고 "all"이 아닌 경우)
-      if (type && type !== "all") {
-        properties = properties.filter(p => {
-          // 대소문자 구분 없이 비교
-          const propertyType = (p.type || "").toLowerCase();
-          const searchType = (type as string).toLowerCase();
-          return propertyType.includes(searchType);
-        });
-      }
-
-      // 가격 범위 필터링 (minPrice와 maxPrice 둘 다 존재하는 경우)
-      if (minPrice && maxPrice) {
-        const min = parseInt(minPrice as string);
-        const max = parseInt(maxPrice as string);
-
-        if (!isNaN(min) && !isNaN(max)) {
-          properties = properties.filter(p => {
-            const price = p.price !== undefined ? Number(p.price) : 0;
-            return price >= min && price <= max;
-          });
-        }
-      }
-
-      console.log(`검색 결과: ${properties.length}개 매물`);
-      res.json(properties);
-    } catch (error) {
-      console.error("매물 검색 오류:", error);
-      res.status(500).json({ message: "매물 검색 중 오류가 발생했습니다." });
     }
   });
 
@@ -2276,6 +2533,252 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("스프레드시트 데이터 가져오기 오류:", error);
       res.status(500).json({ success: false, error: "데이터 가져오기 중 오류가 발생했습니다." });
+    }
+  });
+
+  // Notice Board API
+  app.get("/api/notices", async (req, res) => {
+    try {
+      const notices = await storage.getNotices();
+      res.json(notices);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch notices" });
+    }
+  });
+
+  app.get("/api/notices/pinned", async (req, res) => {
+    try {
+      const notice = await storage.getPinnedNotice();
+      res.json(notice || null);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch pinned notice" });
+    }
+  });
+
+  app.get("/api/notices/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const notice = await storage.getNotice(id);
+      if (!notice) {
+        return res.status(404).json({ message: "Notice not found" });
+      }
+
+      // Increment view count
+      await storage.incrementNoticeViewCount(id);
+
+      res.json(notice);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch notice" });
+    }
+  });
+
+  app.post("/api/notices", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).send("Unauthorized");
+      const user = req.user as Express.User;
+      if (user.role !== "admin") return res.status(403).send("Forbidden");
+      // const user = { id: 1, role: 'admin' } as any;
+
+      const noticeData = insertNoticeSchema.parse(req.body);
+
+      const notice = await storage.createNotice({
+        ...noticeData,
+        authorId: user.id
+      });
+      res.status(201).json(notice);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid notice data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to create notice" });
+      }
+    }
+  });
+
+  app.patch("/api/notices/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).send("Unauthorized");
+      const user = req.user as Express.User;
+      if (user.role !== "admin") return res.status(403).send("Forbidden");
+
+      const id = parseInt(req.params.id);
+      const noticeData = insertNoticeSchema.partial().parse(req.body);
+      const updatedNotice = await storage.updateNotice(id, noticeData);
+
+      if (!updatedNotice) return res.status(404).json({ message: "Notice not found" });
+
+      res.json(updatedNotice);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ message: "Invalid notice data", errors: error.errors });
+      } else {
+        res.status(500).json({ message: "Failed to update notice" });
+      }
+    }
+  });
+
+  app.delete("/api/notices/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).send("Unauthorized");
+      const user = req.user as Express.User;
+      if (user.role !== "admin") return res.status(403).send("Forbidden");
+
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteNotice(id);
+
+      if (success) {
+        res.json({ success: true });
+      } else {
+        res.status(404).json({ message: "Notice not found" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete notice" });
+    }
+  });
+
+  // --- Newsletter API ---
+  app.post("/api/newsletter/subscribe", async (req, res) => {
+    try {
+      const parsed = insertNewsletterSubscriptionSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "유효한 이메일 주소를 입력해주세요.", errors: parsed.error });
+      }
+
+      const { email } = parsed.data;
+
+      // 중복 구독 확인
+      const existing = await storage.getNewsletterSubscriptionByEmail(email);
+      if (existing) {
+        return res.status(400).json({ message: "이미 구독 중인 이메일입니다." });
+      }
+
+      // 구독 정보 저장
+      const subscription = await storage.createNewsletterSubscription({ email });
+
+      // 자동 응답 이메일 발송
+      try {
+        const welcomeHtml = `
+          <div style="font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333; line-height: 1.6;">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #2563eb; margin: 0; font-size: 24px;">이가이버부동산 뉴스레터 구독을 감사드립니다!</h1>
+            </div>
+            
+            <p>안녕하세요,</p>
+            <p><strong>강화도 전문가 '이가이버'</strong>의 부동산 뉴스레터를 구독해주셔서 진심으로 감사드립니다.</p>
+            
+            <div style="background-color: #f8fafc; border-radius: 8px; padding: 25px; margin: 30px 0; border: 1px solid #e2e8f0;">
+              <h3 style="margin-top: 0; color: #1e40af; border-bottom: 1px solid #cbd5e1; padding-bottom: 10px;">앞으로 이런 소식을 전해드려요:</h3>
+              <ul style="padding-left: 20px; margin-bottom: 0;">
+                <li style="margin-bottom: 8px;"><strong>강화도 주간 부동산 시장 동향</strong> (실거래가 분석)</li>
+                <li style="margin-bottom: 8px;"><strong>이가이버가 엄선한 금주의 추천 매물</strong></li>
+                <li style="margin-bottom: 8px;"><strong>강화도 거주 및 투자 팁</strong> (직접 경험한 노하우)</li>
+                <li><strong>부동산 관련 법률 및 세제 소식</strong></li>
+              </ul>
+            </div>
+            
+            <p>매주 알찬 정보를 담아 찾아뵙겠습니다. 혹시 궁금하신 사항이 있다면 언제든 편하게 문의해 주시기 바랍니다.</p>
+            
+            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; font-size: 14px; color: #666;">
+              <p style="margin-bottom: 5px;"><strong>이가이버 부동산 중개사무소</strong></p>
+              <p style="margin-top: 5px;">인천광역시 강화군 강화읍 | 대표: 이민호</p>
+              <p><a href="${req.protocol}://${req.get('host')}" style="color: #2563eb; text-decoration: none;">홈페이지 방문하기</a></p>
+            </div>
+          </div>
+        `;
+
+        await sendEmail(
+          email,
+          "[이가이버부동산] 뉴스레터 구독 신청이 완료되었습니다.",
+          welcomeHtml
+        );
+        console.log(`[Newsletter] Auto-reply sent to ${email}`);
+      } catch (emailError) {
+        console.error(`[Newsletter] Failed to send auto-reply to ${email}:`, emailError);
+        // 구독 저장은 성공했으므로 계속 진행
+      }
+
+      res.status(201).json({ message: "구독 신청이 완료되었습니다. 감사 메일을 확인해주세요!", subscription });
+    } catch (error) {
+      console.error("Newsletter subscription error:", error);
+      res.status(500).json({ message: "구독 신청 중 오류가 발생했습니다." });
+    }
+  });
+
+  // 관리자용 뉴스레터 구독자 목록 조회
+  app.get("/api/admin/newsletter/subscriptions", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+        return res.status(401).json({ message: "관리자 권한이 필요합니다." });
+      }
+
+      const subscriptions = await storage.getNewsletterSubscriptions();
+      res.json(subscriptions);
+    } catch (error) {
+      console.error("Newsletter fetch error:", error);
+      res.status(500).json({ message: "구독자 목록을 불러오는 중 오류가 발생했습니다." });
+    }
+  });
+
+  // 관리자용 뉴스레터 구독 삭제
+  app.delete("/api/admin/newsletter/subscriptions/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+        return res.status(401).json({ message: "관리자 권한이 필요합니다." });
+      }
+
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteNewsletterSubscription(id);
+
+      if (success) {
+        res.json({ message: "구독 정보가 삭제되었습니다." });
+      } else {
+        res.status(404).json({ message: "구독 정보를 찾을 수 없습니다." });
+      }
+    } catch (error) {
+      console.error("Newsletter delete error:", error);
+      res.status(500).json({ message: "구독 삭제 중 오류가 발생했습니다." });
+    }
+  });
+
+  // Crawler API
+  app.post("/api/admin/crawler/run", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "인증이 필요합니다." });
+      const user = req.user as Express.User;
+      if (user.role !== "admin") return res.status(403).json({ message: "관리자 권한이 필요합니다." });
+
+      const bounds = req.body.bounds; // optional { minLat, minLon, maxLat, maxLon }
+      const mode = req.body.mode; // optional 'single' | 'grid'
+      const result = await naverCrawler.fetchAndSave(bounds, mode);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ message: "Crawler failed", error: String(error) });
+    }
+  });
+
+  app.get("/api/admin/crawled-properties", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "인증이 필요합니다." });
+      const user = req.user as Express.User;
+      if (user.role !== "admin") return res.status(403).json({ message: "관리자 권한이 필요합니다." });
+
+      const properties = await storage.getCrawledProperties();
+      res.json(properties);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch crawled properties" });
+    }
+  });
+
+  app.delete("/api/admin/crawled-properties", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "인증이 필요합니다." });
+      const user = req.user as Express.User;
+      if (user.role !== "admin") return res.status(403).json({ message: "관리자 권한이 필요합니다." });
+
+      await storage.clearCrawledProperties();
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to clear crawled properties" });
     }
   });
 

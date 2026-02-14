@@ -22,7 +22,9 @@ const Header = () => {
     { name: "홈", path: "/" },
     { name: "모든매물보기", path: "/properties" },
     { name: "강화도뉴스", path: "/news" },
-    { name: "유튜브채널", path: "/about" },
+    { name: "부동산소개", path: "/about" },
+    { name: "유튜브", path: "/youtube" },
+    { name: "나의부동산 사주", path: "/saju" },
     { name: "문의하기", path: "/contact" },
   ];
 
@@ -60,21 +62,32 @@ const Header = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center gap-2">
                     <User size={18} />
-                    <span className="font-medium">{user.username}</span>
+                    <span className="font-medium">
+                      {user.username}
+                      {user.provider && (
+                        <span className="ml-1 text-xs text-slate-400">
+                          ({user.provider === 'naver' ? '네이버' : user.provider === 'kakao' ? '카카오' : user.provider})
+                        </span>
+                      )}
+                    </span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>내 계정</DropdownMenuLabel>
-                  <DropdownMenuItem onClick={() => setLocation("/profile")}>
-                    <User className="mr-2 h-4 w-4" />
-                    <span>내 프로필</span>
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile" className="flex items-center w-full cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>내 프로필</span>
+                    </Link>
                   </DropdownMenuItem>
                   {user.role === "admin" && (
                     <>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => setLocation("/admin")}>
-                        <Settings className="mr-2 h-4 w-4" />
-                        <span>관리자 패널</span>
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin" className="flex items-center w-full cursor-pointer">
+                          <Settings className="mr-2 h-4 w-4" />
+                          <span>관리자 패널</span>
+                        </Link>
                       </DropdownMenuItem>
                     </>
                   )}
@@ -86,9 +99,11 @@ const Header = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button variant="default" onClick={() => setLocation("/auth")}>
-                <LogIn className="mr-2 h-4 w-4" />
-                로그인
+              <Button variant="default" asChild>
+                <Link href="/auth" className="flex items-center">
+                  <LogIn className="mr-2 h-4 w-4" />
+                  로그인
+                </Link>
               </Button>
             )}
           </div>
@@ -120,7 +135,14 @@ const Header = () => {
                     <>
                       <div className="flex items-center mb-4 text-primary font-medium">
                         <User size={18} className="mr-2" />
-                        <span>{user.username}</span>
+                        <span>
+                          {user.username}
+                          {user.provider && (
+                            <span className="ml-1 text-xs text-indigo-400">
+                              ({user.provider === 'naver' ? '네이버' : user.provider === 'kakao' ? '카카오' : user.provider})
+                            </span>
+                          )}
+                        </span>
                         {user.role === "admin" && (
                           <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full">
                             관리자

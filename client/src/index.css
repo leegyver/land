@@ -11,7 +11,8 @@
   --card-foreground: 222 47% 11%;
   --popover: 0 0% 100%;
   --popover-foreground: 222 47% 11%;
-  --primary: 221 83% 53%;
+  --primary: 25 100% 50%;
+  /* 이가이버 오렌지 #FF6B00 */
   --primary-foreground: 210 40% 98%;
   --secondary: 210 40% 96.1%;
   --secondary-foreground: 222 47% 11%;
@@ -23,7 +24,7 @@
   --destructive-foreground: 210 40% 98%;
   --border: 214 32% 91%;
   --input: 214 32% 91%;
-  --ring: 221 83% 53%;
+  --ring: 25 100% 50%;
   --radius: 0.5rem;
 }
 
@@ -38,7 +39,7 @@
   --card-foreground: 0 0% 98%;
   --border: 240 3.7% 15.9%;
   --input: 240 3.7% 15.9%;
-  --primary: 207 90% 54%;
+  --primary: 25 100% 60%;
   --primary-foreground: 211 100% 99%;
   --secondary: 240 3.7% 15.9%;
   --secondary-foreground: 0 0% 98%;
@@ -46,7 +47,7 @@
   --accent-foreground: 0 0% 98%;
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 0 0% 98%;
-  --ring: 240 4.9% 83.9%;
+  --ring: 25 100% 60%;
   --radius: 0.5rem;
 }
 
@@ -57,5 +58,26 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground leading-tight;
+  }
+}
+
+@layer components {
+  .btn-primary-cta {
+    @apply bg-[#FF6B00] hover:bg-[#E65000] text-white font-bold shadow-lg shadow-orange-500/30 transition-all hover:scale-105 active:scale-95;
+    animation: pulse-orange 2s infinite;
+  }
+}
+
+@keyframes pulse-orange {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 107, 0, 0.7);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 107, 0, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 107, 0, 0);
   }
 }

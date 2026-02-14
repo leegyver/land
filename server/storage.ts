@@ -6,16 +6,20 @@ import {
   type News, type InsertNews,
   type PropertyInquiry, type InsertPropertyInquiry,
   type Favorite, type InsertFavorite,
-  type Banner, type InsertBanner
+  type Banner, type InsertBanner,
+  type Notice, type InsertNotice,
+  type CrawledProperty, type InsertCrawledProperty,
+  type NewsletterSubscription, type InsertNewsletterSubscription
 } from "@shared/schema";
 import { db } from "./db";
 import session from "express-session";
-import createMemoryStore from "memorystore";
+// @ts-ignore
+import createSqliteStore from "better-sqlite3-session-store";
 import { scrypt, randomBytes } from "crypto";
 import { promisify } from "util";
 
 const scryptAsync = promisify(scrypt);
-const MemoryStore = createMemoryStore(session);
+const SqliteStore = createSqliteStore(session);
 
 async function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
@@ -48,7 +52,13 @@ export interface IStorage {
   togglePropertyUrgent(propertyId: number, isUrgent: boolean): Promise<boolean>;
   togglePropertyNegotiable(propertyId: number, isNegotiable: boolean): Promise<boolean>;
   updatePropertyUrgentOrder(propertyId: number, newOrder: number): Promise<boolean>;
+  updatePropertyUrgentOrder(propertyId: number, newOrder: number): Promise<boolean>;
   updatePropertyNegotiableOrder(propertyId: number, newOrder: number): Promise<boolean>;
+
+  // Long-term Investment
+  getLongTermProperties(limit?: number): Promise<Property[]>;
+  togglePropertyLongTerm(propertyId: number, isLongTerm: boolean): Promise<boolean>;
+  updatePropertyLongTermOrder(propertyId: number, newOrder: number): Promise<boolean>;
 
   // Agent methods
   getAgents(): Promise<Agent[]>;
@@ -104,16 +114,41 @@ export interface IStorage {
   deleteBanner(id: number): Promise<boolean>;
   updateBannerOrder(id: number, newOrder: number): Promise<boolean>;
 
+  // Notice methods
+  getNotices(): Promise<Notice[]>;
+  getNotice(id: number): Promise<Notice | undefined>;
+  getPinnedNotice(): Promise<Notice | undefined>;
+  createNotice(notice: InsertNotice): Promise<Notice>;
+  updateNotice(id: number, notice: Partial<InsertNotice>): Promise<Notice | undefined>;
+  deleteNotice(id: number): Promise<boolean>;
+  incrementNoticeViewCount(id: number): Promise<void>;
+
   // Init Data
   initializeData(): Promise<void>;
+
+  // Crawler methods
+  createCrawledProperty(property: InsertCrawledProperty): Promise<CrawledProperty>;
+  getCrawledProperties(): Promise<CrawledProperty[]>;
+  getCrawledProperty(atclNo: string): Promise<CrawledProperty | undefined>;
+  clearCrawledProperties(): Promise<void>;
+
+  // Newsletter methods
+  getNewsletterSubscriptions(): Promise<NewsletterSubscription[]>;
+  getNewsletterSubscriptionByEmail(email: string): Promise<NewsletterSubscription | undefined>;
+  createNewsletterSubscription(sub: InsertNewsletterSubscription): Promise<NewsletterSubscription>;
+  deleteNewsletterSubscription(id: number): Promise<boolean>;
 }
 
 export class SQLiteStorage implements IStorage {
   sessionStore: session.Store;
 
   constructor() {
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000
+    this.sessionStore = new SqliteStore({
+      client: db,
+      expired: {
+        clear: true,
+        intervalMs: 900000 // 15min
+      }
     });
     this.initializeTables();
     this.performMigrations();
@@ -133,6 +168,12 @@ export class SQLiteStorage implements IStorage {
       // Add negotiableOrder column
       try { db.prepare("ALTER TABLE properties ADD COLUMN negotiableOrder INTEGER DEFAULT 0").run(); } catch (e) { }
 
+      // Add isLongTerm column
+      try { db.prepare("ALTER TABLE properties ADD COLUMN isLongTerm INTEGER DEFAULT 0").run(); } catch (e) { }
+
+      // Add longTermOrder column
+      try { db.prepare("ALTER TABLE properties ADD COLUMN longTermOrder INTEGER DEFAULT 0").run(); } catch (e) { }
+
       // Add isVisible column (if missing)
       try { db.prepare("ALTER TABLE properties ADD COLUMN isVisible INTEGER DEFAULT 1").run(); } catch (e) { }
 
@@ -144,6 +185,27 @@ export class SQLiteStorage implements IStorage {
 
       // Add isLunar column
       try { db.prepare("ALTER TABLE users ADD COLUMN isLunar INTEGER DEFAULT 0").run(); } catch (e) { }
+
+      // Add imageUrls column to notices
+      try { db.prepare("ALTER TABLE notices ADD COLUMN imageUrls TEXT").run(); } catch (e) { }
+
+      // Add rltrNm column (Crawler)
+      try { db.prepare("ALTER TABLE crawled_properties ADD COLUMN rltrNm TEXT").run(); } catch (e) { }
+
+      // Add landType column (Crawler)
+      try { db.prepare("ALTER TABLE crawled_properties ADD COLUMN landType TEXT").run(); } catch (e) { }
+
+      // Add zoneType column (Crawler)
+      try { db.prepare("ALTER TABLE crawled_properties ADD COLUMN zoneType TEXT").run(); } catch (e) { }
+
+      // Add newsletter_subscriptions table
+      db.prepare(`
+        CREATE TABLE IF NOT EXISTS newsletter_subscriptions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          email TEXT UNIQUE NOT NULL,
+          createdAt TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+      `).run();
 
       // Create banners table if not exists (in case initializeTables didn't catch it for some reason or specifically for migration flow)
       db.prepare(`
@@ -205,6 +267,8 @@ export class SQLiteStorage implements IStorage {
         urgentOrder INTEGER DEFAULT 0,
         isNegotiable INTEGER DEFAULT 0, -- boolean
         negotiableOrder INTEGER DEFAULT 0,
+        isLongTerm INTEGER DEFAULT 0, -- boolean
+        longTermOrder INTEGER DEFAULT 0,
         isVisible INTEGER DEFAULT 1, -- boolean
         createdAt TEXT,
         updatedAt TEXT,
@@ -320,12 +384,59 @@ export class SQLiteStorage implements IStorage {
     db.prepare(`
       CREATE TABLE IF NOT EXISTS banners (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        location TEXT NOT NULL,
+        location TEXT NOT NULL, 
         imageUrl TEXT NOT NULL,
         linkUrl TEXT,
         openNewWindow INTEGER DEFAULT 0,
         displayOrder INTEGER DEFAULT 0,
         createdAt TEXT
+      )
+    `).run();
+
+    // Notices
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS notices(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL,
+        imageUrls TEXT, -- JSON array
+        isPinned INTEGER DEFAULT 0,
+        authorId INTEGER,
+        viewCount INTEGER DEFAULT 0,
+        createdAt TEXT,
+        updatedAt TEXT
+      )
+    `).run();
+
+    // Crawled Properties
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS crawled_properties (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        atclNo TEXT UNIQUE NOT NULL,
+        atclNm TEXT,
+        rletTpNm TEXT,
+        tradTpNm TEXT,
+        flrInfo TEXT,
+        prc TEXT,
+        spc1 TEXT,
+        spc2 TEXT,
+        direction TEXT,
+        lat REAL,
+        lng REAL,
+        imgUrl TEXT,
+        rltrNm TEXT,
+        landType TEXT,
+        zoneType TEXT,
+        crawledAt TEXT
+      )
+    `).run();
+
+    // Newsletter Subscriptions
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS newsletter_subscriptions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE NOT NULL,
+        createdAt TEXT DEFAULT CURRENT_TIMESTAMP
       )
     `).run();
   }
@@ -351,6 +462,7 @@ export class SQLiteStorage implements IStorage {
       isVisible: this.toBoolean(row.isVisible),
       isUrgent: this.toBoolean(row.isUrgent),
       isNegotiable: this.toBoolean(row.isNegotiable),
+      isLongTerm: this.toBoolean(row.isLongTerm),
       elevator: this.toBoolean(row.elevator),
       coListing: this.toBoolean(row.coListing),
       isSold: this.toBoolean(row.isSold),
@@ -371,12 +483,16 @@ export class SQLiteStorage implements IStorage {
 
   async getProperties(): Promise<Property[]> {
     const rows = db.prepare('SELECT * FROM properties WHERE isVisible = 1 ORDER BY displayOrder ASC, createdAt DESC').all();
-    return rows.map(row => this.mapProperty(row));
+    const result = rows.map(row => this.mapProperty(row)).filter(p => p.district !== '수집매물');
+    console.log(`[Storage] getProperties: ${result.length} items (Filtered out Naver if any)`);
+    return result;
   }
 
   async getAllProperties(): Promise<Property[]> {
     const rows = db.prepare('SELECT * FROM properties ORDER BY displayOrder ASC, createdAt DESC').all();
-    return rows.map(row => this.mapProperty(row));
+    const result = rows.map(row => this.mapProperty(row)).filter(p => p.district !== '수집매물');
+    console.log(`[Storage] getAllProperties: ${result.length} items (Filtered out Naver if any)`);
+    return result;
   }
 
   async getProperty(id: number): Promise<Property | undefined> {
@@ -384,20 +500,33 @@ export class SQLiteStorage implements IStorage {
     return row ? this.mapProperty(row) : undefined;
   }
 
-  async getFeaturedProperties(limit: number = 4): Promise<Property[]> {
-    const rows = db.prepare(`SELECT * FROM properties WHERE featured = 1 AND isVisible = 1 ORDER BY displayOrder ASC, createdAt DESC LIMIT ?`).all(limit);
+  async getFeaturedProperties(limit?: number): Promise<Property[]> {
+    let query = 'SELECT * FROM properties WHERE featured = 1 AND isVisible = 1 ORDER BY displayOrder ASC, createdAt DESC';
+    if (limit) {
+      query += ` LIMIT ${limit}`;
+    }
+    const rows = db.prepare(query).all();
     return rows.map(row => this.mapProperty(row));
   }
 
-  async getUrgentProperties(limit: number = 4): Promise<Property[]> {
-    const rows = db.prepare(`SELECT * FROM properties WHERE isUrgent = 1 AND isVisible = 1 ORDER BY urgentOrder ASC, createdAt DESC LIMIT ?`).all(limit);
+  async getUrgentProperties(limit?: number): Promise<Property[]> {
+    let query = 'SELECT * FROM properties WHERE isUrgent = 1 AND isVisible = 1 ORDER BY urgentOrder ASC, createdAt DESC';
+    if (limit) {
+      query += ` LIMIT ${limit}`;
+    }
+    const rows = db.prepare(query).all();
     return rows.map(row => this.mapProperty(row));
   }
 
-  async getNegotiableProperties(limit: number = 4): Promise<Property[]> {
-    const rows = db.prepare(`SELECT * FROM properties WHERE isNegotiable = 1 AND isVisible = 1 ORDER BY negotiableOrder ASC, createdAt DESC LIMIT ?`).all(limit);
+  async getNegotiableProperties(limit?: number): Promise<Property[]> {
+    let query = 'SELECT * FROM properties WHERE isNegotiable = 1 AND isVisible = 1 ORDER BY negotiableOrder ASC, createdAt DESC';
+    if (limit) {
+      query += ` LIMIT ${limit}`;
+    }
+    const rows = db.prepare(query).all();
     return rows.map(row => this.mapProperty(row));
   }
+
 
   async getPropertiesByType(type: string): Promise<Property[]> {
     const rows = db.prepare('SELECT * FROM properties WHERE type = ? AND isVisible = 1 ORDER BY displayOrder ASC, createdAt DESC').all(type);
@@ -423,26 +552,26 @@ export class SQLiteStorage implements IStorage {
   async getPropertiesByAddresses(addresses: string[]): Promise<Property[]> {
     if (addresses.length === 0) return [];
     const placeholders = addresses.map(() => '?').join(',');
-    const rows = db.prepare(`SELECT * FROM properties WHERE address IN (${placeholders}) LIMIT 10`).all(addresses.slice(0, 10));
+    const rows = db.prepare(`SELECT * FROM properties WHERE address IN(${placeholders}) LIMIT 10`).all(addresses.slice(0, 10));
     return rows.map(row => this.mapProperty(row));
   }
 
   async createProperty(property: InsertProperty): Promise<Property> {
     const now = new Date().toISOString();
     const result = db.prepare(`
-      INSERT INTO properties (
+      INSERT INTO properties(
         title, description, type, price, address, district, size, bedrooms, bathrooms,
         imageUrl, imageUrls, agentId, featured, displayOrder, isUrgent, urgentOrder,
-        isNegotiable, negotiableOrder, isVisible, createdAt, updatedAt,
+        isNegotiable, negotiableOrder, isLongTerm, longTermOrder, isVisible, createdAt, updatedAt,
         buildingName, unitNumber, supplyArea, privateArea, areaSize, floor, totalFloors,
         direction, elevator, parking, heatingSystem, approvalDate, landType, zoneType,
         dealType, deposit, depositAmount, monthlyRent, maintenanceFee, ownerName,
         ownerPhone, tenantName, tenantPhone, clientName, clientPhone, specialNote,
         coListing, agentName, propertyDescription, privateNote, youtubeUrl, isSold, viewCount
-      ) VALUES (
+      ) VALUES(
         @title, @description, @type, @price, @address, @district, @size, @bedrooms, @bathrooms,
         @imageUrl, @imageUrls, @agentId, @featured, @displayOrder, @isUrgent, @urgentOrder,
-        @isNegotiable, @negotiableOrder, @isVisible, @createdAt, @updatedAt,
+        @isNegotiable, @negotiableOrder, @isLongTerm, @longTermOrder, @isVisible, @createdAt, @updatedAt,
         @buildingName, @unitNumber, @supplyArea, @privateArea, @areaSize, @floor, @totalFloors,
         @direction, @elevator, @parking, @heatingSystem, @approvalDate, @landType, @zoneType,
         @dealType, @deposit, @depositAmount, @monthlyRent, @maintenanceFee, @ownerName,
@@ -459,6 +588,8 @@ export class SQLiteStorage implements IStorage {
       urgentOrder: property.urgentOrder ?? 0,
       isNegotiable: this.toInt(property.isNegotiable ?? false),
       negotiableOrder: property.negotiableOrder ?? 0,
+      isLongTerm: this.toInt(property.isLongTerm ?? false),
+      longTermOrder: property.longTermOrder ?? 0,
       isVisible: this.toInt(property.isVisible ?? true),
       elevator: this.toInt(property.elevator ?? false),
       coListing: this.toInt(property.coListing ?? false),
@@ -519,7 +650,7 @@ export class SQLiteStorage implements IStorage {
 
     // Helper to add field if present in property object
     const addIfPresent = (key: keyof InsertProperty | 'createdAt' | 'updatedAt' | 'featured' | 'isVisible' | 'displayOrder' | 'isUrgent' | 'urgentOrder' | 'isNegotiable' | 'negotiableOrder' | 'isSold' | 'viewCount', val: any) => {
-      fields.push(`${key} = @${key}`);
+      fields.push(`${key} = @${key} `);
       values[key] = val;
     };
 
@@ -545,6 +676,8 @@ export class SQLiteStorage implements IStorage {
     if (property.urgentOrder !== undefined) addIfPresent('urgentOrder', property.urgentOrder);
     if (property.isNegotiable !== undefined) addIfPresent('isNegotiable', this.toInt(property.isNegotiable ?? false));
     if (property.negotiableOrder !== undefined) addIfPresent('negotiableOrder', property.negotiableOrder);
+    if (property.isLongTerm !== undefined) addIfPresent('isLongTerm', this.toInt(property.isLongTerm ?? false));
+    if (property.longTermOrder !== undefined) addIfPresent('longTermOrder', property.longTermOrder);
     if (property.isVisible !== undefined) addIfPresent('isVisible', this.toInt(property.isVisible ?? true));
 
     // ... all other fields ...
@@ -613,6 +746,25 @@ export class SQLiteStorage implements IStorage {
     return true;
   }
 
+  async getLongTermProperties(limit?: number): Promise<Property[]> {
+    let query = 'SELECT * FROM properties WHERE isLongTerm = 1 ORDER BY longTermOrder ASC, createdAt DESC';
+    if (limit) {
+      query += ` LIMIT ${limit}`;
+    }
+    const rows = db.prepare(query).all();
+    return rows.map(row => this.mapProperty(row));
+  }
+
+  async togglePropertyLongTerm(propertyId: number, isLongTerm: boolean): Promise<boolean> {
+    db.prepare('UPDATE properties SET isLongTerm = ? WHERE id = ?').run(this.toInt(isLongTerm ?? false), propertyId);
+    return true;
+  }
+
+  async updatePropertyLongTermOrder(propertyId: number, newOrder: number): Promise<boolean> {
+    db.prepare('UPDATE properties SET longTermOrder = ? WHERE id = ?').run(newOrder, propertyId);
+    return true;
+  }
+
   // --- Agents ---
   async getAgents(): Promise<Agent[]> {
     const rows = db.prepare('SELECT * FROM agents WHERE isActive = 1 ORDER BY id').all();
@@ -623,8 +775,8 @@ export class SQLiteStorage implements IStorage {
   }
   async createAgent(agent: InsertAgent): Promise<Agent> {
     const res = db.prepare(`
-      INSERT INTO agents (name, email, phone, position, photo, bio, isActive, createdAt)
-      VALUES (@name, @email, @phone, @position, @photo, @bio, @isActive, @createdAt)
+      INSERT INTO agents(name, email, phone, position, photo, bio, isActive, createdAt)
+    VALUES(@name, @email, @phone, @position, @photo, @bio, @isActive, @createdAt)
     `).run({
       ...agent,
       isActive: this.toInt(agent.isActive ?? true),
@@ -635,7 +787,7 @@ export class SQLiteStorage implements IStorage {
   async updateAgent(id: number, agent: Partial<InsertAgent>): Promise<Agent | undefined> {
     // Simplified update... see Property for full dynamic logic
     // For now assuming full object or key specific
-    const fields = Object.keys(agent).map(k => `${k} = @${k}`).join(', ');
+    const fields = Object.keys(agent).map(k => `${k} = @${k} `).join(', ');
     if (!fields) return this.getAgent(id);
     db.prepare(`UPDATE agents SET ${fields} WHERE id = @id`).run({ ...agent, id });
     return this.getAgent(id);
@@ -654,9 +806,9 @@ export class SQLiteStorage implements IStorage {
   }
   async createInquiry(inquiry: InsertInquiry): Promise<Inquiry> {
     const res = db.prepare(`
-       INSERT INTO inquiries (name, email, phone, message, inquiryType, propertyId, createdAt)
-       VALUES (@name, @email, @phone, @message, @inquiryType, @propertyId, @createdAt)
-     `).run({
+       INSERT INTO inquiries(name, email, phone, message, inquiryType, propertyId, createdAt)
+    VALUES(@name, @email, @phone, @message, @inquiryType, @propertyId, @createdAt)
+      `).run({
       ...inquiry,
       propertyId: inquiry.propertyId || null,
       createdAt: new Date().toISOString()
@@ -675,8 +827,8 @@ export class SQLiteStorage implements IStorage {
   }
   async createUser(user: InsertUser): Promise<User> {
     const res = db.prepare(`
-      INSERT INTO users (username, password, email, phone, role, provider, providerId, birthDate, birthTime, isLunar)
-      VALUES (@username, @password, @email, @phone, @role, @provider, @providerId, @birthDate, @birthTime, @isLunar)
+      INSERT INTO users(username, password, email, phone, role, provider, providerId, birthDate, birthTime, isLunar)
+    VALUES(@username, @password, @email, @phone, @role, @provider, @providerId, @birthDate, @birthTime, @isLunar)
     `).run({
       username: user.username,
       password: user.password,
@@ -696,7 +848,7 @@ export class SQLiteStorage implements IStorage {
     return rows.map(row => this.mapUser(row));
   }
   async updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined> {
-    const fields = Object.keys(user).map(k => `${k} = @${k}`).join(', ');
+    const fields = Object.keys(user).map(k => `${k} = @${k} `).join(', ');
     if (!fields) return this.getUser(id);
 
     const params: any = { ...user, id };
@@ -731,8 +883,8 @@ export class SQLiteStorage implements IStorage {
 
   async createNews(news: InsertNews): Promise<News> {
     const res = db.prepare(`
-      INSERT INTO news (title, summary, description, content, source, sourceUrl, url, imageUrl, category, isPinned, createdAt)
-      VALUES (@title, @summary, @description, @content, @source, @sourceUrl, @url, @imageUrl, @category, @isPinned, @createdAt)
+      INSERT INTO news(title, summary, description, content, source, sourceUrl, url, imageUrl, category, isPinned, createdAt)
+    VALUES(@title, @summary, @description, @content, @source, @sourceUrl, @url, @imageUrl, @category, @isPinned, @createdAt)
     `).run({
       ...news,
       imageUrl: news.imageUrl || null,
@@ -742,7 +894,7 @@ export class SQLiteStorage implements IStorage {
     return this.getNewsById(res.lastInsertRowid as number) as Promise<News>;
   }
   async updateNews(id: number, news: Partial<InsertNews>): Promise<News | undefined> {
-    const fields = Object.keys(news).map(k => `${k} = @${k}`).join(', ');
+    const fields = Object.keys(news).map(k => `${k} = @${k} `).join(', ');
     if (!fields) return this.getNewsById(id);
     db.prepare(`UPDATE news SET ${fields} WHERE id = @id`).run({ ...news, id });
     return this.getNewsById(id);
@@ -768,8 +920,8 @@ export class SQLiteStorage implements IStorage {
   }
   async createPropertyInquiry(inquiry: InsertPropertyInquiry): Promise<PropertyInquiry> {
     const res = db.prepare(`
-       INSERT INTO propertyInquiries (propertyId, userId, title, content, isReply, parentId, isReadByAdmin, createdAt)
-       VALUES (@propertyId, @userId, @title, @content, @isReply, @parentId, @isReadByAdmin, @createdAt)
+       INSERT INTO propertyInquiries(propertyId, userId, title, content, isReply, parentId, isReadByAdmin, createdAt)
+    VALUES(@propertyId, @userId, @title, @content, @isReply, @parentId, @isReadByAdmin, @createdAt)
      `).run({
       ...inquiry,
       parentId: inquiry.parentId || null,
@@ -781,7 +933,7 @@ export class SQLiteStorage implements IStorage {
   }
   async updatePropertyInquiry(id: number, inquiry: Partial<InsertPropertyInquiry>): Promise<PropertyInquiry | undefined> {
     // ... similar update ...
-    const fields = Object.keys(inquiry).map(k => `${k} = @${k}`).join(', ');
+    const fields = Object.keys(inquiry).map(k => `${k} = @${k} `).join(', ');
     if (!fields) return this.getPropertyInquiry(id);
 
     // Handle boolean conv
@@ -814,7 +966,7 @@ export class SQLiteStorage implements IStorage {
       LEFT JOIN properties p ON pi.propertyId = p.id
       WHERE pi.isReadByAdmin = 0
       ORDER BY pi.createdAt DESC
-    `).all() as any[];
+      `).all() as any[];
 
     return joined.map(row => ({
       ...row,
@@ -845,7 +997,7 @@ export class SQLiteStorage implements IStorage {
        SELECT p.* FROM properties p
        JOIN favorites f ON p.id = f.propertyId
        WHERE f.userId = ?
-     `).all(userId);
+      `).all(userId);
     return rows.map(row => this.mapProperty(row));
   }
   async isFavorite(userId: number, propertyId: number): Promise<boolean> {
@@ -885,9 +1037,9 @@ export class SQLiteStorage implements IStorage {
 
   async createBanner(banner: InsertBanner): Promise<Banner> {
     const result = db.prepare(`
-      INSERT INTO banners (location, imageUrl, linkUrl, openNewWindow, displayOrder, createdAt)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(
+      INSERT INTO banners(location, imageUrl, linkUrl, openNewWindow, displayOrder, createdAt)
+    VALUES(?, ?, ?, ?, ?, ?)
+      `).run(
       banner.location,
       banner.imageUrl,
       banner.linkUrl || null,
@@ -906,47 +1058,207 @@ export class SQLiteStorage implements IStorage {
   }
 
   async deleteBanner(id: number): Promise<boolean> {
-    const result = db.prepare("DELETE FROM banners WHERE id = ?").run(id);
-    return result.changes > 0;
+    const res = db.prepare('DELETE FROM banners WHERE id = ?').run(id);
+    return res.changes > 0;
   }
 
   async updateBannerOrder(id: number, newOrder: number): Promise<boolean> {
-    const result = db.prepare("UPDATE banners SET displayOrder = ? WHERE id = ?").run(newOrder, id);
-    return result.changes > 0;
+    db.prepare('UPDATE banners SET displayOrder = ? WHERE id = ?').run(newOrder, id);
+    return true;
   }
 
-  // --- Init ---
-  async initializeData(): Promise<void> {
-    const adminUser = await this.getUserByUsername("admin");
-    if (!adminUser) {
-      console.log("Initializing data...");
+  // --- Notices ---
+  async getNotices(): Promise<Notice[]> {
+    const rows = db.prepare('SELECT * FROM notices ORDER BY isPinned DESC, createdAt DESC').all();
+    return rows.map((row: any) => ({
+      ...row,
+      imageUrls: this.parseJSON(row.imageUrls),
+      isPinned: this.toBoolean(row.isPinned),
+      createdAt: new Date(row.createdAt),
+      updatedAt: new Date(row.updatedAt)
+    })) as Notice[];
+  }
 
-      await this.createUser({
-        username: "admin",
-        password: await hashPassword("adminpass"),
-        role: "admin",
-        email: "admin@example.com",
-        phone: "010-0000-0000"
-      });
-      await this.createUser({
-        username: "user",
-        password: await hashPassword("userpass"),
-        role: "user",
-        email: "user@example.com",
-        phone: "010-1111-1111"
-      });
+  async getNotice(id: number): Promise<Notice | undefined> {
+    const row = db.prepare('SELECT * FROM notices WHERE id = ?').get(id) as any;
+    if (!row) return undefined;
+    return {
+      ...row,
+      imageUrls: this.parseJSON(row.imageUrls),
+      isPinned: this.toBoolean(row.isPinned),
+      createdAt: new Date(row.createdAt),
+      updatedAt: new Date(row.updatedAt)
+    } as Notice;
+  }
 
-      await this.createAgent({
-        name: "이가이버부동산",
-        phone: "010-1234-5678",
-        email: "eguyer@example.com",
-        isActive: true,
-        position: "공인중개사",
-        bio: "정직과 신뢰의 이가이버 부동산입니다."
-      });
+  async getPinnedNotice(): Promise<Notice | undefined> {
+    const row = db.prepare('SELECT * FROM notices WHERE isPinned = 1 ORDER BY createdAt DESC LIMIT 1').get() as any;
+    if (!row) return undefined;
+    return {
+      ...row,
+      imageUrls: this.parseJSON(row.imageUrls),
+      isPinned: this.toBoolean(row.isPinned),
+      createdAt: new Date(row.createdAt),
+      updatedAt: new Date(row.updatedAt)
+    } as Notice;
+  }
 
-      console.log("Basic data initialized.");
+  async createNotice(notice: InsertNotice): Promise<Notice> {
+    const now = new Date().toISOString();
+    const res = db.prepare(`
+      INSERT INTO notices(title, content, imageUrls, isPinned, authorId, viewCount, createdAt, updatedAt)
+    VALUES(@title, @content, @imageUrls, @isPinned, @authorId, 0, @createdAt, @updatedAt)
+    `).run({
+      ...notice,
+      imageUrls: JSON.stringify(notice.imageUrls || []),
+      isPinned: this.toInt(notice.isPinned ?? false),
+      createdAt: now,
+      updatedAt: now
+    });
+    return this.getNotice(res.lastInsertRowid as number) as Promise<Notice>;
+  }
+
+  async updateNotice(id: number, notice: Partial<InsertNotice>): Promise<Notice | undefined> {
+    const existing = await this.getNotice(id);
+    if (!existing) return undefined;
+
+    const fields = Object.keys(notice).map(k => `${k} = @${k} `).join(', ');
+    if (!fields) return existing;
+
+    const now = new Date().toISOString();
+    let query = `UPDATE notices SET ${fields}, updatedAt = @updatedAt WHERE id = @id`;
+
+    const params: any = { ...notice, id, updatedAt: now };
+    if (notice.isPinned !== undefined) params.isPinned = this.toInt(notice.isPinned);
+    if (notice.imageUrls !== undefined) params.imageUrls = JSON.stringify(notice.imageUrls);
+
+    db.prepare(query).run(params);
+    return this.getNotice(id);
+  }
+
+  async deleteNotice(id: number): Promise<boolean> {
+    const res = db.prepare('DELETE FROM notices WHERE id = ?').run(id);
+    return res.changes > 0;
+  }
+
+  async incrementNoticeViewCount(id: number): Promise<void> {
+    db.prepare('UPDATE notices SET viewCount = viewCount + 1 WHERE id = ?').run(id);
+  }
+
+  async initializeData() {
+    const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
+    if (userCount.count > 0) {
+      console.log("Data already initialized.");
+      return;
     }
+
+    console.log("Initializing data...");
+
+    await this.createUser({
+      username: "admin",
+      password: await hashPassword("adminpass"),
+      role: "admin",
+      email: "admin@example.com",
+      phone: "010-0000-0000"
+    });
+    await this.createUser({
+      username: "user",
+      password: await hashPassword("userpass"),
+      role: "user",
+      email: "user@example.com",
+      phone: "010-1111-1111"
+    });
+
+    await this.createAgent({
+      name: "이가이버부동산",
+      phone: "010-1234-5678",
+      email: "eguyer@example.com",
+      isActive: true,
+      position: "공인중개사",
+      bio: "정직과 신뢰의 이가이버 부동산입니다."
+    });
+
+    console.log("Basic data initialized.");
+  }
+
+  // --- Crawler ---
+  async createCrawledProperty(property: InsertCrawledProperty): Promise<CrawledProperty> {
+    const stmt = db.prepare(`
+      INSERT INTO crawled_properties (
+        atclNo, atclNm, rletTpNm, tradTpNm, flrInfo, prc, spc1, spc2, direction, lat, lng, imgUrl, rltrNm, landType, zoneType, crawledAt
+      ) VALUES (
+        @atclNo, @atclNm, @rletTpNm, @tradTpNm, @flrInfo, @prc, @spc1, @spc2, @direction, @lat, @lng, @imgUrl, @rltrNm, @landType, @zoneType, @crawledAt
+      )
+      ON CONFLICT(atclNo) DO UPDATE SET
+        atclNm=excluded.atclNm,
+        prc=excluded.prc,
+        rltrNm=excluded.rltrNm,
+        landType=excluded.landType,
+        zoneType=excluded.zoneType,
+        crawledAt=excluded.crawledAt
+    `);
+
+    // Convert numbers to text if needed, but sqlite handles types loosely.
+    // Zod schema allows numbers for prc, spc1, spc2.
+    // We'll pass as is, assuming better-sqlite3 handles it.
+
+    const res = stmt.run({
+      ...property,
+      crawledAt: new Date().toISOString()
+    });
+
+    // If upsert happened, lastInsertRowid might not be the updated row if ID wasn't changed?
+    // Actually sqlite upsert returns last insert rowid of the row.
+    // But getting by atclNo matches safety.
+    return db.prepare('SELECT * FROM crawled_properties WHERE atclNo = ?').get(property.atclNo) as CrawledProperty;
+  }
+
+  async getCrawledProperties(): Promise<CrawledProperty[]> {
+    const rows = db.prepare('SELECT * FROM crawled_properties ORDER BY crawledAt DESC LIMIT 1000').all() as CrawledProperty[];
+    console.log(`[Storage] getCrawledProperties: ${rows.length} items`);
+    return rows;
+  }
+
+  async getCrawledProperty(atclNo: string): Promise<CrawledProperty | undefined> {
+    return db.prepare('SELECT * FROM crawled_properties WHERE atclNo = ?').get(atclNo) as CrawledProperty | undefined;
+  }
+
+  async clearCrawledProperties(): Promise<void> {
+    db.prepare('DELETE FROM crawled_properties').run();
+  }
+
+  // --- Newsletter ---
+  async getNewsletterSubscriptions(): Promise<NewsletterSubscription[]> {
+    const rows = db.prepare('SELECT * FROM newsletter_subscriptions ORDER BY createdAt DESC').all();
+    return rows.map((row: any) => ({
+      ...row,
+      createdAt: new Date(row.createdAt as string)
+    })) as NewsletterSubscription[];
+  }
+
+  async getNewsletterSubscriptionByEmail(email: string): Promise<NewsletterSubscription | undefined> {
+    const row = db.prepare('SELECT * FROM newsletter_subscriptions WHERE email = ?').get(email) as any;
+    if (!row) return undefined;
+    return {
+      ...row,
+      createdAt: new Date(row.createdAt as string)
+    } as NewsletterSubscription;
+  }
+
+  async createNewsletterSubscription(sub: InsertNewsletterSubscription): Promise<NewsletterSubscription> {
+    const res = db.prepare(`
+      INSERT INTO newsletter_subscriptions (email, createdAt)
+      VALUES (@email, @createdAt)
+    `).run({
+      ...sub,
+      createdAt: new Date().toISOString()
+    });
+    return this.getNewsletterSubscriptionByEmail(sub.email) as Promise<NewsletterSubscription>;
+  }
+
+  async deleteNewsletterSubscription(id: number): Promise<boolean> {
+    const res = db.prepare('DELETE FROM newsletter_subscriptions WHERE id = ?').run(id);
+    return res.changes > 0;
   }
 }
 

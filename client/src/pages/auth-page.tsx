@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth, registerSchema } from "@/hooks/use-auth";
+import YearMonthDayPicker from "@/components/common/YearMonthDayPicker";
 import { useLocation, useSearch } from "wouter";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -95,12 +96,22 @@ export default function AuthPage() {
     registerMutation.mutate(data);
   };
 
-  // 이미 로그인되어 있으면 홈으로 리다이렉트
+  // redirection logic moved to useEffect to keep render tree stable
+  useEffect(() => {
+    if (user) {
+      setLocation("/");
+    }
+  }, [user, setLocation]);
+
   if (user) {
-    // useEffect를 사용하지 않고 리다이렉트할 때는 다음 렌더링에서 처리되므로 
-    // 빈 페이지를 잠시 보여주는 게 안전합니다.
-    setTimeout(() => setLocation("/"), 0);
-    return <div className="flex min-h-screen items-center justify-center">리다이렉트 중...</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-sm font-medium text-slate-500">홈으로 이동 중...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -334,7 +345,11 @@ export default function AuthPage() {
                               <FormLabel className="text-base">생년월일 (선택)</FormLabel>
                               <div className="flex flex-col gap-2">
                                 <FormControl>
-                                  <Input type="date" {...field} className="h-11 rounded-lg w-full" />
+                                  <YearMonthDayPicker
+                                    value={field.value}
+                                    onChange={field.onChange}
+                                    className="w-full"
+                                  />
                                 </FormControl>
                                 <FormField
                                   control={registerForm.control}

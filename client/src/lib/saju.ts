@@ -14,54 +14,11 @@ import {
     getEarthlyBranchElement
 } from 'manseryeok';
 import { Lunar } from 'lunar-javascript';
+import { TenGod, TwelveStage, SajuData } from '@/types/saju';
+import { REAL_ESTATE_TIPS, LUCKY_STYLING, SHINSAL_REAL_ESTATE, FORTUNE_DESCRIPTIONS, HEALTH_DESCRIPTIONS, REAL_ESTATE_DETAILED, PALJA_SUMMARY, getCoreTerm } from './saju_desc';
 
-// --- Extended Types & Interfaces ---
+export type { TenGod, TwelveStage, SajuData };
 
-export interface SajuData extends FourPillarsDetail {
-    // Basic Info
-    birthDate: Date;
-    birthTimeStr?: string;
-    isLunar: boolean;
-
-    // Analysis
-    dominantElement: FiveElement;
-    lackingElement?: FiveElement;
-
-    // Advanced Analysis (Ten Gods / Shipseong)
-    tenGods: {
-        yearStem: TenGod;
-        yearBranch: TenGod;
-        monthStem: TenGod;
-        monthBranch: TenGod;
-        dayStem: '비견(Friend)'; // Day Master is always Friend (Self)
-        dayBranch: TenGod;
-        timeStem?: TenGod;
-        timeBranch?: TenGod;
-    };
-
-    // 12 Stages of Life (Sibiwunseong)
-    twelveStages: {
-        year: TwelveStage;
-        month: TwelveStage;
-        day: TwelveStage;
-        time?: TwelveStage;
-    };
-
-    // Divine/Evil Spirits (Sinsal) - Simplified for MVP
-    spirits: string[];
-}
-
-export type TenGod =
-    '비견(Friend)' | '겁재(Rob Wealth)' |
-    '식신(Eating God)' | '상관(Hurting Officer)' |
-    '편재(Indirect Wealth)' | '정재(Direct Wealth)' |
-    '편관(Seven Killings)' | '정관(Direct Officer)' |
-    '편인(Indirect Resource)' | '정인(Direct Resource)';
-
-export type TwelveStage =
-    '장생' | '목욕' | '관대' | '건록' |
-    '제왕' | '쇠' | '병' | '사' |
-    '묘' | '절' | '태' | '양';
 
 // --- Helper Functions for Advanced Logic ---
 
@@ -181,6 +138,8 @@ const calculateSpirits = (dayBranch: EarthlyBranch, targetBranch: EarthlyBranch)
     // Sin-Ja-Jin (Water) -> Next start: In -> Yeokma
     // Hae-Myo-Mi (Wood) -> Next start: Sa -> Yeokma
 
+    // 3. Spirits (Sinsal) - Enhanced implementation
+    // note: dayStem is needed for Hongyeom
     const yeokmaMap: Record<number, EarthlyBranch> = {
         2: '신', 6: '신', 10: '신', // In, O, Sul -> Sin
         5: '해', 9: '해', 1: '해',  // Sa, Yu, Chuk -> Hae
@@ -191,10 +150,6 @@ const calculateSpirits = (dayBranch: EarthlyBranch, targetBranch: EarthlyBranch)
     if (yeokmaMap[dayIdx] === targetBranch) list.push('역마살(Travel)');
 
     // Dohwa (Peach Blossom): Ja, O, Myo, Yu relative to day branch triplet
-    // In-O-Sul -> Myo
-    // Sa-Yu-Chuk -> O
-    // Sin-Ja-Jin -> Yu
-    // Hae-Myo-Mi -> Ja
     const dohwaMap: Record<number, EarthlyBranch> = {
         2: '묘', 6: '묘', 10: '묘',
         5: '오', 9: '오', 1: '오',
@@ -203,7 +158,42 @@ const calculateSpirits = (dayBranch: EarthlyBranch, targetBranch: EarthlyBranch)
     };
     if (dohwaMap[dayIdx] === targetBranch) list.push('도화살(Attraction)');
 
+    // Hwagae (Arts/Honor): Sul, Chuk, Jin, Mi relative to day branch triplet
+    // In-O-Sul -> Sul
+    // Sa-Yu-Chuk -> Chuk
+    // Sin-Ja-Jin -> Jin
+    // Hae-Myo-Mi -> Mi
+    const hwagaeMap: Record<number, EarthlyBranch> = {
+        2: '술', 6: '술', 10: '술',
+        5: '축', 9: '축', 1: '축',
+        8: '진', 0: '진', 4: '진',
+        11: '미', 3: '미', 7: '미'
+    };
+    if (hwagaeMap[dayIdx] === targetBranch) list.push('화개살(Arts)');
+
     return list;
+};
+
+// Helper for Hongyeom (Red Cheek / Charisma) - based on Day Stem + Branch
+const calculateHongyeom = (dayStem: HeavenlyStem, branch: EarthlyBranch): string | null => {
+    // Gap-O, Eul-O, Byeong-In, Jeong-Mi, Mu-Jin, Gi-Jin, Gyeong-Sul, Sin-Yu, Im-Ja, Gye-Sin
+    const hongyeomMap: Record<string, EarthlyBranch[]> = {
+        '갑': ['오'],
+        '을': ['오'],
+        '병': ['인'],
+        '정': ['미'],
+        '무': ['진'],
+        '기': ['진'],
+        '경': ['술'],
+        '신': ['유'],
+        '임': ['자'],
+        '계': ['신'] // Sin(Monkey) 
+    };
+
+    if (hongyeomMap[dayStem]?.includes(branch)) {
+        return '홍염살(Charisma)';
+    }
+    return null;
 };
 
 
@@ -265,12 +255,23 @@ export const calculateSaju = (inputDate: Date, birthTimeStr?: string, isLunar: b
     };
 
     // Spirits (Check all branches against Day Branch)
+    // Spirits (Check all branches against Day Branch + Day Stem for Hongyeom)
     const spirits: string[] = [
         ...calculateSpirits(dayBranch, fourPillars.year.earthlyBranch),
         ...calculateSpirits(dayBranch, fourPillars.month.earthlyBranch),
-        ...calculateSpirits(dayBranch, dayBranch), // Usually self-check isn't counted or is specific
+        ...calculateSpirits(dayBranch, dayBranch),
         ...(fourPillars.hour ? calculateSpirits(dayBranch, fourPillars.hour.earthlyBranch) : [])
     ];
+
+    // Hongyeom Check
+    const addHongyeom = (branch: EarthlyBranch) => {
+        const hy = calculateHongyeom(dayStem, branch);
+        if (hy) spirits.push(hy);
+    };
+    addHongyeom(fourPillars.year.earthlyBranch);
+    addHongyeom(fourPillars.month.earthlyBranch);
+    addHongyeom(dayBranch);
+    if (fourPillars.hour) addHongyeom(fourPillars.hour.earthlyBranch);
     const uniqueSpirits = Array.from(new Set(spirits));
 
 
@@ -319,6 +320,191 @@ export const calculateSaju = (inputDate: Date, birthTimeStr?: string, isLunar: b
         twelveStages,
         spirits: uniqueSpirits
     };
+};
+
+// --- New Features Interfaces ---
+
+export interface FortuneResult {
+    date: string;
+    score: number;
+    title: string;
+    content: string;
+    tenGod: string; // The relationship key (e.g., '비견')
+}
+
+export interface HealthAnalysis {
+    weakestOrgan: string;
+    advice: string;
+    recommendedFood: string;
+}
+
+export interface RealEstateAnalysis {
+    buyingTiming: string;
+    sellingTiming: string;
+    bestFloor: string;
+    luckyDirection: string;
+}
+
+// --- New Feature Functions ---
+
+// Helper to calculate Ten God for a specific date/time relative to Day Master
+const getTenGodForDate = (dayMaster: HeavenlyStem, targetDate: Date): string => {
+    // Simplified Logic: 
+    // 1. Calculate Heavenly Stem of the target date (Iljin)
+    //    We can use Lunar library or simple modulo from a known reference date.
+    //    Reference: 1900-01-01 was Gab-Sul (Gap is 0, Sul is 10)
+    //    Actually, manseryeok library or Lunar lib is best.
+
+    try {
+        const lunarDaily = Lunar.fromYmd(targetDate.getFullYear(), targetDate.getMonth() + 1, targetDate.getDate());
+        const dayStem = lunarDaily.getTimeGan(); // Wait, daily Gan is needed. 
+        // Lunar-javascript: getDayGan() returns string like '甲'
+        const targetStemChar = lunarDaily.getDayGan();
+
+        // Map char back to HeavenlyStem type if needed, or just use char for TenGod calc
+        // calculateTenGod accepts HeavenlyStem type.
+        // We need to map '甲' -> '갑', etc. if our types differ.
+        // Currently manseryeok uses Korean chars '갑', '을'... unique check needed.
+        // Assuming Lunar lib returns Hanja '甲', check manseryeok types.
+
+        // Quick Map for Lunar(Hanja) -> Manseryeok(Korean)
+        const hanjaToKorean: Record<string, HeavenlyStem> = {
+            '甲': '갑', '乙': '을', '丙': '병', '丁': '정', '戊': '무',
+            '己': '기', '庚': '경', '辛': '신', '壬': '임', '癸': '계'
+        };
+
+        const targetStem = hanjaToKorean[targetStemChar];
+        if (!targetStem) return '비견'; // Fallback
+
+        // Calculate TenGod
+        // Note: calculateTenGod is not exported, we need to move it out or duplicate/refactor.
+        // For now, let's reuse the internal one if we can, or simplified logic here.
+        // Since we are adding this TO the file, we can access calculateTenGod if it's in scope.
+        // Yes, it is defined above in the file.
+
+        const fullTenGod = calculateTenGod(dayMaster, targetStem);
+        return getCoreTerm(fullTenGod); // Return '비견', '식신' etc.
+
+    } catch (e) {
+        console.error("Date calc error", e);
+        return '비견';
+    }
+};
+
+export const getDailyFortune = (saju: SajuData): FortuneResult => {
+    const today = new Date();
+    const tenGod = getTenGodForDate(saju.day.heavenlyStem, today);
+    const desc = FORTUNE_DESCRIPTIONS[tenGod] || FORTUNE_DESCRIPTIONS['비견'];
+
+    return {
+        date: today.toLocaleDateString(),
+        score: desc.score,
+        title: desc.title,
+        content: desc.content,
+        tenGod: tenGod
+    };
+};
+
+export const getMonthlyFortune = (saju: SajuData): FortuneResult => {
+    const today = new Date();
+    // Monthly fortune depends on Month Stem (Wol-Geon)
+    try {
+        const lunar = Lunar.fromYmd(today.getFullYear(), today.getMonth() + 1, today.getDate());
+        const monthStemChar = lunar.getMonthGan(); // Hanja
+
+        const hanjaToKorean: Record<string, HeavenlyStem> = {
+            '甲': '갑', '乙': '을', '丙': '병', '丁': '정', '戊': '무',
+            '己': '기', '庚': '경', '辛': '신', '壬': '임', '癸': '계'
+        };
+
+        const targetStem = hanjaToKorean[monthStemChar];
+        const tenGodFull = targetStem ? calculateTenGod(saju.day.heavenlyStem, targetStem) : '비견(Friend)';
+        const tenGod = getCoreTerm(tenGodFull);
+        const desc = FORTUNE_DESCRIPTIONS[tenGod] || FORTUNE_DESCRIPTIONS['비견'];
+
+        return {
+            date: `${today.getFullYear()}년 ${today.getMonth() + 1}월`,
+            score: desc.score, // Simple score reused
+            title: `${tenGod}의 달: ${desc.title}`,
+            content: `이번 달은 ${desc.content} (월운)`,
+            tenGod: tenGod
+        };
+    } catch (e) {
+        return { date: 'Error', score: 50, title: '-', content: '운세 정보를 불러올 수 없습니다.', tenGod: '비견' };
+    }
+};
+
+export const getYearlyFortune = (saju: SajuData): FortuneResult => {
+    const today = new Date();
+    // Yearly fortune depends on Se-Un (Year Stem)
+    try {
+        const lunar = Lunar.fromYmd(today.getFullYear(), today.getMonth() + 1, today.getDate());
+        const yearStemChar = lunar.getYearGan();
+
+        const hanjaToKorean: Record<string, HeavenlyStem> = {
+            '甲': '갑', '乙': '을', '丙': '병', '丁': '정', '戊': '무',
+            '己': '기', '庚': '경', '辛': '신', '壬': '임', '癸': '계'
+        };
+
+        const targetStem = hanjaToKorean[yearStemChar];
+        const tenGodFull = targetStem ? calculateTenGod(saju.day.heavenlyStem, targetStem) : '비견(Friend)';
+        const tenGod = getCoreTerm(tenGodFull);
+        const desc = FORTUNE_DESCRIPTIONS[tenGod] || FORTUNE_DESCRIPTIONS['비견'];
+
+        return {
+            date: `${lunar.getYear()}년 (${lunar.getYearInGanZhi()}년)`,
+            score: desc.score,
+            title: `${lunar.getYearInGanZhi()}년 총운: ${desc.title}`,
+            content: `올해는 ${tenGod}의 해입니다. ${desc.content}`,
+            tenGod: tenGod
+        };
+    } catch (e) {
+        return { date: 'Error', score: 50, title: '-', content: '운세 정보를 불러올 수 없습니다.', tenGod: '비견' };
+    }
+};
+
+export const getHealthAnalysis = (saju: SajuData): HealthAnalysis => {
+    // Logic: Identify weakest element (Lacking > Weakest in count)
+    // If lackingElement exists, use it. Else use random or dominant inverse?
+    // Let's use lackingElement. If none (balanced), check generated cycle of dominant?
+    // MVP: Lacking element or just '토' (Earth is central)
+
+    const target = saju.lackingElement || '토'; // Default to Earth if balanced
+    const info = HEALTH_DESCRIPTIONS[target];
+
+    return {
+        weakestOrgan: info.organ,
+        advice: info.advice,
+        recommendedFood: info.food
+    };
+};
+
+export const getDetailedRealEstateAnalysis = (saju: SajuData): RealEstateAnalysis => {
+    // Based on Day Master Element (or Month Branch for stronger affinity?)
+    // Let's use Day Master's Element (Self)
+    const selfElement = getHeavenlyStemElement(saju.day.heavenlyStem);
+    const info = REAL_ESTATE_DETAILED[selfElement];
+
+    // Lucky direction based on lacking element
+    const lacking = saju.lackingElement || '토';
+    const directionMapInverse: Record<FiveElement, string> = {
+        '목': '동쪽', '화': '남쪽', '토': '중앙/남서쪽', '금': '서쪽', '수': '북쪽'
+    };
+
+    return {
+        buyingTiming: info.buyingTiming,
+        sellingTiming: info.sellingTiming,
+        bestFloor: info.bestFloor,
+        luckyDirection: directionMapInverse[lacking]
+    };
+};
+
+export const getGeneralPaljaSummary = (saju: SajuData): string => {
+    // Standard Palja interpretation focus: Month Branch (Wol-Ji) Ten God
+    // Wol-Ji represents the environment/society/innate potential.
+    if (!saju.tenGods?.monthBranch) return "선생님만의 독특한 삶의 궤적과 잠재력을 지니셨습니다.";
+    const woljiTenGod = getCoreTerm(saju.tenGods.monthBranch);
+    return PALJA_SUMMARY[woljiTenGod] || "선생님만의 독특한 삶의 궤적과 잠재력을 지니셨습니다.";
 };
 
 
@@ -420,4 +606,3 @@ export const getCompatibilityScore = (saju: SajuData, propertyFeatures: {
         }
     };
 };
-import { REAL_ESTATE_TIPS, LUCKY_STYLING, SHINSAL_REAL_ESTATE } from './saju_desc';

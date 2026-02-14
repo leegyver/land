@@ -1,9 +1,11 @@
 import { Helmet } from "react-helmet";
+import NoticeBanner from "@/components/home/NoticeBanner";
 import PropertyMap from "@/components/map/PropertyMap";
-
 import PropertySection from "@/components/home/PropertySection";
 import BannerSlider from "@/components/home/BannerSlider";
 import FeaturedProperties from "@/components/home/FeaturedProperties"; // Keep for safe removal later if needed, but unused in new layout
+import Hero from "@/components/home/Hero";
+import ReviewSection from "@/components/home/ReviewSection";
 import { useQuery } from "@tanstack/react-query";
 import { News } from "@shared/schema";
 import { Link, useLocation } from "wouter";
@@ -13,6 +15,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { propertyTypeOptions } from "@/constants/property-types";
+
+// Types are now in src/types/speech-recognition.d.ts
+import type { SpeechRecognition, SpeechRecognitionEvent } from "@/types/speech-recognition";
 
 // 유튜브 비디오 타입 정의
 interface YouTubeVideo {
@@ -32,49 +37,6 @@ interface BlogPost {
   publishedAt: string;
   category: string;
   summary?: string;
-}
-
-export interface SpeechRecognitionEvent extends Event {
-  results: SpeechRecognitionResultList;
-  resultIndex: number;
-}
-
-export interface SpeechRecognitionResultList {
-  length: number;
-  item(index: number): SpeechRecognitionResult;
-  [index: number]: SpeechRecognitionResult;
-}
-
-export interface SpeechRecognitionResult {
-  isFinal: boolean;
-  length: number;
-  item(index: number): SpeechRecognitionAlternative;
-  [index: number]: SpeechRecognitionAlternative;
-}
-
-export interface SpeechRecognitionAlternative {
-  transcript: string;
-  confidence: number;
-}
-
-export interface SpeechRecognition extends EventTarget {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  onstart: ((this: SpeechRecognition, ev: Event) => void) | null;
-  onend: ((this: SpeechRecognition, ev: Event) => void) | null;
-  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => void) | null;
-  onerror: ((this: SpeechRecognition, ev: Event) => void) | null;
-  start(): void;
-  stop(): void;
-  abort(): void;
-}
-
-declare global {
-  interface Window {
-    SpeechRecognition: new () => SpeechRecognition;
-    webkitSpeechRecognition: new () => SpeechRecognition;
-  }
 }
 
 const HomePage = () => {
@@ -159,97 +121,141 @@ const HomePage = () => {
   return (
     <>
       <Helmet>
-        <title>이가이버부동산 - 강화도 부동산의 모든 것</title>
-        <meta name="description" content="강화도 토지, 전원주택, 상가 정직한 중개. 이가이버부동산이 함께합니다." />
+        <title>이가이버부동산 - 강화도 부동산 전문 중개</title>
+        <meta name="description" content="강화도 부동산 전문 중개 - 토지, 주택, 아파트, 상가 매물 정보. 강화도 지역 부동산 매매 및 임대 서비스를 제공합니다." />
+        <meta name="keywords" content="강화도 부동산, 강화도 토지, 강화도 전원주택, 강화도 매물, 이가이버, 이가이버부동산" />
+
+        {/* Open Graph / Facebook / Naver Blog */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://leegyver.com/" />
+        <meta property="og:title" content="이가이버부동산 - 강화도 부동산 전문 중개" />
+        <meta property="og:description" content="강화도 부동산 전문 중개 - 토지, 주택, 아파트, 상가 매물 정보. 강화도 지역 부동산 매매 및 임대 서비스를 제공합니다." />
+        <meta property="og:image" content="https://leegyver.com/images/thumbnail.png" />
+        <meta property="og:site_name" content="이가이버부동산" />
+        <meta property="og:locale" content="ko_KR" />
+
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:url" content="https://leegyver.com/" />
+        <meta name="twitter:title" content="이가이버부동산 - 강화도 부동산 전문 중개" />
+        <meta name="twitter:description" content="강화도 부동산 전문 중개 - 토지, 주택, 아파트, 상가 매물 정보. 강화도 지역 부동산 매매 및 임대 서비스를 제공합니다." />
+        <meta name="twitter:image" content="https://leegyver.com/images/thumbnail.png" />
+
+        {/* Structured Data (JSON-LD) */}
+        <script type="application/ld+json">
+          {`
+            {
+              "@context": "https://schema.org",
+              "@type": "RealEstateAgent",
+              "name": "이가이버부동산",
+              "image": "https://leegyver.com/images/thumbnail.png",
+              "@id": "https://leegyver.com",
+              "url": "https://leegyver.com",
+              "telephone": "032-934-3120", 
+              "priceRange": "$$",
+              "address": {
+                "@type": "PostalAddress",
+                "streetAddress": "인천광역시 강화군 강화읍 남문로 51 (남산리 96-1)",
+                "addressLocality": "Ganghwa-gun",
+                "addressRegion": "Incheon",
+                "postalCode": "23030",
+                "addressCountry": "KR"
+              },
+              "geo": {
+                "@type": "GeoCoordinates",
+                "latitude": 37.6437,
+                "longitude": 126.4912
+              },
+              "openingHoursSpecification": {
+                "@type": "OpeningHoursSpecification",
+                "dayOfWeek": [
+                  "Monday",
+                  "Tuesday",
+                  "Wednesday",
+                  "Thursday",
+                  "Friday",
+                  "Saturday"
+                ],
+                "opens": "09:00",
+                "closes": "18:00"
+              },
+              "sameAs": [
+                "https://blog.naver.com/9551304",
+                "https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA"
+              ]
+            }
+          `}
+        </script>
       </Helmet>
 
+      {/* Notice Banner */}
+      <NoticeBanner />
+
       {/* Hero Section */}
-      <section className="relative w-full py-4 bg-center bg-no-repeat"
-        style={{
-          backgroundImage: 'url("/assets/uploads/home-banner-new.jpg")',
-          backgroundSize: 'auto 100%'
-        }}
-      >
-        <div className="absolute inset-0 bg-blue-900/10" />
-
-        <div className="relative z-10 container mx-auto px-4 flex flex-col items-center text-center text-white">
-          <h1 className="text-2xl md:text-4xl font-bold mb-6 drop-shadow-md leading-tight text-white mb-6">
-            강화도의 소중한 공간,<br />
-            <span className="text-[#FEE500] drop-shadow-lg">이가이버</span>가 찾아드립니다
-          </h1>
-
-          {/* Main Search Bar */}
-          <div className="w-full max-w-md bg-white/95 backdrop-blur-sm rounded-full p-1 flex shadow-2xl items-center mb-1 relative">
-            <Search className="ml-3 h-5 w-5 text-gray-400 shrink-0" />
-            <Input
-              className="border-0 focus-visible:ring-0 text-base px-3 text-black placeholder:text-gray-400 h-10 bg-transparent pr-12"
-              placeholder="상호, 지역명 검색"
-              value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              onKeyDown={handleKeyDown}
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={toggleListening}
-              className={`absolute right-20 top-1/2 transform -translate-y-1/2 p-1 h-8 w-8 rounded-full hover:bg-gray-100 z-10 ${isListening ? "text-red-500 animate-pulse" : "text-gray-500 hover:text-primary"
-                }`}
-              title={!speechSupported ? "음성 검색 미지원 (HTTPS 필요)" : "음성 검색"}
-            >
-              {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-            </Button>
-            <Button
-              size="sm"
-              className="rounded-full px-6 text-base h-10 bg-blue-600 hover:bg-blue-700 shrink-0 z-20"
-              onClick={() => handleSearch()}
-            >
-              검색
-            </Button>
-          </div>
-
-          {/* Quick Links */}
-          <div className="flex flex-wrap justify-center gap-3 max-w-4xl mx-auto">
-            <Link href="/properties">
-              <Button variant="outline" className="bg-white/20 backdrop-blur-md border-white/40 text-white hover:bg-white hover:text-blue-600 h-8 px-3 rounded-full text-xs font-medium mb-1 transition-all hover:scale-105">
-                전체
-              </Button>
-            </Link>
-            {propertyTypeOptions.filter(type => type !== "기타").map((type) => (
-              <Link key={type} href={`/properties?type=${encodeURIComponent(type)}`}>
-                <Button variant="outline" className="bg-white/20 backdrop-blur-md border-white/40 text-white hover:bg-white hover:text-blue-600 h-8 px-3 rounded-full text-xs font-medium mb-1 transition-all hover:scale-105">
-                  {type}
-                </Button>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+      <Hero />
 
 
 
       {/* Featured Properties Section */}
-      <section className="pt-0 pb-0 bg-[#F7F5F0]">
+      <section className="pt-8 pb-0 bg-[#F7F5F0]">
         <div className="container mx-auto px-4">
 
 
-          {/* 급매물 섹션 */}
+          <div className="flex justify-between items-center mb-1 mt-0">
+            <h2 className="text-2xl font-bold">🔥 급매물</h2>
+            <Link href="/properties?tag=urgent">
+              <Button variant="ghost" size="sm" className="text-gray-500 hover:text-primary">
+                더보기 <ArrowRight className="ml-1 h-3 w-3" />
+              </Button>
+            </Link>
+          </div>
           <PropertySection
-            title="🔥 급매물"
-            queryKey="/api/properties/urgent"
+            title=""
+            queryKey="/api/properties/urgent?limit=4"
             bgColor="bg-red-50"
           />
 
           {/* 흥정 매물 섹션 */}
+          <div className="flex justify-between items-center mb-1 mt-6">
+            <h2 className="text-2xl font-bold">🤝 가격 협의 가능</h2>
+            <Link href="/properties?tag=negotiable">
+              <Button variant="ghost" size="sm" className="text-gray-500 hover:text-primary">
+                더보기 <ArrowRight className="ml-1 h-3 w-3" />
+              </Button>
+            </Link>
+          </div>
           <PropertySection
-            title="🤝 가격 협의 가능"
-            queryKey="/api/properties/negotiable"
+            title=""
+            queryKey="/api/properties/negotiable?limit=4"
             bgColor="bg-blue-50"
           />
 
-          {/* 추천 매물 섹션 */}
+          {/* 장기투자 매물 섹션 */}
+          <div className="flex justify-between items-center mb-1 mt-6">
+            <h2 className="text-2xl font-bold text-red-600">📈 장기투자 추천</h2>
+            <Link href="/properties?tag=long-term">
+              <Button variant="ghost" size="sm" className="text-gray-500 hover:text-primary">
+                더보기 <ArrowRight className="ml-1 h-3 w-3" />
+              </Button>
+            </Link>
+          </div>
           <PropertySection
-            title={<div className="flex items-center"><ThumbsUp className="w-6 h-6 mr-2 text-primary" />추천 매물</div>}
+            title=""
+            queryKey="/api/properties/long-term?limit=4"
+            bgColor="bg-green-50"
+          />
+
+          {/* 추천 매물 섹션 */}
+          <div className="flex justify-between items-center mb-1 mt-6">
+            <h2 className="text-2xl font-bold flex items-center"><ThumbsUp className="w-6 h-6 mr-2 text-primary" />추천 매물</h2>
+            <Link href="/properties?tag=recommended">
+              <Button variant="ghost" size="sm" className="text-gray-500 hover:text-primary">
+                더보기 <ArrowRight className="ml-1 h-3 w-3" />
+              </Button>
+            </Link>
+          </div>
+          <PropertySection
+            title=""
             queryKey="/api/properties/featured"
           />
 
@@ -263,7 +269,8 @@ const HomePage = () => {
         </div>
       </section >
 
-
+      {/* Review Section */}
+      <ReviewSection />
 
       {/* Map Section */}
       <section className="py-2 bg-white">
@@ -327,7 +334,7 @@ const HomePage = () => {
               </div>
             </div>
             <div className="h-[300px] md:h-[400px] rounded-2xl overflow-hidden shadow-2xl border border-[#EBE5CE]">
-              <PropertyMap />
+              <PropertyMap showCrawled={true} />
             </div>
           </div>
         </div>

@@ -4,20 +4,47 @@ import { insertCrawledPropertySchema } from '@shared/schema';
 
 // Naver Land API Headers
 const HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+    "Accept": "application/json, text/javascript, */*; q=0.01",
+    "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Accept-Encoding": "gzip, deflate, br",
     "Referer": "https://m.land.naver.com/",
+    "X-Requested-With": "XMLHttpRequest",
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-site"
 };
 
-// Ganghwa-gun Full Region Bounds (Approximate)
-// West end (Gyodong): 126.25
-// East end (Bridge): 126.55
-// South end (Mani-san): 37.58
-// North end (Checkpoints): 37.80
+// Ganghwa-gun Full Region Bounds
 const GANGHWA_FULL_BOUNDS = {
     minLat: 37.580,
     minLon: 126.250,
-    maxLat: 37.800,
-    maxLon: 126.550
+    maxLat: 37.850, // 강화 북단(교동, 양사면 등) 포함
+    maxLon: 126.540 // 김포 경계까지 넉넉하게 확장 (좌표 필터링에서 정밀 제어)
+};
+
+// 정밀 강화도 경계 (좌표 기반 필터링용)
+const GANGHWA_PRECISION_BOUNDS = {
+    minLat: 37.580,
+    maxLat: 37.850,
+    minLon: 126.250,
+    maxLon: 126.525 // 김포 매물 유입 방지
+};
+
+// 지역별 좌표 프리셋
+export const REGION_BOUNDS: Record<string, { minLat: number, minLon: number, maxLat: number, maxLon: number, label: string }> = {
+    "eup": { label: "강화읍", minLat: 37.730, minLon: 126.470, maxLat: 37.760, maxLon: 126.510 },
+    "gilsang": { label: "길상면", minLat: 37.600, minLon: 126.450, maxLat: 37.660, maxLon: 126.530 },
+    "hwado": { label: "화도면", minLat: 37.580, minLon: 126.350, maxLat: 37.670, maxLon: 126.460 },
+    "bureun": { label: "불은면", minLat: 37.660, minLon: 126.470, maxLat: 37.720, maxLon: 126.530 },
+    "seonwon": { label: "선원면", minLat: 37.700, minLon: 126.470, maxLat: 37.740, maxLon: 126.520 },
+    "yangdo": { label: "양도면", minLat: 37.650, minLon: 126.370, maxLat: 37.710, maxLon: 126.450 },
+    "naega": { label: "내가면", minLat: 37.700, minLon: 126.350, maxLat: 37.760, maxLon: 126.425 },
+    "hajeom": { label: "하점면", minLat: 37.750, minLon: 126.370, maxLat: 37.820, maxLon: 126.460 },
+    "songhae": { label: "송해면", minLat: 37.770, minLon: 126.440, maxLat: 37.820, maxLon: 126.510 },
+    "yangsa": { label: "양사면", minLat: 37.800, minLon: 126.380, maxLat: 37.850, maxLon: 126.480 },
+    "gyodong": { label: "교동면", minLat: 37.750, minLon: 126.250, maxLat: 37.840, maxLon: 126.350 },
+    "samsan": { label: "삼산면 (석모도)", minLat: 37.640, minLon: 126.290, maxLat: 37.760, maxLon: 126.360 }
 };
 
 export class NaverCrawler {
@@ -26,7 +53,6 @@ export class NaverCrawler {
     }
 
     async fetchAndSave(bounds?: { minLat: number, minLon: number, maxLat: number, maxLon: number }, mode: 'single' | 'grid' = 'single') {
-        // Default to a small area around Ganghwa-eup if no bounds provided
         const defaultBounds = {
             minLat: 37.730,
             minLon: 126.470,
@@ -34,7 +60,6 @@ export class NaverCrawler {
             maxLon: 126.500
         };
 
-        // If grid mode is requested without bounds, use the FULL Ganghwa region
         let targetBounds = bounds;
         if (!targetBounds) {
             targetBounds = mode === 'grid' ? GANGHWA_FULL_BOUNDS : defaultBounds;
@@ -50,7 +75,6 @@ export class NaverCrawler {
     async crawlGrid(bounds: { minLat: number, minLon: number, maxLat: number, maxLon: number }) {
         console.log(`[Crawler] Starting GRID crawl for: ${JSON.stringify(bounds)}`);
 
-        // Let's use 4x4 grid (16 requests)
         const ROWS = 4;
         const COLS = 4;
 
@@ -75,22 +99,24 @@ export class NaverCrawler {
                     maxLon: fileMaxLon
                 };
 
-                console.log(`[Crawler] Sector ${i}-${j}: ${JSON.stringify(sectorBounds)}`);
+                console.log(`[Crawler] Sector ${i}-${j} started: ${JSON.stringify(sectorBounds)}`);
 
                 try {
-                    // Crawl this sector
                     const result = await this.crawlSingle(sectorBounds, processedSet);
                     totalSaved += result.count;
                     totalFetched += result.totalFetched;
+                    console.log(`[Crawler] Sector ${i}-${j} complete. Saved: ${result.count}, Total: ${totalSaved}`);
 
-                    // Sleep to avoid blocking (1 second between sectors if paginated)
-                    await this.sleep(1000);
+                    // Sleep 2 seconds between sectors to avoid detection
+                    await this.sleep(2000);
                 } catch (err) {
                     console.error(`[Crawler] Sector ${i}-${j} failed:`, err);
+                    await this.sleep(5000); // Wait longer on error
                 }
             }
         }
 
+        console.log(`[Crawler] FULL Grid crawl finished. Final Saved: ${totalSaved}`);
         return { success: true, count: totalSaved, totalFetched: totalFetched, message: "Grid crawl completed" };
     }
 
@@ -98,22 +124,19 @@ export class NaverCrawler {
         const url = "https://m.land.naver.com/cluster/ajax/articleList";
         const localSet = processedSet || new Set<string>();
 
-        // Define category groups to fetch separately to ensure diversity
         const categoryGroups = [
-            { rletTpCd: "DDD:SGJT:VL", label: "House" }, // Residence/Villa
-            { rletTpCd: "SG:SMS", label: "Comm" },       // Commercial
-            { rletTpCd: "TJ:JGC:JW", label: "Land/Ind" } // Land/Industrial
+            { rletTpCd: "DDD:SGJT:VL:JWJT:HOJT", label: "House" },
+            { rletTpCd: "TJ:JGC:JW", label: "Land" },
+            { rletTpCd: "SG:SMS", label: "Comm" }
         ];
 
         let savedCount = 0;
         let totalFetchedCount = 0;
 
         for (const group of categoryGroups) {
-            console.log(`[Crawler] Fetching category group: ${group.label} (${group.rletTpCd})`);
             let page = 1;
             let hasMore = true;
 
-            // Fetch up to 3 pages per category group per sector to stay within limits but get depth
             while (hasMore && page <= 3) {
                 const params = new URLSearchParams({
                     rletTpCd: group.rletTpCd,
@@ -127,15 +150,24 @@ export class NaverCrawler {
                     rgt: String(bounds.maxLon),
                     sort: "rank",
                     page: String(page),
+                    pgr: String(page) // 더블 파라미터로 페이징 보강
                 });
 
                 try {
                     const response = await fetch(`${url}?${params.toString()}`, {
-                        headers: HEADERS
+                        method: "GET",
+                        headers: HEADERS,
+                        redirect: "manual" // 리다이렉트를 수동으로 체크
                     });
 
+                    if (response.status === 301 || response.status === 302 || response.status === 307 || response.status === 308) {
+                        const redirectUrl = response.headers.get('location');
+                        console.error(`[Crawler] ${group.label} P${page} Redirected to: ${redirectUrl}`);
+                        break;
+                    }
+
                     if (!response.ok) {
-                        console.error(`[Crawler] ${group.label} Page ${page} failed: ${response.statusText}`);
+                        console.error(`[Crawler] ${group.label} P${page} Error: ${response.status}`);
                         break;
                     }
 
@@ -146,6 +178,18 @@ export class NaverCrawler {
                     for (const article of articles) {
                         const atclNo = String(article.atclNo);
                         if (localSet.has(atclNo)) continue;
+
+                        const lat = Number(article.lat);
+                        const lng = Number(article.lng);
+
+                        // 좌표 기반 강화도 필터링
+                        const isInGanghwa =
+                            lat >= GANGHWA_PRECISION_BOUNDS.minLat &&
+                            lat <= GANGHWA_PRECISION_BOUNDS.maxLat &&
+                            lng >= GANGHWA_PRECISION_BOUNDS.minLon &&
+                            lng <= GANGHWA_PRECISION_BOUNDS.maxLon;
+
+                        if (!isInGanghwa) continue;
 
                         try {
                             const crawledItem = {
@@ -158,8 +202,8 @@ export class NaverCrawler {
                                 spc1: article.spc1 ? String(article.spc1) : null,
                                 spc2: article.spc2 ? String(article.spc2) : null,
                                 direction: article.direction,
-                                lat: Number(article.lat),
-                                lng: Number(article.lng),
+                                lat,
+                                lng,
                                 imgUrl: article.repImgUrl ? `https://landthumb-phinf.pstatic.net${article.repImgUrl}` : null,
                                 rltrNm: article.rltrNm || null,
                                 landType: article.atclNm || null,
@@ -169,25 +213,22 @@ export class NaverCrawler {
                             await storage.createCrawledProperty(crawledItem);
                             savedCount++;
                             localSet.add(atclNo);
-                        } catch (err) {
-                            // ignore duplicate errors or parse errors
-                        }
+                        } catch (err) { }
                     }
 
                     hasMore = data.more === true && articles.length > 0;
                     if (hasMore) {
                         page++;
-                        await this.sleep(300); // Smaller delay between pages
+                        await this.sleep(1000); // 페이지 간 간격 확대
                     } else {
                         break;
                     }
                 } catch (error) {
-                    console.error(`[Crawler] Error in ${group.label} page ${page}:`, error);
+                    console.error(`[Crawler] Request Failed:`, error);
                     break;
                 }
             }
-            // Small delay between category groups
-            await this.sleep(500);
+            await this.sleep(1000); // 카테고리 간 간격
         }
 
         return { success: true, count: savedCount, totalFetched: totalFetchedCount };

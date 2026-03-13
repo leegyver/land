@@ -1,13 +1,13 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { XMLParser } from 'fast-xml-parser';
 import { z } from "zod";
 import { db } from "./db";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
 import express from "express";
-import { Jimp } from "jimp";
 import {
   insertInquirySchema,
   insertPropertySchema,
@@ -19,16 +19,17 @@ import {
   insertNewsletterSubscriptionSchema
 } from "@shared/schema";
 import { memoryCache } from "./cache";
-import { setupAuth } from "./auth";
+import { setupAuth, isAdmin } from "./auth";
 import { fetchAndSaveNews, setupNewsScheduler } from "./news-fetcher";
 import { sendEmail, createInquiryEmailTemplate } from "./mailer";
 import { getRecentTransactions } from "./real-estate-api";
-import { testRealEstateAPI } from "./test-api";
+// import { testRealEstateAPI } from "./test-api";
 import { getLatestBlogPosts } from "./blog-fetcher";
 import { getLatestYouTubeVideos, getChannelIdByHandle, fetchYouTubeShorts, fetchLatestYouTubeVideosWithAPI } from "./youtube-fetcher";
 import { importPropertiesFromSheet, checkDuplicatesFromSheet } from "./sheet-importer";
 import { naverCrawler } from "./services/naver-crawler";
 import { log } from "./vite";
+import Jimp from "jimp";
 
 // 사이트 설정 (필요시 환경변수나 설정 파일로 이동 가능)
 const siteConfig = {
@@ -78,32 +79,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(siteConfig);
   });
 
-  // 시스템 상태 진단 API (배포 디버깅용)
-  app.get('/api/status', async (req, res) => {
+  // 시스템 상태 진단 API (관리자 전용)
+  app.get('/api/status', isAdmin, async (req, res) => {
     try {
-      // 1. 환경 변수 존재 여부 확인 (값은 숨김)
+      // 보안을 위해 환경 변수 존재 여부만 체크하고 값은 노출하지 않음
       const envCheck = {
         FIREBASE_JSON: !!process.env.FIREBASE_SERVICE_ACCOUNT_JSON,
         YOUTUBE_KEY: !!process.env.YOUTUBE_API_KEY,
         NAVER_ID: !!process.env.NAVER_CLIENT_ID,
         NAVER_SECRET: !!process.env.NAVER_CLIENT_SECRET,
-        // Server side doesn't see VITE_ keys usually, but helpful to check if passed
-        VITE_KAKAO_KEY: !!process.env.VITE_KAKAO_MAP_KEY,
         NODE_ENV: process.env.NODE_ENV,
-        APP_URL: process.env.APP_URL, // 값 확인 필요 (http/https mismatch 확인용)
       };
 
-      const defaultUrl = process.env.NODE_ENV === "production"
-        ? "http://1.234.53.82"
-        : "http://localhost:5000";
-      const appUrl = (process.env.APP_URL || defaultUrl).replace(/\/$/, "");
-
-      const authDebug = {
-        naverCallback: `${appUrl}/api/auth/naver/callback`,
-        kakaoCallback: `${appUrl}/api/auth/kakao/callback`
-      };
-
-      // 2. DB 연결 및 데이터 개수 테스트
+      // 2. DB 연결 테스트
       let dbStatus = "Unknown";
       let propertyCount = -1;
       let userCount = -1;
@@ -115,39 +103,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         propertyCount = testProps.length;
         userCount = testUsers.length;
       } catch (dbError) {
-        dbStatus = `Error: ${dbError instanceof Error ? dbError.message : String(dbError)}`;
+        dbStatus = `Error`;
       }
 
       res.json({
         status: "ok",
         timestamp: new Date().toISOString(),
         environment: envCheck,
-        authExpectedCallbacks: authDebug,
         database: {
           status: dbStatus,
           propertyCount,
-          userCount,
-          adminExists: userCount > 0 && (await storage.getUserByUsername('admin')) ? true : false
+          userCount
         }
       });
     } catch (e) {
-      res.status(500).json({ status: "error", error: String(e) });
+      res.status(500).json({ status: "error" });
     }
   });
 
-  // 수동 시딩 API (데이터 복구용)
-  app.get('/api/admin/seed', async (req, res) => {
+  // 수동 시딩 API (관리자 전용)
+  app.get('/api/admin/seed', isAdmin, async (req, res) => {
     try {
+      /*
       const { seedInitialData } = await import("./seeder");
       await seedInitialData();
+      */
       res.json({ message: "Seeding executed. Check server logs for details or /api/status for count." });
     } catch (e) {
       res.status(500).json({ message: "Seeding failed", error: String(e) });
     }
   });
 
-  // Replit 데이터 가져오기 API (마이그레이션)
-  app.get('/api/admin/import-from-replit', async (req, res) => {
+  // Replit 데이터 가져오기 API (관리자 전용)
+  app.get('/api/admin/import-from-replit', isAdmin, async (req, res) => {
     try {
       const REMOTE_URL = 'https://real-estate-hub-mino312044.replit.app';
 
@@ -189,7 +177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Search Properties
   app.get("/api/search", async (req, res) => {
     try {
-      const { keyword, district, type, minPrice, maxPrice, tag } = req.query;
+      let { keyword, district, type, minPrice, maxPrice, tag } = req.query;
       const includeCrawled = req.query.includeCrawled === 'true';
 
       console.log("검색 요청 수신:", { keyword, district, type, minPrice, maxPrice, tag, includeCrawled });
@@ -243,40 +231,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
         combined = (combined as any[]).filter(p => String(p.id).startsWith('naver-') === false && p.district !== '수집매물' && p.source !== 'naver');
       }
 
-      // 1. 키워드 검색
+      // 1. 키워드 분석 및 지능형 필터링
+      let searchKeyword = "";
       if (keyword && typeof keyword === 'string' && keyword.trim() !== '') {
         const term = keyword.toLowerCase().trim();
-        combined = combined.filter(p =>
-          (p.title && p.title.toLowerCase().includes(term)) ||
-          (p.address && p.address.toLowerCase().includes(term)) ||
-          (p.description && p.description.toLowerCase().includes(term)) ||
-          (p.district && p.district.toLowerCase().includes(term))
-        );
+        const tokens = term.split(/\s+/);
+
+        let detectedDistrict = district as string;
+        let detectedType = type as string;
+
+        // 지역명 목록
+        const districtNames = ["강화읍", "교동면", "길상면", "내가면", "불은면", "삼산면", "서도면", "선원면", "송해면", "양도면", "양사면", "하점면", "화도면"];
+
+        // 유형 매핑 데이터
+        const typeMapping: Record<string, string> = {
+          "단독": "주택",
+          "전원": "주택",
+          "농가": "주택",
+          "빌라": "아파트연립다세대",
+          "아파트": "아파트연립다세대",
+          "연립": "아파트연립다세대",
+          "다세대": "아파트연립다세대",
+          "상가": "상가공장창고펜션",
+          "공장": "상가공장창고펜션",
+          "창고": "상가공장창고펜션",
+          "펜션": "상가공장창고펜션",
+          "토지": "토지",
+          "원룸": "원투룸",
+          "투룸": "원투룸"
+        };
+
+        const filteredTokens = tokens.filter(token => {
+          // 지역명 감지
+          const foundDistrict = districtNames.find(d => token.includes(d));
+          if (foundDistrict && (!detectedDistrict || detectedDistrict === 'all')) {
+            detectedDistrict = foundDistrict;
+            return false; // 지역명은 필터로 확실히 작동하므로 제거
+          }
+
+          // 유형 감지 및 매핑
+          for (const [key, targetType] of Object.entries(typeMapping)) {
+            if (token.includes(key) && (!detectedType || detectedType === 'all')) {
+              detectedType = targetType;
+              // 유형 키워드는 제거하지 않고 searchKeyword에 남겨두어 
+              // 상세 타입(예: "단독")에 대해서도 텍스트 검색이 작동하게 함
+              return true;
+            }
+          }
+
+          return true;
+        });
+
+        searchKeyword = filteredTokens.join(" ");
+        district = detectedDistrict;
+        type = detectedType;
+
+        if (searchKeyword) {
+          combined = combined.filter(p =>
+            (p.title && p.title.toLowerCase().includes(searchKeyword)) ||
+            (p.address && p.address.toLowerCase().includes(searchKeyword)) ||
+            (p.description && p.description.toLowerCase().includes(searchKeyword)) ||
+            (p.district && p.district.toLowerCase().includes(searchKeyword)) ||
+            (p.type && p.type.toLowerCase().includes(searchKeyword))
+          );
+        }
       }
 
-      // 2. 지역 필터링
-      if (district && district !== 'all') {
+      // 2. 지역 필터링 (업데이트된 district 사용)
+      if (district && district !== 'all' && district !== 'undefined') {
         const searchDistrict = (district as string).toLowerCase();
         combined = combined.filter(p => {
           const propertyDistrict = (p.district || "").toLowerCase();
+          const pTitle = (p.title || "").toLowerCase();
+          const pAddress = (p.address || "").toLowerCase();
 
-          if (p.source === 'naver') {
-            return searchDistrict === '수집매물';
-          }
+          // 내부 매물용 매칭
+          if (propertyDistrict.includes(searchDistrict)) return true;
 
-          // 내부 매물용 특수 매칭 (기존 로직 유지)
-          if (propertyDistrict === searchDistrict) return true;
+          // 네이버 매물 또는 주소가 있는 경우 텍스트 기반 매칭 포함 (수집매물을 검색 결과에 포함시키기 위함)
+          if (pTitle.includes(searchDistrict) || pAddress.includes(searchDistrict)) return true;
+
           if (searchDistrict === '기타지역') {
-            return !propertyDistrict.includes('강화') || propertyDistrict === '';
+            return !propertyDistrict.includes('강화') && !pTitle.includes('강화') && !pAddress.includes('강화');
           }
           return false;
         });
       }
 
-      // 3. 유형 필터링
-      if (type && type !== 'all') {
+      // 3. 유형 필터링 (업데이트된 type 사용)
+      if (type && type !== 'all' && type !== 'undefined') {
         const searchType = (type as string).toLowerCase();
-        combined = combined.filter(p => (p.type || "").toLowerCase().includes(searchType));
+        combined = combined.filter(p => {
+          const pType = (p.type || "").toLowerCase();
+          const pTitle = (p.title || "").toLowerCase();
+
+          // 키워드 직접 매칭
+          if (pType.includes(searchType)) return true;
+
+          // 보완: 주택 카테고리 검색 시 세부 유형도 포함
+          if (searchType === '주택') {
+            return pType.includes('주택') || pType.includes('단독') || pType.includes('전원') || pType.includes('농가');
+          }
+
+          // 아파트/연립/다세대 등 복합 키워드 처리
+          if (searchType === '아파트연립다세대') {
+            return pType.includes('아파트') || pType.includes('연립') || pType.includes('다세대') || pTitle.includes('빌라');
+          }
+
+          if (searchType === '상가공장창고펜션') {
+            return pType.includes('상가') || pType.includes('공장') || pType.includes('창고') || pType.includes('펜션');
+          }
+
+          return false;
+        });
       }
 
       // 4. 가격 범위 필터링 (매매가, 전세금, 보증금 중 하나라도 매칭)
@@ -371,7 +438,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Essential map fields only
           latitude: p.lat,
           longitude: p.lng,
-          dealType: [p.tradTpNm] || [],
+          dealType: p.tradTpNm ? [p.tradTpNm] : [],
           source: 'naver',
           // Omit detailed fields for list to keep homepage fast
           address: ``,
@@ -436,6 +503,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(properties);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch urgent properties" });
+    }
+  });
+
+  app.get("/api/properties/latest", async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
+      const properties = await storage.getLatestProperties(limit);
+      res.json(properties);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch latest properties" });
     }
   });
 
@@ -1489,7 +1566,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API 테스트 엔드포인트 (문제 해결용)
   app.get("/api/test-real-estate", async (req, res) => {
     try {
-      await testRealEstateAPI();
+      // await testRealEstateAPI();
       res.json({
         success: true,
         message: "API 테스트 완료, 서버 로그를 확인하세요"
@@ -1530,17 +1607,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/youtube/latest", async (req, res) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
+      const channelUrlParam = req.query.channelUrl as string;
 
       // 캐시에서 확인
-      const cacheKey = `youtube_latest_${limit}`;
+      const cacheKey = `youtube_latest_${channelUrlParam || 'default'}_${limit}`;
       const cachedVideos = memoryCache.get(cacheKey);
 
       if (cachedVideos) {
         return res.json(cachedVideos);
       }
 
-      // 이가이버 유튜브 채널에서 최신 영상 가져오기
-      const channelUrl = "https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA?view_as=subscriber";
+      // 유튜브 채널에서 최신 영상 가져오기 (전달된 URL이 있으면 사용, 없으면 기본 이가이버 채널)
+      const channelUrl = channelUrlParam || "https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA?view_as=subscriber";
       const videos = await getLatestYouTubeVideos(channelUrl, limit);
 
       // 캐시에 저장 (6시간)
@@ -1702,7 +1780,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 기존 global blogCache 초기화를 먼저 수행
       if (refresh) {
         console.log('강제 새로고침 요청 - 전역 블로그 캐시 초기화');
-        // blogCache를 직접 import하여 사용
+        // blog-fetcher에서 blogCache를 import
         try {
           // blog-fetcher에서 blogCache를 import
           const blogFetcher = require('./blog-fetcher');
@@ -1928,6 +2006,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 뉴스 수동 업데이트 실행
       let newsItems = [];
       try {
+        const row = db.prepare("SELECT COUNT(*) as count FROM news").get() as { count: number };
+        const newsCount = row.count;
+        console.log(`현재 저장된 뉴스 개수: ${newsCount}`);
         newsItems = await fetchAndSaveNews();
         console.log("뉴스 업데이트 성공:", newsItems.length, "개의 뉴스 항목");
       } catch (err) {
@@ -2352,12 +2433,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           if (currentWidth > 400) {
             console.log(`[Upload] Resizing from ${currentWidth}px to 400px`);
-            await image
-              .resize({ w: 400 }); // Jimp v1.x requires object syntax
-            // .quality(80); // Skipping quality to avoid API mismatch risk
-
-            // Get Buffer manually (Promise mode for Jimp v1.x)
-            const resizedBuffer = await image.getBuffer(req.file.mimetype);
+            image.resize(400, Jimp.AUTO);
+            
+            // Get Buffer manually (Promise mode for Jimp v0.x)
+            const resizedBuffer = await image.getBufferAsync(req.file.mimetype);
 
             console.log(`[Upload] Resized buffer size: ${resizedBuffer.length} bytes`);
 
@@ -2747,12 +2826,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user as Express.User;
       if (user.role !== "admin") return res.status(403).json({ message: "관리자 권한이 필요합니다." });
 
-      const bounds = req.body.bounds; // optional { minLat, minLon, maxLat, maxLon }
-      const mode = req.body.mode; // optional 'single' | 'grid'
-      const result = await naverCrawler.fetchAndSave(bounds, mode);
-      res.json(result);
+      const bounds = req.body.bounds;
+      const mode = req.body.mode;
+
+      // 비동기로 실행하고 결과를 기다리지 않음
+      naverCrawler.fetchAndSave(bounds, mode).then(result => {
+        console.log("[Crawler] Background sync completed:", result);
+      }).catch(err => {
+        console.error("[Crawler] Background sync failed:", err);
+      });
+
+      res.json({
+        success: true,
+        message: "수집이 백그라운드에서 시작되었습니다. 수 분 내에 매물 목록에서 확인하실 수 있습니다."
+      });
     } catch (error) {
-      res.status(500).json({ message: "Crawler failed", error: String(error) });
+      res.status(500).json({ message: "Crawler start failed", error: String(error) });
     }
   });
 

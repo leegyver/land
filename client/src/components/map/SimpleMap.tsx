@@ -227,6 +227,7 @@ export default function SimpleMap() {
       return () => {
         markers.forEach(marker => marker.setMap(null));
       };
+    } catch (error) {
       console.error("카카오맵 초기화 오류:", error);
     }
   }, [properties]);

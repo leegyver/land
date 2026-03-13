@@ -6,7 +6,8 @@ async function runManualFetch() {
     console.log("=== 뉴스 수집기 강제 실행 (진단용) ===");
     try {
         // DB 연결 확인
-        const newsCount = (await db.collection('news').count().get()).data().count;
+        const row = db.prepare("SELECT COUNT(*) as count FROM news").get() as { count: number };
+        const newsCount = row.count;
         console.log(`현재 저장된 뉴스 개수: ${newsCount}`);
 
         console.log("뉴스 수집 시작...");

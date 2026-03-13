@@ -45,13 +45,13 @@ export interface IStorage {
   updatePropertyOrder(propertyId: number, newOrder: number): Promise<boolean>;
   togglePropertyVisibility(propertyId: number, isVisible: boolean): Promise<boolean>;
   togglePropertyFeatured(propertyId: number, featured: boolean): Promise<boolean>;
+  getLatestProperties(limit?: number): Promise<Property[]>;
 
   // New methods for Urgent/Negotiable
   getUrgentProperties(limit?: number): Promise<Property[]>;
   getNegotiableProperties(limit?: number): Promise<Property[]>;
   togglePropertyUrgent(propertyId: number, isUrgent: boolean): Promise<boolean>;
   togglePropertyNegotiable(propertyId: number, isNegotiable: boolean): Promise<boolean>;
-  updatePropertyUrgentOrder(propertyId: number, newOrder: number): Promise<boolean>;
   updatePropertyUrgentOrder(propertyId: number, newOrder: number): Promise<boolean>;
   updatePropertyNegotiableOrder(propertyId: number, newOrder: number): Promise<boolean>;
 
@@ -212,6 +212,8 @@ export class SQLiteStorage implements IStorage {
         CREATE TABLE IF NOT EXISTS banners (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           location TEXT NOT NULL, 
+          title TEXT,
+          description TEXT,
           imageUrl TEXT NOT NULL,
           linkUrl TEXT,
           openNewWindow INTEGER DEFAULT 0,
@@ -220,7 +222,23 @@ export class SQLiteStorage implements IStorage {
         )
       `).run();
 
-      console.log("Database migrations performed.");
+      // Add title column to banners
+      try { db.prepare("ALTER TABLE banners ADD COLUMN title TEXT").run(); } catch (e) { }
+
+      // Add description column to banners
+      try { db.prepare("ALTER TABLE banners ADD COLUMN description TEXT").run(); } catch (e) { }
+
+      // Performance Optimization: Add Indexes
+      try { db.prepare("CREATE INDEX IF NOT EXISTS idx_properties_isVisible_order ON properties(isVisible, displayOrder, createdAt DESC)").run(); } catch (e) { }
+      try { db.prepare("CREATE INDEX IF NOT EXISTS idx_properties_type ON properties(type, isVisible)").run(); } catch (e) { }
+      try { db.prepare("CREATE INDEX IF NOT EXISTS idx_properties_featured ON properties(featured, isVisible)").run(); } catch (e) { }
+      try { db.prepare("CREATE INDEX IF NOT EXISTS idx_properties_isUrgent ON properties(isUrgent, isVisible)").run(); } catch (e) { }
+      try { db.prepare("CREATE INDEX IF NOT EXISTS idx_properties_isNegotiable ON properties(isNegotiable, isVisible)").run(); } catch (e) { }
+      try { db.prepare("CREATE INDEX IF NOT EXISTS idx_news_createdAt ON news(createdAt DESC)").run(); } catch (e) { }
+      try { db.prepare("CREATE INDEX IF NOT EXISTS idx_favorites_userId ON favorites(userId)").run(); } catch (e) { }
+      try { db.prepare("CREATE INDEX IF NOT EXISTS idx_propertyInquiries_propertyId ON propertyInquiries(propertyId)").run(); } catch (e) { }
+
+      console.log("Database migrations performed and indexes created.");
     } catch (error) {
       console.error("Migration error:", error);
     }
@@ -520,6 +538,15 @@ export class SQLiteStorage implements IStorage {
 
   async getNegotiableProperties(limit?: number): Promise<Property[]> {
     let query = 'SELECT * FROM properties WHERE isNegotiable = 1 AND isVisible = 1 ORDER BY negotiableOrder ASC, createdAt DESC';
+    if (limit) {
+      query += ` LIMIT ${limit}`;
+    }
+    const rows = db.prepare(query).all();
+    return rows.map(row => this.mapProperty(row));
+  }
+
+  async getLatestProperties(limit?: number): Promise<Property[]> {
+    let query = 'SELECT * FROM properties WHERE isVisible = 1 ORDER BY createdAt DESC';
     if (limit) {
       query += ` LIMIT ${limit}`;
     }

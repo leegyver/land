@@ -20,13 +20,13 @@ class MemoryCache {
    */
   get<T>(key: string): T | undefined {
     const item = this.cache.get(key);
-    
+
     // 캐시 항목이 없거나 만료된 경우
     if (!item || Date.now() > item.expiry) {
       if (item) this.cache.delete(key); // 만료된 항목 제거
       return undefined;
     }
-    
+
     return item.value as T;
   }
 
@@ -41,7 +41,7 @@ class MemoryCache {
     const expiry = now + ttl;
     this.cache.set(key, { value, expiry, timestamp: now });
   }
-  
+
   /**
    * 캐시 항목이 생성된 시간을 반환
    * @param key 캐시 키
@@ -85,11 +85,11 @@ class MemoryCache {
    */
   cleanup(): void {
     const now = Date.now();
-    for (const [key, item] of this.cache.entries()) {
+    this.cache.forEach((item, key) => {
       if (now > item.expiry) {
         this.cache.delete(key);
       }
-    }
+    });
   }
 }
 

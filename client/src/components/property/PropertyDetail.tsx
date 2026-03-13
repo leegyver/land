@@ -304,7 +304,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
         </div>
         <div className="flex items-center text-gray-600 mb-1">
           <MapPin className="w-5 h-5 mr-1" />
-          <span>{property.district}</span>
+          <span>{property.district} {property.address}</span>
         </div>
         {property.agentName && (
           <div className="bg-green-50 text-green-700 px-3 py-2 rounded text-sm inline-block font-medium">
@@ -360,7 +360,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
             <h3 className="font-bold text-gray-900 mb-3 border-b pb-2">위치 정보</h3>
             <div className="flex items-center text-gray-600 mb-3">
               <MapPin className="w-4 h-4 mr-2 text-primary" />
-              {property.district}
+              {property.district} {property.address}
             </div>
 
             {/* Saju Compatibility Card - Static Block above Map */}

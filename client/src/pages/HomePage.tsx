@@ -15,6 +15,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { propertyTypeOptions } from "@/constants/property-types";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 // Types are now in src/types/speech-recognition.d.ts
 import type { SpeechRecognition, SpeechRecognitionEvent } from "@/types/speech-recognition";
@@ -88,9 +95,15 @@ const HomePage = () => {
     }
   }, [isListening]);
 
-  // 최신 유튜브 영상 데이터 가져오기
+  // 최신 유튜브 영상 데이터 가져오기 (이가이버 유튜브)
   const { data: latestVideos, isLoading: isVideosLoading } = useQuery<YouTubeVideo[]>({
-    queryKey: ["/api/youtube/latest"],
+    queryKey: ["/api/youtube/latest", { limit: 24 }],
+  });
+
+  // 두 번째 유튜브 채널 데이터 가져오기
+  const secondChannelUrl = "https://www.youtube.com/channel/UChvA8_nrczWDBYdHUum7Amw";
+  const { data: secondChannelVideos, isLoading: isSecondVideosLoading } = useQuery<YouTubeVideo[]>({
+    queryKey: ["/api/youtube/latest", { limit: 24, channelUrl: secondChannelUrl }],
   });
 
   // 최신 뉴스 데이터 가져오기
@@ -202,6 +215,20 @@ const HomePage = () => {
 
 
           <div className="flex justify-between items-center mb-1 mt-0">
+            <h2 className="text-2xl font-bold">✨ 최신매물</h2>
+            <Link href="/properties">
+              <Button variant="ghost" size="sm" className="text-gray-500 hover:text-primary">
+                더보기 <ArrowRight className="ml-1 h-3 w-3" />
+              </Button>
+            </Link>
+          </div>
+          <PropertySection
+            title=""
+            queryKey="/api/properties/latest?limit=4"
+            bgColor="bg-white"
+          />
+
+          <div className="flex justify-between items-center mb-1 mt-6">
             <h2 className="text-2xl font-bold">🔥 급매물</h2>
             <Link href="/properties?tag=urgent">
               <Button variant="ghost" size="sm" className="text-gray-500 hover:text-primary">
@@ -340,67 +367,21 @@ const HomePage = () => {
         </div>
       </section >
 
-      {/* YouTube Section */}
-      <section className="py-2 bg-slate-900 text-white">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-row justify-between items-center mb-2">
-            <div>
-              <h2 className="text-2xl font-bold mb-0 flex items-center">
-                <Youtube className="h-6 w-6 text-red-600 mr-2" />
-                이가이버 유튜브
-              </h2>
-            </div>
-            <a
-              href="https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-0 text-gray-300 hover:text-white transition-colors flex items-center text-sm"
-            >
-              더보기 <ArrowRight className="ml-1 h-3 w-3" />
-            </a>
-          </div>
+      {/* YouTube Section 1: 이가이버 유튜브 */}
+      <YouTubeSliderSection
+        title="이가이버 유튜브"
+        videos={latestVideos}
+        isLoading={isVideosLoading}
+        channelUrl="https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA"
+      />
 
-          {isVideosLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="bg-slate-800 h-64 rounded-xl animate-pulse" />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              {latestVideos?.slice(0, 5).map((video) => (
-                <a
-                  key={video.id}
-                  href={video.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group h-full block"
-                >
-                  <div className="bg-slate-800 rounded-xl overflow-hidden hover:transform hover:-translate-y-2 transition-all duration-300 shadow-lg border border-slate-700 h-full flex flex-col">
-                    <div className="relative aspect-video overflow-hidden shrink-0">
-                      <img
-                        src={video.thumbnail}
-                        alt={video.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                      />
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <div className="bg-red-600 p-3 rounded-full text-white">
-                          <Play className="h-6 w-6 fill-current" />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="p-3 flex-grow bg-slate-800">
-                      <h3 className="font-semibold line-clamp-2 text-gray-100 group-hover:text-red-400 transition-colors text-sm">
-                        {video.title}
-                      </h3>
-                    </div>
-                  </div>
-                </a>
-              ))}
-            </div>
-          )}
-        </div>
-      </section >
+      {/* YouTube Section 2: 부동산 애니메이션 */}
+      <YouTubeSliderSection
+        title="부동산 애니메이션"
+        videos={secondChannelVideos}
+        isLoading={isSecondVideosLoading}
+        channelUrl={secondChannelUrl}
+      />
 
       {/* News & Blog Section (Combined) */}
       <section className="pt-4 pb-0 bg-white">
@@ -472,8 +453,92 @@ const HomePage = () => {
             </div>
           </div>
         </div>
-      </section >
+      </section>
     </>
+  );
+};
+
+// 유튜브 슬라이더 섹션 컴포넌트
+const YouTubeSliderSection = ({ title, videos, isLoading, channelUrl }: {
+  title: string,
+  videos: YouTubeVideo[] | undefined,
+  isLoading: boolean,
+  channelUrl: string
+}) => {
+  return (
+    <section className="py-2 bg-slate-900 text-white">
+      <div className="container mx-auto px-4">
+        <div className="flex flex-row justify-between items-center mb-2">
+          <div>
+            <h2 className="text-2xl font-bold mb-0 flex items-center">
+              <Youtube className="h-6 w-6 text-red-600 mr-2" />
+              {title}
+            </h2>
+          </div>
+          <a
+            href={channelUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-0 text-gray-300 hover:text-white transition-colors flex items-center text-sm"
+          >
+            더보기 <ArrowRight className="ml-1 h-3 w-3" />
+          </a>
+        </div>
+
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-slate-800 h-64 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <Carousel
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            className="w-full relative px-2"
+          >
+            <CarouselContent className="-ml-2 md:-ml-4">
+              {videos?.map((video) => (
+                <CarouselItem key={video.id} className="pl-2 md:pl-4 basis-[85%] sm:basis-[45%] lg:basis-1/4 xl:basis-1/5">
+                  <a
+                    href={video.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group h-full block"
+                  >
+                    <div className="bg-slate-800 rounded-xl overflow-hidden hover:transform hover:-translate-y-2 transition-all duration-300 shadow-lg border border-slate-700 h-full flex flex-col">
+                      <div className="relative aspect-video overflow-hidden shrink-0">
+                        <img
+                          src={video.thumbnail}
+                          alt={video.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                        />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <div className="bg-red-600 p-3 rounded-full text-white">
+                            <Play className="h-6 w-6 fill-current" />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-3 flex-grow bg-slate-800">
+                        <h3 className="font-semibold line-clamp-2 text-gray-100 group-hover:text-red-400 transition-colors text-sm">
+                          {video.title}
+                        </h3>
+                      </div>
+                    </div>
+                  </a>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <div className="hidden md:block">
+              <CarouselPrevious className="absolute -left-12 top-1/2 -translate-y-1/2 bg-white/10 border-white/20 text-white hover:bg-white/20" />
+              <CarouselNext className="absolute -right-12 top-1/2 -translate-y-1/2 bg-white/10 border-white/20 text-white hover:bg-white/20" />
+            </div>
+          </Carousel>
+        )}
+      </div>
+    </section>
   );
 };
 

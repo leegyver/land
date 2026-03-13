@@ -223,13 +223,6 @@ export function setupAuth(app: Express) {
     res.json(userWithoutPassword);
   });
 
-  // 관리자 권한 검사 미들웨어
-  const isAdmin = (req: Request, res: Response, next: NextFunction) => {
-    if (!req.isAuthenticated() || req.user.role !== "admin") {
-      return res.status(403).json({ message: "관리자 권한이 필요합니다." });
-    }
-    next();
-  };
 
   // 관리자 전용 API 엔드포인트
   app.get("/api/admin/users", isAdmin, async (req: Request, res: Response, next: NextFunction) => {
@@ -347,7 +340,7 @@ export function setupAuth(app: Express) {
       }
 
       // 관리자는 자기 자신을 삭제할 수 없음
-      if (userId === req.user.id) {
+      if (req.user && userId === req.user.id) {
         return res.status(400).json({ message: "관리자는 자신의 계정을 삭제할 수 없습니다." });
       }
 
@@ -402,3 +395,11 @@ export function setupAuth(app: Express) {
     }
   );
 }
+
+// 관리자 권한 검사 미들웨어
+export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.isAuthenticated() || req.user.role !== "admin") {
+    return res.status(403).json({ message: "관리자 권한이 필요합니다." });
+  }
+  next();
+};

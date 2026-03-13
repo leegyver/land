@@ -14,7 +14,7 @@ const PropertyDetailPage = () => {
   });
 
   // Naver Property Check
-  const isNaverProperty = property?.source === 'naver' || (id && id.startsWith('naver-'));
+  const isNaverProperty = (property as any)?.source === 'naver' || (id && id.startsWith('naver-'));
 
   if (isNaverProperty && property) {
     return (

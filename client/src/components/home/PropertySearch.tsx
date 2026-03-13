@@ -86,26 +86,34 @@ const PropertySearch = () => {
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = false;
       recognitionRef.current.lang = 'ko-KR';
-      
+
       recognitionRef.current.onstart = () => {
         setIsListening(true);
       };
-      
+
       recognitionRef.current.onend = () => {
         setIsListening(false);
       };
-      
+
       recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
         const transcript = event.results[0][0].transcript;
         setSearchKeyword(transcript);
         handleSearch(transcript);
       };
-      
-      recognitionRef.current.onerror = () => {
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error("Speech recognition error:", event.error);
         setIsListening(false);
+        if (event.error === 'not-allowed') {
+          alert("마이크 사용 권한이 거부되었습니다. 브라우저 설정에서 마이크 권한을 허용해 주세요.");
+        } else if (event.error === 'no-speech') {
+          // 침묵의 경우 별도 처리하지 않거나 가벼운 알림
+        } else {
+          alert("음성 인식 중 오류가 발생했습니다: " + event.error);
+        }
       };
     }
-    
+
     return () => {
       if (recognitionRef.current) {
         recognitionRef.current.abort();
@@ -115,7 +123,7 @@ const PropertySearch = () => {
 
   const toggleListening = useCallback(() => {
     if (!recognitionRef.current) return;
-    
+
     if (isListening) {
       recognitionRef.current.stop();
     } else {
@@ -125,10 +133,10 @@ const PropertySearch = () => {
 
   const handleSearch = (keyword: string) => {
     if (!keyword.trim()) return;
-    
+
     const searchParams = new URLSearchParams();
     searchParams.append("keyword", keyword.trim());
-    
+
     setLocation(`/properties?${searchParams.toString()}`);
   };
 
@@ -160,7 +168,7 @@ const PropertySearch = () => {
           ))}
         </SelectContent>
       </Select>
-      
+
       {/* 음성검색 입력창 */}
       <form onSubmit={handleSubmit}>
         <div className="relative">
@@ -181,19 +189,18 @@ const PropertySearch = () => {
               onClick={toggleListening}
               aria-label={isListening ? "음성인식 중지" : "음성으로 검색"}
               title={isListening ? "음성인식 중지" : "음성으로 검색"}
-              className={`absolute right-1 top-1/2 transform -translate-y-1/2 p-1 h-7 w-7 ${
-                isListening ? "text-red-500 animate-pulse" : "text-gray-500 hover:text-primary"
-              }`}
+              className={`absolute right-1 top-1/2 transform -translate-y-1/2 p-1 h-7 w-7 ${isListening ? "text-red-500 animate-pulse" : "text-gray-500 hover:text-primary"
+                }`}
               data-testid="button-voice-search"
             >
               {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
             </Button>
           )}
         </div>
-        
+
         {isListening && (
-          <div className="text-center text-xs text-red-500 animate-pulse mt-1">
-            🎤 듣고 있습니다...
+          <div className="text-center text-xs text-red-500 animate-pulse mt-1 font-medium">
+            🎤 목소리를 듣고 있습니다. 말씀해 주세요...
           </div>
         )}
       </form>

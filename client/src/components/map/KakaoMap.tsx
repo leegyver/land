@@ -95,6 +95,7 @@ const KakaoMap = ({ zoom = 8, properties: externalProperties, singleProperty }: 
       const addMarker = (coords: any) => {
         if (!isMounted || !mapInstance.current) return;
 
+        console.log(`KakaoMap: 마커 추가됨 [${prop.id}]`, coords);
         const marker = new window.kakao.maps.Marker({
           map: map,
           position: coords,
@@ -112,8 +113,10 @@ const KakaoMap = ({ zoom = 8, properties: externalProperties, singleProperty }: 
         processedCount++;
         if (processedCount === properties.length && !bounds.isEmpty()) {
           if (singleProperty) {
+            console.log("KakaoMap: SingleProperty 센터 지정", coords);
             map.setCenter(coords);
           } else {
+            console.log("KakaoMap: Bounds 지정");
             map.setBounds(bounds);
           }
         }
@@ -124,14 +127,27 @@ const KakaoMap = ({ zoom = 8, properties: externalProperties, singleProperty }: 
       } else {
         const district = prop.district || "";
         const detailAddress = prop.address || "";
-        const query = `${district.includes("강화") || district.includes("서울") ? district : "인천광역시 " + district} ${detailAddress}`.trim().replace(/\s+/g, ' ');
+
+        // 강화군이 누락된 경우 보정 (인천광역시 강화군 ... 형식으로)
+        let normalizedDistrict = district;
+        if (!district.includes("강화") && !district.includes("서울")) {
+          normalizedDistrict = `인천광역시 강화군 ${district}`;
+        } else if (district.includes("강화") && !district.includes("인천")) {
+          normalizedDistrict = `인천광역시 ${district}`;
+        }
+
+        const query = `${normalizedDistrict} ${detailAddress}`.trim().replace(/\s+/g, ' ');
+        console.log(`KakaoMap: 주소 검색 시도 [${prop.id}] -> ${query}`);
 
         if (query.length > 2) {
           geocoder.addressSearch(query, (result: any, status: any) => {
             if (status === window.kakao.maps.services.Status.OK && isMounted) {
+              console.log(`KakaoMap: 주소 검색 성공 [${prop.id}]`);
               addMarker(new window.kakao.maps.LatLng(result[0].y, result[0].x));
             } else {
+              console.warn(`KakaoMap: 주소 검색 실패 [${prop.id}] status: ${status}, query: ${query}`);
               processedCount++;
+              // 검색 실패해도 singleProperty면 기본 강화군 위치라도 보여줌 (이미 center로 설정되어있음)
             }
           });
         } else {

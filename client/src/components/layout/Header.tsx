@@ -112,7 +112,7 @@ const Header = () => {
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="default" className="md:hidden px-3 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white shadow-md animate-pulse">
-                모든매물보기
+                모든메뉴보기
               </Button>
             </SheetTrigger>
             <SheetContent>

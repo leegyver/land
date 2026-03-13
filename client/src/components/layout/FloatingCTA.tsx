@@ -8,20 +8,18 @@ import { useLocation } from "wouter";
 const FloatingCTA = () => {
     // const [isVisible, setIsVisible] = useState(false); // Removed scroll logic
     const [location] = useLocation();
-
-    // useEffect(() => { ... }, []); // Removed scroll listener
-
-    // Don't show on admin pages or map popup
-    if (location.startsWith("/admin") || location.startsWith("/popup")) return null;
-
-    // 챗봇 스크립트 (환영 메시지) - 3초 후 표시
     const [showBubble, setShowBubble] = useState(false);
+
     useEffect(() => {
         const timer = setTimeout(() => {
             setShowBubble(true);
         }, 3000);
         return () => clearTimeout(timer);
     }, []);
+
+    // Don't show on admin pages or map popup
+    // Move after hooks to prevent "Rendered fewer hooks than expected" (Error #300)
+    if (location.startsWith("/admin") || location.startsWith("/popup")) return null;
 
     return (
         <AnimatePresence>

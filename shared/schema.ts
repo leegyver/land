@@ -67,6 +67,7 @@ export const propertySchema = z.object({
   longitude: z.number().optional().nullable(),
   isSold: z.boolean().default(false).optional(),
   viewCount: z.number().default(0).optional(),
+  source: z.string().optional().nullable(), // 'naver' or undefined
 });
 
 export type Property = z.infer<typeof propertySchema>;
@@ -191,6 +192,8 @@ export type InsertFavorite = z.infer<typeof insertFavoriteSchema>;
 export const bannerSchema = z.object({
   id: z.number(),
   location: z.string(), // 'left' or 'right'
+  title: z.string().optional().nullable(),
+  description: z.string().optional().nullable(),
   imageUrl: z.string(),
   linkUrl: z.string().optional().nullable(),
   openNewWindow: z.boolean().default(false),

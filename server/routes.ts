@@ -29,7 +29,7 @@ import { getLatestYouTubeVideos, getChannelIdByHandle, fetchYouTubeShorts, fetch
 import { importPropertiesFromSheet, checkDuplicatesFromSheet } from "./sheet-importer";
 import { naverCrawler } from "./services/naver-crawler";
 import { log } from "./vite";
-import Jimp from "jimp";
+import { Jimp } from "jimp";
 
 // 사이트 설정 (필요시 환경변수나 설정 파일로 이동 가능)
 const siteConfig = {
@@ -2433,10 +2433,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           if (currentWidth > 400) {
             console.log(`[Upload] Resizing from ${currentWidth}px to 400px`);
-            image.resize(400, Jimp.AUTO);
+            image.resize({ w: 400 });
             
-            // Get Buffer manually (Promise mode for Jimp v0.x)
-            const resizedBuffer = await image.getBufferAsync(req.file.mimetype);
+            // Get Buffer (Jimp v1.x API)
+            const resizedBuffer = await image.getBuffer(req.file.mimetype as any);
 
             console.log(`[Upload] Resized buffer size: ${resizedBuffer.length} bytes`);
 

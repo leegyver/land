@@ -34,7 +34,7 @@ export const reviews: Review[] = [
         content: "전원주택 부지를 찾고 있었는데, 제가 원하는 조건에 딱 맞는 땅을 찾아주셨어요. 복잡한 서류 문제도 깔끔하게 해결해주셔서 감사합니다.",
         transactionType: "매매",
         transactionAmount: "2억 8천만원",
-        imageUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=1170&q=80",
+        imageUrl: "https://images.unsplash.com/photo-1599809272520-279778c79805?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1074&q=80",
         badge: "거래완료"
     },
     {

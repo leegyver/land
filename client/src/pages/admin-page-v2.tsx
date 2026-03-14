@@ -12,6 +12,7 @@ import { Loader2, Trash2, RefreshCw, Edit, Plus, Eye, FileSpreadsheet, GripVerti
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { ImportFromSheetModal } from "@/components/admin/ImportFromSheetModal";
 import CrawlerManager from "@/components/admin/CrawlerManager";
+import InquiryNotifications from "@/components/admin/InquiryNotifications";
 import { BannerColumn } from "@/components/admin/BannerColumn";
 import {
   Table,
@@ -278,7 +279,7 @@ export default function AdminPage() {
               ? (property.dealType as any).replace('{', '').replace('}', '').split(',')
               : [(property.dealType as any).toString()];
 
-          if (!dealTypesArray.some((type: string) => type.includes(filterDealType))) {
+          if (!dealTypesArray.some(type => type.includes(filterDealType))) {
             return false;
           }
         } catch (e) {
@@ -870,7 +871,7 @@ export default function AdminPage() {
   };
 
   // 삭제 확인 모달 열기
-  const openDeleteConfirm = (type: 'properties' | 'news' | 'users' | 'newsletter') => {
+  const openDeleteConfirm = (type: 'properties' | 'news' | 'users') => {
     setCurrentDeleteType(type);
     setIsDeleteAlertOpen(true);
   };
@@ -963,6 +964,7 @@ export default function AdminPage() {
       </div>
 
       <div className="mb-4 flex justify-end items-center gap-2">
+        <InquiryNotifications />
         <Button variant="outline" onClick={handleRefreshClick}>
           <RefreshCw className="mr-2 h-4 w-4" />
           새로고침
@@ -970,7 +972,7 @@ export default function AdminPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full space-y-6">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 bg-gray-100 p-1 h-auto">
+        <TabsList className="grid w-full grid-cols-8 bg-gray-100 p-1 h-auto">
           <TabsTrigger value="properties">부동산 매물 관리</TabsTrigger>
           <TabsTrigger value="urgent">급매물 순서</TabsTrigger>
           <TabsTrigger value="negotiable">흥정 매물 순서</TabsTrigger>

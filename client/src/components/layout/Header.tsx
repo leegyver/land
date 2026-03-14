@@ -24,7 +24,8 @@ const Header = () => {
     { name: "강화도뉴스", path: "/news" },
     { name: "부동산소개", path: "/about" },
     { name: "유튜브", path: "/youtube" },
-    { name: "나의부동산 사주", path: "/saju" },
+    { name: "오늘의 운세", path: "/saju" },
+    { name: "커뮤니티", path: "/community" },
     { name: "문의하기", path: "/contact" },
   ];
 
@@ -64,8 +65,10 @@ const Header = () => {
                     <User size={18} />
                     <span className="font-medium">
                       {user.username}
+                      {/* @ts-ignore */}
                       {user.provider && (
                         <span className="ml-1 text-xs text-slate-400">
+                          {/* @ts-ignore */}
                           ({user.provider === 'naver' ? '네이버' : user.provider === 'kakao' ? '카카오' : user.provider})
                         </span>
                       )}
@@ -112,7 +115,7 @@ const Header = () => {
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="default" className="md:hidden px-3 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white shadow-md animate-pulse">
-                모든메뉴보기
+                모든매물보기
               </Button>
             </SheetTrigger>
             <SheetContent>
@@ -137,8 +140,10 @@ const Header = () => {
                         <User size={18} className="mr-2" />
                         <span>
                           {user.username}
+                          {/* @ts-ignore */}
                           {user.provider && (
                             <span className="ml-1 text-xs text-indigo-400">
+                              {/* @ts-ignore */}
                               ({user.provider === 'naver' ? '네이버' : user.provider === 'kakao' ? '카카오' : user.provider})
                             </span>
                           )}

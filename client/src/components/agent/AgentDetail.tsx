@@ -14,12 +14,12 @@ const AgentDetail = ({ agentId }: AgentDetailProps) => {
   const { data: agent, isLoading: agentLoading, error: agentError } = useQuery<Agent>({
     queryKey: [`/api/agents/${agentId}`],
   });
-
+  
   const { data: properties, isLoading: propertiesLoading } = useQuery<Property[]>({
     queryKey: ["/api/properties"],
     select: (data) => data.filter(property => property.agentId === Number(agentId))
   });
-
+  
   if (agentLoading) {
     return (
       <div className="container mx-auto px-4 py-12">
@@ -33,7 +33,7 @@ const AgentDetail = ({ agentId }: AgentDetailProps) => {
             <Skeleton className="h-4 w-full mb-2" />
             <Skeleton className="h-4 w-full mb-2" />
             <Skeleton className="h-4 w-2/3 mb-6" />
-
+            
             <div className="grid grid-cols-2 gap-4 mb-6">
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
@@ -63,24 +63,29 @@ const AgentDetail = ({ agentId }: AgentDetailProps) => {
       <div className="flex flex-col md:flex-row gap-8 mb-12">
         <div className="md:w-1/3">
           <div className="rounded-lg overflow-hidden shadow-md h-auto">
-            <img
-              src={agent.photo || ""}
-              alt={agent.name}
+            <img 
+              src={agent.imageUrl} 
+              alt={agent.name} 
               className="w-full h-full object-cover"
             />
           </div>
         </div>
         <div className="md:w-2/3">
           <h1 className="text-3xl font-bold mb-1">{agent.name}</h1>
-          <p className="text-primary font-medium text-lg mb-4">{agent.position}</p>
-
+          <p className="text-primary font-medium text-lg mb-4">{agent.title}</p>
+          
+          <div className="flex items-center mb-2">
+            <BriefcaseBusiness className="text-primary mr-2" />
+            <span>{agent.specialization} 전문가</span>
+          </div>
+          
           <div className="flex items-center mb-6">
             <MapPin className="text-primary mr-2" />
-            <span>인천광역시 강화군</span>
+            <span>서울특별시 강남구</span>
           </div>
-
-          <p className="text-gray-medium mb-6">{agent.bio}</p>
-
+          
+          <p className="text-gray-medium mb-6">{agent.description}</p>
+          
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Button className="flex items-center justify-center">
               <Phone className="mr-2 h-4 w-4" /> {agent.phone}
@@ -91,10 +96,10 @@ const AgentDetail = ({ agentId }: AgentDetailProps) => {
           </div>
         </div>
       </div>
-
+      
       <div>
         <h2 className="text-2xl font-bold mb-6">담당 매물</h2>
-
+        
         {propertiesLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[...Array(3)].map((_, index) => (

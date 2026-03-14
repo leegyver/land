@@ -63,7 +63,7 @@ const Hero = () => {
       <motion.div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat z-0"
         style={{
-          backgroundImage: 'url("https://images.unsplash.com/photo-1542224566-6e85f2e6772f?auto=format&fit=crop&w=1920&q=80")',
+          backgroundImage: 'url("/assets/uploads/home-banner-new.jpg")',
           y: y,
           scale: 1.1
         }}
@@ -85,7 +85,7 @@ const Hero = () => {
                 <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
                 <span className="text-orange-300 font-bold text-sm tracking-wide">강화도 토지·주택·상가 전문</span>
                 <span className="text-gray-400 text-xs">|</span>
-                <span className="text-white font-medium text-sm">바로 지금이 기회입니다</span>
+                <span className="text-white font-medium text-sm">2026년 지금이 기회입니다</span>
               </div>
 
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight mb-6">
@@ -170,28 +170,28 @@ const Hero = () => {
             <div className="relative z-10 w-[400px] h-[500px] mx-auto bg-gradient-to-b from-gray-900/0 to-gray-900/80 rounded-b-3xl overflow-hidden">
               {/* Placeholder for Representative Image - Replace src with actual image */}
               <img
-                src="/assets/uploads/ceo_profile.jpg"
+                src="/assets/uploads/home-banner-final-v3.jpg"
                 alt="이가이버 대표"
                 className="w-full h-full object-cover object-center mask-image-gradient"
                 style={{ maskImage: 'linear-gradient(to bottom, black 80%, transparent 100%)' }}
               />
 
               {/* Expert Badge */}
-              <div className="absolute top-64 -right-4 bg-white p-4 rounded-xl shadow-2xl transform rotate-3 border border-gray-100">
+              <div className="absolute top-10 -right-4 bg-white p-4 rounded-xl shadow-2xl transform rotate-3 border border-gray-100">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                    20
+                    10
                   </div>
                   <div>
                     <p className="text-xs text-gray-500 font-medium">SINCE 2014</p>
-                    <p className="text-gray-900 font-bold text-sm">강화도 20년차 전문가</p>
+                    <p className="text-gray-900 font-bold text-sm">10년차 강화도 전문가</p>
                   </div>
                 </div>
               </div>
 
               {/* Name Tag */}
               <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md px-6 py-3 rounded-full border border-white/20 text-center w-max">
-                <p className="text-white font-bold text-lg">이민호 <span className="text-orange-400 font-normal text-sm ml-1">대표 공인중개사</span></p>
+                <p className="text-white font-bold text-lg">이가이버 <span className="text-orange-400 font-normal text-sm ml-1">대표 공인중개사</span></p>
               </div>
             </div>
 

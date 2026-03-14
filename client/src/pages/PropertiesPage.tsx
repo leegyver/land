@@ -144,16 +144,8 @@ const PropertiesPage = () => {
         handleVoiceSearch(transcript);
       };
 
-      recognitionRef.current.onerror = (event: any) => {
-        console.error("Speech recognition error:", event.error);
+      recognitionRef.current.onerror = () => {
         setIsListening(false);
-        if (event.error === 'not-allowed') {
-          alert("마이크 사용 권한이 거부되었습니다. 브라우저 설정에서 마이크 권한을 허용해 주세요.");
-        } else if (event.error === 'no-speech') {
-          // 침묵의 경우 가볍게 처리
-        } else {
-          alert("음성 인식 중 오류가 발생했습니다: " + event.error);
-        }
       };
     }
 
@@ -320,7 +312,7 @@ const PropertiesPage = () => {
   }, [search]);
 
   const { data: properties, isLoading, error } = useQuery<Property[]>({
-    queryKey: ["/api/search", filterParams.district, filterParams.type, filterParams.minPrice, filterParams.maxPrice, filterParams.keyword, filterParams.tag, true], // includeCrawled=true for list view integrated
+    queryKey: ["/api/search", filterParams.district, filterParams.type, filterParams.minPrice, filterParams.maxPrice, filterParams.keyword, filterParams.tag, false], // includeCrawled=false for list
     queryFn: async () => {
       // 검색 파라미터 구성
       const searchParams = new URLSearchParams();
@@ -348,7 +340,7 @@ const PropertiesPage = () => {
       }
 
       // URL 생성 및 요청
-      const url = `/api/search?${searchParams.toString()}&includeCrawled=true`;
+      const url = `/api/search?${searchParams.toString()}&includeCrawled=false`;
       console.log("검색 요청 URL:", url);
 
       const res = await fetch(url);
@@ -411,8 +403,13 @@ const PropertiesPage = () => {
     return properties;
   }, [properties, isRecommend, sajuData]);
 
-  // Client-side safety filter: Removed to allow integrated view
-  const filteredList = sortedProperties;
+  // Client-side safety filter: Ensure NO Naver properties (source='naver' or district='수집매물') are shown in the list
+  // irrespective of what the API returns.
+  const filteredList = sortedProperties?.filter((p: any) =>
+    p.source !== 'naver' &&
+    p.district !== '수집매물' &&
+    !String(p.id).startsWith('naver-')
+  );
 
   // Backward compatibility for other references if any (though we updated JSX)
   const listProperties = filteredList;

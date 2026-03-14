@@ -9,13 +9,6 @@ import { Input } from "@/components/ui/input";
 import CrawlerMap from "@/components/admin/CrawlerMap";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import {
     Table,
     TableBody,
     TableCell,
@@ -51,23 +44,6 @@ export default function CrawlerManager() {
     const [viewMode, setViewMode] = useState<"list" | "map" | "split">("split");
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<string>("all");
-    const [selectedRegion, setSelectedRegion] = useState<string>("eup");
-
-    // 지역별 좌표 프리셋
-    const regionPresets: Record<string, { label: string, bounds: any }> = {
-        "eup": { label: "강화읍", bounds: { minLat: 37.730, minLon: 126.470, maxLat: 37.760, maxLon: 126.510 } },
-        "gilsang": { label: "길상면", bounds: { minLat: 37.600, minLon: 126.450, maxLat: 37.660, maxLon: 126.530 } },
-        "hwado": { label: "화도면", bounds: { minLat: 37.580, minLon: 126.350, maxLat: 37.670, maxLon: 126.460 } },
-        "bureun": { label: "불은면", bounds: { minLat: 37.660, minLon: 126.470, maxLat: 37.720, maxLon: 126.530 } },
-        "seonwon": { label: "선원면", bounds: { minLat: 37.700, minLon: 126.470, maxLat: 37.740, maxLon: 126.520 } },
-        "yangdo": { label: "양도면", bounds: { minLat: 37.650, minLon: 126.370, maxLat: 37.710, maxLon: 126.450 } },
-        "naega": { label: "내가면", bounds: { minLat: 37.700, minLon: 126.350, maxLat: 37.760, maxLon: 126.425 } },
-        "hajeom": { label: "하점면", bounds: { minLat: 37.750, minLon: 126.370, maxLat: 37.820, maxLon: 126.460 } },
-        "songhae": { label: "송해면", bounds: { minLat: 37.770, minLon: 126.440, maxLat: 37.820, maxLon: 126.510 } },
-        "yangsa": { label: "양사면", bounds: { minLat: 37.800, minLon: 126.380, maxLat: 37.850, maxLon: 126.480 } },
-        "gyodong": { label: "교동면", bounds: { minLat: 37.750, minLon: 126.250, maxLat: 37.840, maxLon: 126.350 } },
-        "samsan": { label: "삼산면 (석모도)", bounds: { minLat: 37.640, minLon: 126.290, maxLat: 37.760, maxLon: 126.360 } }
-    };
 
     // Category filtering logic
     const categoryGroups = {
@@ -97,11 +73,11 @@ export default function CrawlerManager() {
 
     // Run Crawler Mutation
     const runCrawlerMutation = useMutation({
-        mutationFn: async ({ mode, bounds }: { mode: 'single' | 'grid', bounds?: any }) => {
+        mutationFn: async (mode: 'single' | 'grid') => {
             const res = await fetch("/api/admin/crawler/run", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ mode, bounds })
+                body: JSON.stringify({ mode })
             });
             if (!res.ok) {
                 const text = await res.text();
@@ -118,8 +94,8 @@ export default function CrawlerManager() {
         },
         onSuccess: (data) => {
             toast({
-                title: "수집 시작됨",
-                description: "강화군 매물 수집을 백그라운드에서 시작했습니다. 잠시 후 목록에서 확인하세요.",
+                title: "수집 완료",
+                description: `${data.count}개의 매물을 수집했습니다.`,
             });
             queryClient.invalidateQueries({ queryKey: ["/api/admin/crawled-properties"] });
         },
@@ -161,12 +137,11 @@ export default function CrawlerManager() {
     });
 
     const handleRunCrawler = (mode: 'single' | 'grid') => {
-        if (mode === 'grid' && !confirm("강화군 전체(4x4 그리드) 수집을 시작하시겠습니까?\n이 작업은 시간이 다소 걸릴 수 있습니다 (약 4분).")) {
+        if (mode === 'grid' && !confirm("강화군 전체(4x4 그리드) 수집을 시작하시겠습니까?\n이 작업은 시간이 다소 걸릴 수 있습니다 (약 40초).")) {
             return;
         }
         setIsRunning(true);
-        const bounds = mode === 'single' ? regionPresets[selectedRegion].bounds : undefined;
-        runCrawlerMutation.mutate({ mode, bounds });
+        runCrawlerMutation.mutate(mode);
     };
 
     const handleClear = () => {
@@ -190,61 +165,43 @@ export default function CrawlerManager() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex flex-wrap gap-4 items-end">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">수집 지역 선택</label>
-                            <Select value={selectedRegion} onValueChange={setSelectedRegion}>
-                                <SelectTrigger className="w-[180px]">
-                                    <SelectValue placeholder="지역 선택" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {Object.entries(regionPresets).map(([key, region]) => (
-                                        <SelectItem key={key} value={key}>
-                                            {region.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                    <div className="flex gap-4">
+                        <Button
+                            onClick={() => handleRunCrawler('single')}
+                            disabled={isRunning || runCrawlerMutation.isPending}
+                            className="bg-green-600 hover:bg-green-700"
+                        >
+                            {(isRunning || runCrawlerMutation.isPending) ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 수집 중...
+                                </>
+                            ) : (
+                                "수집 시작 (강화군 읍내)"
+                            )}
+                        </Button>
 
-                        <div className="flex gap-2">
-                            <Button
-                                onClick={() => handleRunCrawler('single')}
-                                disabled={isRunning || runCrawlerMutation.isPending}
-                                className="bg-green-600 hover:bg-green-700"
-                            >
-                                {(isRunning || runCrawlerMutation.isPending) ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 수집 중...
-                                    </>
-                                ) : (
-                                    `${regionPresets[selectedRegion].label} 수집`
-                                )}
-                            </Button>
+                        <Button
+                            onClick={() => handleRunCrawler('grid')}
+                            disabled={isRunning || runCrawlerMutation.isPending}
+                            className="bg-blue-600 hover:bg-blue-700"
+                        >
+                            {(isRunning || runCrawlerMutation.isPending) ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 수집 중...
+                                </>
+                            ) : (
+                                "전체 수집 (4x4 Grid)"
+                            )}
+                        </Button>
 
-                            <Button
-                                onClick={() => handleRunCrawler('grid')}
-                                disabled={isRunning || runCrawlerMutation.isPending}
-                                className="bg-blue-600 hover:bg-blue-700"
-                            >
-                                {(isRunning || runCrawlerMutation.isPending) ? (
-                                    <>
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 수집 중...
-                                    </>
-                                ) : (
-                                    "전체 수집 (4x4 Grid)"
-                                )}
-                            </Button>
-
-                            <Button
-                                variant="outline"
-                                onClick={handleClear}
-                                disabled={clearPropertiesMutation.isPending || !properties?.length}
-                                className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                            >
-                                <Trash2 className="mr-2 h-4 w-4" /> 목록 초기화
-                            </Button>
-                        </div>
+                        <Button
+                            variant="outline"
+                            onClick={handleClear}
+                            disabled={clearPropertiesMutation.isPending || !properties?.length}
+                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" /> 목록 초기화
+                        </Button>
                     </div>
                 </CardContent>
             </Card>

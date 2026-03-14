@@ -125,11 +125,6 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
       <div className="relative aspect-[16/9] overflow-hidden shrink-0">
         {/* 거래 유형 표시 */}
         <div className="absolute top-3 right-3 z-20 flex flex-wrap gap-1 justify-end">
-          {property.source === 'naver' && (
-            <Badge className="bg-emerald-600/90 text-white border-none px-2.5 py-1 rounded-full text-xs backdrop-blur-md font-bold">
-              외부매물
-            </Badge>
-          )}
           {property.dealType && Array.isArray(property.dealType) && property.dealType
             .filter((type) => ['매매', '전세', '월세'].includes(type))
             .map((type, index) => (

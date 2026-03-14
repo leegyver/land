@@ -1,72 +1,85 @@
-import { sqliteTable, text, integer, numeric } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Property schema - Matched to SQLite and Form structure
+// Property schema - Matched to actual SQLite column names (camelCase)
 export const properties = sqliteTable("properties", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   title: text("title").notNull(),
   description: text("description").notNull(),
-  type: text("type").notNull(), // 토지, 주택, 아파트연립다세대, 원투룸, 상가공장창고펜션
-  price: text("price").notNull(), // SQLite에 TEXT로 저장된 매매가 (Numeric 호환)
-  address: text("address").notNull(), // 주소
-  district: text("district").notNull(), // 읍면동리
-  size: text("size").notNull(), // 면적(㎡)
-  bedrooms: integer("bedrooms").notNull(), // 방 개수
-  bathrooms: integer("bathrooms").notNull(), // 화장실 개수
-  imageUrl: text("image_url").notNull(), // 단일 이미지 URL
-  imageUrls: text("image_urls"), // SQLite는 배열 지원 안함 -> JSON string으로 처리 (storage.ts에서 파싱)
-  featuredImageIndex: integer("featured_image_index"),
-  agentId: integer("agent_id").notNull(),
+  type: text("type").notNull(),
+  price: text("price").notNull(),
+  address: text("address").notNull(),
+  district: text("district").notNull(),
+  size: text("size").notNull(),
+  bedrooms: integer("bedrooms").notNull(),
+  bathrooms: integer("bathrooms").notNull(),
+  imageUrl: text("imageUrl").notNull(),
+  imageUrls: text("imageUrls"),
+  featuredImageIndex: integer("featuredImageIndex"),
+  agentId: integer("agentId").notNull(),
   featured: integer("featured", { mode: 'boolean' }).default(false),
-  displayOrder: integer("display_order").default(0),
-  isVisible: integer("is_visible", { mode: 'boolean' }).default(true),
-  createdAt: text("created_at").default("CURRENT_TIMESTAMP"), // SQLite는 timestamp 대신 text/integer
-  
+  displayOrder: integer("displayOrder").default(0),
+  isUrgent: integer("isUrgent", { mode: 'boolean' }).default(false),
+  urgentOrder: integer("urgentOrder").default(0),
+  isNegotiable: integer("isNegotiable", { mode: 'boolean' }).default(false),
+  negotiableOrder: integer("negotiableOrder").default(0),
+  isVisible: integer("isVisible", { mode: 'boolean' }).default(true),
+  createdAt: text("createdAt"),
+  updatedAt: text("updatedAt"),
+
   // 위치 정보
-  buildingName: text("building_name"),
-  unitNumber: text("unit_number"),
-  
+  buildingName: text("buildingName"),
+  unitNumber: text("unitNumber"),
+
   // 면적 정보
-  supplyArea: text("supply_area"),
-  privateArea: text("private_area"),
-  areaSize: text("area_size"),
-  
+  supplyArea: text("supplyArea"),
+  privateArea: text("privateArea"),
+  areaSize: text("areaSize"),
+
   // 건물 정보
   floor: integer("floor"),
-  totalFloors: integer("total_floors"),
+  totalFloors: integer("totalFloors"),
   direction: text("direction"),
   elevator: integer("elevator", { mode: 'boolean' }),
   parking: text("parking"),
-  heatingSystem: text("heating_system"),
-  approvalDate: text("approval_date"),
-  
+  heatingSystem: text("heatingSystem"),
+  approvalDate: text("approvalDate"),
+
   // 토지 정보
-  landType: text("land_type"),
-  zoneType: text("zone_type"),
-  
+  landType: text("landType"),
+  zoneType: text("zoneType"),
+
   // 금액 정보
-  dealType: text("deal_type"), // JSON string
+  dealType: text("dealType"),
   deposit: text("deposit"),
-  depositAmount: text("deposit_amount"),
-  monthlyRent: text("monthly_rent"),
-  maintenanceFee: text("maintenance_fee"),
-  
+  depositAmount: text("depositAmount"),
+  monthlyRent: text("monthlyRent"),
+  maintenanceFee: text("maintenanceFee"),
+
   // 연락처 정보
-  ownerName: text("owner_name"),
-  ownerPhone: text("owner_phone"),
-  tenantName: text("tenant_name"),
-  tenantPhone: text("tenant_phone"),
-  clientName: text("client_name"),
-  clientPhone: text("client_phone"),
-  
+  ownerName: text("ownerName"),
+  ownerPhone: text("ownerPhone"),
+  tenantName: text("tenantName"),
+  tenantPhone: text("tenantPhone"),
+  clientName: text("clientName"),
+  clientPhone: text("clientPhone"),
+
   // 추가 정보
-  specialNote: text("special_note"),
-  coListing: integer("co_listing", { mode: 'boolean' }).default(false),
-  agentName: text("agent_name"),
-  propertyDescription: text("property_description"),
-  privateNote: text("private_note"),
-  youtubeUrl: text("youtube_url"),
+  specialNote: text("specialNote"),
+  coListing: integer("coListing", { mode: 'boolean' }).default(false),
+  agentName: text("agentName"),
+  propertyDescription: text("propertyDescription"),
+  privateNote: text("privateNote"),
+  youtubeUrl: text("youtubeUrl"),
+  isSold: integer("isSold", { mode: 'boolean' }).default(false),
+  viewCount: integer("viewCount").default(0),
+  isLongTerm: integer("isLongTerm", { mode: 'boolean' }).default(false),
+  longTermOrder: integer("longTermOrder").default(0),
+  latitude: real("latitude"),
+  longitude: real("longitude"),
+  ownerId: integer("ownerId"),
+  atclNo: text("atclNo"),
 });
 
 export const insertPropertySchema = createInsertSchema(properties).omit({
@@ -85,8 +98,8 @@ export const agents = sqliteTable("agents", {
   position: text("position"),
   photo: text("photo"),
   bio: text("bio"),
-  isActive: integer("is_active", { mode: 'boolean' }).default(true),
-  createdAt: text("created_at").default("CURRENT_TIMESTAMP"),
+  isActive: integer("isActive", { mode: 'boolean' }).default(true),
+  createdAt: text("createdAt"),
 });
 
 export const insertAgentSchema = createInsertSchema(agents).omit({
@@ -104,9 +117,9 @@ export const inquiries = sqliteTable("inquiries", {
   email: text("email").notNull(),
   phone: text("phone").notNull(),
   message: text("message").notNull(),
-  inquiryType: text("inquiry_type").notNull(),
-  propertyId: integer("property_id"),
-  createdAt: text("created_at").default("CURRENT_TIMESTAMP"),
+  inquiryType: text("inquiryType").notNull(),
+  propertyId: integer("propertyId"),
+  createdAt: text("createdAt"),
 });
 
 export const insertInquirySchema = createInsertSchema(inquiries).omit({
@@ -147,12 +160,12 @@ export const news = sqliteTable("news", {
   description: text("description").notNull(),
   content: text("content").notNull(),
   source: text("source").notNull(),
-  sourceUrl: text("source_url").notNull(),
+  sourceUrl: text("sourceUrl").notNull(),
   url: text("url").notNull(),
-  imageUrl: text("image_url"),
+  imageUrl: text("imageUrl"),
   category: text("category").notNull(),
-  isPinned: integer("is_pinned", { mode: 'boolean' }).default(false),
-  createdAt: text("created_at").default("CURRENT_TIMESTAMP"),
+  isPinned: integer("isPinned", { mode: 'boolean' }).default(false),
+  createdAt: text("createdAt"),
 });
 
 export const insertNewsSchema = createInsertSchema(news).omit({
@@ -166,14 +179,14 @@ export type InsertNews = z.infer<typeof insertNewsSchema>;
 // Property inquiry board schema
 export const propertyInquiries = sqliteTable("property_inquiries", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  propertyId: integer("property_id").notNull().references(() => properties.id, { onDelete: "cascade" }),
-  userId: integer("user_id").notNull().references(() => users.id),
+  propertyId: integer("propertyId").notNull(),
+  userId: integer("userId").notNull(),
   title: text("title").notNull(),
   content: text("content").notNull(),
-  isReply: integer("is_reply", { mode: 'boolean' }).default(false).notNull(),
-  parentId: integer("parent_id"),
-  isReadByAdmin: integer("is_read_by_admin", { mode: 'boolean' }).default(false).notNull(),
-  createdAt: text("created_at").default("CURRENT_TIMESTAMP"),
+  isReply: integer("isReply", { mode: 'boolean' }).default(false).notNull(),
+  parentId: integer("parentId"),
+  isReadByAdmin: integer("isReadByAdmin", { mode: 'boolean' }).default(false).notNull(),
+  createdAt: text("createdAt"),
 });
 
 export const insertPropertyInquirySchema = createInsertSchema(propertyInquiries).omit({
@@ -187,9 +200,9 @@ export type InsertPropertyInquiry = z.infer<typeof insertPropertyInquirySchema>;
 // Favorites schema
 export const favorites = sqliteTable("favorites", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  propertyId: integer("property_id").notNull().references(() => properties.id, { onDelete: "cascade" }),
-  createdAt: text("created_at").default("CURRENT_TIMESTAMP").notNull(),
+  userId: integer("userId").notNull(),
+  propertyId: integer("propertyId").notNull(),
+  createdAt: text("createdAt").notNull(),
 });
 
 export const insertFavoriteSchema = createInsertSchema(favorites).omit({

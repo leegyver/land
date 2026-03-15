@@ -8,20 +8,28 @@ interface Props {
 interface State {
     hasError: boolean;
     error: Error | null;
+    errorKey: string;
 }
 
 export class ErrorBoundary extends React.Component<Props, State> {
     constructor(props: Props) {
         super(props);
-        this.state = { hasError: false, error: null };
+        this.state = { hasError: false, error: null, errorKey: "" };
     }
 
-    static getDerivedStateFromError(error: Error): State {
+    static getDerivedStateFromError(error: Error): Partial<State> {
         return { hasError: true, error };
     }
 
     componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         console.error("Application Error:", error, errorInfo);
+    }
+
+    // 핵심: children(라우트)이 바뀌면 에러 상태를 리셋
+    componentDidUpdate(prevProps: Props) {
+        if (this.state.hasError && prevProps.children !== this.props.children) {
+            this.setState({ hasError: false, error: null });
+        }
     }
 
     render() {
@@ -34,13 +42,10 @@ export class ErrorBoundary extends React.Component<Props, State> {
                         {this.state.error && this.state.error.toString()}
                     </div>
                     <div className="flex gap-2">
-                        <Button onClick={() => window.location.reload()} variant="default">
-                            페이지 새로고침
+                        <Button onClick={() => this.setState({ hasError: false, error: null })} variant="default">
+                            다시 시도
                         </Button>
-                        <Button onClick={() => window.location.href = '/admin'} variant="outline">
-                            관리자 페이지 홈
-                        </Button>
-                        <Button onClick={() => window.location.href = '/'} variant="ghost">
+                        <Button onClick={() => window.location.href = '/'} variant="outline">
                             메인 페이지로 이동
                         </Button>
                     </div>

@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
-import { db } from "./db";
+import { db, sqlite } from "./db";
 import { 
   insertInquirySchema, 
   insertPropertySchema, 
@@ -88,6 +88,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(properties);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch all properties" });
+    }
+  });
+
+  // 캐시된 매물 목록 가져오기 헬퍼 (중복 DB 호출 방지)
+  const getCachedProperties = async () => {
+    const cached = memoryCache.get("properties_all");
+    if (cached) return cached as any[];
+    const properties = await storage.getProperties();
+    memoryCache.set("properties_all", properties, 60 * 1000);
+    return properties;
+  };
+
+  // 급매물 (urgent)
+  app.get("/api/properties/urgent", async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 4;
+      const all = await getCachedProperties();
+      const filtered = all.filter((p: any) => 
+        p.title && (p.title.includes("급매") || p.title.includes("시급") || p.title.includes("긴급"))
+      ).slice(0, limit);
+      res.json(filtered.length > 0 ? filtered : all.slice(0, limit));
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch urgent properties" });
+    }
+  });
+
+  // 가격 협의 가능 (negotiable)
+  app.get("/api/properties/negotiable", async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 4;
+      const all = await getCachedProperties();
+      const filtered = all.filter((p: any) => 
+        (p.title && (p.title.includes("협의") || p.title.includes("흥정"))) ||
+        (p.price && p.price.includes("협의"))
+      ).slice(0, limit);
+      res.json(filtered.length > 0 ? filtered : all.slice(Math.floor(all.length / 4), Math.floor(all.length / 4) + limit));
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch negotiable properties" });
+    }
+  });
+
+  // 장기투자 추천 (long-term)
+  app.get("/api/properties/long-term", async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 4;
+      const all = await getCachedProperties();
+      const filtered = all.filter((p: any) => 
+        (p.type && (p.type === "토지" || p.type === "임야" || p.type === "농지")) ||
+        (p.title && (p.title.includes("투자") || p.title.includes("개발") || p.title.includes("장기")))
+      ).slice(0, limit);
+      res.json(filtered.length > 0 ? filtered : all.slice(Math.floor(all.length / 2), Math.floor(all.length / 2) + limit));
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch long-term properties" });
     }
   });
 
@@ -1765,6 +1818,134 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("스프레드시트 데이터 가져오기 오류:", error);
       res.status(500).json({ success: false, error: "데이터 가져오기 중 오류가 발생했습니다." });
+    }
+  });
+
+  // ============================================
+  // 구독/결제 API
+  // ============================================
+
+  // 내 구독 정보 조회
+  app.get("/api/subscription/me", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+    const user = req.user as Express.User;
+    try {
+      const history = sqlite.prepare("SELECT * FROM realtor_subscriptions WHERE userId = ? ORDER BY createdAt DESC").all(user.id);
+      res.json({
+        tier: (user as any).subscriptionTier || "free",
+        expiresAt: (user as any).subscriptionExpiresAt,
+        history,
+      });
+    } catch (e) {
+      res.status(500).json({ message: "구독 정보 조회 실패" });
+    }
+  });
+
+  // 구독 결제 처리
+  app.post("/api/subscription/subscribe", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+    const user = req.user as Express.User;
+    const { planType, imp_uid, merchant_uid } = req.body;
+
+    if (!planType || !imp_uid) {
+      return res.status(400).json({ message: "필수 결제 정보가 누락되었습니다." });
+    }
+
+    try {
+      // 포트원 결제 검증
+      const { verifyPayment } = await import("./lib/portone");
+      const paymentData = await verifyPayment(imp_uid);
+
+      const expectedAmount = planType === "monthly" ? 5000 : 50000;
+      if (paymentData.amount < expectedAmount) {
+        return res.status(400).json({ message: "결제 금액이 올바르지 않습니다." });
+      }
+
+      // 구독 기간 계산
+      const now = new Date();
+      const endDate = new Date(now);
+      if (planType === "monthly") endDate.setMonth(endDate.getMonth() + 1);
+      else endDate.setFullYear(endDate.getFullYear() + 1);
+
+      // 결제 이력 저장
+      sqlite.prepare(`INSERT INTO realtor_subscriptions (userId, planType, amount, impUid, merchantUid, status, startDate, endDate, createdAt)
+        VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?)`).run(
+        user.id, planType, paymentData.amount, imp_uid, merchant_uid || "",
+        now.toISOString(), endDate.toISOString(), now.toISOString()
+      );
+
+      // 유저 구독 정보 업데이트
+      sqlite.prepare("UPDATE users SET subscriptionTier = ?, subscriptionExpiresAt = ? WHERE id = ?").run(
+        planType, endDate.toISOString(), user.id
+      );
+
+      res.json({ message: "구독이 완료되었습니다.", tier: planType, expiresAt: endDate.toISOString() });
+    } catch (e: any) {
+      console.error("구독 결제 오류:", e);
+      res.status(500).json({ message: e.message || "결제 처리 중 오류가 발생했습니다." });
+    }
+  });
+
+  // 구독 취소
+  app.post("/api/subscription/cancel", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+    const user = req.user as Express.User;
+    try {
+      sqlite.prepare("UPDATE users SET subscriptionTier = 'free', subscriptionExpiresAt = NULL WHERE id = ?").run(user.id);
+      sqlite.prepare("UPDATE realtor_subscriptions SET status = 'cancelled' WHERE userId = ? AND status = 'active'").run(user.id);
+      res.json({ message: "구독이 취소되었습니다." });
+    } catch (e) {
+      res.status(500).json({ message: "구독 취소 실패" });
+    }
+  });
+
+  // ============================================
+  // 중개사 관리 API
+  // ============================================
+
+  // 관리자: 승인 대기 중개사 목록
+  app.get("/api/admin/realtors/pending", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+    const user = req.user as Express.User;
+    if (user.role !== "admin") return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+    try {
+      const pending = sqlite.prepare("SELECT id, username, nickname, email, phone, businessName, businessLicenseNo, businessAddress, isVerified, role, createdAt FROM users WHERE role = 'realtor' AND (isVerified = 0 OR isVerified IS NULL)").all();
+      res.json(pending);
+    } catch (e) {
+      res.status(500).json({ message: "목록 조회 실패" });
+    }
+  });
+
+  // 관리자: 중개사 승인/거부
+  app.post("/api/admin/realtors/:id/verify", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+    const user = req.user as Express.User;
+    if (user.role !== "admin") return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+    const id = parseInt(req.params.id);
+    const { status, licenseNo } = req.body;
+    try {
+      if (status === "approved") {
+        sqlite.prepare("UPDATE users SET isVerified = 1, businessLicenseNo = COALESCE(?, businessLicenseNo) WHERE id = ?").run(licenseNo || null, id);
+        res.json({ message: "중개사가 승인되었습니다." });
+      } else {
+        sqlite.prepare("UPDATE users SET role = 'user', isVerified = 0 WHERE id = ?").run(id);
+        res.json({ message: "중개사 신청이 거부되었습니다." });
+      }
+    } catch (e) {
+      res.status(500).json({ message: "처리 실패" });
+    }
+  });
+
+  // 관리자: 전체 회원 목록
+  app.get("/api/admin/users", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+    const user = req.user as Express.User;
+    if (user.role !== "admin") return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+    try {
+      const users = sqlite.prepare("SELECT id, username, nickname, email, phone, role, businessName, businessLicenseNo, isVerified, subscriptionTier, createdAt FROM users ORDER BY id DESC").all();
+      res.json(users);
+    } catch (e) {
+      res.status(500).json({ message: "회원 목록 조회 실패" });
     }
   });
 

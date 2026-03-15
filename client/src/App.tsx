@@ -36,6 +36,7 @@ import RoadviewPopupPage from "@/pages/RoadviewPopupPage";
 import CommunityPage from "@/pages/CommunityPage";
 import PostDetailPage from "@/pages/PostDetailPage";
 import PostFormPage from "@/pages/PostFormPage";
+import PricingPage from "@/pages/PricingPage";
 function AppRouter() {
   return (
     <Switch>
@@ -58,6 +59,7 @@ function AppRouter() {
       <Route path="/admin/properties/new" component={PropertyForm} />
       <Route path="/admin/properties/edit/:id" component={PropertyForm} />
       <Route path="/diagnosis" component={DiagnosisPage} />
+      <Route path="/pricing" component={PricingPage} />
       <Route path="/popup/roadview" component={RoadviewPopupPage} />
       <Route component={NotFound} />
     </Switch>
@@ -72,13 +74,18 @@ import { Building, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 
 function AppContent() {
-  // No root-level isLoading check to prevent tree flickering and Hook mismatch (#300, #310)
+  const [location] = useLocation();
+  // location의 첫 번째 세그먼트를 key로 사용 → /admin에서 /properties로 이동하면 ErrorBoundary 리셋
+  const routeGroup = location.split('/')[1] || 'home';
+
   return (
     <div className="flex flex-col min-h-screen">
       <ScrollToTop />
       <Header />
       <main className="flex-grow pb-16 md:pb-0 pt-0 mt-0 overflow-x-hidden relative z-0">
-        <AppRouter />
+        <ErrorBoundary key={routeGroup}>
+          <AppRouter />
+        </ErrorBoundary>
       </main>
       <Footer />
       <MobileBottomNav />

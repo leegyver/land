@@ -23,6 +23,9 @@ export const registerSchema = insertUserSchema.extend({
   birthDate: z.string().optional(),
   birthTime: z.string().optional(),
   confirmPassword: z.string(),
+  businessName: z.string().optional(),
+  businessLicenseNo: z.string().optional(),
+  businessAddress: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "비밀번호가 일치하지 않습니다",
   path: ["confirmPassword"],

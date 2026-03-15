@@ -1,0 +1,28 @@
+﻿vite v5.4.14 building for production...
+transforming...
+Browserslist: browsers data (caniuse-lite) is 17 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+??3593 modules transformed.
+x Build failed in 5.72s
+error during build:
+client/src/components/notice/NoticeBoard.tsx (5:17): "insertNoticeSchema" is not exported by "shared/schema.ts", imported by "client/src/components/notice/NoticeBoard.tsx".
+file: E:/server/homepage/client/src/components/notice/NoticeBoard.tsx:5:17
+
+3: import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+4: import { useAuth } from "@/hooks/use-auth";
+5: import { Notice, insertNoticeSchema, InsertNotice } from "@shared/schema";
+                    ^
+6: import { useForm } from "react-hook-form";
+7: import { zodResolver } from "@hookform/resolvers/zod";
+
+    at getRollupError (file:///E:/server/homepage/node_modules/rollup/dist/es/shared/parseAst.js:396:41)
+    at error (file:///E:/server/homepage/node_modules/rollup/dist/es/shared/parseAst.js:392:42)
+    at Module.error (file:///E:/server/homepage/node_modules/rollup/dist/es/shared/node-entry.js:15588:16)
+    at Module.traceVariable (file:///E:/server/homepage/node_modules/rollup/dist/es/shared/node-entry.js:16037:29)
+    at ModuleScope.findVariable (file:///E:/server/homepage/node_modules/rollup/dist/es/shared/node-entry.js:13820:39)
+    at FunctionScope.findVariable (file:///E:/server/homepage/node_modules/rollup/dist/es/shared/node-entry.js:5283:38)
+    at FunctionBodyScope.findVariable (file:///E:/server/homepage/node_modules/rollup/dist/es/shared/node-entry.js:5283:38)
+    at Identifier.bind (file:///E:/server/homepage/node_modules/rollup/dist/es/shared/node-entry.js:5066:40)
+    at CallExpression.bind (file:///E:/server/homepage/node_modules/rollup/dist/es/shared/node-entry.js:2649:28)
+    at CallExpression.bind (file:///E:/server/homepage/node_modules/rollup/dist/es/shared/node-entry.js:11284:15)

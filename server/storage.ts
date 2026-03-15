@@ -350,7 +350,8 @@ export class DatabaseStorage implements IStorage {
     const [result] = await db.insert(users)
       .values({
         ...insertUser,
-        role: insertUser.role || "user"
+        role: insertUser.role || "user",
+        createdAt: new Date().toISOString()
       })
       .returning();
 
@@ -664,6 +665,38 @@ export class DatabaseStorage implements IStorage {
       console.error("Error removing favorite:", error);
       return false;
     }
+  }
+
+  // 미읽은 문의글 관련 메서드
+  async getUnreadInquiries(): Promise<PropertyInquiry[]> {
+    try {
+      return sqlite.prepare(
+        "SELECT * FROM property_inquiries WHERE isReadByAdmin = 0 OR isReadByAdmin IS NULL ORDER BY createdAt DESC"
+      ).all() as PropertyInquiry[];
+    } catch { return []; }
+  }
+
+  async getUnreadInquiryCount(): Promise<number> {
+    try {
+      const row = sqlite.prepare(
+        "SELECT COUNT(*) as c FROM property_inquiries WHERE isReadByAdmin = 0 OR isReadByAdmin IS NULL"
+      ).get() as any;
+      return row?.c || 0;
+    } catch { return 0; }
+  }
+
+  async markInquiryAsRead(id: number): Promise<boolean> {
+    try {
+      sqlite.prepare("UPDATE property_inquiries SET isReadByAdmin = 1 WHERE id = ?").run(id);
+      return true;
+    } catch { return false; }
+  }
+
+  async markAllInquiriesAsRead(): Promise<boolean> {
+    try {
+      sqlite.prepare("UPDATE property_inquiries SET isReadByAdmin = 1 WHERE isReadByAdmin = 0 OR isReadByAdmin IS NULL").run();
+      return true;
+    } catch { return false; }
   }
 }
 

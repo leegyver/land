@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ interface UnreadInquiry {
 
 const InquiryNotifications = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedInquiry, setSelectedInquiry] = useState<UnreadInquiry | null>(null);
@@ -36,12 +38,13 @@ const InquiryNotifications = () => {
   const { data: unreadCount = { count: 0 } } = useQuery<{ count: number }>({
     queryKey: ["/api/admin/inquiries/unread/count"],
     refetchInterval: 30000, // 30초마다 자동 새로고침
+    enabled: !!user && user.role === "admin",
   });
 
   // 미읽은 문의글 목록 조회
   const { data: unreadInquiries = [], isLoading } = useQuery<UnreadInquiry[]>({
     queryKey: ["/api/admin/inquiries/unread"],
-    enabled: isOpen,
+    enabled: isOpen && !!user && user.role === "admin",
   });
 
   // 개별 문의글 읽음 처리

@@ -134,7 +134,21 @@ export const users = sqliteTable("users", {
   password: text("password").notNull(),
   email: text("email"),
   phone: text("phone"),
-  role: text("role").default("user").notNull(),
+  role: text("role").default("user").notNull(), // user, realtor, admin
+  nickname: text("nickname"),
+  profileImage: text("profileImage"),
+  birthDate: text("birthDate"),
+  birthTime: text("birthTime"),
+  isLunar: integer("isLunar", { mode: 'boolean' }).default(false),
+  // 중개사 전용 필드
+  businessName: text("businessName"),          // 사무소명
+  businessLicenseNo: text("businessLicenseNo"), // 사업자등록번호
+  businessAddress: text("businessAddress"),     // 사무소 주소
+  isVerified: integer("isVerified", { mode: 'boolean' }).default(false), // 관리자 승인 여부
+  // 구독 정보
+  subscriptionTier: text("subscriptionTier").default("free"), // free, monthly, annual
+  subscriptionExpiresAt: text("subscriptionExpiresAt"),
+  createdAt: text("createdAt"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -143,6 +157,13 @@ export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   phone: true,
   role: true,
+  nickname: true,
+  birthDate: true,
+  birthTime: true,
+  isLunar: true,
+  businessName: true,
+  businessLicenseNo: true,
+  businessAddress: true,
 });
 
 export type Property = typeof properties.$inferSelect;
@@ -212,3 +233,103 @@ export const insertFavoriteSchema = createInsertSchema(favorites).omit({
 
 export type Favorite = typeof favorites.$inferSelect;
 export type InsertFavorite = z.infer<typeof insertFavoriteSchema>;
+
+// Notices schema
+export const notices = sqliteTable("notices", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  imageUrls: text("imageUrls", { mode: "json" }).$type<string[]>(),
+  isPinned: integer("isPinned", { mode: 'boolean' }).default(false),
+  viewCount: integer("viewCount").default(0),
+  createdAt: text("createdAt"),
+  updatedAt: text("updatedAt"),
+});
+
+export const insertNoticeSchema = createInsertSchema(notices).omit({ id: true, createdAt: true, updatedAt: true, viewCount: true });
+export type Notice = typeof notices.$inferSelect;
+export type InsertNotice = z.infer<typeof insertNoticeSchema>;
+
+// Posts (Community) schema
+export const posts = sqliteTable("posts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  category: text("category").notNull().default("free"),
+  authorId: integer("authorId").notNull(),
+  authorName: text("authorName"),
+  imageUrls: text("imageUrls", { mode: "json" }).$type<string[]>(),
+  viewCount: integer("viewCount").default(0),
+  likeCount: integer("likeCount").default(0),
+  commentCount: integer("commentCount").default(0),
+  isPinned: integer("isPinned", { mode: 'boolean' }).default(false),
+  createdAt: text("createdAt"),
+  updatedAt: text("updatedAt"),
+});
+
+export const insertPostSchema = createInsertSchema(posts).omit({ id: true, createdAt: true, updatedAt: true, viewCount: true, likeCount: true, commentCount: true });
+export type Post = typeof posts.$inferSelect;
+export type InsertPost = z.infer<typeof insertPostSchema>;
+
+// Banners schema
+export const banners = sqliteTable("banners", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  imageUrl: text("imageUrl").notNull(),
+  linkUrl: text("linkUrl"),
+  location: text("location").notNull().default("left"),
+  isActive: integer("isActive", { mode: 'boolean' }).default(true),
+  displayOrder: integer("displayOrder").default(0),
+  createdAt: text("createdAt"),
+});
+
+export const insertBannerSchema = createInsertSchema(banners).omit({ id: true, createdAt: true });
+export type Banner = typeof banners.$inferSelect;
+export type InsertBanner = z.infer<typeof insertBannerSchema>;
+
+// Newsletter Subscriptions schema
+export const newsletterSubscriptions = sqliteTable("newsletter_subscriptions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  email: text("email").notNull(),
+  name: text("name"),
+  isActive: integer("isActive", { mode: 'boolean' }).default(true),
+  createdAt: text("createdAt"),
+});
+
+export const insertNewsletterSubscriptionSchema = createInsertSchema(newsletterSubscriptions).omit({ id: true, createdAt: true });
+export type NewsletterSubscription = typeof newsletterSubscriptions.$inferSelect;
+export type InsertNewsletterSubscription = z.infer<typeof insertNewsletterSubscriptionSchema>;
+
+// Realtor Subscriptions (결제 이력) schema
+export const realtorSubscriptions = sqliteTable("realtor_subscriptions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("userId").notNull(),
+  planType: text("planType").notNull(), // monthly, annual
+  amount: integer("amount").notNull(),  // 결제 금액
+  impUid: text("impUid"),              // 포트원 결제 ID
+  merchantUid: text("merchantUid"),    // 주문번호
+  status: text("status").default("active").notNull(), // active, expired, cancelled
+  startDate: text("startDate"),
+  endDate: text("endDate"),
+  createdAt: text("createdAt"),
+});
+
+export const insertRealtorSubscriptionSchema = createInsertSchema(realtorSubscriptions).omit({ id: true, createdAt: true });
+export type RealtorSubscription = typeof realtorSubscriptions.$inferSelect;
+export type InsertRealtorSubscription = z.infer<typeof insertRealtorSubscriptionSchema>;
+
+// Notifications schema
+export const notifications = sqliteTable("notifications", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("userId"),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  type: text("type").notNull().default("info"),
+  isRead: integer("isRead", { mode: 'boolean' }).default(false),
+  linkUrl: text("linkUrl"),
+  createdAt: text("createdAt"),
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;

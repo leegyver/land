@@ -1,0 +1,20 @@
+=== 현재 DB properties 컬럼 ===
+id(INTEGER), title(TEXT), description(TEXT), type(TEXT), price(TEXT), address(TEXT), district(TEXT), size(TEXT), bedrooms(INTEGER), bathrooms(INTEGER), imageUrl(TEXT), imageUrls(TEXT), featuredImageIndex(INTEGER), agentId(INTEGER), featured(INTEGER), displayOrder(INTEGER), isUrgent(INTEGER), urgentOrder(INTEGER), isNegotiable(INTEGER), negotiableOrder(INTEGER), isVisible(INTEGER), createdAt(TEXT), updatedAt(TEXT), buildingName(TEXT), unitNumber(TEXT), supplyArea(TEXT), privateArea(TEXT), areaSize(TEXT), floor(INTEGER), totalFloors(INTEGER), direction(TEXT), elevator(INTEGER), parking(TEXT), heatingSystem(TEXT), approvalDate(TEXT), landType(TEXT), zoneType(TEXT), dealType(TEXT), deposit(TEXT), depositAmount(TEXT), monthlyRent(TEXT), maintenanceFee(TEXT), ownerName(TEXT), ownerPhone(TEXT), tenantName(TEXT), tenantPhone(TEXT), clientName(TEXT), clientPhone(TEXT), specialNote(TEXT), coListing(INTEGER), agentName(TEXT), propertyDescription(TEXT), privateNote(TEXT), youtubeUrl(TEXT), isSold(INTEGER), viewCount(INTEGER), isLongTerm(INTEGER), longTermOrder(INTEGER), latitude(REAL), longitude(REAL), ownerId(INTEGER), atclNo(TEXT)
+
+=== 백업 DB properties 컬럼 ===
+id(INTEGER), title(TEXT), description(TEXT), type(TEXT), price(TEXT), address(TEXT), district(TEXT), size(TEXT), bedrooms(INTEGER), bathrooms(INTEGER), imageUrl(TEXT), imageUrls(TEXT), featuredImageIndex(INTEGER), agentId(INTEGER), featured(INTEGER), displayOrder(INTEGER), isUrgent(INTEGER), urgentOrder(INTEGER), isNegotiable(INTEGER), negotiableOrder(INTEGER), isVisible(INTEGER), createdAt(TEXT), updatedAt(TEXT), buildingName(TEXT), unitNumber(TEXT), supplyArea(TEXT), privateArea(TEXT), areaSize(TEXT), floor(INTEGER), totalFloors(INTEGER), direction(TEXT), elevator(INTEGER), parking(TEXT), heatingSystem(TEXT), approvalDate(TEXT), landType(TEXT), zoneType(TEXT), dealType(TEXT), deposit(TEXT), depositAmount(TEXT), monthlyRent(TEXT), maintenanceFee(TEXT), ownerName(TEXT), ownerPhone(TEXT), tenantName(TEXT), tenantPhone(TEXT), clientName(TEXT), clientPhone(TEXT), specialNote(TEXT), coListing(INTEGER), agentName(TEXT), propertyDescription(TEXT), privateNote(TEXT), youtubeUrl(TEXT), isSold(INTEGER), viewCount(INTEGER), isLongTerm(INTEGER), longTermOrder(INTEGER), latitude(REAL), longitude(REAL)
+
+=== 현재 DB news 컬럼 ===
+id(INTEGER), title(TEXT), summary(TEXT), description(TEXT), content(TEXT), source(TEXT), sourceUrl(TEXT), url(TEXT), imageUrl(TEXT), category(TEXT), isPinned(INTEGER), createdAt(TEXT)
+
+=== 백업 DB news 컬럼 ===
+id(INTEGER), title(TEXT), summary(TEXT), description(TEXT), content(TEXT), source(TEXT), sourceUrl(TEXT), url(TEXT), imageUrl(TEXT), category(TEXT), isPinned(INTEGER), createdAt(TEXT)
+
+=== 현재 DB agents 컬럼 ===
+id(INTEGER), name(TEXT), email(TEXT), phone(TEXT), position(TEXT), photo(TEXT), bio(TEXT), isActive(INTEGER), createdAt(TEXT)
+
+=== 백업 DB agents 컬럼 ===
+id(INTEGER), name(TEXT), email(TEXT), phone(TEXT), position(TEXT), photo(TEXT), bio(TEXT), isActive(INTEGER), createdAt(TEXT)
+
+=== 중복 체크 ===
+백업에만 있는 매물: 67건

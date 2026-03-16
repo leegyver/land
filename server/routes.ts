@@ -9,7 +9,8 @@ import {
   insertNewsSchema, 
   insertPropertyInquirySchema,
   insertFavoriteSchema,
-  news
+  news,
+  crawledProperties
 } from "../shared/schema";
 import { memoryCache } from "./cache";
 import { setupAuth } from "./auth";

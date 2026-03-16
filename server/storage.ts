@@ -93,6 +93,7 @@ export interface IStorage {
   // Newsletter methods
   createNewsletterSubscription(subscription: InsertNewsletterSubscription): Promise<NewsletterSubscription>;
   getNewsletterSubscriptions(): Promise<NewsletterSubscription[]>;
+  getNewsletterSubscriptionByEmail(email: string): Promise<NewsletterSubscription | undefined>;
   deleteNewsletterSubscription(id: number): Promise<boolean>;
 
   // Crawler methods
@@ -727,6 +728,13 @@ export class DatabaseStorage implements IStorage {
     return db.select()
       .from(newsletterSubscriptions)
       .orderBy(desc(newsletterSubscriptions.createdAt));
+  }
+
+  async getNewsletterSubscriptionByEmail(email: string): Promise<NewsletterSubscription | undefined> {
+    const [subscription] = await db.select()
+      .from(newsletterSubscriptions)
+      .where(eq(newsletterSubscriptions.email, email));
+    return subscription;
   }
 
   async deleteNewsletterSubscription(id: number): Promise<boolean> {

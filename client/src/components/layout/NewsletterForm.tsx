@@ -65,7 +65,7 @@ const NewsletterForm = () => {
                 </p>
                 <Button
                     variant="secondary"
-                    className="mt-6 bg-white hover:bg-gray-100 text-blue-900 font-bold px-8 h-12 rounded-xl shadow-lg transition-all"
+                    className="mt-6 bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-bold px-8 h-12 rounded-xl shadow-lg transition-all"
                     onClick={() => setIsSubscribed(false)}
                 >
                     다른 이메일로 구독하기

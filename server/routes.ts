@@ -2051,6 +2051,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email is required" });
       }
 
+      // 이미 구독 중인지 확인
+      const existingSubscription = await storage.getNewsletterSubscriptionByEmail(email);
+      if (existingSubscription) {
+        return res.status(200).json({ 
+          message: "이미 구독 중인 이메일입니다. 감사합니다!",
+          subscription: existingSubscription 
+        });
+      }
+
       const subscription = await storage.createNewsletterSubscription({
         email,
         name: name || null,

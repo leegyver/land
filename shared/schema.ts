@@ -274,7 +274,7 @@ export type InsertBanner = z.infer<typeof insertBannerSchema>;
 // Newsletter Subscriptions schema
 export const newsletterSubscriptions = sqliteTable("newsletter_subscriptions", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  email: text("email").notNull(),
+  email: text("email").notNull().unique(),
   name: text("name"),
   isActive: integer("isActive", { mode: 'boolean' }).default(true),
   createdAt: text("createdAt"),

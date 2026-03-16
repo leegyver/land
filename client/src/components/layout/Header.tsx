@@ -77,20 +77,16 @@ const Header = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>내 계정</DropdownMenuLabel>
-                  <DropdownMenuItem asChild>
-                    <Link href="/profile" className="flex items-center w-full cursor-pointer">
-                      <User className="mr-2 h-4 w-4" />
-                      <span>내 프로필</span>
-                    </Link>
+                  <DropdownMenuItem onClick={() => setLocation("/profile")} className="flex items-center w-full cursor-pointer">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>내 프로필</span>
                   </DropdownMenuItem>
                   {user.role === "admin" && (
                     <>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link href="/admin" className="flex items-center w-full cursor-pointer">
-                          <Settings className="mr-2 h-4 w-4" />
-                          <span>관리자 패널</span>
-                        </Link>
+                      <DropdownMenuItem onClick={() => setLocation("/admin")} className="flex items-center w-full cursor-pointer">
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>관리자 패널</span>
                       </DropdownMenuItem>
                     </>
                   )}
@@ -114,8 +110,8 @@ const Header = () => {
           {/* Mobile Navigation */}
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="default" className="md:hidden px-3 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white shadow-md animate-pulse">
-                모든매물보기
+              <Button variant="default" className="md:hidden px-3 py-2 text-sm font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-md">
+                모든메뉴보기
               </Button>
             </SheetTrigger>
             <SheetContent>
@@ -155,24 +151,28 @@ const Header = () => {
                         )}
                       </div>
 
-                      <Link
-                        href="/profile"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="flex items-center py-2 text-lg font-medium text-neutral-800 hover:text-primary"
+                      <button
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          setLocation("/profile");
+                        }}
+                        className="flex items-center py-2 text-lg font-medium text-neutral-800 hover:text-primary w-full text-left"
                       >
                         <User className="mr-2 h-5 w-5" />
                         내 프로필
-                      </Link>
+                      </button>
 
                       {user.role === "admin" && (
-                        <Link
-                          href="/admin"
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="flex items-center py-2 text-lg font-medium text-neutral-800 hover:text-primary"
+                        <button
+                          onClick={() => {
+                            setMobileMenuOpen(false);
+                            setLocation("/admin");
+                          }}
+                          className="flex items-center py-2 text-lg font-medium text-neutral-800 hover:text-primary w-full text-left"
                         >
                           <Settings className="mr-2 h-5 w-5" />
                           관리자 패널
-                        </Link>
+                        </button>
                       )}
 
                       <button
@@ -187,14 +187,16 @@ const Header = () => {
                       </button>
                     </>
                   ) : (
-                    <Link
-                      href="/auth"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center py-2 text-lg font-medium text-neutral-800 hover:text-primary"
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        setLocation("/auth");
+                      }}
+                      className="flex items-center py-2 text-lg font-medium text-neutral-800 hover:text-primary w-full text-left"
                     >
                       <LogIn className="mr-2 h-5 w-5" />
                       로그인 / 회원가입
-                    </Link>
+                    </button>
                   )}
                 </div>
               </div>

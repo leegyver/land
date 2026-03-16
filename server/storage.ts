@@ -5,7 +5,9 @@ import {
   users, type User, type InsertUser,
   news, type News, type InsertNews,
   propertyInquiries, type PropertyInquiry, type InsertPropertyInquiry,
-  favorites, type Favorite, type InsertFavorite
+  favorites, type Favorite, type InsertFavorite,
+  newsletterSubscriptions, type NewsletterSubscription, type InsertNewsletterSubscription,
+  crawledProperties, type CrawledProperty, type InsertCrawledProperty
 } from "@shared/schema";
 import { db, sqlite } from "./db";
 import { eq, desc, asc, and, gte, lte, inArray } from "drizzle-orm";
@@ -87,6 +89,17 @@ export interface IStorage {
   isFavorite(userId: number, propertyId: number): Promise<boolean>;
   addFavorite(favorite: InsertFavorite): Promise<Favorite>;
   removeFavorite(userId: number, propertyId: number): Promise<boolean>;
+
+  // Newsletter methods
+  createNewsletterSubscription(subscription: InsertNewsletterSubscription): Promise<NewsletterSubscription>;
+  getNewsletterSubscriptions(): Promise<NewsletterSubscription[]>;
+  deleteNewsletterSubscription(id: number): Promise<boolean>;
+
+  // Crawler methods
+  createCrawledProperty(property: InsertCrawledProperty): Promise<CrawledProperty>;
+  getCrawledProperties(): Promise<CrawledProperty[]>;
+  getCrawledProperty(atclNo: string): Promise<CrawledProperty | undefined>;
+  clearCrawledProperties(): Promise<void>;
 
   // Init Data
   initializeData(): Promise<void>;
@@ -697,6 +710,72 @@ export class DatabaseStorage implements IStorage {
       sqlite.prepare("UPDATE property_inquiries SET isReadByAdmin = 1 WHERE isReadByAdmin = 0 OR isReadByAdmin IS NULL").run();
       return true;
     } catch { return false; }
+  }
+
+  // Newsletter methods
+  async createNewsletterSubscription(subscription: InsertNewsletterSubscription): Promise<NewsletterSubscription> {
+    const [result] = await db.insert(newsletterSubscriptions)
+      .values({
+        ...subscription,
+        createdAt: new Date().toISOString()
+      })
+      .returning();
+    return result;
+  }
+
+  async getNewsletterSubscriptions(): Promise<NewsletterSubscription[]> {
+    return db.select()
+      .from(newsletterSubscriptions)
+      .orderBy(desc(newsletterSubscriptions.createdAt));
+  }
+
+  async deleteNewsletterSubscription(id: number): Promise<boolean> {
+    const result = await db.delete(newsletterSubscriptions)
+      .where(eq(newsletterSubscriptions.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  // Crawler methods
+  async createCrawledProperty(property: InsertCrawledProperty): Promise<CrawledProperty> {
+    const [existing] = await db.select().from(crawledProperties).where(eq(crawledProperties.atclNo, property.atclNo));
+    
+    if (existing) {
+      const [updated] = await db.update(crawledProperties)
+        .set({
+          ...property,
+          crawledAt: new Date().toISOString()
+        })
+        .where(eq(crawledProperties.atclNo, property.atclNo))
+        .returning();
+      return updated;
+    }
+
+    const [inserted] = await db.insert(crawledProperties)
+      .values({
+        ...property,
+        crawledAt: new Date().toISOString()
+      })
+      .returning();
+    return inserted;
+  }
+
+  async getCrawledProperties(): Promise<CrawledProperty[]> {
+    return db.select()
+      .from(crawledProperties)
+      .orderBy(desc(crawledProperties.crawledAt))
+      .limit(1000);
+  }
+
+  async getCrawledProperty(atclNo: string): Promise<CrawledProperty | undefined> {
+    const [result] = await db.select()
+      .from(crawledProperties)
+      .where(eq(crawledProperties.atclNo, atclNo));
+    return result;
+  }
+
+  async clearCrawledProperties(): Promise<void> {
+    await db.delete(crawledProperties);
   }
 }
 

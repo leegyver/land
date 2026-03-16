@@ -44,7 +44,6 @@ type FormValues = z.infer<typeof formSchema>;
 
 const ContactForm = ({ propertyId, atclNo, propertyTitle }: ContactFormProps) => {
   const { user } = useAuth();
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Construct default message for crawled properties
   const defaultMessage = atclNo && propertyTitle
@@ -95,13 +94,9 @@ const ContactForm = ({ propertyId, atclNo, propertyTitle }: ContactFormProps) =>
   });
 
   const onSubmit = (data: FormValues) => {
-    setIsSubmitting(true);
-
     // Remove agreeToTerms as it's not part of the inquiry schema
     const { agreeToTerms, ...inquiryData } = data;
-
     mutation.mutate(inquiryData);
-    setIsSubmitting(false);
   };
 
   return (
@@ -217,9 +212,9 @@ const ContactForm = ({ propertyId, atclNo, propertyTitle }: ContactFormProps) =>
         <Button
           type="submit"
           className="w-full btn-primary-cta h-12 text-lg"
-          disabled={isSubmitting}
+          disabled={mutation.isPending}
         >
-          {isSubmitting ? "제출 중..." : "지금 상담 신청하기"}
+          {mutation.isPending ? "제출 중..." : "지금 상담 신청하기"}
         </Button>
       </form>
     </Form>

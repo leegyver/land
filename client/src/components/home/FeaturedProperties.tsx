@@ -3,6 +3,13 @@ import { Link } from "wouter";
 import PropertyCard from "@/components/property/PropertyCard";
 import { Property } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 const FeaturedProperties = () => {
   const { data: properties, isLoading, error } = useQuery<Property[]>({
@@ -63,10 +70,26 @@ const FeaturedProperties = () => {
         <div className="text-left mb-2">
           <h2 className="text-2xl font-bold text-slate-900">추천 매물</h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {properties && properties.slice(0, 4).map((property) => (
-            <PropertyCard key={property.id} property={property} />
-          ))}
+        <div className="relative group px-1">
+          <Carousel
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            className="w-full"
+          >
+            <CarouselContent className="-ml-2 md:-ml-4">
+              {properties && properties.map((property) => (
+                <CarouselItem key={property.id} className="pl-2 md:pl-4 basis-[85%] sm:basis-[45%] md:basis-[33.33%] lg:basis-[25%]">
+                  <PropertyCard property={property} />
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <div className="hidden lg:block opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-white/80 hover:bg-white border shadow-md" />
+              <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-white/80 hover:bg-white border shadow-md" />
+            </div>
+          </Carousel>
         </div>
       </div>
     </section>

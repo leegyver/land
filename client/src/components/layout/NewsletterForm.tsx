@@ -55,15 +55,17 @@ const NewsletterForm = () => {
 
     if (isSubscribed) {
         return (
-            <div className="flex flex-col items-center justify-center p-8 bg-primary/5 rounded-2xl border border-primary/20 animate-in fade-in zoom-in duration-300">
-                <CheckCircle2 className="h-12 w-12 text-primary mb-4" />
-                <h3 className="text-xl font-bold text-gray-900 mb-2">구독해주셔서 감사합니다!</h3>
-                <p className="text-gray-600 text-center text-sm md:text-base">
+            <div className="flex flex-col items-center justify-center p-8 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 animate-in fade-in zoom-in duration-300 text-center">
+                <div className="bg-yellow-400 p-3 rounded-full mb-4">
+                    <CheckCircle2 className="h-8 w-8 text-blue-900" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">구독해주셔서 감사합니다!</h3>
+                <p className="text-blue-100 text-sm md:text-base opacity-90">
                     매주 전해드리는 강화도 부동산 소식으로 찾아뵙겠습니다.
                 </p>
                 <Button
-                    variant="outline"
-                    className="mt-6 font-semibold"
+                    variant="secondary"
+                    className="mt-6 bg-white hover:bg-gray-100 text-blue-900 font-bold px-8 h-12 rounded-xl shadow-lg transition-all"
                     onClick={() => setIsSubscribed(false)}
                 >
                     다른 이메일로 구독하기

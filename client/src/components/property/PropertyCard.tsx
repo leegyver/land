@@ -121,7 +121,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
   };
 
   return (
-    <Card className="bg-white rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300 group border border-slate-200 h-full flex flex-col">
+    <Card className="bg-white rounded-2xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.05)] hover:shadow-[0_12px_30px_rgba(255,107,0,0.15)] hover:border-orange-500/50 transition-all duration-300 group border-2 border-transparent hover:-translate-y-1.5 h-full flex flex-col relative z-0">
       <div className="relative aspect-[16/9] overflow-hidden shrink-0">
         {/* 거래 유형 표시 */}
         <div className="absolute top-3 right-3 z-20 flex flex-wrap gap-1 justify-end">
@@ -158,6 +158,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
             <img
               src={property.imageUrl || siteConfig.defaultImageUrl}
               alt={property.title}
+              loading="lazy"
               className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent opacity-40" />
@@ -237,7 +238,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
         <div className="flex gap-2 mt-auto pt-2 border-t border-slate-100">
           <button
             onClick={() => setShowPhonePopup(true)}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 text-white py-2.5 rounded-xl hover:bg-blue-700 transition-all text-sm font-bold shadow-sm hover:shadow-md"
+            className="flex-1 flex items-center justify-center gap-1.5 bg-slate-900 text-white py-2.5 rounded-xl hover:bg-orange-600 transition-all text-sm font-black italic shadow-sm hover:shadow-md"
           >
             <Phone className="w-4 h-4 fill-current" />
             <span>전화문의</span>

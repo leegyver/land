@@ -333,3 +333,28 @@ export const notifications = sqliteTable("notifications", {
 export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+// Crawled Properties schema (Naver Crawler)
+export const crawledProperties = sqliteTable("crawled_properties", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  atclNo: text("atclNo").notNull().unique(),
+  atclNm: text("atclNm"),
+  rletTpNm: text("rletTpNm"),
+  tradTpNm: text("tradTpNm"),
+  flrInfo: text("flrInfo"),
+  prc: text("prc"),
+  spc1: text("spc1"),
+  spc2: text("spc2"),
+  direction: text("direction"),
+  lat: real("lat"),
+  lng: real("lng"),
+  imgUrl: text("imgUrl"),
+  rltrNm: text("rltrNm"),
+  landType: text("landType"),
+  zoneType: text("zoneType"),
+  crawledAt: text("crawledAt"),
+});
+
+export const insertCrawledPropertySchema = createInsertSchema(crawledProperties).omit({ id: true });
+export type CrawledProperty = typeof crawledProperties.$inferSelect;
+export type InsertCrawledProperty = z.infer<typeof insertCrawledPropertySchema>;

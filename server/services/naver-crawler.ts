@@ -52,7 +52,7 @@ export class NaverCrawler {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    async fetchAndSave(bounds?: { minLat: number, minLon: number, maxLat: number, maxLon: number }, mode: 'single' | 'grid' = 'single') {
+    async fetchAndSave(bounds?: { minLat: number, minLon: number, maxLat: number, maxLon: number }) {
         const defaultBounds = {
             minLat: 37.730,
             minLon: 126.470,
@@ -60,16 +60,11 @@ export class NaverCrawler {
             maxLon: 126.500
         };
 
-        let targetBounds = bounds;
-        if (!targetBounds) {
-            targetBounds = mode === 'grid' ? GANGHWA_FULL_BOUNDS : defaultBounds;
-        }
+        return this.crawlSingle(bounds || defaultBounds);
+    }
 
-        if (mode === 'grid') {
-            return this.crawlGrid(targetBounds);
-        } else {
-            return this.crawlSingle(targetBounds);
-        }
+    async fetchAndSaveGrid(bounds?: { minLat: number, minLon: number, maxLat: number, maxLon: number }) {
+        return this.crawlGrid(bounds || GANGHWA_FULL_BOUNDS);
     }
 
     async crawlGrid(bounds: { minLat: number, minLon: number, maxLat: number, maxLon: number }) {

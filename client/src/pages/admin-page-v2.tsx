@@ -950,7 +950,18 @@ export default function AdminPage() {
     setSkipCache(true);
   };
 
-  // Early return removed to keep hooks alive (V15 Radical Simplification)
+  // V16: 훅 규칙(Rules of Hooks)을 준수하면서 렌더링 크래시(백화 현상)를 방지하기 위해
+  // 모든 useQuery 호출이 끝난 최종 렌더링 직전에 Early Return을 수행합니다.
+  if (isLoading || !user || user.role !== "admin") {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-sm font-medium text-slate-500">권한 확인 및 데이터 연결 중...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-6">
@@ -2268,16 +2279,6 @@ export default function AdminPage() {
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
       />
-
-      {/* Auth Guard overlay handled at JSX level */}
-      {(isLoading || !user || user.role !== "admin") && (
-        <div className="fixed inset-0 z-[100] bg-white flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <p className="text-sm font-medium text-slate-500">권한 확인 및 데이터 연결 중...</p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -8,12 +8,7 @@ import { useLocation } from "wouter";
 const FloatingCTA = () => {
     // const [isVisible, setIsVisible] = useState(false); // Removed scroll logic
     const [location] = useLocation();
-
-    // useEffect(() => { ... }, []); // Removed scroll listener
-
-    // Don't show on admin pages or map popup
-    if (location.startsWith("/admin") || location.startsWith("/popup")) return null;
-
+    
     // 챗봇 스크립트 (환영 메시지) - 3초 후 표시
     const [showBubble, setShowBubble] = useState(false);
     useEffect(() => {
@@ -22,6 +17,10 @@ const FloatingCTA = () => {
         }, 3000);
         return () => clearTimeout(timer);
     }, []);
+
+    // Don't show on admin pages or map popup
+    // 훅 호출이 모두 끝난 뒤에 Early Return을 해야 렌더링 크래시 시 Hook 개수 불일치 에러(React Error #310)가 발생하지 않습니다.
+    if (location.startsWith("/admin") || location.startsWith("/popup")) return null;
 
     return (
         <AnimatePresence>

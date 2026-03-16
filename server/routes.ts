@@ -18,8 +18,9 @@ import { sendEmail, createInquiryEmailTemplate } from "./mailer";
 import { getRecentTransactions } from "./real-estate-api";
 import { testRealEstateAPI } from "./test-api";
 import { getLatestBlogPosts } from "./blog-fetcher";
-import { getLatestYouTubeVideos } from "./youtube-fetcher";
+import { getLatestYouTubeVideos, fetchLatestYouTubeVideosWithAPI, getChannelIdByHandle, fetchYouTubeShorts } from "./youtube-fetcher";
 import { importPropertiesFromSheet, checkDuplicatesFromSheet } from "./sheet-importer";
+import { naverCrawler } from "./services/naver-crawler";
 import { log } from "./vite";
 
 // 사이트 설정 (필요시 환경변수나 설정 파일로 이동 가능)
@@ -610,10 +611,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Search properties
   app.get("/api/search", async (req, res) => {
     try {
-      const { district, type, minPrice, maxPrice, keyword } = req.query;
-      console.log("검색 파라미터:", { district, type, minPrice, maxPrice, keyword });
+      const { district, type, minPrice, maxPrice, keyword, skipCache } = req.query;
+      console.log("검색 파라미터:", { district, type, minPrice, maxPrice, keyword, skipCache });
 
-      let properties = await storage.getProperties();
+      // [8단계 속도 개선] 매번 무거운 DB를 긁어오지 않고, 1분 단기 메모리 캐싱 헬퍼 우선 호출
+      let properties = skipCache === 'true' ? await storage.getProperties() : await getCachedProperties();
 
       // 키워드 검색 (제목, 설명, 주소에서 검색)
       if (keyword && typeof keyword === 'string' && keyword.trim() !== '') {
@@ -1066,7 +1068,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // 이가이버 유튜브 채널에서 최신 영상 가져오기
-      const channelUrl = "https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA?view_as=subscriber";
+      const handle = "강화도부동산이야기";
+      const channelUrl = `https://www.youtube.com/@${handle}`;
       const videos = await getLatestYouTubeVideos(channelUrl, limit);
 
       // 캐시에 저장 (6시간)
@@ -1077,6 +1080,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("유튜브 영상 가져오기 오류:", error);
       res.status(500).json({ 
         message: "최신 유튜브 영상을 불러오는데 실패했습니다",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // 특정 유튜브 채널 영상 가져오기 (일반 영상만, 쇼츠 제외)
+  app.get("/api/youtube/channel/:channelId", async (req, res) => {
+    try {
+      const { channelId } = req.params;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+      const refresh = req.query.refresh === 'true';
+
+      const cacheKey = `youtube_channel_videos_${channelId}_${limit}`;
+
+      if (refresh) memoryCache.delete(cacheKey);
+
+      const cachedVideos = memoryCache.get(cacheKey);
+      if (cachedVideos) return res.json(cachedVideos);
+
+      const videos = await fetchLatestYouTubeVideosWithAPI(channelId, limit);
+
+      memoryCache.set(cacheKey, videos, 6 * 60 * 60 * 1000);
+      res.json(videos);
+    } catch (error) {
+      console.error("유튜브 채널 영상 가져오기 오류:", error);
+      res.status(500).json({
+        message: "유튜브 채널 영상을 불러오는데 실패했습니다",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // 유튜브 핸들로 채널 ID 조회
+  app.get("/api/youtube/handle/:handle", async (req, res) => {
+    try {
+      const { handle } = req.params;
+      const cacheKey = `youtube_handle_${handle}`;
+      const cachedChannelId = memoryCache.get(cacheKey);
+
+      if (cachedChannelId) return res.json({ channelId: cachedChannelId });
+
+      const channelId = await getChannelIdByHandle(handle);
+
+      if (!channelId) return res.status(404).json({ message: "채널을 찾을 수 없습니다" });
+
+      memoryCache.set(cacheKey, channelId, 24 * 60 * 60 * 1000);
+      res.json({ channelId });
+    } catch (error) {
+      console.error("유튜브 핸들 조회 오류:", error);
+      res.status(500).json({
+        message: "채널 ID 조회에 실패했습니다",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // 유튜브 쇼츠 가져오기
+  app.get("/api/youtube/shorts/:channelId", async (req, res) => {
+    try {
+      const { channelId } = req.params;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+
+      const cacheKey = `youtube_shorts_${channelId}_${limit}`;
+      const cachedShorts = memoryCache.get(cacheKey);
+
+      if (cachedShorts) return res.json(cachedShorts);
+
+      const shorts = await fetchYouTubeShorts(channelId, limit);
+
+      memoryCache.set(cacheKey, shorts, 6 * 60 * 60 * 1000);
+      res.json(shorts);
+    } catch (error) {
+      console.error("유튜브 쇼츠 가져오기 오류:", error);
+      res.status(500).json({
+        message: "유튜브 쇼츠를 불러오는데 실패했습니다",
         error: error instanceof Error ? error.message : String(error)
       });
     }
@@ -1946,6 +2024,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(users);
     } catch (e) {
       res.status(500).json({ message: "회원 목록 조회 실패" });
+    }
+  });
+
+  // Newsletter Subscription API
+  app.post("/api/newsletter/subscribe", async (req, res) => {
+    try {
+      const { email, name } = req.body;
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      const subscription = await storage.createNewsletterSubscription({
+        email,
+        name: name || null,
+        isActive: true
+      });
+
+      res.status(201).json({ 
+        message: "Successfully subscribed to newsletter",
+        subscription 
+      });
+    } catch (error) {
+      console.error("Newsletter subscription error:", error);
+      res.status(500).json({ message: "서버 오류로 구독 신청에 실패했습니다." });
+    }
+  });
+
+  // Newsletter Admin: List subscriptions
+  app.get("/api/admin/newsletter/subscriptions", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      const user = req.user as Express.User;
+      if (user.role !== "admin") return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+
+      const subscriptions = await storage.getNewsletterSubscriptions();
+      res.json(subscriptions);
+    } catch (error) {
+      console.error("Fetch newsletter subscriptions error:", error);
+      res.status(500).json({ message: "구독자 목록을 불러오는 중 오류가 발생했습니다." });
+    }
+  });
+
+  // Newsletter Admin: Delete subscription
+  app.delete("/api/admin/newsletter/subscriptions/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      const user = req.user as Express.User;
+      if (user.role !== "admin") return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteNewsletterSubscription(id);
+      
+      if (success) {
+        res.json({ message: "구독 정보가 삭제되었습니다." });
+      } else {
+        res.status(404).json({ message: "삭제할 구독 정보를 찾을 수 없습니다." });
+      }
+    } catch (error) {
+      console.error("Delete newsletter subscription error:", error);
+      res.status(500).json({ message: "구독 정보 삭제 중 오류가 발생했습니다." });
+    }
+  });
+
+  // Crawler Admin: List properties
+  app.get("/api/admin/crawled-properties", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      const user = req.user as Express.User;
+      if (user.role !== "admin") return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+
+      const properties = await storage.getCrawledProperties();
+      res.json(properties);
+    } catch (error) {
+      console.error("Fetch crawled properties error:", error);
+      res.status(500).json({ message: "수집된 매물 목록을 불러오는 중 오류가 발생했습니다." });
+    }
+  });
+
+  // Crawler Admin: Delete all
+  app.delete("/api/admin/crawled-properties", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      const user = req.user as Express.User;
+      if (user.role !== "admin") return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+
+      await storage.clearCrawledProperties();
+      res.json({ message: "수집된 매물 목록이 초기화되었습니다." });
+    } catch (error) {
+      console.error("Clear crawled properties error:", error);
+      res.status(500).json({ message: "수집된 매물 목록 초기화 중 오류가 발생했습니다." });
+    }
+  });
+
+  // Crawler Admin: Run crawler
+  app.post("/api/admin/crawler/run", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      const user = req.user as Express.User;
+      if (user.role !== "admin") return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+
+      const { grid } = req.body;
+      
+      // 비동기로 실행하고 즉시 응답 (오래 걸릴 수 있으므로)
+      if (grid) {
+        naverCrawler.fetchAndSaveGrid().catch(err => console.error("Crawler grid run error:", err));
+      } else {
+        naverCrawler.fetchAndSave().catch(err => console.error("Crawler run error:", err));
+      }
+
+      res.json({ message: "매물 수집이 시작되었습니다. 잠시 후 새로고침 해주세요." });
+    } catch (error) {
+      console.error("Run crawler error:", error);
+      res.status(500).json({ message: "매물 수집 시작 중 오류가 발생했습니다." });
     }
   });
 

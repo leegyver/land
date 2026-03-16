@@ -268,82 +268,52 @@ export async function fetchLatestYouTubeVideos(channelUrl: string, limit: number
     } catch (apiError) {
       console.error('YouTube API 요청 실패, 대체 데이터 사용:', apiError);
       
-      // API 실패 시 대체 데이터 제공
-      if (channelId === 'UCCG3_JlKhgalqhict7tKkbA') {
-        // 이가이버 유튜브 채널의 최신 동영상 데이터 (대체 데이터)
-        console.log('이가이버 유튜브 채널의 대체 데이터를 사용합니다.');
+      // API 실패 시 RSS 대안 데이터 적용 (동적 Fallback)
+      console.log(`YouTube RSS 피드로 대체 우회 시도: ${channelId}`);
+      try {
+        const rssResponse = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`);
+        if (!rssResponse.ok) throw new Error('RSS 피드 요청 실패');
         
-        const videos: YouTubeVideo[] = [
-          {
-            id: 'Kh-CoR26mAk',
-            title: '무엇을 보고 매입한 땅인데..이렇게...',
-            thumbnail: 'https://i.ytimg.com/vi/Kh-CoR26mAk/hqdefault.jpg',
-            url: 'https://www.youtube.com/watch?v=Kh-CoR26mAk'
-          },
-          {
-            id: 'lIMCvP9De8w',
-            title: '강화도 마니산 아래 힐링 할수 있는 전망좋은집',
-            thumbnail: 'https://i.ytimg.com/vi/lIMCvP9De8w/hqdefault.jpg',
-            url: 'https://www.youtube.com/watch?v=lIMCvP9De8w'
-          },
-          {
-            id: '3dJUkIVx42U',
-            title: '강화 천문 금송 전남권공간-강화부동산',
-            thumbnail: 'https://i.ytimg.com/vi/3dJUkIVx42U/hqdefault.jpg',
-            url: 'https://www.youtube.com/watch?v=3dJUkIVx42U'
-          },
-          {
-            id: 'wTxCLSPAktI',
-            title: '강화 마니산 중턱 전원주택 50평형 넘는 단독주택',
-            thumbnail: 'https://i.ytimg.com/vi/wTxCLSPAktI/hqdefault.jpg',
-            url: 'https://www.youtube.com/watch?v=wTxCLSPAktI'
-          },
-          {
-            id: 'tlcv9i9m5CU',
-            title: '벤츠가 바퀴가 거의 없는 주책이야...뻘이 많다',
-            thumbnail: 'https://i.ytimg.com/vi/tlcv9i9m5CU/hqdefault.jpg',
-            url: 'https://www.youtube.com/watch?v=tlcv9i9m5CU'
+        const rssText = await rssResponse.text();
+        
+        // 정규식으로 Entry 파싱 (최대 15개)
+        const videos: YouTubeVideo[] = [];
+        const entryRegex = /<entry>([\s\S]*?)<\/entry>/g;
+        let match;
+        
+        while ((match = entryRegex.exec(rssText)) !== null && videos.length < limit) {
+          const entryStr = match[1];
+          
+          const idMatch = entryStr.match(/<yt:videoId>([^<]+)<\/yt:videoId>/);
+          const titleMatch = entryStr.match(/<title>([^<]+)<\/title>/);
+          const pubMatch = entryStr.match(/<published>([^<]+)<\/published>/);
+          const thumbMatch = entryStr.match(/<media:thumbnail url="([^"]+)"/);
+          
+          if (idMatch && titleMatch) {
+            const videoId = idMatch[1];
+            // 썸네일 없으면 hqdefault 조립
+            const thumbnail = thumbMatch ? thumbMatch[1] : `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+            
+            videos.push({
+              id: videoId,
+              title: titleMatch[1],
+              thumbnail: thumbnail,
+              url: `https://www.youtube.com/watch?v=${videoId}`,
+              publishedAt: pubMatch ? pubMatch[1] : new Date().toISOString()
+            });
           }
-        ];
-        
-        return videos.slice(0, limit);
-      }
-
-      // 기타 채널의 대체 데이터
-      const videos: YouTubeVideo[] = [
-        {
-          id: 'Vjqm9G9VN7s',
-          title: '강화버스투어 강화한옥마을-우리집한옥스테이',
-          thumbnail: 'https://i.ytimg.com/vi/Vjqm9G9VN7s/hqdefault.jpg',
-          url: 'https://www.youtube.com/watch?v=Vjqm9G9VN7s'
-        },
-        {
-          id: 'nJvPvjZ6hcE',
-          title: '현대아이파크 인근 단독주택 바로 보시죠',
-          thumbnail: 'https://i.ytimg.com/vi/nJvPvjZ6hcE/hqdefault.jpg',
-          url: 'https://www.youtube.com/watch?v=nJvPvjZ6hcE'
-        },
-        {
-          id: 'FQy2PGG2IEY',
-          title: '강화 전원주택 전세 바로 보시죠',
-          thumbnail: 'https://i.ytimg.com/vi/FQy2PGG2IEY/hqdefault.jpg',
-          url: 'https://www.youtube.com/watch?v=FQy2PGG2IEY'
-        },
-        {
-          id: 'uF6DUZEdFtA',
-          title: '강화에서 서울 한강이 보이는 타운하우스 "강화 브리드원"',
-          thumbnail: 'https://i.ytimg.com/vi/uF6DUZEdFtA/hqdefault.jpg',
-          url: 'https://www.youtube.com/watch?v=uF6DUZEdFtA'
-        },
-        {
-          id: 'cJ-OQ4j5-5c',
-          title: '장화리 효정마을 전원주택단지 "이웃과 함께 사는 기쁨"',
-          thumbnail: 'https://i.ytimg.com/vi/cJ-OQ4j5-5c/hqdefault.jpg',
-          url: 'https://www.youtube.com/watch?v=cJ-OQ4j5-5c'
         }
-      ];
+        
+        if (videos.length > 0) {
+          console.log(`RSS 피드로 ${videos.length}개 영상 복구 완료.`);
+          return videos;
+        }
+      } catch (rssError) {
+        console.error('RSS 피드 우회 파싱마저 실패:', rssError);
+      }
       
-      return videos.slice(0, limit);
+      // 최악의 경우 빈 배열 반환 (에러 파급 방지)
+      return [];
     }
     
   } catch (error) {

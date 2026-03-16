@@ -106,11 +106,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/properties/urgent", async (req, res) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 4;
-      const all = await getCachedProperties();
+      const all = await storage.getAllProperties(); // 모든 매물에서 필터링 (isVisible은 storage에서 처리되도록 하거나 여기서 직접 처리)
+      
       const filtered = all.filter((p: any) => 
-        p.title && (p.title.includes("급매") || p.title.includes("시급") || p.title.includes("긴급"))
-      ).slice(0, limit);
-      res.json(filtered.length > 0 ? filtered : all.slice(0, limit));
+        p.isVisible && (
+          p.isUrgent === true || 
+          (p.title && (p.title.includes("급매") || p.title.includes("시급") || p.title.includes("긴급")))
+        )
+      ).sort((a: any, b: any) => (a.urgentOrder || 0) - (b.urgentOrder || 0));
+
+      res.json(filtered.slice(0, limit));
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch urgent properties" });
     }
@@ -120,12 +125,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/properties/negotiable", async (req, res) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 4;
-      const all = await getCachedProperties();
+      const all = await storage.getAllProperties();
+      
       const filtered = all.filter((p: any) => 
-        (p.title && (p.title.includes("협의") || p.title.includes("흥정"))) ||
-        (p.price && p.price.includes("협의"))
-      ).slice(0, limit);
-      res.json(filtered.length > 0 ? filtered : all.slice(Math.floor(all.length / 4), Math.floor(all.length / 4) + limit));
+        p.isVisible && (
+          p.isNegotiable === true ||
+          (p.title && (p.title.includes("협의") || p.title.includes("흥정"))) ||
+          (p.price && p.price.includes("협의"))
+        )
+      ).sort((a: any, b: any) => (a.negotiableOrder || 0) - (b.negotiableOrder || 0));
+
+      res.json(filtered.slice(0, limit));
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch negotiable properties" });
     }
@@ -135,12 +145,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/properties/long-term", async (req, res) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 4;
-      const all = await getCachedProperties();
+      const all = await storage.getAllProperties();
+      
       const filtered = all.filter((p: any) => 
-        (p.type && (p.type === "토지" || p.type === "임야" || p.type === "농지")) ||
-        (p.title && (p.title.includes("투자") || p.title.includes("개발") || p.title.includes("장기")))
-      ).slice(0, limit);
-      res.json(filtered.length > 0 ? filtered : all.slice(Math.floor(all.length / 2), Math.floor(all.length / 2) + limit));
+        p.isVisible && (
+          p.isLongTerm === true ||
+          (p.type && (p.type === "토지" || p.type === "임야" || p.type === "농지")) ||
+          (p.title && (p.title.includes("투자") || p.title.includes("개발") || p.title.includes("장기")))
+        )
+      ).sort((a: any, b: any) => (a.longTermOrder || 0) - (b.longTermOrder || 0));
+
+      res.json(filtered.slice(0, limit));
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch long-term properties" });
     }

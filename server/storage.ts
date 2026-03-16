@@ -8,7 +8,7 @@ import {
   favorites, type Favorite, type InsertFavorite,
   newsletterSubscriptions, type NewsletterSubscription, type InsertNewsletterSubscription,
   crawledProperties, type CrawledProperty, type InsertCrawledProperty
-} from "@shared/schema";
+} from "../shared/schema";
 import { db, sqlite } from "./db";
 import { eq, desc, asc, and, gte, lte, inArray } from "drizzle-orm";
 import session from "express-session";

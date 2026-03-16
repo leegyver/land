@@ -10,7 +10,7 @@ import {
   insertPropertyInquirySchema,
   insertFavoriteSchema,
   news
-} from "@shared/schema";
+} from "../shared/schema";
 import { memoryCache } from "./cache";
 import { setupAuth } from "./auth";
 import { fetchAndSaveNews, setupNewsScheduler } from "./news-fetcher";

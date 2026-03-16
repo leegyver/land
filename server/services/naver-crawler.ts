@@ -53,6 +53,7 @@ export class NaverCrawler {
     }
 
     async fetchAndSave(bounds?: { minLat: number, minLon: number, maxLat: number, maxLon: number }) {
+        console.log(`[Crawler] Starting SINGLE crawl...`);
         const defaultBounds = {
             minLat: 37.730,
             minLon: 126.470,
@@ -149,6 +150,7 @@ export class NaverCrawler {
                 });
 
                 try {
+                    console.log(`[Crawler] Fetching ${group.label} P${page}... URL: ${url}?${params.toString().substring(0, 50)}...`);
                     const response = await fetch(`${url}?${params.toString()}`, {
                         method: "GET",
                         headers: HEADERS,

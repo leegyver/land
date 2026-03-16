@@ -7,7 +7,7 @@ import {
   propertyInquiries, type PropertyInquiry, type InsertPropertyInquiry,
   favorites, type Favorite, type InsertFavorite,
   newsletterSubscriptions, type NewsletterSubscription, type InsertNewsletterSubscription,
-  crawledProperties, type CrawledProperty, type InsertCrawledProperty
+  crawledPropertiesTable as crawledProperties, type CrawledProperty, type InsertCrawledProperty
 } from "../shared/schema";
 import { db, sqlite } from "./db";
 import { eq, desc, asc, and, gte, lte, inArray } from "drizzle-orm";

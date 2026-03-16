@@ -13,10 +13,10 @@ if %ERRORLEVEL% NEQ 0 (
 )
 echo Git backup successful.
 
-echo 1. Building server...
-call node_modules\.bin\esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/index.js --alias:@shared=./shared
+echo 1. Building application (Frontend + Server)...
+call npm run build
 if %ERRORLEVEL% NEQ 0 (
-    echo Server build failed!
+    echo Build failed!
     exit /b %ERRORLEVEL%
 )
 

@@ -1,7 +1,11 @@
 import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
+import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
+import { nanoid } from "nanoid";
+
+const viteLogger = createLogger();
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -15,30 +19,22 @@ export function log(message: string, source = "express") {
 }
 
 export async function setupVite(app: Express, server: Server) {
-  const viteModule = await import("vite");
-  const createViteServer = viteModule.createServer;
-  const viteLogger = viteModule.createLogger();
-  const viteConfig = (await import("../vite.config")).default;
-  const { nanoid } = await import("nanoid");
-
   const serverOptions = {
     middlewareMode: true,
     hmr: { server },
-    allowedHosts: true,
+    // allowedHosts: true,
   };
 
   const vite = await createViteServer({
-    ...viteConfig,
-    configFile: false,
+    server: serverOptions,
+    appType: "custom",
     customLogger: {
       ...viteLogger,
-      error: (msg: string, options?: any) => {
+      error: (msg, options) => {
         viteLogger.error(msg, options);
         process.exit(1);
       },
     },
-    server: serverOptions,
-    appType: "custom",
   });
 
   app.use(vite.middlewares);
@@ -53,11 +49,13 @@ export async function setupVite(app: Express, server: Server) {
         "index.html",
       );
 
+      // always reload the index.html file from disk incase it changes
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
       template = template.replace(
-        `src="/src/main.tsx"`,
-        `src="/src/main.tsx?v=${nanoid()}"`,
+        `src="/src/main.v2.tsx"`,
+        `src="/src/main.v2.tsx?v=${nanoid()}"`,
       );
+      console.log("Serving index.html with new version tag");
       const page = await vite.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {

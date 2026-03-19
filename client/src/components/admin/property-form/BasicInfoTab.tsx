@@ -133,62 +133,56 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
     };
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Card className="stadium-card border-slate-200">
-                <CardHeader className="bg-slate-50/50 border-b-2 border-slate-100 pb-4">
-                    <CardTitle className="text-xl font-black italic uppercase tracking-tighter">
-                        Core <span className="text-primary">Specs</span>
-                    </CardTitle>
-                    <CardDescription className="font-bold text-slate-400">부동산의 기본 제원을 입력하세요</CardDescription>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle>필수 정보</CardTitle>
+                    <CardDescription>부동산의 기본 정보를 입력하세요</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6 pt-6">
+                <CardContent className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="title" className="font-black text-xs uppercase tracking-widest text-slate-500">제목 *</Label>
+                        <Label htmlFor="title">제목 *</Label>
                         <Input
                             id="title"
                             name="title"
                             value={formData.title}
                             onChange={handleChange}
                             required
-                            className="stadium-input"
                         />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="type" className="font-black text-xs uppercase tracking-widest text-slate-500">유형 *</Label>
-                            <Select
-                                name="type"
-                                value={formData.type}
-                                onValueChange={(value) => handleSelectChange("type", value)}
-                            >
-                                <SelectTrigger className="stadium-input">
-                                    <SelectValue placeholder="유형 선택" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {propertyTypeOptions.map(option => (
-                                        <SelectItem key={option} value={option}>{option}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="price" className="font-black text-xs uppercase tracking-widest text-slate-500">가격 / 보증금</Label>
-                            <Input
-                                id="price"
-                                name="price"
-                                type="text"
-                                value={formData.price}
-                                onChange={handleChange}
-                                placeholder="예: 5억 2천 / 5000"
-                                className="stadium-input"
-                            />
-                        </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="type">부동산 유형 *</Label>
+                        <Select
+                            name="type"
+                            value={formData.type}
+                            onValueChange={(value) => handleSelectChange("type", value)}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="유형 선택" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {propertyTypeOptions.map(option => (
+                                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="address" className="font-black text-xs uppercase tracking-widest text-slate-500">주소 *</Label>
+                        <Label htmlFor="price">매매가</Label>
+                        <Input
+                            id="price"
+                            name="price"
+                            type="text"
+                            value={formData.price}
+                            onChange={handleChange}
+                            placeholder="선택사항"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="address">주소 *</Label>
                         <Input
                             id="address"
                             name="address"
@@ -196,40 +190,36 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
                             onChange={handleChange}
                             required
                             placeholder="상세 주소를 입력하세요"
-                            className="stadium-input"
                         />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="district" className="font-black text-xs uppercase tracking-widest text-slate-500">지역 상세 *</Label>
-                            <Select
-                                value={formData.district}
-                                onValueChange={(value) => handleSelectChange("district", value)}
-                            >
-                                <SelectTrigger id="district" className="stadium-input">
-                                    <SelectValue placeholder="지역 선택" />
-                                </SelectTrigger>
-                                <SelectContent className="max-h-[300px]">
-                                    {allLocations.map((location) => (
-                                        <SelectItem key={location} value={location}>{location}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="district">지역 *</Label>
+                        <Select
+                            value={formData.district}
+                            onValueChange={(value) => handleSelectChange("district", value)}
+                        >
+                            <SelectTrigger id="district">
+                                <SelectValue placeholder="지역을 선택하세요" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-[300px]">
+                                {allLocations.map((location) => (
+                                    <SelectItem key={location} value={location}>{location}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="size" className="font-black text-xs uppercase tracking-widest text-slate-500">면적 (㎡) *</Label>
-                            <Input
-                                id="size"
-                                name="size"
-                                type="text"
-                                value={formData.size || ""}
-                                onChange={handleChange}
-                                required
-                                className="stadium-input"
-                            />
-                        </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="size">면적(㎡) *</Label>
+                        <Input
+                            id="size"
+                            name="size"
+                            type="text"
+                            value={formData.size || ""}
+                            onChange={handleChange}
+                            required
+                        />
                     </div>
 
                     {formData.type !== '토지' && (

@@ -1,10 +1,9 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { PAGE_ORDER } from '@/constants/navigation';
 
 const SWIPE_THRESHOLD = 50; // 최소 스와이프 거리 (px)
-const MAX_SWIPE_TIME = 500; // 최대 스와이프 시간 (ms)
 
 interface SwipeHandlerProps {
     children?: React.ReactNode;
@@ -12,7 +11,8 @@ interface SwipeHandlerProps {
 
 export const SwipeHandler: React.FC<SwipeHandlerProps> = ({ children }) => {
     const [location, setLocation] = useLocation();
-    const [touchStart, setTouchStart] = useState<{ x: number, y: number, time: number } | null>(null);
+    // useRef로 변경: state로 관리하면 터치할 때마다 리렌더 + 이벤트 리스너 재등록 발생
+    const touchStartRef = useRef<{ x: number, y: number, time: number } | null>(null);
 
     useEffect(() => {
         const handleTouchStart = (e: TouchEvent) => {
@@ -29,14 +29,15 @@ export const SwipeHandler: React.FC<SwipeHandlerProps> = ({ children }) => {
                 return;
             }
 
-            setTouchStart({
+            touchStartRef.current = {
                 x: e.changedTouches[0].clientX,
                 y: e.changedTouches[0].clientY,
                 time: Date.now()
-            });
+            };
         };
 
         const handleTouchEnd = (e: TouchEvent) => {
+            const touchStart = touchStartRef.current;
             if (!touchStart) return;
 
             const touchEnd = {
@@ -47,13 +48,9 @@ export const SwipeHandler: React.FC<SwipeHandlerProps> = ({ children }) => {
 
             const deltaX = touchEnd.x - touchStart.x;
             const deltaY = touchEnd.y - touchStart.y;
-            const deltaTime = touchEnd.time - touchStart.time;
 
             // 초기화
-            setTouchStart(null);
-
-            // 시간 제한 체크 (너무 느린 스와이프는 무시 - 드래그 형식이므로 시간 제한을 좀 더 넉넉하게 하거나 제거 가능하지만 오동작 방지를 위해 유지)
-            // if (deltaTime > MAX_SWIPE_TIME) return;
+            touchStartRef.current = null;
 
             // 수직 스크롤 의도가 강하면 무시 (Y축 이동이 X축 이동보다 크면 스크롤로 간주)
             if (Math.abs(deltaY) > Math.abs(deltaX)) return;
@@ -65,22 +62,19 @@ export const SwipeHandler: React.FC<SwipeHandlerProps> = ({ children }) => {
             if (Math.abs(deltaX) < threshold) return;
 
             // 현재 페이지 인덱스 찾기
-            // (쿼리 파라미터 제외하고 순수 경로만 비교)
             const currentPath = location.split('?')[0];
-
-            // 상세 페이지 등은 순서에 없으므로 스와이프 네비게이션 동작 안함
             const currentIndex = PAGE_ORDER.indexOf(currentPath);
 
             if (currentIndex === -1) return;
 
             // 스와이프 방향 판별
             if (deltaX > 0) {
-                // 오른쪽으로 스와이프 (Previous Page) -> 손가락을 오른쪽으로 밈
+                // 오른쪽으로 스와이프 (Previous Page)
                 if (currentIndex > 0) {
                     setLocation(PAGE_ORDER[currentIndex - 1]);
                 }
             } else {
-                // 왼쪽으로 스와이프 (Next Page) -> 손가락을 왼쪽으로 밈
+                // 왼쪽으로 스와이프 (Next Page)
                 if (currentIndex < PAGE_ORDER.length - 1) {
                     setLocation(PAGE_ORDER[currentIndex + 1]);
                 }
@@ -88,14 +82,15 @@ export const SwipeHandler: React.FC<SwipeHandlerProps> = ({ children }) => {
         };
 
         // 전역 이벤트 리스너 등록
-        window.addEventListener('touchstart', handleTouchStart);
-        window.addEventListener('touchend', handleTouchEnd);
+        window.addEventListener('touchstart', handleTouchStart, { passive: true });
+        window.addEventListener('touchend', handleTouchEnd, { passive: true });
 
         return () => {
             window.removeEventListener('touchstart', handleTouchStart);
             window.removeEventListener('touchend', handleTouchEnd);
         };
-    }, [location, setLocation, touchStart]);
+    }, [location, setLocation]); // touchStart 제거: useRef로 관리하므로 불필요
 
     return <>{children}</>;
 };
+

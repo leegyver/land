@@ -13,12 +13,8 @@ interface YouTubeVideo {
 
 const NEW_CHANNEL_HANDLE = "강화도부동산이야기";
 const NEW_CHANNEL_URL = `https://www.youtube.com/@${NEW_CHANNEL_HANDLE}`;
-// 대표님 기존 채널 1 (이가이버 유튜브)
-const OLD_CHANNEL_ID_1 = "UChvA8_nrczWDBYdHUum7Amw";
-const OLD_CHANNEL_URL_1 = `https://www.youtube.com/channel/${OLD_CHANNEL_ID_1}`;
-// 대표님 기존 채널 2
-const OLD_CHANNEL_ID_2 = "UCCG3_JlKhgalqhict7tKkbA";
-const OLD_CHANNEL_URL_2 = `https://www.youtube.com/channel/${OLD_CHANNEL_ID_2}`;
+const OLD_CHANNEL_ID = "UCCG3_JlKhgalqhict7tKkbA";
+const OLD_CHANNEL_URL = "https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA";
 
 const YoutubePage = () => {
   const { data: newChannelData } = useQuery<{ channelId: string }>({
@@ -48,21 +44,10 @@ const YoutubePage = () => {
     enabled: !!newChannelId,
   });
 
-  const { data: oldChannelVideos1, isLoading: oldLoading1 } = useQuery<YouTubeVideo[]>({
-    queryKey: ["/api/youtube/channel", OLD_CHANNEL_ID_1, "12"],
+  const { data: oldChannelVideos, isLoading: oldLoading } = useQuery<YouTubeVideo[]>({
+    queryKey: ["/api/youtube/channel", OLD_CHANNEL_ID, "12"],
     queryFn: async () => {
-      const response = await fetch(`/api/youtube/channel/${OLD_CHANNEL_ID_1}?limit=12`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch videos");
-      }
-      return response.json();
-    },
-  });
-
-  const { data: oldChannelVideos2, isLoading: oldLoading2 } = useQuery<YouTubeVideo[]>({
-    queryKey: ["/api/youtube/channel", OLD_CHANNEL_ID_2, "12"],
-    queryFn: async () => {
-      const response = await fetch(`/api/youtube/channel/${OLD_CHANNEL_ID_2}?limit=12`);
+      const response = await fetch(`/api/youtube/channel/${OLD_CHANNEL_ID}?limit=12`);
       if (!response.ok) {
         throw new Error("Failed to fetch videos");
       }
@@ -177,48 +162,15 @@ const YoutubePage = () => {
           )}
         </section>
 
-        {/* 기존 채널 1: 특화 채널 (UChvA8_nrczWDBYdHUum7Amw) */}
-        <section className="mb-12">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <Youtube className="h-6 w-6 text-red-600" />
-              이가이버 채널 1
-            </h2>
-            <a
-              href={OLD_CHANNEL_URL_1}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center text-red-600 hover:text-red-700 text-sm"
-            >
-              <ExternalLink className="w-4 h-4 mr-1" />
-              채널 방문
-            </a>
-          </div>
-
-          {oldLoading1 ? (
-            <LoadingSkeleton />
-          ) : oldChannelVideos1 && oldChannelVideos1.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {oldChannelVideos1.slice(0, 12).map((video) => (
-                <VideoCard key={video.id} video={video} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-10 bg-white rounded-lg">
-              <p className="text-gray-500">등록된 영상이 없습니다.</p>
-            </div>
-          )}
-        </section>
-
-        {/* 기존 채널 2: 이가이버 유튜브 (UCCG3_JlKhgalqhict7tKkbA) */}
+        {/* 기존 채널: 이가이버 유튜브 */}
         <section>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold flex items-center gap-2">
               <Youtube className="h-6 w-6 text-red-600" />
-              이가이버 채널 2
+              이가이버 유튜브
             </h2>
             <a
-              href={OLD_CHANNEL_URL_2}
+              href={OLD_CHANNEL_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center text-red-600 hover:text-red-700 text-sm"
@@ -228,11 +180,11 @@ const YoutubePage = () => {
             </a>
           </div>
 
-          {oldLoading2 ? (
+          {oldLoading ? (
             <LoadingSkeleton />
-          ) : oldChannelVideos2 && oldChannelVideos2.length > 0 ? (
+          ) : oldChannelVideos && oldChannelVideos.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {oldChannelVideos2.slice(0, 12).map((video) => (
+              {oldChannelVideos.slice(0, 12).map((video) => (
                 <VideoCard key={video.id} video={video} />
               ))}
             </div>

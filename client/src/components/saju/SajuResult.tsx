@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { SajuData, TwelveStage, getCompatibilityScore, getDailyFortune, getMonthlyFortune, getYearlyFortune, getHealthAnalysis, getDetailedRealEstateAnalysis, getGeneralPaljaSummary } from '@/lib/saju';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,8 +8,11 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import { Sparkles, Home, Heart, User, HelpCircle, Info } from 'lucide-react';
+import { Sparkles, Home, Heart, User, HelpCircle, Info, Clock, Sunrise, Sun, Moon } from 'lucide-react';
 import { SPIRIT_DESCRIPTIONS, TEN_GOD_DESCRIPTIONS, TWELVE_STAGE_DESCRIPTIONS, PILLAR_DESCRIPTIONS, STEM_BRANCH_DESCRIPTIONS, getCoreTerm } from '@/lib/saju_desc';
+import { generateDetailedFortune } from '@/lib/saju_story_engine';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
@@ -24,6 +28,31 @@ const SajuResult = ({ sajuData, username }: SajuResultProps) => {
     const yearly = getYearlyFortune(sajuData);
     const health = getHealthAnalysis(sajuData);
     const realEstate = getDetailedRealEstateAnalysis(sajuData);
+
+    const [isGenerating, setIsGenerating] = React.useState(true);
+    const [detailedFortune, setDetailedFortune] = React.useState('');
+
+    React.useEffect(() => {
+        // Generate a cache key based on user and today's date
+        const todayStr = new Date().toISOString().split('T')[0];
+        const cacheKey = `saju_fortune_${username || 'guest'}_${sajuData.birthDate}_${todayStr}`;
+        const cached = localStorage.getItem(cacheKey);
+
+        if (cached) {
+            setDetailedFortune(cached);
+            setIsGenerating(false);
+            return;
+        }
+
+        // Simulating a deep analysis process to increase premium feel and dwell time
+        const timer = setTimeout(() => {
+            const fortune = generateDetailedFortune(sajuData, daily.score);
+            setDetailedFortune(fortune);
+            localStorage.setItem(cacheKey, fortune);
+            setIsGenerating(false);
+        }, 2000);
+        return () => clearTimeout(timer);
+    }, [sajuData, daily.score, username]);
 
     const formatSajuDate = (d: Date, isLunar: boolean) => {
         return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${isLunar ? '음력' : '양력'})`;
@@ -167,6 +196,74 @@ const SajuResult = ({ sajuData, username }: SajuResultProps) => {
                     </div>
                 </div>
 
+                {/* --- NEW: Detailed Today's Fortune Section --- */}
+                <div className="mt-10">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-bold text-2xl flex items-center gap-2">
+                            📜 오늘의 운명 심층 분석 리포트
+                        </h3>
+                        <Badge variant="secondary" className="animate-pulse bg-indigo-100 text-indigo-700">실시간 연산중</Badge>
+                    </div>
+
+                    <Card className="border-indigo-200 shadow-lg overflow-hidden relative min-h-[400px]">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 animate-gradient-x"></div>
+                        <CardContent className="p-0">
+                            {isGenerating ? (
+                                <div className="flex flex-col items-center justify-center py-20 bg-slate-50/50">
+                                    <div className="relative w-24 h-24 mb-6">
+                                        <div className="absolute inset-0 border-4 border-indigo-100 rounded-full"></div>
+                                        <div className="absolute inset-0 border-4 border-indigo-500 rounded-full border-t-transparent animate-spin"></div>
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <Clock className="h-8 w-8 text-indigo-500 animate-pulse" />
+                                        </div>
+                                    </div>
+                                    <h4 className="text-lg font-bold text-slate-700 mb-2">오늘의 기운을 정밀 분석하고 있습니다...</h4>
+                                    <p className="text-sm text-slate-400">당신의 사주 팔자와 오늘의 일진을 대조 중입니다.</p>
+                                    <div className="mt-8 grid grid-cols-2 gap-x-12 gap-y-4">
+                                        {['천간 합 충 분석', '12신살 운기 측정', '시간대별 흐름 산출', '오행 상생상극 대조'].map((step, i) => (
+                                            <div key={i} className="flex items-center gap-2">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></div>
+                                                <span className="text-[10px] text-slate-500 font-medium uppercase tracking-widest">{step}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="p-6 md:p-10 bg-white dark:bg-slate-900 prose prose-indigo max-w-none prose-sm md:prose-base dark:prose-invert">
+                                    <div className="flex flex-wrap gap-4 mb-8">
+                                        <Badge className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200 flex items-center gap-1.5 py-1.5 px-3">
+                                            <Sunrise className="h-3.5 w-3.5" /> 오전 행운지수: {Math.max(40, daily.score - 10)}%
+                                        </Badge>
+                                        <Badge className="bg-orange-50 text-orange-700 hover:bg-orange-100 border-orange-200 flex items-center gap-1.5 py-1.5 px-3">
+                                            <Sun className="h-3.5 w-3.5" /> 오후 행운지수: {daily.score}%
+                                        </Badge>
+                                        <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-300 flex items-center gap-1.5 py-1.5 px-3">
+                                            <Moon className="h-3.5 w-3.5" /> 저녁 행운지수: {Math.max(40, daily.score + 5)}%
+                                        </Badge>
+                                    </div>
+                                    <ReactMarkdown
+                                        remarkPlugins={[remarkGfm]}
+                                        components={{
+                                            h2: ({ node, ...props }) => <h2 className="text-2xl font-bold text-indigo-800 border-b-2 border-indigo-50 pb-2 mt-12 mb-6" {...props} />,
+                                            h3: ({ node, ...props }) => <h3 className="text-lg font-bold text-slate-800 bg-slate-50 px-3 py-1.5 rounded-lg inline-block my-4" {...props} />,
+                                            p: ({ node, ...props }) => <p className="leading-relaxed text-slate-600 mb-4 indent-1" {...props} />,
+                                            ul: ({ node, ...props }) => <ul className="bg-indigo-50/30 p-4 rounded-xl list-none space-y-2 border border-indigo-100/50 my-6" {...props} />,
+                                            li: ({ node, ...props }) => <li className="flex items-start gap-2 text-sm text-indigo-900 before:content-['✦'] before:text-indigo-400" {...props} />
+                                        }}
+                                    >
+                                        {detailedFortune}
+                                    </ReactMarkdown>
+
+                                    <Separator className="my-10" />
+                                    <div className="text-center italic text-slate-400 text-xs">
+                                        이가이버 부동산 오늘의 운세 서비스는 한국 전통 명리학 빅데이터를 기반으로 합니다.
+                                    </div>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+
                 {/* 3. Four Pillars - Detailed Cards (Inline Focus) */}
                 <div className="mt-8">
                     <div className="flex items-center gap-2 mb-4">
@@ -229,43 +326,13 @@ const SajuResult = ({ sajuData, username }: SajuResultProps) => {
                     )}
                 </div>
 
-                {/* 5. Life Guide Tabs (Fortune, Health, Real Estate) */}
+                {/* 5. Life Guide Tabs (Health, Real Estate) */}
                 <div className="mt-10">
-                    <Tabs defaultValue="fortune" className="w-full">
-                        <TabsList className="grid w-full grid-cols-3 h-12 bg-slate-100 p-1 rounded-xl">
-                            <TabsTrigger value="fortune" className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-indigo-700 data-[state=active]:shadow-sm">운세 흐름</TabsTrigger>
+                    <Tabs defaultValue="realestate" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2 h-12 bg-slate-100 p-1 rounded-xl">
                             <TabsTrigger value="realestate" className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-emerald-700 data-[state=active]:shadow-sm">부동자산 운</TabsTrigger>
                             <TabsTrigger value="health" className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-rose-700 data-[state=active]:shadow-sm">체질과 건강</TabsTrigger>
                         </TabsList>
-
-                        <TabsContent value="fortune" className="mt-6 space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {[
-                                    { key: 'daily', data: daily, label: '오늘의 운세' },
-                                    { key: 'monthly', data: monthly, label: '이달의 운세' },
-                                    { key: 'yearly', data: yearly, label: '올해의 운세' }
-                                ].map((item) => (
-                                    <Card key={item.key} className="border-indigo-100 shadow-sm border-t-4 border-t-indigo-500">
-                                        <CardHeader className="p-4 pb-2">
-                                            <div className="flex justify-between items-center mb-1">
-                                                <Badge variant="outline" className="text-[10px] text-indigo-500">{item.label}</Badge>
-                                                <span className="text-[10px] text-slate-400">{item.data.date}</span>
-                                            </div>
-                                            <CardTitle className="text-base text-slate-800">{item.data.title}</CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="p-4 pt-0">
-                                            <div className="flex items-center gap-2 mb-3">
-                                                <Progress value={item.data.score} className="h-1.5 flex-1" />
-                                                <span className="text-xs font-bold text-indigo-600">{item.data.score}점</span>
-                                            </div>
-                                            <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                                                {item.data.content}
-                                            </p>
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                            </div>
-                        </TabsContent>
 
                         <TabsContent value="realestate" className="mt-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

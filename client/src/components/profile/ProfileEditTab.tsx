@@ -24,19 +24,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useEffect, useState } from "react";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { AlertTriangle, UserX } from "lucide-react";
+import { useEffect } from "react";
 
 const profileSchema = z.object({
     email: z.string().email({ message: "유효한 이메일을 입력해주세요." }).optional().or(z.literal("")),
@@ -108,30 +96,7 @@ export function ProfileEditTab({ user }: ProfileEditTabProps) {
         updateProfileMutation.mutate(data);
     };
 
-    const deleteAccountMutation = useMutation({
-        mutationFn: async () => {
-            const res = await apiRequest("DELETE", "/api/users/me");
-            return await res.json();
-        },
-        onSuccess: () => {
-            toast({
-                title: "회원 탈퇴 완료",
-                description: "그동안 이용해 주셔서 감사합니다. 안전하게 로그아웃되었습니다.",
-            });
-            // 홈으로 리다이렉트 (서버에서 이미 세션이 파기됨)
-            window.location.href = "/";
-        },
-        onError: (error: Error) => {
-            toast({
-                title: "탈퇴 처리 중 오류",
-                description: error.message,
-                variant: "destructive",
-            });
-        },
-    });
-
     return (
-    <>
         <Card>
             <CardHeader>
                 <CardTitle>기본 정보</CardTitle>
@@ -282,60 +247,5 @@ export function ProfileEditTab({ user }: ProfileEditTabProps) {
                 </Button>
             </CardFooter>
         </Card>
-
-        <Card className="mt-8 border-destructive/20 bg-destructive/5">
-            <CardHeader>
-                <CardTitle className="text-destructive flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5" />
-                    계정 관리 (Danger Zone)
-                </CardTitle>
-                <CardDescription>
-                    회원 탈퇴 시 모든 정보가 영구적으로 삭제되며 복구할 수 없습니다.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                    회원 탈퇴를 하시면 지금까지 등록한 관심 매물, 작성한 게시글 등의 정보가 모두 삭제되거나 익명화됩니다.
-                </p>
-            </CardContent>
-            <CardFooter className="bg-destructive/10 border-t border-destructive/10 py-4">
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="destructive" className="flex items-center gap-2">
-                            <UserX className="h-4 w-4" />
-                            회원 탈퇴하기
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-                                <AlertTriangle className="h-5 w-5" />
-                                정말로 탈퇴하시겠습니까?
-                            </AlertDialogTitle>
-                            <AlertDialogDescription className="space-y-3 pt-2">
-                                <p>
-                                    계정을 삭제하면 프로필, 관심 목록 및 기타 계정 정보가 **영구적으로 삭제**됩니다.
-                                    이 작업은 취소할 수 없습니다.
-                                </p>
-                                <p className="font-semibold text-foreground">
-                                    탈퇴 확인을 위해 정말로 동의하신다면 아래 [탈퇴 확인] 버튼을 눌러주세요.
-                                </p>
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>취소</AlertDialogCancel>
-                            <AlertDialogAction 
-                                onClick={() => deleteAccountMutation.mutate()}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                disabled={deleteAccountMutation.isPending}
-                            >
-                                {deleteAccountMutation.isPending ? "처리 중..." : "탈퇴 확인"}
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-            </CardFooter>
-        </Card>
-    </>
     );
 }

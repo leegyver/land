@@ -8,6 +8,7 @@ interface CrawledProperty {
     rletTpNm: string;
     tradTpNm: string;
     prc: string;
+    rentPrc?: string;
     spc1: string;
     spc2: string;
     flrInfo: string;
@@ -21,12 +22,13 @@ interface CrawledProperty {
 
 interface CrawlerMapProps {
     properties: CrawledProperty[];
+    highlightedId: number | null;
 }
 
-const CrawlerMap = ({ properties }: CrawlerMapProps) => {
+const CrawlerMap = ({ properties, highlightedId }: CrawlerMapProps) => {
     const mapContainer = useRef<HTMLDivElement>(null);
     const mapInstance = useRef<any>(null);
-    const markers = useRef<any[]>([]);
+    const markers = useRef<Map<number, any>>(new Map());
     const [selectedProperty, setSelectedProperty] = useState<CrawledProperty | null>(null);
     const [isMapLoaded, setIsMapLoaded] = useState(false);
     const [useDistrict, setUseDistrict] = useState(false);
@@ -121,7 +123,7 @@ const CrawlerMap = ({ properties }: CrawlerMapProps) => {
 
         // Cleanup existing markers
         markers.current.forEach(m => m.setMap(null));
-        markers.current = [];
+        markers.current.clear();
 
         const bounds = new window.kakao.maps.LatLngBounds();
         let hasValidMarker = false;
@@ -131,6 +133,7 @@ const CrawlerMap = ({ properties }: CrawlerMapProps) => {
 
             const position = new window.kakao.maps.LatLng(prop.lat, prop.lng);
 
+            // Default Marker Image (Blue)
             const marker = new window.kakao.maps.Marker({
                 map: map,
                 position: position,
@@ -142,7 +145,7 @@ const CrawlerMap = ({ properties }: CrawlerMapProps) => {
                 setSelectedProperty(prop);
             });
 
-            markers.current.push(marker);
+            markers.current.set(prop.id, marker);
             bounds.extend(position);
             hasValidMarker = true;
         });
@@ -152,6 +155,42 @@ const CrawlerMap = ({ properties }: CrawlerMapProps) => {
         }
 
     }, [isMapLoaded, properties]);
+
+    // 2.5 Handle External Highlight (from list click)
+    useEffect(() => {
+        const map = mapInstance.current;
+        if (!isMapLoaded || !map || !highlightedId || !properties) return;
+
+        const prop = properties.find(p => p.id === highlightedId);
+        if (!prop || !prop.lat || !prop.lng) return;
+
+        // Reset all markers to default first
+        markers.current.forEach((marker) => {
+            marker.setImage(null); // Back to default
+            marker.setZIndex(1);
+        });
+
+        // Highlight the specific marker
+        const targetMarker = markers.current.get(highlightedId);
+        if (targetMarker) {
+            // Highlighting with a custom orange marker image
+            const highlightedImage = new window.kakao.maps.MarkerImage(
+                'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png', // red/orange marker
+                new window.kakao.maps.Size(31, 35),
+                { offset: new window.kakao.maps.Point(13, 34) }
+            );
+            targetMarker.setImage(highlightedImage);
+            targetMarker.setZIndex(100);
+        }
+
+        // Center map
+        const position = new window.kakao.maps.LatLng(prop.lat, prop.lng);
+        map.setCenter(position);
+        map.setLevel(3); // Zoom in closer
+
+        // Show info overlay
+        setSelectedProperty(prop);
+    }, [highlightedId, isMapLoaded]);
 
     // 3. Handle Cadastral Map Toggle
     useEffect(() => {
@@ -389,7 +428,7 @@ const CrawlerMap = ({ properties }: CrawlerMapProps) => {
 
                         <div className="flex justify-between items-center mt-3 pt-3 border-t">
                             <span className="text-blue-600 font-bold text-lg">
-                                {selectedProperty.prc}
+                                {selectedProperty.tradTpNm === "월세" && selectedProperty.rentPrc ? `${selectedProperty.prc}/${selectedProperty.rentPrc}` : selectedProperty.prc}
                             </span>
                             <a
                                 href={`https://m.land.naver.com/article/info/${selectedProperty.atclNo}`}

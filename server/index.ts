@@ -1,12 +1,15 @@
+import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import path from "path";
 import { registerRoutes } from "./routes";
-import { serveStatic, log } from "./static";
+import { setupVite, serveStatic, log } from "./vite";
 import { setupNewsScheduler } from "./news-fetcher";
+import { naverCrawler } from "./services/naver-crawler";
 
 const app = express();
+console.log("SERVER_STARTUP_ENV:", app.get("env"), "PROCESS_ENV:", process.env.NODE_ENV);
 
-// 정적 파일 제공: /uploads/ 경로로 접근 가능
+// ... existing code ...
 app.use('/uploads', express.static(path.join(process.cwd(), 'public/uploads')));
 // 파일 업로드 크기 제한 증가 (기본값 100kb → 10MB)
 app.use(express.json({ limit: '10mb' }));
@@ -50,11 +53,17 @@ app.use((req, res, next) => {
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
-    throw err;
+    console.error(err);
   });
 
-  // In production, serve static files. Development uses tsx directly.
-  serveStatic(app);
+  // importantly only setup vite in development and after
+  // setting up all the other routes so the catch-all route
+  // doesn't interfere with the other routes
+  if (app.get("env") === "development") {
+    await setupVite(app, server);
+  } else {
+    serveStatic(app);
+  }
 
   // ALWAYS serve the app on port 5000
   // this serves both the API and the client.
@@ -65,8 +74,11 @@ app.use((req, res, next) => {
     host: "0.0.0.0",
   }, () => {
     log(`serving on port ${port}`);
-    
+
     // 뉴스 스케줄러 초기화
     setupNewsScheduler();
+
+    // 네이버 매물 수집 스케줄러 초기화
+    naverCrawler.setupCrawlerScheduler();
   });
 })();

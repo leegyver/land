@@ -1,95 +1,90 @@
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { SajuProvider } from "@/contexts/SajuContext";
 import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { ThemeProvider } from "@/components/ui/theme-provider";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
-import NotFound from "@/pages/not-found";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
-// import FloatingContactButtons from "@/components/layout/FloatingContactButtons"; // Deprecated
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
+import { SajuProvider } from "@/contexts/SajuContext";
 import FloatingCTA from "@/components/layout/FloatingCTA";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import ScrollToTop from "@/components/layout/ScrollToTop";
 import { SwipeHandler } from "@/components/layout/SwipeHandler";
-import { PageTransition } from "@/components/layout/PageTransition";
-import HomePage from "@/pages/HomePage";
-import PropertiesPage from "@/pages/PropertiesPage";
-import PropertyDetailPage from "@/pages/PropertyDetailPage";
-import NewsPage from "@/pages/NewsPage";
-import NewsDetailPage from "@/pages/NewsDetailPage";
-import AboutPage from "@/pages/AboutPage";
-import YoutubePage from "@/pages/YoutubePage";
-import SajuPage from "@/pages/SajuPage";
-import ContactPage from "@/pages/ContactPage";
-import AuthPage from "@/pages/auth-page";
-import AdminPage from "@/pages/admin-page-v2";
-import ProfilePage from "@/pages/profile-page-v2";
-import ReviewsPage from "@/pages/ReviewsPage";
+import { ErrorBoundary } from "@/components/layout/ErrorBoundary";
+import { lazy, Suspense } from "react";
+
+// 코드 분할: 각 페이지를 필요할 때만 로드 (초기 번들 크기 대폭 감소)
+const HomePage = lazy(() => import("@/pages/HomePage"));
+const AuthPage = lazy(() => import("@/pages/auth-page"));
+const PropertiesPage = lazy(() => import("@/pages/PropertiesPage"));
+const PropertyDetailPage = lazy(() => import("@/pages/PropertyDetailPage"));
+const NewsPage = lazy(() => import("@/pages/NewsPage"));
+const NewsDetailPage = lazy(() => import("@/pages/NewsDetailPage"));
+const ReviewsPage = lazy(() => import("@/pages/ReviewsPage"));
+const AboutPage = lazy(() => import("@/pages/AboutPage"));
+const YoutubePage = lazy(() => import("@/pages/YoutubePage"));
+const SajuPage = lazy(() => import("@/pages/SajuPage"));
+const ContactPage = lazy(() => import("@/pages/ContactPage"));
+const ProfilePage = lazy(() => import("@/pages/profile-page-v2"));
+const AdminPage = lazy(() => import("@/pages/admin-page-v2"));
 // @ts-ignore
-import PropertyForm from "@/pages/PropertyForm";
-import DiagnosisPage from "@/pages/DiagnosisPage";
-// @ts-ignore
-import { SimpleProtectedRoute } from "@/components/auth/SimpleProtectedRoute";
-import RoadviewPopupPage from "@/pages/RoadviewPopupPage";
-import CommunityPage from "@/pages/CommunityPage";
-import PostDetailPage from "@/pages/PostDetailPage";
-import PostFormPage from "@/pages/PostFormPage";
-import PricingPage from "@/pages/PricingPage";
-function AppRouter() {
+const PropertyForm = lazy(() => import("@/pages/PropertyForm"));
+const CommunityPage = lazy(() => import("@/pages/CommunityPage"));
+const PostDetailPage = lazy(() => import("@/pages/PostDetailPage"));
+const PostFormPage = lazy(() => import("@/pages/PostFormPage"));
+const NotFound = lazy(() => import("@/pages/not-found"));
+
+// 페이지 로딩 중 표시할 최소한의 스켈레톤
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[60vh]">
+    <div className="animate-spin rounded-full h-10 w-10 border-4 border-slate-200 border-t-primary"></div>
+  </div>
+);
+
+function Router() {
   return (
-    <Switch>
-      <Route path="/" component={HomePage} />
-      <Route path="/properties" component={PropertiesPage} />
-      <Route path="/properties/:id" component={PropertyDetailPage} />
-      <Route path="/news" component={NewsPage} />
-      <Route path="/news/:id" component={NewsDetailPage} />
-      <Route path="/about" component={AboutPage} />
-      <Route path="/youtube" component={YoutubePage} />
-      <Route path="/reviews" component={ReviewsPage} />
-      <Route path="/saju" component={SajuPage} />
-      <Route path="/community" component={CommunityPage} />
-      <Route path="/community/new" component={PostFormPage} />
-      <Route path="/community/:id" component={PostDetailPage} />
-      <Route path="/contact" component={ContactPage} />
-      <Route path="/auth" component={AuthPage} />
-      <Route path="/profile" component={ProfilePage} />
-      <Route path="/admin" component={AdminPage} />
-      <Route path="/admin/properties/new" component={PropertyForm} />
-      <Route path="/admin/properties/edit/:id" component={PropertyForm} />
-      <Route path="/diagnosis" component={DiagnosisPage} />
-      <Route path="/pricing" component={PricingPage} />
-      <Route path="/popup/roadview" component={RoadviewPopupPage} />
-      <Route component={NotFound} />
-    </Switch>
+    <Suspense fallback={<PageLoader />}>
+      <Switch>
+        <Route path="/" component={HomePage} />
+        <Route path="/auth" component={AuthPage} />
+        <Route path="/properties" component={PropertiesPage} />
+        <Route path="/properties/:id" component={PropertyDetailPage} />
+        <Route path="/news" component={NewsPage} />
+        <Route path="/news/:id" component={NewsDetailPage} />
+        <Route path="/reviews" component={ReviewsPage} />
+        <Route path="/about" component={AboutPage} />
+        <Route path="/youtube" component={YoutubePage} />
+        <Route path="/saju" component={SajuPage} />
+        <Route path="/contact" component={ContactPage} />
+        <Route path="/profile" component={ProfilePage} />
+        <Route path="/admin" component={AdminPage} />
+        <Route path="/admin/properties/new" component={PropertyForm} />
+        <Route path="/admin/properties/edit/:id" component={PropertyForm} />
+        <Route path="/community" component={CommunityPage} />
+        <Route path="/community/new" component={PostFormPage} />
+        <Route path="/community/edit/:id" component={PostFormPage} />
+        <Route path="/community/:id" component={PostDetailPage} />
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
   );
 }
 
-import { ErrorBoundary } from "@/components/layout/ErrorBoundary";
-import ScrollToTop from "@/components/layout/ScrollToTop";
-
-import { Building, Loader2 } from "lucide-react";
-
-import { useLocation } from "wouter";
-
 function AppContent() {
-  const [location] = useLocation();
-  // location의 첫 번째 세그먼트를 key로 사용 → /admin에서 /properties로 이동하면 ErrorBoundary 리셋
-  const routeGroup = location.split('/')[1] || 'home';
+  const { user } = useAuth();
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="min-h-screen flex flex-col font-sans theme-transition bg-slate-50">
       <ScrollToTop />
+      <SwipeHandler />
       <Header />
-      <main className="flex-grow pb-16 md:pb-0 pt-0 mt-0 overflow-x-hidden relative z-0">
-        <ErrorBoundary key={routeGroup}>
-          <AppRouter />
-        </ErrorBoundary>
+      <main className="flex-grow">
+        <Router />
       </main>
       <Footer />
-      <MobileBottomNav />
       <FloatingCTA />
+      <MobileBottomNav />
     </div>
   );
 }
@@ -97,18 +92,19 @@ function AppContent() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="light">
-        <AuthProvider>
-          <SajuProvider>
-            <TooltipProvider>
+      <AuthProvider>
+        <SajuProvider>
+          <TooltipProvider>
+            <ErrorBoundary>
               <AppContent />
-              <Toaster />
-            </TooltipProvider>
-          </SajuProvider>
-        </AuthProvider>
-      </ThemeProvider>
+            </ErrorBoundary>
+            <Toaster />
+          </TooltipProvider>
+        </SajuProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
 
 export default App;
+

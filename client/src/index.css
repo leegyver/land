@@ -81,3 +81,28 @@
     box-shadow: 0 0 0 0 rgba(255, 107, 0, 0);
   }
 }
+
+/* React Quill Image Alignment Fixes for Tailwind */
+.quill .ql-editor img {
+  display: inline-block;
+}
+.quill .ql-editor .ql-align-center img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+.quill .ql-editor .ql-align-right img {
+  display: block;
+  margin-left: auto;
+  margin-right: 0;
+}
+.prose .ql-align-center img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+.prose .ql-align-right img {
+  display: block;
+  margin-left: auto;
+  margin-right: 0;
+}

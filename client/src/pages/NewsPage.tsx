@@ -56,33 +56,6 @@ export default function NewsPage() {
     setCurrentPage(page);
   };
 
-  // 페이지네이션 링크 생성
-  const renderPaginationLinks = () => {
-    const links = [];
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-    // 시작 페이지 조정
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      links.push(
-        <PaginationItem key={i}>
-          <PaginationLink
-            isActive={currentPage === i}
-            onClick={() => goToPage(i)}
-          >
-            {i}
-          </PaginationLink>
-        </PaginationItem>
-      );
-    }
-    return links;
-  };
-
   // 날짜 포맷팅 함수
   const formatDate = (dateString: string | Date) => {
     const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
@@ -226,13 +199,16 @@ export default function NewsPage() {
               </div>
 
               {/* 페이지네이션 */}
-              <Pagination className="mt-6">
+              <Pagination className="mt-6 mx-auto justify-center">
                 <PaginationContent>
                   <PaginationItem>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={goToPreviousPage}
+                      onClick={() => {
+                        goToPreviousPage();
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
                       disabled={currentPage === 1}
                       className="flex items-center gap-1"
                     >
@@ -240,13 +216,42 @@ export default function NewsPage() {
                     </Button>
                   </PaginationItem>
 
-                  {renderPaginationLinks()}
+                  {(() => {
+                    const links = [];
+                    const maxVisiblePages = 5;
+                    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+                    if (endPage - startPage + 1 < maxVisiblePages) {
+                      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                    }
+
+                    for (let i = startPage; i <= endPage; i++) {
+                      links.push(
+                        <PaginationItem key={i}>
+                          <PaginationLink
+                            isActive={currentPage === i}
+                            onClick={() => {
+                              goToPage(i);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                          >
+                            {i}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    }
+                    return links;
+                  })()}
 
                   <PaginationItem>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={goToNextPage}
+                      onClick={() => {
+                        goToNextPage();
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
                       disabled={currentPage === totalPages}
                       className="flex items-center gap-1"
                     >

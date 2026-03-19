@@ -10,7 +10,7 @@ interface CommunitySidebarProps {
 
 export function CommunitySidebar({ activeCategory, setActiveCategory, sajuData }: CommunitySidebarProps) {
     return (
-        <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100 flex-shrink-0 w-full h-fit sticky top-24">
+        <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100 flex-shrink-0 lg:w-1/4 h-fit sticky top-24">
             <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
                 <Search className="w-5 h-5 text-blue-600" />
                 카테고리

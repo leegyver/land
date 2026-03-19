@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useParams, useLocation } from "wouter";
-import { Loader2, ArrowLeft, Save, Sparkles, ShieldCheck } from "lucide-react";
+import { Loader2, ArrowLeft, Save, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ErrorBoundary } from "@/components/layout/ErrorBoundary";
@@ -110,53 +110,8 @@ function PropertyFormContent() {
         ownerId: null, // 소유자 ID (중개사 ID) 추가
     });
 
-    // 권한 확인 및 데이터 로드
+    // 편집 모드일 경우 기존 데이터 로드
     useEffect(() => {
-        // 1. 인증 확인
-        if (!user) {
-            setLocation("/auth");
-            return;
-        }
-
-        // 2. 권한 확인 (관리자 또는 중개사만 접근 가능)
-        const isAdmin = user.role === "admin";
-        const isRealtor = user.role === "realtor";
-
-        if (!isAdmin && !isRealtor) {
-            toast({
-                title: "접근 권한 없음",
-                description: "매물 등록 권한이 없습니다. 중개사 회원으로 가입해주세요.",
-                variant: "destructive",
-            });
-            setLocation("/");
-            return;
-        }
-
-        // 3. 중개사인 경우 관리자 승인 여부부터 확인 (신규 등록 시에만 체크)
-        if (isRealtor && !isEditMode) {
-            // 관리자가 승인한 상태라면 구독 상태 무관하게 통과
-            if (user.businessLicenseStatus === "approved") {
-                // 통과
-            } else {
-                if (user.subscriptionStatus !== "active" && (!user.subscriptionTier || user.subscriptionTier === "free")) {
-                    toast({
-                        title: "구독 필요",
-                        description: "요금제 결제 후 관리자 승인을 받아주세요.",
-                        variant: "destructive",
-                    });
-                    setLocation("/pricing");
-                    return;
-                }
-
-                toast({
-                    title: "승인 대기 중",
-                    description: "관리자의 최종 승인 후 매물을 등록할 수 있습니다. 잠시만 기다려주세요.",
-                });
-                setLocation("/profile");
-                return;
-            }
-        }
-
         if (isEditMode && params.id) {
             const fetchProperty = async () => {
                 try {
@@ -169,18 +124,6 @@ function PropertyFormContent() {
                     }
 
                     const data = await response.json();
-                    
-                    // 수정 권한 확인 (본인 매물 또는 관리자)
-                    if (!isAdmin && data.ownerId !== user.id && data.agentId !== user.id) {
-                        toast({
-                            title: "권한 없음",
-                            description: "해당 매물을 수정할 권한이 없습니다.",
-                            variant: "destructive"
-                        });
-                        setLocation("/admin");
-                        return;
-                    }
-
                     console.log("불러온 부동산 데이터:", data);
 
                     // 단일 이미지 필드 제거 및 연결할 필드들 정리
@@ -448,60 +391,56 @@ function PropertyFormContent() {
 
     return (
         <div className="container mx-auto p-4 md:p-6 mb-20 max-w-7xl">
-            <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-6 border-b-2 border-slate-100 pb-6">
+            <div className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4 border-b pb-4">
                 <div className="flex items-center">
                     <Button
                         variant="ghost"
+                        size="sm"
                         onClick={() => setLocation("/admin")}
-                        className="mr-4 h-12 w-12 rounded-full hover:bg-slate-100 border border-slate-200 shrink-0"
+                        className="mr-2 h-9 px-3 rounded-full hover:bg-slate-100"
                     >
-                        <ArrowLeft className="h-6 w-6 text-slate-700" />
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        돌아가기
                     </Button>
-                    <div>
-                        <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-slate-900 uppercase">
-                            Property <span className="text-primary">{isEditMode ? "Editor" : "Register"}</span>
-                        </h1>
-                        <p className="text-slate-500 text-xs font-bold mt-1 uppercase tracking-widest">{isEditMode ? `ID: ${params.id} | EDITING` : "NEW LISTING"}</p>
-                    </div>
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 border-l-4 border-primary pl-4 hidden sm:block">
+                        {isEditMode ? "부동산 정보 수정" : "새 부동산 등록"}
+                    </h1>
                 </div>
 
                 {user?.role === 'realtor' && (
-                    <Badge className="bg-slate-900 text-white border-none luxe-badge px-4 py-2 flex items-center gap-2">
-                        <ShieldCheck className="h-4 w-4" />
-                        VERIFIED REALTOR MODE
+                    <Badge className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-4 py-1.5 shadow-sm text-sm font-semibold flex items-center gap-1.5 whitespace-nowrap">
+                        <Sparkles className="h-4 w-4" />
+                        공인중개사 모드
                     </Badge>
                 )}
             </div>
 
             {user?.role === 'realtor' && (
-                <Card className="mb-8 luxe-card bg-slate-50 border-slate-200">
-                    <CardContent className="py-5 px-6 flex items-center gap-4">
-                        <div className="bg-slate-900 p-2.5 rounded-full shrink-0 shadow-lg">
-                            <ShieldCheck className="w-5 h-5 text-white" />
+                <Card className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 shadow-sm rounded-xl overflow-hidden">
+                    <CardContent className="py-4 px-6 flex items-start sm:items-center gap-3">
+                        <div className="bg-blue-100 p-2 rounded-full hidden sm:block shrink-0">
+                            <Sparkles className="w-5 h-5 text-blue-600" />
                         </div>
                         <div>
-                            <p className="text-slate-900 text-sm md:text-base font-bold">
-                                전문가 모드 활성화: 중개사님의 고정 정보가 자동으로 적용됩니다.
+                            <p className="text-blue-900 text-sm md:text-base font-semibold">
+                                중개사님, 안녕하세요! 등록하시는 매물에는 중개사님의 비즈니스 정보가 자동으로 표시됩니다.
                             </p>
-                            <p className="text-slate-500 text-xs mt-1 font-medium">관리자 전용 보안 연결이 활발하게 유지되고 있습니다.</p>
+                            <p className="text-blue-700/80 text-xs mt-1">상세 정보는 '연락처' 및 '추가 정보' 탭에서 확인 및 수정 가능합니다.</p>
                         </div>
                     </CardContent>
                 </Card>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-8 mb-24">
+            <form onSubmit={handleSubmit} className="space-y-8 bg-white p-2">
                 <Tabs defaultValue="basic" className="w-full">
-                    <div className="relative mb-8">
-                        <TabsList className="admin-tab-list border-none shadow-none bg-transparent gap-2 p-0">
-                            <TabsTrigger value="basic" className="admin-tab-trigger bg-slate-100 hover:bg-slate-200 border border-transparent data-[state=active]:border-slate-300">기본 정보</TabsTrigger>
-                            <TabsTrigger value="price" className="admin-tab-trigger bg-slate-100 hover:bg-slate-200 border border-transparent data-[state=active]:border-slate-300">가격 정보</TabsTrigger>
-                            <TabsTrigger value="detail" className="admin-tab-trigger bg-slate-100 hover:bg-slate-200 border border-transparent data-[state=active]:border-slate-300">상세 정보</TabsTrigger>
-                            <TabsTrigger value="land" className="admin-tab-trigger bg-slate-100 hover:bg-slate-200 border border-transparent data-[state=active]:border-slate-300">대지/건물</TabsTrigger>
-                            <TabsTrigger value="contact" className="admin-tab-trigger bg-slate-100 hover:bg-slate-200 border border-transparent data-[state=active]:border-slate-300">연락처</TabsTrigger>
-                            <TabsTrigger value="additional" className="admin-tab-trigger bg-slate-100 hover:bg-slate-200 border border-transparent data-[state=active]:border-slate-300">기타</TabsTrigger>
-                        </TabsList>
-                        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-white to-transparent pointer-events-none sm:hidden" />
-                    </div>
+                    <TabsList className="mb-6 grid grid-cols-2 lg:grid-cols-6 gap-2 bg-slate-100/50 p-1.5 rounded-xl h-auto">
+                        <TabsTrigger value="basic" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm py-2.5 text-sm font-medium">기본 정보</TabsTrigger>
+                        <TabsTrigger value="details" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm py-2.5 text-sm font-medium">상세 정보</TabsTrigger>
+                        <TabsTrigger value="land" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm py-2.5 text-sm font-medium">토지 정보</TabsTrigger>
+                        <TabsTrigger value="price" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm py-2.5 text-sm font-medium">가격 정보</TabsTrigger>
+                        <TabsTrigger value="contacts" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm py-2.5 text-sm font-medium">연락처</TabsTrigger>
+                        <TabsTrigger value="notes" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm py-2.5 text-sm font-medium">추가 정보</TabsTrigger>
+                    </TabsList>
 
                     <TabsContent value="basic" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
                         <BasicInfoTab

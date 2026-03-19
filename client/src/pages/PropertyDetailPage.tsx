@@ -14,7 +14,7 @@ const PropertyDetailPage = () => {
   });
 
   // Naver Property Check
-  const isNaverProperty = property?.source === 'naver' || (id && id.startsWith('naver-'));
+  const isNaverProperty = (property as any)?.source === 'naver' || (id && id.startsWith('naver-'));
 
   if (isNaverProperty && property) {
     return (
@@ -23,7 +23,7 @@ const PropertyDetailPage = () => {
           <title>매물 상세 | 이가이버 부동산</title>
           <meta name="robots" content="noindex" />
         </Helmet>
-        <NaverPropertyOverlay property={property} />
+        <NaverPropertyOverlay property={property as any} />
       </div>
     );
   }

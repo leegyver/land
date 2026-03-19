@@ -21,7 +21,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
-  HelpCircle
+  HelpCircle,
+  FileBadge
 } from "lucide-react";
 import { SiKakaotalk } from "react-icons/si";
 import { siteConfig } from "@/config/siteConfig";
@@ -33,6 +34,7 @@ import { Property as PropertyType } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import PropertyInquiryBoard from "@/components/property/PropertyInquiryBoard";
 import { formatKoreanPrice } from "@/lib/formatter";
 import { useSaju } from "@/contexts/SajuContext";
@@ -55,6 +57,15 @@ declare global {
 type Property = PropertyType & {
   latitude?: string | number;
   longitude?: string | number;
+  mapAddress?: string | null;
+  realtorInfo?: {
+    businessName?: string;
+    realtorName?: string;
+    realtorPhone?: string;
+    realtorPhoto?: string;
+    realtorAddress?: string;
+    realtorLicenseNo?: string;
+  };
 };
 
 interface PropertyDetailProps {
@@ -285,6 +296,15 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
     );
   }
 
+  // 상세주소 비공개 로직 (토지, 단독, 근린) - 관리자는 예외
+  const privacyTypes = ["토지", "단독", "근린"];
+  const isPrivacyType = property && property.type && privacyTypes.some(t => property.type.includes(t)) && user?.role !== 'admin';
+  const displayAddress = property
+    ? isPrivacyType
+      ? `${property.district} (상세주소 비공개)`
+      : `${property.district}${property.address ? ` ${property.address}` : ""}`
+    : "";
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* 헤더 섹션 */}
@@ -304,11 +324,11 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
         </div>
         <div className="flex items-center text-gray-600 mb-1">
           <MapPin className="w-5 h-5 mr-1" />
-          <span>{property.district}</span>
+          <span>{displayAddress}</span>
         </div>
         {property.agentName && (
           <div className="bg-green-50 text-green-700 px-3 py-2 rounded text-sm inline-block font-medium">
-            담당공인중개사는 "{property.agentName}" 부동산 대표입니다
+            담당공인중개사는 "{property.agentName}" 대표입니다
           </div>
         )}
       </div>
@@ -325,6 +345,8 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                       src={img}
                       alt={`매물 상세 이미지 ${index + 1}`}
                       className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
                     />
                   </div>
                 </CarouselItem>
@@ -346,7 +368,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                   onClick={() => api?.scrollTo(idx)}
                   className={`aspect-[16/9] rounded overflow-hidden border-2 ${currentImageIndex === idx ? 'border-primary' : 'border-transparent'}`}
                 >
-                  <img src={img} className="w-full h-full object-cover" alt={`썸네일 ${idx}`} />
+                  <img src={img} className="w-full h-full object-cover" alt={`썸네일 ${idx}`} loading="lazy" decoding="async" />
                 </button>
               ))}
             </div>
@@ -360,7 +382,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
             <h3 className="font-bold text-gray-900 mb-3 border-b pb-2">위치 정보</h3>
             <div className="flex items-center text-gray-600 mb-3">
               <MapPin className="w-4 h-4 mr-2 text-primary" />
-              {property.district}
+              {displayAddress}
             </div>
 
             {/* Saju Compatibility Card - Static Block above Map */}
@@ -523,6 +545,91 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
         </div>
       </div>
 
+      {/* 관리자/소유자 전용 정보 (권한이 있을 때만 노출) */}
+      {(property.ownerName || property.ownerPhone || property.tenantName || property.tenantPhone || property.clientName || property.clientPhone || property.privateNote || property.unitNumber) && (
+        <div className="mb-12">
+          <Card className="border-red-200 bg-red-50/30 overflow-hidden">
+            <div className="bg-red-500 px-4 py-2 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-white" />
+              <h3 className="font-bold text-white text-sm">중개사 / 관리자 전용 정보 (외부 비공개)</h3>
+            </div>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-bold text-sm text-red-900 border-b border-red-200 pb-1 mb-2">상세 주소 정보</h4>
+                    <div className="text-sm text-gray-700 space-y-1">
+                      {property.mapAddress && (
+                        <div className="flex justify-between border-b border-red-100 pb-1">
+                          <span className="text-gray-500">실제 지번주소</span>
+                          <span className="font-medium text-gray-900">{property.mapAddress}</span>
+                        </div>
+                      )}
+                      {property.buildingName && (
+                        <div className="flex justify-between border-b border-red-100 pb-1">
+                          <span className="text-gray-500">건물명</span>
+                          <span className="font-medium text-gray-900">{property.buildingName}</span>
+                        </div>
+                      )}
+                      {property.unitNumber && (
+                        <div className="flex justify-between border-b border-red-100 pb-1">
+                          <span className="text-gray-500">상세 동/호수</span>
+                          <span className="font-medium text-red-700">{property.unitNumber}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {property.privateNote && (
+                    <div>
+                      <h4 className="font-bold text-sm text-red-900 border-b border-red-200 pb-1 mb-2">비공개 메모 (내부용)</h4>
+                      <div className="text-sm text-gray-700 bg-white p-3 rounded border border-red-100 whitespace-pre-wrap">
+                        {property.privateNote}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-bold text-sm text-red-900 border-b border-red-200 pb-1 mb-2">연락처 정보</h4>
+                    <div className="text-sm text-gray-700 space-y-2">
+                      {(property.ownerName || property.ownerPhone) && (
+                        <div className="bg-white p-2 rounded border border-red-100 flex justify-between items-center">
+                          <span className="text-gray-500 font-medium">소유자</span>
+                          <span className="font-bold text-gray-900">
+                            {property.ownerName} {property.ownerPhone ? `(${property.ownerPhone})` : ''}
+                          </span>
+                        </div>
+                      )}
+                      {(property.tenantName || property.tenantPhone) && (
+                        <div className="bg-white p-2 rounded border border-red-100 flex justify-between items-center">
+                          <span className="text-gray-500 font-medium">세입자</span>
+                          <span className="font-bold text-gray-900">
+                            {property.tenantName} {property.tenantPhone ? `(${property.tenantPhone})` : ''}
+                          </span>
+                        </div>
+                      )}
+                      {(property.clientName || property.clientPhone) && (
+                        <div className="bg-white p-2 rounded border border-red-100 flex justify-between items-center">
+                          <span className="text-gray-500 font-medium">의뢰인</span>
+                          <span className="font-bold text-gray-900">
+                            {property.clientName} {property.clientPhone ? `(${property.clientPhone})` : ''}
+                          </span>
+                        </div>
+                      )}
+                      {!property.ownerName && !property.ownerPhone && !property.tenantName && !property.tenantPhone && !property.clientName && !property.clientPhone && (
+                        <div className="text-gray-400 italic text-center py-2">등록된 연락처 정보가 없습니다.</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* 주요 특징 (4개 박스) */}
       <h3 className="text-xl font-bold mb-4">주요 특징</h3>
       {/* 주요 특징 (4개 박스) - 값이 0이거나 없으면 숨김 처리됨 */}
@@ -675,6 +782,113 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
         </div>
       )}
 
+      {/* 공인중개사 프로필 카드 */}
+      {property.realtorInfo && (
+        <div className="mb-12 bg-white rounded-xl border-2 border-slate-900 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)] overflow-hidden">
+          <div className="bg-slate-900 px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+              <h3 className="text-xl font-black text-white uppercase tracking-tighter">Verified Professional Realtor</h3>
+            </div>
+            <Badge className="bg-yellow-400 text-slate-900 font-bold border-none">PREMIUM AGENT</Badge>
+          </div>
+
+          <div className="p-8 md:flex items-center gap-10">
+            {/* 왼쪽: 프로필 이미지/아이콘 */}
+            <div className="flex-shrink-0 mb-6 md:mb-0 relative self-center">
+              <div className="w-24 h-24 md:w-32 md:h-32 bg-slate-100 rounded-full flex items-center justify-center border-4 border-slate-900 overflow-hidden">
+                {property.realtorInfo.realtorPhoto ? (
+                  <img
+                    src={property.realtorInfo.realtorPhoto}
+                    alt={property.realtorInfo.realtorName || '공인중개사'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="text-4xl md:text-5xl font-black text-slate-800">
+                    {(property.realtorInfo.realtorName || 'I').charAt(0)}
+                  </div>
+                )}
+              </div>
+              <div className="absolute -bottom-2 -right-2 bg-blue-600 text-white p-2 rounded-full border-2 border-white shadow-lg">
+                <Sparkles className="w-4 h-4" />
+              </div>
+            </div>
+
+            {/* 중간: 중개사 정보 */}
+            <div className="flex-grow">
+              <div className="mb-4">
+                <div className="text-blue-600 font-black text-sm uppercase tracking-widest mb-1">{property.realtorInfo.businessName || "공인중개사사무소"}</div>
+                <h4 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight">
+                  {property.realtorInfo.realtorName || "이가이버 공인중개사"} <span className="text-lg md:text-xl font-bold text-slate-500">Representative</span>
+                </h4>
+              </div>
+
+              <div className="space-y-3 mb-6">
+                <div className="flex items-center gap-3 text-slate-700 font-bold">
+                  <div className="p-2 bg-slate-100 rounded-lg">
+                    <Phone className="w-5 h-5 text-slate-900" />
+                  </div>
+                  <span className="text-lg md:text-xl">{property.realtorInfo.realtorPhone || "010-0000-0000"}</span>
+                </div>
+
+                {property.realtorInfo.realtorAddress && (
+                  <div className="flex items-center gap-3 text-slate-600">
+                    <div className="p-2 bg-slate-100 rounded-lg">
+                      <MapPin className="w-5 h-5 text-slate-900" />
+                    </div>
+                    <span className="font-bold">{property.realtorInfo.realtorAddress}</span>
+                  </div>
+                )}
+
+                {property.realtorInfo.realtorLicenseNo && (
+                  <div className="flex items-center gap-3 text-slate-600">
+                    <div className="p-2 bg-slate-100 rounded-lg">
+                      <FileBadge className="w-5 h-5 text-slate-900" />
+                    </div>
+                    <span className="font-bold">등록번호: {property.realtorInfo.realtorLicenseNo}</span>
+                  </div>
+                )}
+
+                {!property.realtorInfo.realtorAddress && (
+                  <div className="flex items-center gap-3 text-slate-600">
+                    <div className="p-2 bg-slate-100 rounded-lg">
+                      <MapPin className="w-5 h-5 text-slate-900" />
+                    </div>
+                    <span className="font-bold">{property.district} Area Expert</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 오른쪽: 액션 버튼 */}
+            <div className="flex-shrink-0 flex flex-col gap-3 min-w-[200px]">
+              <a href={`tel:${property.realtorInfo.realtorPhone}`} className="block">
+                <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black h-14 rounded-lg flex items-center justify-center gap-3 shadow-[4px_4px_0px_0px_rgba(59,130,246,1)] active:translate-y-1 active:shadow-none transition-all">
+                  <Phone className="w-5 h-5 fill-white" />
+                  CALL NOW
+                </Button>
+              </a>
+              <a href={siteConfig.kakaoChannelUrl} target="_blank" rel="noopener noreferrer" className="block">
+                <Button className="w-full bg-[#FEE500] hover:bg-[#FDD000] text-[#191919] font-black h-14 rounded-lg flex items-center justify-center gap-3 shadow-[4px_4px_0px_0px_rgba(25,25,25,0.2)] active:translate-y-1 active:shadow-none transition-all">
+                  <SiKakaotalk className="w-5 h-5" />
+                  CONSULT
+                </Button>
+              </a>
+            </div>
+          </div>
+
+          <div className="bg-slate-50 px-8 py-4 border-t border-slate-100 flex flex-wrap items-center gap-6">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              REAL-TIME RESPONSE
+            </div>
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
+              <Badge variant="outline" className="border-slate-300 text-slate-500 font-bold">PROFESSIONAL LICENSE VERIFIED</Badge>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 매물 영상 */}
       {property.youtubeUrl && (
         <div className="mb-12">
@@ -696,9 +910,6 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
         <h3 className="text-xl font-bold mb-4">이 매물 문의게시판</h3>
         <PropertyInquiryBoard propertyId={Number(propertyId)} />
       </div>
-
-      {/* 하단 큰 지도 (숨김 - 사이드바 미니맵 사용, 필요시 활성화) */}
-      <div id="detail-map" className="hidden"></div>
 
       {/* Modals */}
       <SajuFormModal />

@@ -121,10 +121,15 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
   };
 
   return (
-    <Card className="bg-white rounded-2xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.05)] hover:shadow-[0_12px_30px_rgba(255,107,0,0.15)] hover:border-orange-500/50 transition-all duration-300 group border-2 border-transparent hover:-translate-y-1.5 h-full flex flex-col relative z-0">
+    <Card className="bg-white rounded-2xl overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition-all duration-300 group border border-slate-200 h-full flex flex-col">
       <div className="relative aspect-[16/9] overflow-hidden shrink-0">
         {/* 거래 유형 표시 */}
         <div className="absolute top-3 right-3 z-20 flex flex-wrap gap-1 justify-end">
+          {property.source === 'naver' && (
+            <Badge className="bg-emerald-600/90 text-white border-none px-2.5 py-1 rounded-full text-[10px] backdrop-blur-sm font-bold">
+              네이버 수집
+            </Badge>
+          )}
           {property.dealType && Array.isArray(property.dealType) && property.dealType
             .filter((type) => ['매매', '전세', '월세'].includes(type))
             .map((type, index) => (
@@ -158,30 +163,31 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
             <img
               src={property.imageUrl || siteConfig.defaultImageUrl}
               alt={property.title}
-              loading="lazy"
               className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
+              loading="lazy"
+              decoding="async"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent opacity-40" />
           </div>
         </Link>
       </div>
 
-      <div className="p-4 flex flex-col flex-grow relative">
+      <div className="p-3.5 flex flex-col flex-grow relative">
         <Link href={`/properties/${property.id}`}>
           <div>
-            <h3 className="text-xl font-bold mb-2 text-slate-900 line-clamp-2 leading-tight">
+            <h3 className="text-lg font-bold mb-1.5 text-slate-900 line-clamp-2 leading-tight">
               {property.title}
             </h3>
 
             {/* 위치 및 배지 - 한 줄로 배치 시도하거나 간격 최소화 */}
-            <div className="flex flex-wrap items-center gap-1 mb-2">
+            <div className="flex flex-wrap items-center gap-1 mb-1.5">
               <div className="flex items-center text-sm text-slate-500">
                 <MapPin className="h-3.5 w-3.5 mr-1" />
                 {property.district}
               </div>
             </div>
 
-            <div className="mb-3">
+            <div className="mb-2">
               <Badge
                 variant="outline"
                 className="font-normal text-blue-600 border-blue-600 bg-blue-50 hover:bg-blue-100 text-xs h-6 px-2"
@@ -193,7 +199,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
             {/* 가격 정보 (리스트 형태) - 간격 최소화 */}
             <div className="flex flex-col gap-1 mb-0">
               {hasValidPrice(property.price) && (
-                <div className="text-lg font-bold text-blue-600 leading-snug">
+                <div className="text-base font-bold text-blue-600 leading-snug">
                   매매가: {formatKoreanPrice(property.price)}
                 </div>
               )}
@@ -235,20 +241,30 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
           )}
         </button>
 
-        <div className="flex gap-2 mt-auto pt-2 border-t border-slate-100">
-          <button
-            onClick={() => setShowPhonePopup(true)}
-            className="flex-1 flex items-center justify-center gap-1.5 bg-slate-900 text-white py-2.5 rounded-xl hover:bg-orange-600 transition-all text-sm font-black italic shadow-sm hover:shadow-md"
-          >
-            <Phone className="w-4 h-4 fill-current" />
-            <span>전화문의</span>
-          </button>
+        <div className="flex gap-2 mt-auto pt-3 border-t border-slate-100">
+          {property.source === 'naver' ? (
+            <Link
+              href={`/contact?tab=inquiry&atclNo=${property.atclNo || ''}&title=${encodeURIComponent(property.title)}`}
+              className="flex-[2] flex items-center justify-center gap-2 bg-slate-900 text-white py-3 rounded-xl hover:bg-slate-800 transition-all text-xs font-black shadow-[4px_4px_0px_0px_rgba(59,130,246,1)] active:translate-y-1 active:shadow-none uppercase tracking-tighter"
+            >
+              <Phone className="w-3.5 h-3.5 fill-white" />
+              <span>Consult Now</span>
+            </Link>
+          ) : (
+            <button
+              onClick={() => setShowPhonePopup(true)}
+              className="flex-[2] flex items-center justify-center gap-2 bg-slate-900 text-white py-3 rounded-xl hover:bg-slate-800 transition-all text-xs font-black shadow-[4px_4px_0px_0px_rgba(59,130,246,1)] active:translate-y-1 active:shadow-none uppercase tracking-tighter"
+            >
+              <Phone className="w-3.5 h-3.5 fill-white" />
+              <span>Call Agent</span>
+            </button>
+          )}
 
           <a
             href={kakaoChannelUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-12 flex items-center justify-center bg-blue-50 text-blue-600 border border-blue-100 rounded-xl hover:bg-blue-100 transition-all shadow-sm"
+            className="flex-1 flex items-center justify-center bg-[#FEE500] text-black border-none rounded-xl hover:bg-[#FDD835] transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] active:translate-y-1 active:shadow-none"
             title="카카오톡 상담"
           >
             <SiKakaotalk className="w-5 h-5" />

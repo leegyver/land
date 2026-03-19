@@ -342,11 +342,12 @@ const PropertyMap = ({ properties: passedProperties, showCrawled = false }: Prop
     let isMounted = true;
     let processedCount = 0;
 
-    if (properties.length === 0) return;
+    const propsToProcess = Array.isArray(properties) ? properties : [];
+    if (propsToProcess.length === 0) return;
 
-    console.log(`PropertyMap: ${properties.length}개 매물 정보 처리 중...`);
+    console.log(`PropertyMap: ${propsToProcess.length}개 매물 정보 처리 중...`);
 
-    properties.forEach((property: any) => {
+    propsToProcess.forEach((property: any) => {
       const isNaver = property.source === 'naver';
       // Use existing lat/lng if available (Naver properties have them)
       if (property.latitude && property.longitude) {

@@ -1,18 +1,20 @@
-import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import path from 'path';
-import * as schema from '@shared/schema';
 
-// SQLite 데이터베이스 파일 경로 설정 (e:\server\homepage\database.sqlite)
+// SQLite 데이터베이스 파일 경로 설정
 const dbPath = path.join(process.cwd(), 'database.sqlite');
 
-console.log(`[DB] Connecting to SQLite at: ${dbPath} (Bridging to modern UI)`);
-
-export const sqlite = new Database(dbPath, {
+// DB 연결 (파일이 없으면 생성됨)
+console.log(`[DB] Connecting to SQLite at: ${dbPath}`);
+export const db = new Database(dbPath, {
   verbose: console.log
 });
 
-export const db = drizzle(sqlite, { schema });
+// 동시성 및 쓰기 성능 향상을 위한 WAL 모드 활성화 (서버 속도 최적화 3단계)
+db.pragma('journal_mode = WAL');
 
-// 세션 등을 위한 원시 풀 시뮬레이션 (필요시)
-export const pool = sqlite; 
+// 프로세스 종료 시 DB 연결 해제
+process.on('exit', () => db.close());
+process.on('SIGHUP', () => process.exit(128 + 1));
+process.on('SIGINT', () => process.exit(128 + 2));
+process.on('SIGTERM', () => process.exit(128 + 15));

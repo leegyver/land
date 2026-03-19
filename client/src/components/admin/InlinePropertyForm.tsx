@@ -167,7 +167,7 @@ const propertyFormSchema = z.object({
   district: z.string().min(1, "지역을 선택해주세요"),
   size: z.union([z.string(), z.number()]).transform(val => val === "" ? "0" : String(val)),
   agentId: z.number().default(1),
-  
+
   // 선택적 필드들
   bedrooms: z.number().default(0),
   bathrooms: z.number().default(0),
@@ -176,16 +176,16 @@ const propertyFormSchema = z.object({
   imageUrl: z.string().optional(),
   imageUrls: z.array(z.string()).optional(),
   featuredImageIndex: z.number().optional(),
-  
+
   // 위치 정보
   buildingName: z.string().optional(),
   unitNumber: z.string().optional(),
-  
+
   // 면적 정보
   supplyArea: z.union([z.string(), z.number(), z.null()]).optional(),
   privateArea: z.union([z.string(), z.number(), z.null()]).optional(),
   areaSize: z.string().optional(),
-  
+
   // 건물 정보
   floor: z.union([z.string(), z.number(), z.null()]).optional(),
   totalFloors: z.union([z.string(), z.number(), z.null()]).optional(),
@@ -194,16 +194,16 @@ const propertyFormSchema = z.object({
   parking: z.string().optional(),
   heatingSystem: z.string().optional(),
   approvalDate: z.string().optional(),
-  
+
   // 토지 정보
   landType: z.string().optional(),
   zoneType: z.string().optional(),
-  
+
   // 금액 정보
   deposit: z.union([z.string(), z.number(), z.null()]).optional(),
   monthlyRent: z.union([z.string(), z.number(), z.null()]).optional(),
   maintenanceFee: z.union([z.string(), z.number(), z.null()]).optional(),
-  
+
   // 연락처 정보
   ownerName: z.string().optional(),
   ownerPhone: z.string().optional(),
@@ -211,13 +211,15 @@ const propertyFormSchema = z.object({
   tenantPhone: z.string().optional(),
   clientName: z.string().optional(),
   clientPhone: z.string().optional(),
-  
+
   // 추가 정보
   specialNote: z.string().optional(),
   coListing: z.boolean().optional(),
   agentName: z.string().optional(), // 담당중개사 이름
   propertyDescription: z.string().optional(),
   privateNote: z.string().optional(),
+  latitude: z.union([z.string(), z.number(), z.null()]).optional(),
+  longitude: z.union([z.string(), z.number(), z.null()]).optional(),
 });
 
 type PropertyFormValues = z.infer<typeof propertyFormSchema>;
@@ -231,7 +233,7 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedMainDistrict, setSelectedMainDistrict] = useState<string>(districts[0]);
-  
+
   // 담당 중개사 목록 조회
   const { data: users } = useQuery<User[]>({
     queryKey: ['/api/admin/users'],
@@ -248,14 +250,14 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
     district: "강화읍 갑곳리",
     address: "",
     size: "0",
-    agentId: 4, // 기본값: 이민호
+    agentId: 4, // 기본값: 이가이버 공인중개사
     bedrooms: 0,
     bathrooms: 0,
     featured: false,
     dealType: ["매매"],
     imageUrl: "",
     imageUrls: [],
-    
+
     // 추가 필드들
     buildingName: "",
     unitNumber: "",
@@ -285,6 +287,8 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
     agentName: "",
     propertyDescription: "",
     privateNote: "",
+    latitude: null,
+    longitude: null,
   };
 
   // 부동산 등록/수정 폼
@@ -297,7 +301,7 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
   useEffect(() => {
     if (selectedMainDistrict && detailedDistricts[selectedMainDistrict]) {
       setDetailedDistrictOptions(detailedDistricts[selectedMainDistrict]);
-      
+
       // 첫 번째 세부 지역을 기본값으로 설정
       if (detailedDistricts[selectedMainDistrict].length > 0) {
         form.setValue("district", detailedDistricts[selectedMainDistrict][0]);
@@ -309,12 +313,12 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
   useEffect(() => {
     if (property) {
       // 현재 읍면 찾기
-      const mainDistrict = districts.find(d => 
+      const mainDistrict = districts.find(d =>
         property.district.startsWith(d)
       ) || districts[0];
-      
+
       setSelectedMainDistrict(mainDistrict);
-      
+
       // 폼 초기화
       const formValues: Partial<PropertyFormValues> = {
         title: property.title || "",
@@ -340,8 +344,8 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
         parking: property.parking || "",
         heatingSystem: property.heatingSystem || "",
         approvalDate: property.approvalDate || "",
-        dealType: Array.isArray(property.dealType) && property.dealType.length > 0 
-          ? property.dealType 
+        dealType: Array.isArray(property.dealType) && property.dealType.length > 0
+          ? property.dealType
           : ["매매"],
         deposit: property.deposit ? property.deposit.toString() : "",
         monthlyRent: property.monthlyRent ? property.monthlyRent.toString() : "",
@@ -357,8 +361,10 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
         agentName: property.agentName || "",
         propertyDescription: property.propertyDescription || "",
         privateNote: property.privateNote || "",
+        latitude: property.latitude || null,
+        longitude: property.longitude || null,
       };
-      
+
       form.reset(formValues);
     } else {
       form.reset(defaultFormValues);
@@ -421,7 +427,7 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
       // 필수 숫자 필드들은 문자열로 변환 (빈 문자열인 경우 "0"으로 설정)
       price: data.price || "0",
       size: data.size || "0",
-      
+
       // 선택적 숫자 필드들은 빈 문자열인 경우 null로 처리
       floor: data.floor === "" || data.floor === undefined ? null : String(data.floor),
       totalFloors: data.totalFloors === "" || data.totalFloors === undefined ? null : String(data.totalFloors),
@@ -430,11 +436,11 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
       deposit: data.deposit === "" || data.deposit === undefined ? null : String(data.deposit),
       monthlyRent: data.monthlyRent === "" || data.monthlyRent === undefined ? null : String(data.monthlyRent),
       maintenanceFee: data.maintenanceFee === "" || data.maintenanceFee === undefined ? null : String(data.maintenanceFee),
-      
+
       // 이미지 URL 처리
       imageUrl: data.imageUrl || "/attached_assets/Asset 3.png", // 기본 이미지
       imageUrls: data.imageUrls || [],
-      
+
       // 기본값 설정
       bedrooms: data.bedrooms || 0,
       bathrooms: data.bathrooms || 0,
@@ -444,8 +450,10 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
       elevator: data.elevator || false,
       coListing: data.coListing || false,
       agentName: data.agentName || undefined,
+      latitude: data.latitude ? Number(data.latitude) : null,
+      longitude: data.longitude ? Number(data.longitude) : null,
     };
-    
+
     if (property) {
       updatePropertyMutation.mutate({ id: property.id, data: processedData });
     } else {
@@ -457,10 +465,10 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
     <Card className="mt-6">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle>{property ? "부동산 수정" : "새 부동산 등록"}</CardTitle>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={onClose} 
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
           className="rounded-full h-8 w-8 p-0"
         >
           <X className="h-4 w-4" />
@@ -624,7 +632,35 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
                 name="address"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>지번</FormLabel>
+                    <FormLabel className="flex justify-between items-center">
+                      지번
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-[10px] px-2 bg-blue-50 text-blue-600 hover:bg-blue-100"
+                        onClick={() => {
+                          if (!field.value) return;
+
+                          // 카카오 지오코더 사용
+                          if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
+                            const geocoder = new window.kakao.maps.services.Geocoder();
+                            const fullAddr = `${selectedMainDistrict} ${field.value}`;
+                            geocoder.addressSearch(fullAddr, (result: any, status: any) => {
+                              if (status === window.kakao.maps.services.Status.OK) {
+                                form.setValue("latitude", Number(result[0].y));
+                                form.setValue("longitude", Number(result[0].x));
+                                toast({ title: "좌표 추출 성공", description: `위도: ${result[0].y}, 경도: ${result[0].x}` });
+                              } else {
+                                toast({ title: "좌표 추출 실패", description: "주소를 다시 확인해주세요.", variant: "destructive" });
+                              }
+                            });
+                          }
+                        }}
+                      >
+                        좌표추출
+                      </Button>
+                    </FormLabel>
                     <FormControl>
                       <Input placeholder="지번 주소" {...field} />
                     </FormControl>
@@ -640,8 +676,8 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
                   <FormItem>
                     <FormLabel>층수</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="층수" 
+                      <Input
+                        placeholder="층수"
                         value={field.value || ""}
                         onChange={(e) => field.onChange(e.target.value)}
                         onBlur={field.onBlur}
@@ -660,8 +696,8 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
                   <FormItem>
                     <FormLabel>총층</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="총층" 
+                      <Input
+                        placeholder="총층"
                         value={field.value || ""}
                         onChange={(e) => field.onChange(e.target.value)}
                         onBlur={field.onBlur}
@@ -763,7 +799,12 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
                       <FormControl>
                         <Checkbox
                           checked={field.value}
-                          onCheckedChange={field.onChange}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            if (!checked) {
+                              form.setValue("agentName", "이가이버 공인중개사");
+                            }
+                          }}
                           data-testid="checkbox-co-listing"
                         />
                       </FormControl>
@@ -771,7 +812,7 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="agentName"
@@ -780,7 +821,7 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
                       <div className="flex items-center gap-2">
                         <FormLabel className="whitespace-nowrap">담당중개사</FormLabel>
                         <FormControl>
-                          <Input 
+                          <Input
                             placeholder="담당중개사 이름 입력"
                             data-testid="input-agent-name"
                             {...field}

@@ -8,9 +8,8 @@ import { useLocation } from "wouter";
 const FloatingCTA = () => {
     // const [isVisible, setIsVisible] = useState(false); // Removed scroll logic
     const [location] = useLocation();
-    
-    // 챗봇 스크립트 (환영 메시지) - 3초 후 표시
     const [showBubble, setShowBubble] = useState(false);
+
     useEffect(() => {
         const timer = setTimeout(() => {
             setShowBubble(true);
@@ -19,7 +18,7 @@ const FloatingCTA = () => {
     }, []);
 
     // Don't show on admin pages or map popup
-    // 훅 호출이 모두 끝난 뒤에 Early Return을 해야 렌더링 크래시 시 Hook 개수 불일치 에러(React Error #310)가 발생하지 않습니다.
+    // Move after hooks to prevent "Rendered fewer hooks than expected" (Error #300)
     if (location.startsWith("/admin") || location.startsWith("/popup")) return null;
 
     return (
@@ -59,7 +58,7 @@ const FloatingCTA = () => {
                     )}
                 </AnimatePresence>
 
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-4">
                     {/* KakaoTalk Button (Principal CTA) */}
                     <a
                         href={KAKAO_CHANNEL_URL}
@@ -67,34 +66,37 @@ const FloatingCTA = () => {
                         rel="noopener noreferrer"
                         className="group relative"
                     >
-                        <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                            카카오톡 무료상담
+                        <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap shadow-xl">
+                            Live Consult
                         </span>
                         <Button
                             size="icon"
-                            className="w-14 h-14 rounded-full bg-[#FEE500] hover:bg-[#FDD835] text-black shadow-lg shadow-black/10 border-none transition-transform hover:scale-110"
+                            className="w-16 h-16 rounded-2xl bg-[#FEE500] hover:bg-[#FDD835] text-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] border-2 border-transparent hover:border-black/5 transition-all duration-300 hover:scale-110 active:scale-95"
                             title="카카오톡 상담"
                         >
-                            <MessageCircle className="w-7 h-7 fill-current" />
+                            <MessageCircle className="w-8 h-8 fill-current" />
                         </Button>
                         {/* Notification Badge */}
-                        <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                        <span className="absolute -top-1 -right-1 flex h-6 w-6">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-[10px] text-white justify-center items-center">1</span>
+                            <span className="relative inline-flex rounded-full h-6 w-6 bg-red-600 text-[10px] font-black text-white justify-center items-center border-2 border-white">1</span>
                         </span>
                     </a>
 
                     {/* Phone Button (Secondary) */}
                     <a
                         href="tel:010-4787-3120"
-                        className="group"
+                        className="group relative"
                     >
+                        <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap shadow-xl">
+                            Call Agent
+                        </span>
                         <Button
                             size="icon"
-                            className="w-12 h-12 rounded-full bg-white hover:bg-gray-50 text-gray-600 shadow-md border border-gray-100 transition-all"
+                            className="w-14 h-14 rounded-2xl bg-white hover:bg-slate-50 text-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.05)] border-2 border-slate-900 transition-all duration-300 hover:scale-110 active:scale-95"
                             title="전화 상담"
                         >
-                            <Phone className="w-5 h-5" />
+                            <Phone className="w-6 h-6" />
                         </Button>
                     </a>
                 </div>

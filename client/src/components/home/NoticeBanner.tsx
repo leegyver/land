@@ -1,15 +1,22 @@
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { Notice } from "@shared/schema";
 import { Megaphone, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
 
 export default function NoticeBanner() {
-    const { data: notice, isLoading } = useQuery<Notice | null>({
+    const { data: notice, isLoading, isFetching } = useQuery<Notice | null>({
         queryKey: ["/api/notices/pinned"],
+        staleTime: 5 * 60 * 1000, // 5분간 캐시 유지 (불필요한 리페칭 방지)
+        refetchOnWindowFocus: false, // 탭 전환 시 리페칭 방지 (깜빡임 원인)
+        refetchOnMount: true, // 기본값 false를 재정의 - 공지는 항상 확인 필요
+        placeholderData: keepPreviousData, // 리페칭 중에도 이전 데이터 유지
     });
 
-    if (isLoading || !notice) return null;
+    // 데이터가 없고 로딩 중이면 레이아웃 시프트 방지를 위해 빈 공간 유지
+    // (isLoading은 최초 로딩일 때만 true - 리페칭 중에는 isFetching만 true)
+    if (!notice && !isLoading) return null; // 데이터 확정적으로 없음
+    if (!notice) return null; // 로딩 중이어도 아직 데이터가 없으면 숨김 (최초)
 
     return (
         <div className="bg-slate-900 text-white border-b border-slate-800">
@@ -32,3 +39,5 @@ export default function NoticeBanner() {
         </div>
     );
 }
+
+

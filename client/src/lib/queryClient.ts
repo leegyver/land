@@ -60,20 +60,14 @@ export const getQueryFn: <T>(options: {
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "returnNull" }),
+      queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: 30 * 1000, // 30초 — 너무 길면 페이지 이동 시 빈 화면 원인
-      retry: (failureCount, error: any) => {
-        // 401(인증), 403(권한), 404(없음) 에러는 다시 시도해도 실패할 가능성이 높으므로 즉시 중단
-        if (error?.message?.includes("401") || error?.message?.includes("403") || error?.message?.includes("404")) {
-          return false;
-        }
-        // 그 외 에러(네트워크, 500 등)는 최대 1회만 재시도
-        return failureCount < 1;
-      },
+      staleTime: 5 * 60 * 1000, // 5분 동안 캐시 유지
+      retry: false,
       gcTime: 10 * 60 * 1000, // 10분 동안 비활성 캐시 유지
-      refetchOnMount: true, // 페이지 이동 시 마운트될 때 반드시 데이터 재요청
+      // 성능 향상을 위한 옵션
+      refetchOnMount: false,
     },
     mutations: {
       retry: false,

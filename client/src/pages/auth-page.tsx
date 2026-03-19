@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, UserPlus, LogIn, Home, AlertCircle, Building2, User } from "lucide-react";
+import { Loader2, UserPlus, LogIn, Home, AlertCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -263,40 +263,6 @@ export default function AuthPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {/* 회원 유형 선택 */}
-                  <div className="grid grid-cols-2 gap-3 mb-6">
-                    <button
-                      type="button"
-                      onClick={() => registerForm.setValue("role", "user")}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                        registerForm.watch("role") !== "realtor"
-                          ? "border-blue-500 bg-blue-50 shadow-md"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                    >
-                      <User className={`w-8 h-8 ${registerForm.watch("role") !== "realtor" ? "text-blue-600" : "text-gray-400"}`} />
-                      <span className={`font-semibold text-sm ${registerForm.watch("role") !== "realtor" ? "text-blue-700" : "text-gray-500"}`}>
-                        일반회원
-                      </span>
-                      <span className="text-[11px] text-gray-400">매물 검색 · 관심 저장</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => registerForm.setValue("role", "realtor")}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                        registerForm.watch("role") === "realtor"
-                          ? "border-emerald-500 bg-emerald-50 shadow-md"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                    >
-                      <Building2 className={`w-8 h-8 ${registerForm.watch("role") === "realtor" ? "text-emerald-600" : "text-gray-400"}`} />
-                      <span className={`font-semibold text-sm ${registerForm.watch("role") === "realtor" ? "text-emerald-700" : "text-gray-500"}`}>
-                        공인중개사
-                      </span>
-                      <span className="text-[11px] text-gray-400">매물 등록 · 광고 노출</span>
-                    </button>
-                  </div>
-
                   <Form {...registerForm}>
                     <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
                       <div className="grid gap-4 md:grid-cols-2">
@@ -311,6 +277,22 @@ export default function AuthPage() {
                               </FormControl>
                               <FormDescription>
                                 3자 이상의 사용자 이름을 입력하세요.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={registerForm.control}
+                          name="nickname"
+                          render={({ field }) => (
+                            <FormItem className="md:col-span-2">
+                              <FormLabel className="text-base text-blue-600 font-bold">별명 (커뮤니티 활동 시 노출)</FormLabel>
+                              <FormControl>
+                                <Input placeholder="커뮤니티에서 사용할 별명을 입력하세요" {...field} className="h-11 rounded-lg border-blue-200 shadow-sm focus:border-blue-500" />
+                              </FormControl>
+                              <FormDescription>
+                                미입력 시 아이디가 표시됩니다. 언제든 프로필에서 변경 가능합니다.
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
@@ -371,58 +353,6 @@ export default function AuthPage() {
                             </FormItem>
                           )}
                         />
-
-                        {/* 중개사 전용 필드 */}
-                        {registerForm.watch("role") === "realtor" && (
-                          <>
-                            <div className="md:col-span-2">
-                              <Separator className="my-2" />
-                              <p className="text-sm font-semibold text-emerald-700 mb-3 flex items-center gap-2">
-                                <Building2 className="w-4 h-4" /> 공인중개사 정보
-                              </p>
-                            </div>
-                            <FormField
-                              control={registerForm.control}
-                              name="businessName"
-                              render={({ field }) => (
-                                <FormItem className="md:col-span-2">
-                                  <FormLabel className="text-base">사무소명</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="예: 이가이버공인중개사무소" {...field} value={field.value || ""} className="h-11 rounded-lg" />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={registerForm.control}
-                              name="businessLicenseNo"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel className="text-base">사업자등록번호</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="000-00-00000" {...field} value={field.value || ""} className="h-11 rounded-lg" />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            <FormField
-                              control={registerForm.control}
-                              name="businessAddress"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel className="text-base">사무소 주소</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="인천시 강화군..." {...field} value={field.value || ""} className="h-11 rounded-lg" />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </>
-                        )}
-
                         <FormField
                           control={registerForm.control}
                           name="birthDate"
@@ -503,11 +433,7 @@ export default function AuthPage() {
                       />
                       <Button
                         type="submit"
-                        className={`w-full h-11 text-base rounded-lg mt-4 transition-all ${
-                          registerForm.watch("role") === "realtor"
-                            ? "bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800"
-                            : "bg-gradient-to-r from-blue-600 to-indigo-800 hover:from-blue-700 hover:to-indigo-900"
-                        }`}
+                        className="w-full h-11 text-base rounded-lg mt-4 bg-gradient-to-r from-blue-600 to-indigo-800 hover:from-blue-700 hover:to-indigo-900 transition-all"
                         disabled={registerMutation.isPending}
                       >
                         {registerMutation.isPending ? (
@@ -518,7 +444,7 @@ export default function AuthPage() {
                         ) : (
                           <>
                             <UserPlus className="mr-2 h-5 w-5" />
-                            {registerForm.watch("role") === "realtor" ? "중개사 회원가입" : "회원가입"}
+                            회원가입
                           </>
                         )}
                       </Button>

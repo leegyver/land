@@ -23,15 +23,12 @@ const sampleProperties: InsertProperty[] = [
         bedrooms: 3,
         bathrooms: 2,
         imageUrl: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-        imageUrls: [
-            "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-            "https://images.unsplash.com/photo-1600596542815-2a4d9fdd4070?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
-        ],
+        imageUrls: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
         agentId: 1,
         featured: true,
         displayOrder: 1,
         isVisible: true,
-        dealType: ["매매"],
+        dealType: "매매",
         supplyArea: "180",
         privateArea: "150",
         totalFloors: 2,
@@ -54,12 +51,12 @@ const sampleProperties: InsertProperty[] = [
         bedrooms: 2,
         bathrooms: 1,
         imageUrl: "https://images.unsplash.com/photo-1480074568708-e7b720bb3f09?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-        imageUrls: ["https://images.unsplash.com/photo-1480074568708-e7b720bb3f09?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"],
+        imageUrls: "https://images.unsplash.com/photo-1480074568708-e7b720bb3f09?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
         agentId: 1,
         featured: false,
         displayOrder: 2,
         isVisible: true,
-        dealType: ["매매"],
+        dealType: "매매",
         supplyArea: "90",
         privateArea: "85",
         totalFloors: 1,
@@ -80,12 +77,12 @@ const sampleProperties: InsertProperty[] = [
         bedrooms: 0,
         bathrooms: 0,
         imageUrl: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-        imageUrls: ["https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"],
+        imageUrls: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
         agentId: 1,
         featured: true,
         displayOrder: 3,
         isVisible: true,
-        dealType: ["매매"],
+        dealType: "매매",
         landType: "전",
         zoneType: "보전관리지역"
     }
@@ -95,45 +92,45 @@ const sampleBanners: InsertBanner[] = [
     // Left Slider Banners
     {
         location: "left",
+        title: "강화군청 바로가기",
         imageUrl: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
-        linkUrl: "https://www.ganghwa.go.kr/", // 강화군청
-        openNewWindow: true,
+        linkUrl: "https://www.ganghwa.go.kr/",
         displayOrder: 1
     },
     {
         location: "left",
+        title: "이가이버 소식",
         imageUrl: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
         linkUrl: "",
-        openNewWindow: false,
         displayOrder: 2
     },
     {
         location: "left",
+        title: "추천 매물 안내",
         imageUrl: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
         linkUrl: "",
-        openNewWindow: false,
         displayOrder: 3
     },
     // Right Slider Banners
     {
         location: "right",
+        title: "유튜브 채널",
         imageUrl: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
         linkUrl: "https://www.youtube.com/",
-        openNewWindow: true,
         displayOrder: 1
     },
     {
         location: "right",
+        title: "강화도 여행 가이드",
         imageUrl: "https://images.unsplash.com/photo-1513584685908-2274653dbf29?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
         linkUrl: "",
-        openNewWindow: false,
         displayOrder: 2
     },
     {
         location: "right",
+        title: "실시간 매물 상담",
         imageUrl: "https://images.unsplash.com/photo-1502005229766-52835791e80d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
         linkUrl: "",
-        openNewWindow: false,
         displayOrder: 3
     }
 ];
@@ -169,6 +166,18 @@ export async function seedInitialData() {
             console.log(`Seeded ${sampleProperties.length} sample properties.`);
         } else {
             console.log(`Database already has ${properties.length} properties.`);
+        }
+
+        // 3. Check banners
+        const banners = await storage.getBanners();
+        if (banners.length === 0) {
+            console.log("No banners found. Seeding sample banners...");
+            for (const banner of sampleBanners) {
+                await storage.createBanner(banner);
+            }
+            console.log(`Seeded ${sampleBanners.length} sample banners.`);
+        } else {
+            console.log(`Database already has ${banners.length} banners.`);
         }
 
         console.log("DB seeding check completed.");

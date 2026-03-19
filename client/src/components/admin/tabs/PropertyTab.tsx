@@ -5,8 +5,7 @@ import {
     Plus,
     FileSpreadsheet,
     GripVertical,
-    Edit,
-    Zap
+    Edit
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -25,7 +24,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Property, User } from "@shared/schema";
 import { formatKoreanPrice } from "@/lib/formatter";
@@ -323,100 +321,42 @@ export const PropertyTab: React.FC<PropertyTabProps> = ({
                         )}
                     </div>
 
-                    {/* Mobile View: Luxe Card Layout */}
-                    <div className="md:hidden space-y-4">
+                    {/* Mobile View */}
+                    <div className="md:hidden space-y-3">
                         {filteredProperties?.map((p) => (
-                            <div
-                                key={p.id}
-                                className="luxe-card relative bg-white border border-slate-200"
-                            >
-                                <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
-                                    {p.imageUrls && (p.imageUrls as string[]).length > 0 ? (
-                                        <img
-                                            src={(p.imageUrls as string[])[0]}
-                                            alt={p.title}
-                                            className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
-                                            <div className="text-sm font-medium">NO IMAGE</div>
+                            <div key={p.id} className="bg-white border rounded-lg p-3 shadow-sm border-l-4 border-l-blue-500">
+                                <div className="flex gap-3">
+                                    <div className="w-20 h-20 bg-gray-100 rounded overflow-hidden flex-shrink-0">
+                                        {p.imageUrls?.[0] ? <img src={p.imageUrls[0]} className="w-full h-full object-cover" /> : <div className="h-full flex items-center justify-center text-gray-400 text-[10px]">No Img</div>}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between items-start">
+                                            <span className="text-[10px] font-bold text-slate-400">#{p.id}</span>
+                                            <Checkbox checked={selectedProperties.includes(p.id)} onCheckedChange={(c) => handleSelectProperty(p.id, c === true)} />
                                         </div>
-                                    )}
-                                    <div className="absolute top-3 left-3 flex gap-2">
-                                        <Badge className="bg-slate-900/80 text-white border-none luxe-badge">
-                                            ID {p.id}
-                                        </Badge>
-                                        {p.isUrgent && (
-                                            <Badge className="bg-amber-500 text-white border-none luxe-badge">
-                                                URGENT
-                                            </Badge>
-                                        )}
-                                    </div>
-                                    <div className="absolute top-3 right-3">
-                                        <Checkbox
-                                            checked={selectedProperties.includes(p.id)}
-                                            onCheckedChange={(checked) => handleSelectProperty(p.id, checked === true)}
-                                            className="h-6 w-6 border-2 border-white bg-white/20 backdrop-blur-sm data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                                        />
-                                    </div>
-
-                                    {!p.isVisible && (
-                                        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px] flex items-center justify-center">
-                                            <Badge variant="outline" className="text-white border-white border-2 px-4 py-1.5 font-bold tracking-widest luxe-badge bg-transparent">
-                                                PRIVATE LISTING
-                                            </Badge>
+                                        <h4 className="font-bold text-sm truncate">{p.title}</h4>
+                                        <div className="text-xs font-bold text-red-500 mt-1">{formatKoreanPrice(p.price)}</div>
+                                        <div className="flex gap-2 mt-2">
+                                            <Button size="sm" variant="outline" className="text-[10px] h-7 flex-1" asChild><a href={`/admin/properties/edit/${p.id}`}>수정</a></Button>
+                                            <Button size="sm" variant="ghost" className="text-[10px] h-7 text-red-500 border border-red-200" onClick={() => handleIndividualDelete(p.id, 'property')}>삭제</Button>
                                         </div>
-                                    )}
-                                </div>
-
-                                <div className="p-5">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <Badge variant="outline" className="border-slate-200 text-slate-600 luxe-badge lowercase">
-                                            {p.type} / {p.dealType}
-                                        </Badge>
-                                        <span className="text-xs font-bold text-slate-400">{p.district}</span>
-                                    </div>
-                                    <h3 className="text-lg font-bold text-slate-900 mb-3 truncate">
-                                        {p.title}
-                                    </h3>
-                                    <div className="text-xl font-extrabold text-primary mb-5">
-                                        {formatKoreanPrice(p.price)}
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <Button
-                                            variant="outline"
-                                            className="w-full h-11 border-slate-200 hover:bg-slate-50 font-bold"
-                                            onClick={() => window.location.href = `/admin/properties/edit/${p.id}`}
-                                        >
-                                            편집하기
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            className="w-full h-11 text-red-500 hover:text-red-600 hover:bg-red-50 font-bold"
-                                            onClick={() => handleIndividualDelete(p.id, 'property')}
-                                        >
-                                            삭제
-                                        </Button>
                                     </div>
                                 </div>
                             </div>
                         ))}
                     </div>
 
-                    {
-                        totalPropertyPages > 1 && (
-                            <div className="mt-8 flex justify-center pt-4 border-t">
-                                <SmartPagination
-                                    currentPage={adminPropertiesPage}
-                                    totalPages={totalPropertyPages}
-                                    onPageChange={setAdminPropertiesPage}
-                                />
-                            </div>
-                        )
-                    }
-                </div >
+                    {totalPropertyPages > 1 && (
+                        <div className="mt-8 flex justify-center pt-4 border-t">
+                            <SmartPagination
+                                currentPage={adminPropertiesPage}
+                                totalPages={totalPropertyPages}
+                                onPageChange={setAdminPropertiesPage}
+                            />
+                        </div>
+                    )}
+                </div>
             )}
-        </div >
+        </div>
     );
 };

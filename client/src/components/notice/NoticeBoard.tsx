@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useRef, useMemo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { Notice, insertNoticeSchema, InsertNotice } from "@shared/schema";
@@ -10,8 +10,9 @@ import { Loader2, Plus, Pencil, Trash2, Pin, Megaphone, Calendar, User, Eye, X }
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { apiRequest } from "@/lib/queryClient";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
+import DOMPurify from "dompurify";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -195,11 +196,9 @@ export default function NoticeBoard() {
 
 
                     <div className="py-6 min-h-[200px] space-y-6">
-                        <div className="prose prose-sm max-w-none dark:prose-invert">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                {selectedNotice?.content || ""}
-                            </ReactMarkdown>
-                        </div>
+                        <div className="prose prose-sm max-w-none dark:prose-invert"
+                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedNotice?.content || "") }}
+                        />
 
                     </div>
 
@@ -231,6 +230,7 @@ export default function NoticeBoard() {
 function NoticeForm({ notice, onSuccess, onCancel }: { notice: Notice | null, onSuccess: () => void, onCancel: () => void }) {
     const { toast } = useToast();
     const queryClient = useQueryClient();
+    const quillRef = useRef<ReactQuill>(null);
 
     const form = useForm<InsertNotice>({
         resolver: zodResolver(insertNoticeSchema),
@@ -246,6 +246,62 @@ function NoticeForm({ notice, onSuccess, onCancel }: { notice: Notice | null, on
             isPinned: false,
         },
     });
+
+    const quillImageHandler = useCallback(() => {
+        const input = document.createElement('input');
+        input.setAttribute('type', 'file');
+        input.setAttribute('accept', 'image/*');
+        input.click();
+
+        input.onchange = async () => {
+            const file = input.files ? input.files[0] : null;
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            try {
+                const res = await fetch("/api/upload", {
+                    method: "POST",
+                    body: formData,
+                });
+                if (!res.ok) throw new Error("업로드 실패");
+                const data = await res.json();
+
+                const quill = quillRef.current?.getEditor();
+                if (quill) {
+                    const range = quill.getSelection(true);
+                    quill.insertEmbed(range.index, 'image', data.url);
+                    quill.setSelection(range.index + 1, 0);
+                }
+
+                // Add to thumbnails
+                const current = form.getValues("imageUrls") || [];
+                form.setValue("imageUrls", [...current, data.url]);
+
+                toast({ title: "사진 첨부 완료", description: "본문에 사진이 삽입되었습니다." });
+            } catch (error) {
+                toast({ title: "업로드 실패", description: "사진 첨부 중 오류가 발생했습니다.", variant: "destructive" });
+            }
+        };
+    }, [toast, form]);
+
+    const quillModules = useMemo(() => ({
+        toolbar: {
+            container: [
+                [{ 'header': [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ 'color': [] }, { 'background': [] }],
+                [{ 'align': [] }],
+                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                ['link', 'image'],
+                ['clean']
+            ],
+            handlers: {
+                image: quillImageHandler
+            }
+        }
+    }), [quillImageHandler]);
 
     const mutation = useMutation({
         mutationFn: async (data: InsertNotice) => {
@@ -353,12 +409,15 @@ function NoticeForm({ notice, onSuccess, onCancel }: { notice: Notice | null, on
                                                             size="sm"
                                                             className="h-7 text-xs"
                                                             onClick={() => {
-                                                                const content = form.getValues("content");
-                                                                const imageMarkdown = `\n![이미지](${url})\n`;
-                                                                form.setValue("content", content + imageMarkdown);
+                                                                const quill = quillRef.current?.getEditor();
+                                                                if (quill) {
+                                                                    const range = quill.getSelection(true) || { index: quill.getLength() };
+                                                                    quill.insertEmbed(range.index, 'image', url);
+                                                                    quill.setSelection(range.index + 1, 0);
+                                                                }
                                                                 toast({
                                                                     title: "본문에 추가됨",
-                                                                    description: "이미지 코드가 본문 맨 끝에 추가되었습니다. 원하는 위치로 옮겨주세요.",
+                                                                    description: "에디터 커서 위치에 사진이 삽입되었습니다.",
                                                                 });
                                                             }}
                                                         >
@@ -411,40 +470,33 @@ function NoticeForm({ notice, onSuccess, onCancel }: { notice: Notice | null, on
                     )}
                 />
 
-                <Tabs defaultValue="write" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="write">작성하기</TabsTrigger>
-                        <TabsTrigger value="preview">미리보기</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="write" className="space-y-4">
-                        <FormField
-                            control={form.control}
-                            name="content"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>내용</FormLabel>
-                                    <FormControl>
-                                        <Textarea
-                                            placeholder="공지사항 내용을 입력하세요. (마크다운 지원)"
-                                            className="min-h-[200px]"
-                                            {...field}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </TabsContent>
-                    <TabsContent value="preview">
-                        <div className="min-h-[200px] rounded-md border p-4">
-                            <div className="prose prose-sm max-w-none dark:prose-invert">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                    {form.watch("content") || "작성된 내용이 없습니다."}
-                                </ReactMarkdown>
+                <FormField
+                    control={form.control}
+                    name="content"
+                    render={({ field }) => (
+                        <FormItem>
+                            <div className="flex justify-between items-end mb-2">
+                                <FormLabel>본문 내용</FormLabel>
+                                <div className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full tracking-tighter">
+                                    상단 툴바의 아이콘을 눌러 사진을 본문에 바로 넣을 수 있습니다.
+                                </div>
                             </div>
-                        </div>
-                    </TabsContent>
-                </Tabs>
+                            <FormControl>
+                                <div className="bg-background rounded-md overflow-hidden border [&_.ql-container]:min-h-[300px] [&_.ql-editor]:text-base [&_.ql-editor]:p-4 [&_.ql-toolbar]:bg-muted/50 [&_.ql-toolbar]:border-none [&_.ql-toolbar]:border-b [&_.ql-container]:border-none">
+                                    <ReactQuill
+                                        ref={quillRef}
+                                        theme="snow"
+                                        value={field.value}
+                                        onChange={field.onChange}
+                                        modules={quillModules}
+                                        placeholder="공지사항 내용을 자유롭게 작성해주세요."
+                                    />
+                                </div>
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
 
                 <DialogFooter>
                     <Button type="button" variant="outline" onClick={onCancel}>

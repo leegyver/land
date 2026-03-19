@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import PropertyCard from "@/components/property/PropertyCard";
-import { useInView } from "@/hooks/use-in-view";
 import { Property } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -19,10 +18,8 @@ interface PropertySectionProps {
 }
 
 const PropertySection = ({ title, queryKey, bgColor = "bg-white", limit = 4 }: PropertySectionProps) => {
-    const { ref, inView } = useInView<HTMLElement>({ rootMargin: "200px" });
     const { data: properties, isLoading, error } = useQuery<Property[]>({
         queryKey: [queryKey],
-        enabled: inView,
     });
 
     if (isLoading) {
@@ -70,7 +67,7 @@ const PropertySection = ({ title, queryKey, bgColor = "bg-white", limit = 4 }: P
     }
 
     return (
-        <section ref={ref} className={`py-4 ${bgColor}`}>
+        <section className={`py-4 ${bgColor}`}>
             <div className="container mx-auto px-4">
                 {title && (
                     <div className="text-left mb-4">
@@ -78,8 +75,15 @@ const PropertySection = ({ title, queryKey, bgColor = "bg-white", limit = 4 }: P
                     </div>
                 )}
 
-                {/* Unified Carousel View */}
-                <div className="relative group px-1">
+                {/* Desktop Grid View */}
+                <div className="hidden lg:grid grid-cols-4 gap-4">
+                    {properties.slice(0, limit).map((property) => (
+                        <PropertyCard key={property.id} property={property} />
+                    ))}
+                </div>
+
+                {/* Mobile/Tablet Carousel View */}
+                <div className="lg:hidden">
                     <Carousel
                         opts={{
                             align: "start",
@@ -89,15 +93,13 @@ const PropertySection = ({ title, queryKey, bgColor = "bg-white", limit = 4 }: P
                     >
                         <CarouselContent className="-ml-2 md:-ml-4">
                             {properties.slice(0, limit).map((property) => (
-                                <CarouselItem key={property.id} className="pl-2 md:pl-4 basis-[85%] sm:basis-[45%] md:basis-[33.33%] lg:basis-[25%]">
+                                <CarouselItem key={property.id} className="pl-2 md:pl-4 basis-[85%] md:basis-[45%]">
                                     <PropertyCard property={property} />
                                 </CarouselItem>
                             ))}
                         </CarouselContent>
-                        <div className="hidden lg:block opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-white/80 hover:bg-white border shadow-md" />
-                            <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2 z-10 h-10 w-10 bg-white/80 hover:bg-white border shadow-md" />
-                        </div>
+                        {/* <CarouselPrevious className="hidden md:flex" />
+                        <CarouselNext className="hidden md:flex" /> */}
                     </Carousel>
                 </div>
             </div>

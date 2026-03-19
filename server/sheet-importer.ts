@@ -67,7 +67,7 @@ export async function checkDuplicatesFromSheet(
     const sheets = google.sheets({ version: 'v4', auth: apiKey });
     const response = await sheets.spreadsheets.values.get({ spreadsheetId, range });
     const rows = response.data.values;
-    
+
     if (!rows || rows.length === 0) {
       return { success: true, duplicates: [] };
     }
@@ -80,10 +80,10 @@ export async function checkDuplicatesFromSheet(
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       if (row.length < 3) continue;
-      
+
       const rowDateStr = row[COL.A]?.toString().trim();
       if (!rowDateStr) continue;
-      
+
       let rowDate: Date;
       if (rowDateStr.includes('/')) {
         const parts = rowDateStr.split('/');
@@ -105,10 +105,10 @@ export async function checkDuplicatesFromSheet(
         rowDate = new Date(rowDateStr);
         if (isNaN(rowDate.getTime())) continue;
       }
-      
+
       rowDate.setHours(0, 0, 0, 0);
       if (rowDate < filterDateTime) continue;
-      
+
       const address = row[COL.C]?.toString().trim();
       if (address) {
         addressMap.set(address, i + 2); // 엑셀 행 번호 (1-indexed + 헤더)
@@ -122,7 +122,7 @@ export async function checkDuplicatesFromSheet(
     // 기존 매물과 비교
     const addresses = Array.from(addressMap.keys());
     const existingProperties = await storage.getPropertiesByAddresses(addresses);
-    
+
     const duplicates = existingProperties.map(prop => ({
       rowIndex: addressMap.get(prop.address) || 0,
       address: prop.address,
@@ -152,6 +152,10 @@ export async function importPropertiesFromSheet(
   error?: string;
 }> {
   try {
+    // 모든 사용자(중개사 포함) 정보 미리 가져오기
+    const allUsers = await storage.getAllUsers();
+    const realtors = allUsers.filter(u => u.role === 'realtor' || u.role === 'admin');
+
     // 구글 시트 API 클라이언트 생성
     const sheets = google.sheets({ version: 'v4', auth: apiKey });
 
@@ -162,7 +166,7 @@ export async function importPropertiesFromSheet(
     });
 
     const rows = response.data.values;
-    
+
     if (!rows || rows.length === 0) {
       return { success: false, error: '시트에 데이터가 없습니다.' };
     }
@@ -176,7 +180,7 @@ export async function importPropertiesFromSheet(
 
     // 가져온 프로퍼티 ID 목록
     const importedIds: number[] = [];
-    
+
     // 에러 기록
     const errors: string[] = [];
 
@@ -186,20 +190,20 @@ export async function importPropertiesFromSheet(
         const row = rows[i];
         // 행 데이터가 충분히 있는지 확인
         if (row.length < 3) {
-          errors.push(`행 ${i+2}: 데이터가 부족합니다.`);
+          errors.push(`행 ${i + 2}: 데이터가 부족합니다.`);
           continue;
         }
 
         // A열(인덱스 0)의 날짜 확인 및 필터링 (필수)
         const rowDateStr = row[COL.A]?.toString().trim();
-        
+
         // A열에 날짜가 없으면 스킵 (로그 생략 - 너무 많음)
         if (!rowDateStr) {
           continue;
         }
-        
+
         let rowDate: Date;
-        
+
         // 다양한 날짜 형식 처리
         if (rowDateStr.includes('/')) {
           // MM/DD/YYYY 또는 YYYY/MM/DD 형식
@@ -223,43 +227,43 @@ export async function importPropertiesFromSheet(
         } else {
           rowDate = new Date(rowDateStr);
         }
-        
+
         rowDate.setHours(0, 0, 0, 0);
-        
+
         if (isNaN(rowDate.getTime())) {
-          log(`행 ${i+2}: 날짜 형식이 올바르지 않습니다 (${rowDateStr}), 스킵됨`, 'warn');
+          log(`행 ${i + 2}: 날짜 형식이 올바르지 않습니다 (${rowDateStr}), 스킵됨`, 'warn');
           continue;
         }
-        
+
         // 날짜 필터 적용: 선택한 날짜 이후(같거나 이후)의 데이터만 가져오기 (로그 생략)
         if (rowDate < filterDateTime) {
           continue;
         }
-        
-        log(`행 ${i+2}: 날짜 필터 통과 (${rowDateStr} >= ${filterDate})`, 'info');
-        
+
+        log(`행 ${i + 2}: 날짜 필터 통과 (${rowDateStr} >= ${filterDate})`, 'info');
+
         // 행 패딩 전 원본 데이터 로깅
-        log(`행 ${i+2}: 패딩 전 행 길이: ${row.length}`, 'info');
-        
+        log(`행 ${i + 2}: 패딩 전 행 길이: ${row.length}`, 'info');
+
         // 원본 이미지 열 데이터 확인 (패딩 전)
         const originalAV = row[COL.AV] || '(없음)';
         const originalAW = row[COL.AW] || '(없음)';
         const originalAX = row[COL.AX] || '(없음)';
         const originalAY = row[COL.AY] || '(없음)';
         const originalAZ = row[COL.AZ] || '(없음)';
-        log(`행 ${i+2}: 원본 이미지 데이터 - AV: "${String(originalAV).substring(0, 30)}", AW: "${String(originalAW).substring(0, 30)}", AX: "${String(originalAX).substring(0, 30)}"`, 'info');
-        
+        log(`행 ${i + 2}: 원본 이미지 데이터 - AV: "${String(originalAV).substring(0, 30)}", AW: "${String(originalAW).substring(0, 30)}", AX: "${String(originalAX).substring(0, 30)}"`, 'info');
+
         // 행 패딩: Google Sheets API가 빈 셀을 잘라내기 때문에 BA열까지 패딩
         const requiredLength = COL.BA + 1; // BA열 포함하려면 53개 요소 필요
         while (row.length < requiredLength) {
           row.push('');
         }
-        log(`행 ${i+2}: 패딩 후 행 길이: ${row.length}`, 'info');
-        
+        log(`행 ${i + 2}: 패딩 후 행 길이: ${row.length}`, 'info');
+
         // 중복 매물 건너뛰기 체크
         const rowAddress = row[COL.C]?.toString().trim();
         if (rowAddress && skipAddresses.includes(rowAddress)) {
-          log(`행 ${i+2}: 중복 매물로 건너뜀 (주소: ${rowAddress})`, 'info');
+          log(`행 ${i + 2}: 중복 매물로 건너뜀 (주소: ${rowAddress})`, 'info');
           continue;
         }
 
@@ -272,7 +276,7 @@ export async function importPropertiesFromSheet(
           const numStr = val.replace(/[^0-9.-]/g, '');
           return numStr || null;
         };
-        
+
         // 금액 필드용 함수 (만원 → 원 변환: *10000)
         const getMoneyValue = (idx: number): string | null => {
           const val = getNumericValue(idx);
@@ -285,37 +289,37 @@ export async function importPropertiesFromSheet(
           const val = getValue(idx).toLowerCase();
           return val === 'true' || val === '1' || val === 'yes' || val === '예' || val === 'o';
         };
-        
+
         // 승강기 체크 - "유"이면 true, "무"이거나 빈값이면 false
         const getElevatorValue = (idx: number): boolean => {
           const val = getValue(idx).trim();
           return val === '유';
         };
-        
+
         // 이미지 URL 수집 (AV-AZ 열에서 가져오기)
         const collectImageUrls = (): string[] => {
           const imageColumns = [COL.AV, COL.AW, COL.AX, COL.AY, COL.AZ];
           const urls: string[] = [];
-          log(`[IMG] 행 ${i+2}: 행길이=${row.length}, AV(47)="${(row[47] || '').toString().substring(0, 60)}"`, 'info');
-          log(`[IMG] 행 ${i+2}: AW(48)="${(row[48] || '').toString().substring(0, 60)}", AX(49)="${(row[49] || '').toString().substring(0, 60)}"`, 'info');
-          
+          log(`[IMG] 행 ${i + 2}: 행길이=${row.length}, AV(47)="${(row[47] || '').toString().substring(0, 60)}"`, 'info');
+          log(`[IMG] 행 ${i + 2}: AW(48)="${(row[48] || '').toString().substring(0, 60)}", AX(49)="${(row[49] || '').toString().substring(0, 60)}"`, 'info');
+
           for (const col of imageColumns) {
             const rawValue = row[col];
             const url = rawValue?.toString().trim() || '';
-            
+
             // URL 검증 - 공백 제거 후 http/https 체크
             const cleanUrl = url.replace(/\s+/g, '');
             if (cleanUrl && cleanUrl.length > 0) {
               if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://') || cleanUrl.startsWith('//')) {
                 const finalUrl = cleanUrl.startsWith('//') ? 'https:' + cleanUrl : cleanUrl;
-                log(`[IMG] 행 ${i+2}: 열 ${col}에서 URL 발견: ${finalUrl.substring(0, 60)}...`, 'info');
+                log(`[IMG] 행 ${i + 2}: 열 ${col}에서 URL 발견: ${finalUrl.substring(0, 60)}...`, 'info');
                 urls.push(finalUrl);
               } else {
-                log(`[IMG] 행 ${i+2}: 열 ${col} URL형식 아님: "${cleanUrl.substring(0, 40)}"`, 'warn');
+                log(`[IMG] 행 ${i + 2}: 열 ${col} URL형식 아님: "${cleanUrl.substring(0, 40)}"`, 'warn');
               }
             }
           }
-          log(`[IMG] 행 ${i+2}: 총 ${urls.length}개 URL`, 'info');
+          log(`[IMG] 행 ${i + 2}: 총 ${urls.length}개 URL`, 'info');
           return urls;
         };
 
@@ -330,13 +334,13 @@ export async function importPropertiesFromSheet(
         // 이미지 URL 수집 및 리사이징 (1027x768)
         const originalImageUrls = collectImageUrls();
         let processedImageUrls: string[] = [];
-        
+
         if (originalImageUrls.length > 0) {
-          log(`행 ${i+2}: ${originalImageUrls.length}개 이미지 리사이징 시작...`, 'info');
+          log(`행 ${i + 2}: ${originalImageUrls.length}개 이미지 리사이징 시작...`, 'info');
           processedImageUrls = await resizeImages(originalImageUrls);
-          log(`행 ${i+2}: 이미지 리사이징 완료 (${processedImageUrls.length}개)`, 'info');
+          log(`행 ${i + 2}: 이미지 리사이징 완료 (${processedImageUrls.length}개)`, 'info');
         }
-        
+
         // 이미지가 없으면 기본 이미지 사용
         const propertyType = mapPropertyType(getValue(COL.Y));
         if (processedImageUrls.length === 0) {
@@ -361,16 +365,16 @@ export async function importPropertiesFromSheet(
           size: getNumericValue(COL.J) || '0',
           bedrooms: parseInt(getValue(COL.P)) || 0,
           bathrooms: parseInt(getValue(COL.Q)) || 0,
-          
+
           // 위치 정보
           buildingName: getValue(COL.G) || null,
           unitNumber: getValue(COL.H) || null,
-          
+
           // 면적 정보
           supplyArea: getNumericValue(COL.J),
           privateArea: getNumericValue(COL.M),
           areaSize: getValue(COL.O) || null,
-          
+
           // 건물 정보
           floor: parseInt(getValue(COL.S)) || null,
           totalFloors: parseInt(getValue(COL.T)) || null,
@@ -379,18 +383,18 @@ export async function importPropertiesFromSheet(
           parking: getValue(COL.AC) || null,
           heatingSystem: getValue(COL.V) || null,
           approvalDate: getValue(COL.X) || null,
-          
+
           // 토지 정보
           landType: getValue(COL.D) || null,
           zoneType: getValue(COL.E) || null,
-          
+
           // 금액 정보 (만원 → 원 변환)
           dealType: dealTypeArray,
           deposit: getMoneyValue(COL.AF),
           depositAmount: getMoneyValue(COL.AG),
           monthlyRent: getMoneyValue(COL.AH),
           maintenanceFee: getNumericValue(COL.AI),
-          
+
           // 연락처 정보
           ownerName: getValue(COL.AJ) || null,
           ownerPhone: getValue(COL.AK) || null,
@@ -398,7 +402,7 @@ export async function importPropertiesFromSheet(
           tenantPhone: getValue(COL.AM) || null,
           clientName: getValue(COL.AN) || null,
           clientPhone: getValue(COL.AO) || null,
-          
+
           // 추가 정보
           specialNote: getValue(COL.AP) || null,
           coListing: false, // 공동중개 기본값
@@ -406,30 +410,48 @@ export async function importPropertiesFromSheet(
           propertyDescription: getValue(COL.AR) || null,
           privateNote: getValue(COL.AS) || null,
           youtubeUrl: getValue(COL.BA) || null,
-          
+
           // 이미지 URL 처리 - 리사이징된 이미지 사용
           imageUrl: processedImageUrls[0],
           imageUrls: processedImageUrls,
           featured: false,
           displayOrder: 0,
           isVisible: true,
-          agentId: 4 // 기본값 4 (이민호)
+          agentId: 4, // 기본값 4 (이민호)
+          ownerId: (() => {
+            const agentNameRaw = getValue(COL.AQ) || null;
+            if (agentNameRaw) {
+              const matchedRealtor = realtors.find(r =>
+                (r.realtorName && r.realtorName.includes(agentNameRaw)) ||
+                (r.businessName && r.businessName.includes(agentNameRaw)) ||
+                (r.username && r.username.includes(agentNameRaw)) ||
+                (r.realtorName && agentNameRaw.includes(r.realtorName)) ||
+                (r.businessName && agentNameRaw.includes(r.businessName)) ||
+                (agentNameRaw.includes('이가이버') && r.username === 'leegyver')
+              );
+              if (matchedRealtor) {
+                log(`행 ${i + 2}: ${agentNameRaw} 중개사 매칭 성공 (ID: ${matchedRealtor.id})`, 'info');
+                return matchedRealtor.id;
+              }
+            }
+            return null;
+          })()
         };
 
         // 필수 필드 검증
         if (!propertyData.title || !propertyData.address) {
-          errors.push(`행 ${i+2}: 필수 필드(제목, 주소)가 누락되었습니다.`);
+          errors.push(`행 ${i + 2}: 필수 필드(제목, 주소)가 누락되었습니다.`);
           continue;
         }
 
         // 데이터베이스에 저장
         const savedProperty = await storage.createProperty(propertyData as InsertProperty);
         importedIds.push(savedProperty.id);
-        
-        log(`행 ${i+2} 임포트 성공: ${savedProperty.title} (ID: ${savedProperty.id})`, 'info');
+
+        log(`행 ${i + 2} 임포트 성공: ${savedProperty.title} (ID: ${savedProperty.id})`, 'info');
       } catch (rowError) {
-        errors.push(`행 ${i+2} 처리 오류: ${rowError}`);
-        log(`행 ${i+2} 처리 오류: ${rowError}`, 'error');
+        errors.push(`행 ${i + 2} 처리 오류: ${rowError}`);
+        log(`행 ${i + 2} 처리 오류: ${rowError}`, 'error');
       }
     }
 
@@ -475,7 +497,7 @@ function mapPropertyType(type: string): string {
   };
 
   const normalizedType = type.trim();
-  
+
   // 정확한 매칭 시도
   if (typeMap[normalizedType]) {
     return typeMap[normalizedType];

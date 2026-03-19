@@ -20,12 +20,10 @@ type LoginData = {
 export const registerSchema = insertUserSchema.extend({
   email: z.string().email("유효한 이메일 주소를 입력해주세요").optional(),
   phone: z.string().optional(),
+  nickname: z.string().optional(),
   birthDate: z.string().optional(),
   birthTime: z.string().optional(),
   confirmPassword: z.string(),
-  businessName: z.string().optional(),
-  businessLicenseNo: z.string().optional(),
-  businessAddress: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "비밀번호가 일치하지 않습니다",
   path: ["confirmPassword"],

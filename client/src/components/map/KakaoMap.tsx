@@ -22,7 +22,7 @@ const KakaoMap = ({ zoom = 8, properties: externalProperties, singleProperty }: 
     enabled: !singleProperty && !externalProperties
   });
 
-  const properties = singleProperty ? [singleProperty] : (externalProperties || fetchedProperties || []);
+  const properties = singleProperty ? [singleProperty] : (Array.isArray(externalProperties) ? externalProperties : (Array.isArray(fetchedProperties) ? fetchedProperties : []));
 
   // 1. 지도 인스턴스 초기화 (최초 1회)
   useEffect(() => {
@@ -89,12 +89,14 @@ const KakaoMap = ({ zoom = 8, properties: externalProperties, singleProperty }: 
     let isMounted = true;
     let processedCount = 0;
 
-    if (properties.length === 0) return;
+    const propsToProcess = Array.isArray(properties) ? properties : [];
+    if (propsToProcess.length === 0) return;
 
-    properties.forEach((prop) => {
+    propsToProcess.forEach((prop) => {
       const addMarker = (coords: any) => {
         if (!isMounted || !mapInstance.current) return;
 
+        console.log(`KakaoMap: 마커 추가됨 [${prop.id}]`, coords.getLat(), coords.getLng());
         const marker = new window.kakao.maps.Marker({
           map: map,
           position: coords,
@@ -110,27 +112,81 @@ const KakaoMap = ({ zoom = 8, properties: externalProperties, singleProperty }: 
         bounds.extend(coords);
 
         processedCount++;
-        if (processedCount === properties.length && !bounds.isEmpty()) {
+        if (processedCount === propsToProcess.length && !bounds.isEmpty()) {
           if (singleProperty) {
-            map.setCenter(coords);
+            console.log("KakaoMap: SingleProperty 센터 지정", coords.getLat(), coords.getLng());
+            // 지도가 안정화된 후 이동하도록 지연 실행 보강
+            setTimeout(() => {
+              if (map && isMounted) {
+                map.setCenter(coords);
+                map.setLevel(zoom || 5);
+                map.relayout();
+              }
+            }, 100);
           } else {
+            console.log("KakaoMap: Bounds 지정");
             map.setBounds(bounds);
           }
         }
       };
 
-      if (prop.latitude && prop.longitude) {
-        addMarker(new window.kakao.maps.LatLng(prop.latitude, prop.longitude));
+      // 좌표값을 숫자로 확실히 변환
+      const lat = Number(prop.latitude);
+      const lng = Number(prop.longitude);
+
+      if (lat && lng && !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+        // 좌표가 있으면 정확하게 그 위치에 핀 표시
+        console.log(`KakaoMap: 좌표 사용 [${prop.id}] lat=${lat}, lng=${lng}`);
+        addMarker(new window.kakao.maps.LatLng(lat, lng));
       } else {
+        // 좌표가 없으면 주소 기반으로 지오코딩
+        // mapAddress(원본 주소)를 우선 사용, 없으면 district + address 조합
+        const mapAddr = (prop as any).mapAddress || "";
         const district = prop.district || "";
-        const detailAddress = prop.address || "";
-        const query = `${district.includes("강화") || district.includes("서울") ? district : "인천광역시 " + district} ${detailAddress}`.trim().replace(/\s+/g, ' ');
+        const address = prop.address || "";
+
+        // 지오코딩용 주소 결정: mapAddress > district+address > district만
+        let rawAddress = "";
+        if (mapAddr) {
+          rawAddress = mapAddr;
+        } else if (address && address !== "***") {
+          rawAddress = address;
+        }
+
+        // 주소 정규화 로직
+        let query = "";
+        if (rawAddress) {
+          // 원본 주소가 있으면 district와 결합
+          if (rawAddress.includes("강화") || rawAddress.includes("인천")) {
+            query = rawAddress;
+          } else if (district.includes("강화") || district.includes("인천")) {
+            query = `${district} ${rawAddress}`;
+          } else {
+            query = `인천광역시 강화군 ${district} ${rawAddress}`;
+          }
+        } else {
+          // 원본 주소가 없으면 district만 사용
+          if (!district.includes("강화") && !district.includes("서울") && !district.includes("인천")) {
+            query = `인천광역시 강화군 ${district}`;
+          } else if (district.includes("강화") && !district.includes("군")) {
+            query = district.replace(/강화\s*/, "인천광역시 강화군 ");
+          } else if (district.includes("강화군") && !district.includes("인천")) {
+            query = `인천광역시 ${district}`;
+          } else {
+            query = district;
+          }
+        }
+
+        query = query.trim().replace(/\s+/g, ' ');
+        console.log(`KakaoMap: 주소 검색 시도 (좌표없음) [${prop.id}] -> ${query}`);
 
         if (query.length > 2) {
           geocoder.addressSearch(query, (result: any, status: any) => {
             if (status === window.kakao.maps.services.Status.OK && isMounted) {
+              console.log(`KakaoMap: 주소 검색 성공 [${prop.id}]`);
               addMarker(new window.kakao.maps.LatLng(result[0].y, result[0].x));
             } else {
+              console.warn(`KakaoMap: 주소 검색 실패 [${prop.id}] status: ${status}, query: ${query}`);
               processedCount++;
             }
           });

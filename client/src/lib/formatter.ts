@@ -1,4 +1,6 @@
 
+import { format } from "date-fns";
+
 /**
  * 숫자를 한국식 화폐 단위로 포맷팅합니다.
  * 예: 150000000 -> 1억 5000만원
@@ -35,4 +37,18 @@ export const formatKoreanPrice = (price: string | number | null | undefined): st
     }
 
     return numPrice.toLocaleString() + '원';
+};
+
+/**
+ * 날짜 문자열을 안전하게 포맷팅합니다.
+ */
+export const safeFormatDate = (dateStr: string | Date | null | undefined, includeTime = false) => {
+    if (!dateStr) return "-";
+    try {
+        const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+        if (isNaN(date.getTime())) return "-";
+        return includeTime ? format(date, "yyyy-MM-dd HH:mm") : format(date, "yyyy-MM-dd");
+    } catch (e) {
+        return "-";
+    }
 };

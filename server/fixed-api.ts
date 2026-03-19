@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import { XMLParser } from 'fast-xml-parser';
+import { parse as parseXML } from 'fast-xml-parser';
 import { memoryCache } from './cache';
 
 // 부동산 실거래가 데이터 타입 정의
@@ -38,7 +38,7 @@ export async function getApartmentTransactions(params: {
 
   // 캐시 키 생성
   const cacheKey = `apartment-transactions-${params.LAWD_CD}-${params.DEAL_YMD}`;
-
+  
   // 캐시에 데이터가 있는지 확인
   const cachedData = memoryCache.get<RealEstateTransaction[]>(cacheKey);
   if (cachedData) {
@@ -49,10 +49,10 @@ export async function getApartmentTransactions(params: {
   // 키는 그대로 사용 (인코딩/디코딩 없이)
   // URL은 템플릿 문자열로 직접 구성
   const url = `${baseUrl}?serviceKey=${serviceKey}&LAWD_CD=${params.LAWD_CD}&DEAL_YMD=${params.DEAL_YMD}`;
-
+  
   try {
     console.log(`아파트 실거래 데이터 요청: ${params.LAWD_CD}, ${params.DEAL_YMD}`);
-
+    
     // 요청 헤더 추가
     const response = await fetch(url, {
       method: 'GET',
@@ -61,18 +61,18 @@ export async function getApartmentTransactions(params: {
         'Content-Type': 'application/xml',
       }
     });
-
+    
     // 응답 확인
     if (!response.ok) {
       console.error(`HTTP 오류: ${response.status} ${response.statusText}`);
       throw new Error(`HTTP 오류: ${response.status}`);
     }
-
+    
     const xmlData = await response.text();
-
+    
     // 디버깅: XML 응답 로깅
     console.log('API 응답 일부:', xmlData.substring(0, 300));
-
+    
     // XML을 JSON으로 변환 (fast-xml-parser 사용)
     const options = {
       attributeNamePrefix: '@_',
@@ -81,26 +81,25 @@ export async function getApartmentTransactions(params: {
       parseAttributeValue: true,
       trimValues: true,
     };
-
-    const parser = new XMLParser(options);
-    const parsed = parser.parse(xmlData);
-
+    
+    const parsed = parseXML(xmlData, options);
+    
     // 디버깅: 파싱된 데이터 확인
     console.log('파싱된 데이터 구조:', JSON.stringify(parsed).substring(0, 300));
-
+    
     // 응답 구조 확인 및 에러 처리
     if (!parsed.response) {
       console.error('API 응답 형식 오류: response 객체 없음');
       return [];
     }
-
+    
     // 공공데이터 포털 API 응답 구조에 맞게 파싱
     // 이 부분은 실제 응답 구조에 맞게 조정 필요
     if (!parsed.response.body || !parsed.response.body.items) {
       console.log('API 응답: 데이터 없음');
       return [];
     }
-
+    
     // 데이터 추출 및 변환
     let items = [];
     if (Array.isArray(parsed.response.body.items.item)) {
@@ -110,14 +109,14 @@ export async function getApartmentTransactions(params: {
     } else {
       return [];
     }
-
+    
     // 데이터 정제 및 변환
     const transactions: RealEstateTransaction[] = items.map((item: any) => {
       // 주소 생성
       const legalDong = item.법정동 || '';
       const jibun = item.지번 || '';
       const address = `인천 강화군 ${legalDong} ${jibun}`;
-
+      
       return {
         거래금액: (item.거래금액 || '').trim().replace(/,/g, ''),
         건축년도: item.건축년도,
@@ -137,7 +136,7 @@ export async function getApartmentTransactions(params: {
 
     // 캐시에 데이터 저장 (2시간 동안)
     memoryCache.set(cacheKey, transactions, 2 * 60 * 60 * 1000);
-
+    
     console.log(`${transactions.length}개의 아파트 실거래 데이터 조회 완료`);
     return transactions;
   } catch (error) {

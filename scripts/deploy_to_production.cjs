@@ -14,21 +14,14 @@ async function deploy() {
         const remotePath = '/root/land';
         const localPath = 'e:/server/homepage';
 
-        console.log('📦 Cleaning remote dist and server folders...');
+        console.log('📤 Uploading dist.tar.gz...');
+        await ssh.putFile(path.join(localPath, 'dist.tar.gz'), path.join(remotePath, 'dist.tar.gz'));
+
+        console.log('📦 Cleaning remote dist and server folders and extracting tarball...');
         // We keep uploads/ and database.sqlite
-        await ssh.execCommand('rm -rf dist/ server/ shared/', { cwd: remotePath });
-
-        console.log('📤 Uploading dist/ folder...');
-        await ssh.putDirectory(path.join(localPath, 'dist'), path.join(remotePath, 'dist'));
-
-        console.log('📤 Uploading server/ folder...');
-        await ssh.putDirectory(path.join(localPath, 'server'), path.join(remotePath, 'server'));
-
-        console.log('📤 Uploading shared/ folder...');
-        await ssh.putDirectory(path.join(localPath, 'shared'), path.join(remotePath, 'shared'));
-
-        console.log('📤 Uploading package.json...');
-        await ssh.putFile(path.join(localPath, 'package.json'), path.join(remotePath, 'package.json'));
+        await ssh.execCommand('rm -rf dist/ server/ shared/ package.json', { cwd: remotePath });
+        await ssh.execCommand('tar -xzf dist.tar.gz', { cwd: remotePath });
+        await ssh.execCommand('rm dist.tar.gz', { cwd: remotePath });
 
         console.log('⚙️ Installing dependencies on server...');
         const installResult = await ssh.execCommand('npm install --production', { cwd: remotePath });

@@ -1,10 +1,20 @@
 import fetch from 'node-fetch';
 import { storage } from '../storage';
 import { insertCrawledPropertySchema } from '@shared/schema';
+import { log } from '../vite';
 
 // Naver Land API Headers
-const HEADERS = {
-    "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+// Naver Land API Headers list for rotation
+const USER_AGENTS = [
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+    "Mozilla/5.0 (Linux; Android 13; SM-S901B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36",
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+];
+
+const getHeaders = () => ({
+    "User-Agent": USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)],
     "Accept": "application/json, text/javascript, */*; q=0.01",
     "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
     "Accept-Encoding": "gzip, deflate, br",
@@ -13,7 +23,7 @@ const HEADERS = {
     "Sec-Fetch-Dest": "empty",
     "Sec-Fetch-Mode": "cors",
     "Sec-Fetch-Site": "same-site"
-};
+});
 
 // Ganghwa-gun Full Region Bounds
 const GANGHWA_FULL_BOUNDS = {
@@ -26,9 +36,9 @@ const GANGHWA_FULL_BOUNDS = {
 // 정밀 강화도 경계 (좌표 기반 필터링용)
 const GANGHWA_PRECISION_BOUNDS = {
     minLat: 37.580,
-    maxLat: 37.850,
+    maxLat: 37.855, // Slightly increased to catch north edge items
     minLon: 126.250,
-    maxLon: 126.525 // 김포 매물 유입 방지
+    maxLon: 126.535 // Slightly increased to catch east edge items
 };
 
 // 지역별 좌표 프리셋
@@ -49,11 +59,12 @@ export const REGION_BOUNDS: Record<string, { minLat: number, minLon: number, max
 
 export class NaverCrawler {
     private sleep(ms: number) {
-        return new Promise(resolve => setTimeout(resolve, ms));
+        // Randomize delay between 80% and 150% of base value
+        const randomMs = Math.floor(ms * (0.8 + Math.random() * 0.7));
+        return new Promise(resolve => setTimeout(resolve, randomMs));
     }
 
-    async fetchAndSave(bounds?: { minLat: number, minLon: number, maxLat: number, maxLon: number }) {
-        console.log(`[Crawler] Starting SINGLE crawl...`);
+    async fetchAndSave(bounds?: { minLat: number, minLon: number, maxLat: number, maxLon: number }, mode: 'single' | 'grid' = 'single') {
         const defaultBounds = {
             minLat: 37.730,
             minLon: 126.470,
@@ -61,59 +72,85 @@ export class NaverCrawler {
             maxLon: 126.500
         };
 
-        return this.crawlSingle(bounds || defaultBounds);
-    }
+        let targetBounds = bounds;
+        if (!targetBounds) {
+            targetBounds = mode === 'grid' ? GANGHWA_FULL_BOUNDS : defaultBounds;
+        }
 
-    async fetchAndSaveGrid(bounds?: { minLat: number, minLon: number, maxLat: number, maxLon: number }) {
-        return this.crawlGrid(bounds || GANGHWA_FULL_BOUNDS);
+        if (mode === 'grid') {
+            return this.crawlGrid(targetBounds);
+        } else {
+            return this.crawlSingle(targetBounds);
+        }
     }
 
     async crawlGrid(bounds: { minLat: number, minLon: number, maxLat: number, maxLon: number }) {
-        console.log(`[Crawler] Starting GRID crawl for: ${JSON.stringify(bounds)}`);
+        console.log(`[Crawler] Starting Advanced Radius-based Grid crawl...`);
 
-        const ROWS = 4;
-        const COLS = 4;
-
-        const latStep = (bounds.maxLat - bounds.minLat) / ROWS;
-        const lonStep = (bounds.maxLon - bounds.minLon) / COLS;
+        // 핵심 밀집 지역 좌표 (강화읍, 길상면 등 주요 거점)
+        const focalPoints = [
+            { lat: 37.746, lon: 126.487, radius: 0.02, label: "강화읍 중심" },
+            { lat: 37.645, lon: 126.494, radius: 0.03, label: "길상/온수리" },
+            { lat: 37.620, lon: 126.400, radius: 0.04, label: "화도/마니산" },
+            { lat: 37.705, lon: 126.410, radius: 0.03, label: "양도/내가" },
+            { lat: 37.800, lon: 126.440, radius: 0.05, label: "하점/송해" },
+            { lat: 37.830, lon: 126.440, radius: 0.03, label: "양사/북단" }, // 북단 추가
+            { lat: 37.780, lon: 126.300, radius: 0.04, label: "교동" },
+            { lat: 37.700, lon: 126.320, radius: 0.05, label: "삼산/석모" }
+        ];
 
         let totalSaved = 0;
         let totalFetched = 0;
         const processedSet = new Set<string>();
 
+        // 1. 핵심 지역 정밀 수집
+        for (const point of focalPoints) {
+            console.log(`[Crawler] Focus: ${point.label}...`);
+            const sectorBounds = {
+                minLat: point.lat - point.radius,
+                maxLat: point.lat + point.radius,
+                minLon: point.lon - point.radius,
+                maxLon: point.lon + point.radius
+            };
+            const result = await this.crawlSingle(sectorBounds, processedSet);
+            if (result.message === "Abuse detected") return result;
+            totalSaved += result.count;
+            totalFetched += result.totalFetched;
+            await this.sleep(3000); // 간격 확대
+        }
+
+        // 2. 전체 그리드 보완 수집 (10x10)
+        const ROWS = 10;
+        const COLS = 10;
+        const latStep = (bounds.maxLat - bounds.minLat) / ROWS;
+        const lonStep = (bounds.maxLon - bounds.minLon) / COLS;
+
         for (let i = 0; i < ROWS; i++) {
             for (let j = 0; j < COLS; j++) {
-                const fileMinLat = bounds.minLat + (i * latStep);
-                const fileMaxLat = fileMinLat + latStep;
-                const fileMinLon = bounds.minLon + (j * lonStep);
-                const fileMaxLon = fileMinLon + lonStep;
-
                 const sectorBounds = {
-                    minLat: fileMinLat,
-                    minLon: fileMinLon,
-                    maxLat: fileMaxLat,
-                    maxLon: fileMaxLon
+                    minLat: bounds.minLat + (i * latStep),
+                    maxLat: bounds.minLat + ((i + 1) * latStep),
+                    minLon: bounds.minLon + (j * lonStep),
+                    maxLon: bounds.minLon + ((j + 1) * lonStep)
                 };
 
-                console.log(`[Crawler] Sector ${i}-${j} started: ${JSON.stringify(sectorBounds)}`);
+                console.log(`[Crawler] Global Sector ${i}-${j}: ${JSON.stringify(sectorBounds)}`);
 
                 try {
                     const result = await this.crawlSingle(sectorBounds, processedSet);
+                    if (result.message === "Abuse detected") return result;
                     totalSaved += result.count;
                     totalFetched += result.totalFetched;
-                    console.log(`[Crawler] Sector ${i}-${j} complete. Saved: ${result.count}, Total: ${totalSaved}`);
-
-                    // Sleep 2 seconds between sectors to avoid detection
-                    await this.sleep(2000);
+                    await this.sleep(2000); // 간격 확대
                 } catch (err) {
                     console.error(`[Crawler] Sector ${i}-${j} failed:`, err);
-                    await this.sleep(5000); // Wait longer on error
+                    await this.sleep(3000);
                 }
             }
         }
 
-        console.log(`[Crawler] FULL Grid crawl finished. Final Saved: ${totalSaved}`);
-        return { success: true, count: totalSaved, totalFetched: totalFetched, message: "Grid crawl completed" };
+        console.log(`[Crawler] Advanced crawl finished. Final Saved: ${totalSaved}`);
+        return { success: true, count: totalSaved, totalFetched: totalFetched, message: "Advanced crawl completed" };
     }
 
     async crawlSingle(bounds: { minLat: number, minLon: number, maxLat: number, maxLon: number }, processedSet?: Set<string>) {
@@ -150,15 +187,18 @@ export class NaverCrawler {
                 });
 
                 try {
-                    console.log(`[Crawler] Fetching ${group.label} P${page}... URL: ${url}?${params.toString().substring(0, 50)}...`);
                     const response = await fetch(`${url}?${params.toString()}`, {
                         method: "GET",
-                        headers: HEADERS,
+                        headers: getHeaders(),
                         redirect: "manual" // 리다이렉트를 수동으로 체크
                     });
 
                     if (response.status === 301 || response.status === 302 || response.status === 307 || response.status === 308) {
                         const redirectUrl = response.headers.get('location');
+                        if (redirectUrl?.includes('error/abuse') || redirectUrl?.includes('nid.naver.com')) {
+                            log(`[Crawler] !!! Naver Abuse Detected !!! Stopping crawl to prevent IP ban. URL: ${redirectUrl}`, 'error');
+                            return { success: false, count: savedCount, totalFetched: totalFetchedCount, message: "Abuse detected" };
+                        }
                         console.error(`[Crawler] ${group.label} P${page} Redirected to: ${redirectUrl}`);
                         break;
                     }
@@ -196,6 +236,8 @@ export class NaverCrawler {
                                 tradTpNm: article.tradTpNm,
                                 flrInfo: article.flrInfo,
                                 prc: String(article.prc),
+                                rentPrc: article.rentPrc ? String(article.rentPrc) : null,
+                                depositPrc: article.dps ? String(article.dps) : null,
                                 spc1: article.spc1 ? String(article.spc1) : null,
                                 spc2: article.spc2 ? String(article.spc2) : null,
                                 direction: article.direction,
@@ -203,8 +245,8 @@ export class NaverCrawler {
                                 lng,
                                 imgUrl: article.repImgUrl ? `https://landthumb-phinf.pstatic.net${article.repImgUrl}` : null,
                                 rltrNm: article.rltrNm || null,
-                                landType: article.atclNm || null,
-                                zoneType: article.flrInfo || null,
+                                landType: null,
+                                zoneType: null,
                             };
 
                             await storage.createCrawledProperty(crawledItem);
@@ -229,6 +271,47 @@ export class NaverCrawler {
         }
 
         return { success: true, count: savedCount, totalFetched: totalFetchedCount };
+    }
+
+    setupCrawlerScheduler() {
+        log(`[info] 네이버 매물 자동 수집 스케줄러 초기화`, 'info');
+
+        // 매 분마다 시간 체크하여 오전 8시에 수집 (KST 기준)
+        const CHECK_INTERVAL = 60 * 1000; // 1분
+        let lastRunDate = "";
+
+        setInterval(async () => {
+            const now = new Date();
+            const utcNow = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
+            const kstOffset = 9 * 60 * 60 * 1000;
+            const kstDate = new Date(utcNow + kstOffset);
+
+            const currentHour = kstDate.getHours();
+            const currentMinute = kstDate.getMinutes();
+            const currentDateString = kstDate.toISOString().split('T')[0];
+
+            // 실행 조건: 오전 8시 00분~05분 사이, 오늘 아직 실행하지 않음
+            if (currentHour === 8 && currentMinute < 5 && lastRunDate !== currentDateString) {
+                log(`[scheduler] 네이버 매물 자동 수집 시작 (KST 08:00)`, 'info');
+                lastRunDate = currentDateString;
+
+                try {
+                    // 1. 기존 데이터 초기화 (대표님 요청: 전체 초기화 후 수집)
+                    log(`[scheduler] 기존 매물 데이터 초기화 중...`, 'info');
+                    await storage.clearCrawledProperties();
+
+                    // 2. 전체 그리드 수집 시작 (10x10)
+                    log(`[scheduler] 네이버 전체 지역 정밀 수집(Grid) 시작...`, 'info');
+                    await this.crawlGrid(GANGHWA_FULL_BOUNDS);
+
+                    log(`[scheduler] 네이버 매물 자동 수집 완료`, 'info');
+                } catch (err) {
+                    log(`[scheduler] 네이버 자동 수집 실패: ${err}`, 'error');
+                }
+            }
+        }, CHECK_INTERVAL);
+
+        log(`[info] 네이버 수집 스케줄러 설정 완료 (매일 오전 8시 실행)`, 'info');
     }
 }
 

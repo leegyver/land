@@ -43,8 +43,7 @@ export const SajuProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const date = new Date(user.birthDate);
             setUserBirthDate(date);
             if (user.birthTime) setUserBirthTime(user.birthTime);
-            // TODO: user profile needs isLunar field.
-            const userIsLunar = (user as any).isLunar || false;
+            const userIsLunar = user.isLunar ?? false;
             setIsLunar(userIsLunar);
 
             const data = calculateSaju(date, user.birthTime || undefined, userIsLunar);

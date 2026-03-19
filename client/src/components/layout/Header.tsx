@@ -64,11 +64,9 @@ const Header = () => {
                   <Button variant="ghost" className="flex items-center gap-2">
                     <User size={18} />
                     <span className="font-medium">
-                      {user.username}
-                      {/* @ts-ignore */}
+                      {user.nickname || user.username}
                       {user.provider && (
                         <span className="ml-1 text-xs text-slate-400">
-                          {/* @ts-ignore */}
                           ({user.provider === 'naver' ? '네이버' : user.provider === 'kakao' ? '카카오' : user.provider})
                         </span>
                       )}
@@ -77,16 +75,20 @@ const Header = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>내 계정</DropdownMenuLabel>
-                  <DropdownMenuItem onClick={() => setLocation("/profile")} className="flex items-center w-full cursor-pointer">
-                    <User className="mr-2 h-4 w-4" />
-                    <span>내 프로필</span>
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile" className="flex items-center w-full cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>내 프로필</span>
+                    </Link>
                   </DropdownMenuItem>
-                  {user.role === "admin" && (
+                  {(user.role === "admin" || user.role === "realtor") && (
                     <>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => setLocation("/admin")} className="flex items-center w-full cursor-pointer">
-                        <Settings className="mr-2 h-4 w-4" />
-                        <span>관리자 패널</span>
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin" className="flex items-center w-full cursor-pointer">
+                          <Settings className="mr-2 h-4 w-4" />
+                          <span>{user.role === "admin" ? "관리자 패널" : "매물 관리"}</span>
+                        </Link>
                       </DropdownMenuItem>
                     </>
                   )}
@@ -110,7 +112,7 @@ const Header = () => {
           {/* Mobile Navigation */}
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="default" className="md:hidden px-3 py-2 text-sm font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-md">
+              <Button variant="default" className="md:hidden px-3 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white shadow-md">
                 모든메뉴보기
               </Button>
             </SheetTrigger>
@@ -135,11 +137,9 @@ const Header = () => {
                       <div className="flex items-center mb-4 text-primary font-medium">
                         <User size={18} className="mr-2" />
                         <span>
-                          {user.username}
-                          {/* @ts-ignore */}
+                          {user.nickname || user.username}
                           {user.provider && (
                             <span className="ml-1 text-xs text-indigo-400">
-                              {/* @ts-ignore */}
                               ({user.provider === 'naver' ? '네이버' : user.provider === 'kakao' ? '카카오' : user.provider})
                             </span>
                           )}
@@ -151,28 +151,24 @@ const Header = () => {
                         )}
                       </div>
 
-                      <button
-                        onClick={() => {
-                          setMobileMenuOpen(false);
-                          setLocation("/profile");
-                        }}
-                        className="flex items-center py-2 text-lg font-medium text-neutral-800 hover:text-primary w-full text-left"
+                      <Link
+                        href="/profile"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center py-2 text-lg font-medium text-neutral-800 hover:text-primary"
                       >
                         <User className="mr-2 h-5 w-5" />
                         내 프로필
-                      </button>
+                      </Link>
 
-                      {user.role === "admin" && (
-                        <button
-                          onClick={() => {
-                            setMobileMenuOpen(false);
-                            setLocation("/admin");
-                          }}
-                          className="flex items-center py-2 text-lg font-medium text-neutral-800 hover:text-primary w-full text-left"
+                      {(user.role === "admin" || user.role === "realtor") && (
+                        <Link
+                          href="/admin"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center py-2 text-lg font-medium text-neutral-800 hover:text-primary"
                         >
                           <Settings className="mr-2 h-5 w-5" />
-                          관리자 패널
-                        </button>
+                          {user.role === "admin" ? "관리자 패널" : "매물 관리"}
+                        </Link>
                       )}
 
                       <button
@@ -187,16 +183,14 @@ const Header = () => {
                       </button>
                     </>
                   ) : (
-                    <button
-                      onClick={() => {
-                        setMobileMenuOpen(false);
-                        setLocation("/auth");
-                      }}
-                      className="flex items-center py-2 text-lg font-medium text-neutral-800 hover:text-primary w-full text-left"
+                    <Link
+                      href="/auth"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center py-2 text-lg font-medium text-neutral-800 hover:text-primary"
                     >
                       <LogIn className="mr-2 h-5 w-5" />
                       로그인 / 회원가입
-                    </button>
+                    </Link>
                   )}
                 </div>
               </div>

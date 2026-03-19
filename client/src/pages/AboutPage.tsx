@@ -30,12 +30,12 @@ const AboutPage = () => {
                 <title>부동산소개 | 이가이버부동산</title>
                 <meta
                     name="description"
-                    content="강화도에서 10년, 고객과 함께한 이가이버 부동산의 이야기와 철학을 소개합니다."
+                    content="강화도에서 20년, 고객과 함께한 이가이버 부동산의 이야기와 철학을 소개합니다."
                 />
             </Helmet>
 
             {/* Hero Section */}
-            <section className="relative h-[400px] md:h-[500px] flex items-center justify-center overflow-hidden">
+            <section className="relative h-[250px] md:h-[300px] flex items-center justify-center overflow-hidden">
                 <div className="absolute inset-0 bg-slate-900">
                     <div className="absolute inset-0 opacity-40 bg-[url('https://images.unsplash.com/photo-1500382017468-9049fee74a62?auto=format&fit=crop&q=80')] bg-cover bg-center" />
                     <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-900/80" />
@@ -47,12 +47,11 @@ const AboutPage = () => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6 }}
                     >
-                        <Badge className="mb-4 bg-primary text-white border-none py-1 px-4 text-sm font-bold">Since 2014</Badge>
-                        <h1 className="text-3xl md:text-6xl font-black text-white mb-6 leading-tight">
-                            강화도에서 10년,<br />고객과 함께한 이야기
+                        <Badge className="mb-2 bg-primary text-white border-none py-1 px-4 text-xs font-bold">Since 2006</Badge>
+                        <h1 className="text-2xl md:text-5xl font-black text-white mb-4 leading-tight">
+                            강화도에서 20년,<br />고객과 함께한 이야기
                         </h1>
-                        <p className="text-lg md:text-xl text-slate-200 max-w-2xl mx-auto font-light">
-                            진심을 담은 한 번의 인연이 평생의 신뢰로 이어질 수 있도록,<br className="hidden md:block" />
+                        <p className="text-base md:text-lg text-slate-200 max-w-2xl mx-auto font-light">
                             강화도의 가치를 누구보다 깊이 이해하는 전문가가 함께합니다.
                         </p>
                     </motion.div>
@@ -60,7 +59,7 @@ const AboutPage = () => {
             </section>
 
             {/* CEO Profile & Philosophy */}
-            <section className="py-20 bg-white">
+            <section className="py-12 bg-white">
                 <div className="container mx-auto px-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
                         <motion.div
@@ -72,8 +71,8 @@ const AboutPage = () => {
                         >
                             <div className="aspect-[4/5] rounded-2xl overflow-hidden shadow-2xl relative z-10">
                                 <img
-                                    src="/brain/2454dd71-e38a-4ac3-b7fc-ee99f0794c2e/ceo_profile_image.png"
-                                    alt="이가이버 대표"
+                                    src="/assets/uploads/ceo_profile.jpg"
+                                    alt="이가이버 공인중개사 대표"
                                     className="w-full h-full object-cover"
                                 />
                             </div>
@@ -100,7 +99,7 @@ const AboutPage = () => {
                                         강화도라는 섬이 가진 매력과 가치는 단순히 평당 가격으로 환산될 수 없습니다. 누군가에게는 새로운 시작의 터전이고, 누군가에게는 평온한 노후의 안식처이며, 또 누군가에게는 성공을 위한 기회의 땅이기 때문입니다.
                                     </p>
                                     <p>
-                                        지난 10년간 강화도 곳곳을 발로 뛰며 배운 것은 '정직한 정보'와 '깊은 통찰'의 중요성입니다. 저는 단순히 매물을 매칭하는 중개인이 아니라, 고객의 꿈이 실현될 수 있도록 돕는 파트너가 되고자 합니다.
+                                        지난 20년간 강화도 곳곳을 발로 뛰며 배운 것은 '정직한 정보'와 '깊은 통찰'의 중요성입니다. 저는 단순히 매물을 매칭하는 중개인이 아니라, 고객의 꿈이 실현될 수 있도록 돕는 파트너가 되고자 합니다.
                                     </p>
                                 </div>
                             </div>
@@ -117,7 +116,7 @@ const AboutPage = () => {
                                     <CheckCircle className="w-6 h-6 text-primary flex-shrink-0" />
                                     <div>
                                         <h4 className="font-bold text-slate-900">현장 중심</h4>
-                                        <p className="text-sm text-slate-500">강화도 10년, 깊이 있는 지역 전문성</p>
+                                        <p className="text-sm text-slate-500">강화도 20년, 깊이 있는 지역 전문성</p>
                                     </div>
                                 </div>
                             </div>
@@ -131,7 +130,7 @@ const AboutPage = () => {
                 <div className="container mx-auto px-4">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
                         <div>
-                            <div className="text-4xl md:text-5xl font-black text-primary mb-2">10+</div>
+                            <div className="text-4xl md:text-5xl font-black text-primary mb-2">20+</div>
                             <p className="text-slate-400 text-sm uppercase tracking-widest">강화도 경력</p>
                         </div>
                         <div>

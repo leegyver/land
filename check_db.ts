@@ -1,23 +1,27 @@
-import Database from 'better-sqlite3';
-import path from 'path';
+import { sqlite } from "./server/db";
 
-const dbPath = path.join(process.cwd(), 'database.sqlite');
-const db = new Database(dbPath);
-
-console.log('--- Checking Users ---');
-const users = db.prepare("SELECT id, username, realtorName, businessName FROM users WHERE username LIKE '%이가이버%' OR realtorName LIKE '%이가이버%'").all();
-console.log(users);
-
-console.log('\n--- Checking Properties ---');
-const properties = db.prepare("SELECT id, title, agentName FROM properties WHERE agentName LIKE '%이가이버%'").all();
-console.log(properties);
-
-console.log('\n--- Checking Agents ---');
-try {
-    const agents = db.prepare("SELECT id, realtorName FROM agents WHERE realtorName LIKE '%이가이버%'").all();
-    console.log(agents);
-} catch (e) {
-    console.log('Agents table might not exist or schema is different.');
+async function checkSchema() {
+  try {
+    console.log("Checking columns for 'properties' table...");
+    const columns = sqlite.prepare("PRAGMA table_info(properties)").all();
+    console.log("Columns found:");
+    console.table(columns);
+    
+    const columnNames = columns.map((c: any) => c.name);
+    const requiredColumns = ['urgentOrder', 'negotiableOrder', 'longTermOrder', 'displayOrder'];
+    
+    for (const col of requiredColumns) {
+      if (columnNames.includes(col)) {
+        console.log(`✅ Column '${col}' exists.`);
+      } else {
+        console.log(`❌ Column '${col}' IS MISSING!`);
+      }
+    }
+  } catch (error) {
+    console.error("Error checking schema:", error);
+  } finally {
+    process.exit(0);
+  }
 }
 
-db.close();
+checkSchema();

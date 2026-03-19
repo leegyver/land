@@ -4,7 +4,7 @@ description: Pack, upload, rebuild and restart the application on the production
 // turbo-all
 1. Pack the source files into update.tar.
 ```powershell
-tar -cvf update.tar client/src server client/public client/index.html tailwind.config.ts vite.config.ts package.json tsconfig.json postcss.config.js shared
+tar -cvf update.tar client/src server client/public client/index.html tailwind.config.ts vite.config.ts package.json package-lock.json tsconfig.json postcss.config.js shared
 ```
 
 2. Upload the archive to the server.

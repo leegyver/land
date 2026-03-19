@@ -1,87 +1,39 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Helmet } from "react-helmet";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation, useSearch } from "wouter";
 import { Property } from "@shared/schema";
+import { SpeechRecognition, SpeechRecognitionEvent } from "@/types/speech-recognition";
+import PropertyCard from "@/components/property/PropertyCard";
+import CompactPropertyItem from "@/components/property/CompactPropertyItem";
+import PropertyMap from "@/components/map/PropertyMap";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import PropertyCard from "@/components/property/PropertyCard";
-import { Skeleton } from "@/components/ui/skeleton";
-import { MapIcon, Mic, MicOff, Search, X, Sparkles, ArrowLeft } from "lucide-react";
-import PropertyMap from "@/components/map/PropertyMap";
-import { Input } from "@/components/ui/input";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import { Search, Map as MapIcon, X, Mic, MicOff, Sparkles, ArrowLeft } from "lucide-react";
+import { useLocation, useSearch } from "wouter";
 import { useSaju } from "@/contexts/SajuContext";
-import { useAuth } from "@/hooks/use-auth";
 import { getCompatibilityScore } from "@/lib/saju";
-import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/use-auth";
+import { Helmet } from "react-helmet";
+import { Separator } from "@/components/ui/separator";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 
 const formSchema = z.object({
   district: z.string(),
   type: z.string(),
+  dealType: z.string(),
   priceRange: z.string(),
+  sortBy: z.string(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-// Web Speech API 타입 선언
-interface SpeechRecognitionEvent extends Event {
-  results: SpeechRecognitionResultList;
-  resultIndex: number;
-}
-
-interface SpeechRecognitionResultList {
-  length: number;
-  item(index: number): SpeechRecognitionResult;
-  [index: number]: SpeechRecognitionResult;
-}
-
-interface SpeechRecognitionResult {
-  isFinal: boolean;
-  length: number;
-  item(index: number): SpeechRecognitionAlternative;
-  [index: number]: SpeechRecognitionAlternative;
-}
-
-interface SpeechRecognitionAlternative {
-  transcript: string;
-  confidence: number;
-}
-
-interface SpeechRecognition extends EventTarget {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  onstart: ((this: SpeechRecognition, ev: Event) => void) | null;
-  onend: ((this: SpeechRecognition, ev: Event) => void) | null;
-  onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => void) | null;
-  onerror: ((this: SpeechRecognition, ev: Event) => void) | null;
-  start(): void;
-  stop(): void;
-  abort(): void;
-}
-
-declare global {
-  interface Window {
-    SpeechRecognition: new () => SpeechRecognition;
-    webkitSpeechRecognition: new () => SpeechRecognition;
-  }
-}
+// Speech recognition types are provided by src/types/speech-recognition.d.ts
 
 const PropertiesPage = () => {
   const [location, setLocation] = useLocation();
@@ -89,10 +41,11 @@ const PropertiesPage = () => {
   const { sajuData } = useSaju();
   const { user } = useAuth();
 
-  // useSearch 훅에서 초기값 파싱 (wouter의 반응형 쿼리 문자열 사용)
+  // useSearch 훅에서 초기값 파싱
   const initialParams = new URLSearchParams(search);
   const initialDistrict = initialParams.get("district") || "all";
   const initialType = initialParams.get("type") || "all";
+  const initialDealType = initialParams.get("dealType") || "all";
   const initialMinPrice = initialParams.get("minPrice");
   const initialMaxPrice = initialParams.get("maxPrice");
   const initialTag = initialParams.get("tag");
@@ -107,11 +60,19 @@ const PropertiesPage = () => {
   const [filterParams, setFilterParams] = useState({
     district: initialDistrict,
     type: initialType,
+    dealType: initialDealType,
     minPrice: initialMinPrice,
     maxPrice: initialMaxPrice,
     keyword: initialKeyword,
     tag: initialTag,
+    sortBy: initialParams.get("sortBy") || "latest",
   });
+
+  // 전문가 매물 상태
+  const [expertPage, setExpertPage] = useState(1);
+
+  // 공동 중개 매물 상태
+  const [coBrokerPage, setCoBrokerPage] = useState(1);
 
   // 음성검색 관련 상태
   const [searchKeyword, setSearchKeyword] = useState(initialKeyword);
@@ -125,645 +86,382 @@ const PropertiesPage = () => {
     if (SpeechRecognition) {
       setSpeechSupported(true);
       recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = 'ko-KR'; // 한국어 설정
+      const recognition = recognitionRef.current;
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'ko-KR';
 
-      recognitionRef.current.onstart = () => {
-        setIsListening(true);
-      };
-
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-      };
-
-      recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+      recognition.onstart = () => setIsListening(true);
+      recognition.onend = () => setIsListening(false);
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
         const transcript = event.results[0][0].transcript;
         setSearchKeyword(transcript);
-        // 음성인식 완료 후 자동 검색
         handleVoiceSearch(transcript);
       };
-
-      recognitionRef.current.onerror = () => {
+      recognition.onerror = (event: any) => {
+        console.error("Speech recognition error:", event.error);
         setIsListening(false);
       };
     }
-
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.abort();
-      }
-    };
+    return () => recognitionRef.current?.abort();
   }, []);
 
-  // 음성인식 시작/중지
   const toggleListening = useCallback(() => {
     if (!recognitionRef.current) return;
-
-    if (isListening) {
-      recognitionRef.current.stop();
-    } else {
-      recognitionRef.current.start();
-    }
+    isListening ? recognitionRef.current.stop() : recognitionRef.current.start();
   }, [isListening]);
 
-  // 음성검색 실행 (기존 필터 유지)
   const handleVoiceSearch = useCallback((keyword: string) => {
     if (!keyword.trim()) return;
-
     const newParams = new URLSearchParams();
     newParams.append("keyword", keyword.trim());
-
-    // 기존 필터 값 유지
-    if (filterParams.district && filterParams.district !== "all") {
-      newParams.append("district", filterParams.district);
-    }
-    if (filterParams.type && filterParams.type !== "all") {
-      newParams.append("type", filterParams.type);
-    }
+    if (filterParams.district && filterParams.district !== "all") newParams.append("district", filterParams.district);
+    if (filterParams.type && filterParams.type !== "all") newParams.append("type", filterParams.type);
+    if (filterParams.dealType && filterParams.dealType !== "all") newParams.append("dealType", filterParams.dealType);
     if (filterParams.minPrice && filterParams.maxPrice) {
       newParams.append("minPrice", filterParams.minPrice);
       newParams.append("maxPrice", filterParams.maxPrice);
     }
-    if (filterParams.tag) {
-      newParams.append("tag", filterParams.tag);
-    }
-
-    // 추천 상태 유지 여부 결정 (현재는 검색시 추천 해제하는 것이 자연스러움)
-    // if (isRecommend) newParams.append("recommend", "true");
-
+    if (filterParams.tag) newParams.append("tag", filterParams.tag);
+    if (filterParams.sortBy) newParams.append("sortBy", filterParams.sortBy);
     setLocation(`/properties?${newParams.toString()}`);
-  }, [setLocation, filterParams, isRecommend]);
+  }, [setLocation, filterParams]);
 
-  // form 객체가 초기화된 후에 handleKeywordSearch를 정의해야 하므로,
-  // form.getValues()를 사용하기 위한 간접 호출 패턴을 사용
   const getFormValues = useRef<any>(null);
 
-  // 키워드 검색 실행 (현재 폼 필터 값 사용)
   const handleKeywordSearch = useCallback(() => {
     const newParams = new URLSearchParams();
-
-    // 키워드가 있으면 추가
-    if (searchKeyword.trim()) {
-      newParams.append("keyword", searchKeyword.trim());
-    }
-
-    // 현재 폼 값을 직접 사용 (간접 호출)
+    if (searchKeyword.trim()) newParams.append("keyword", searchKeyword.trim());
     const formValues = getFormValues.current?.();
     if (formValues) {
-      if (formValues.district && formValues.district !== "all") {
-        newParams.append("district", formValues.district);
-      }
-      if (formValues.type && formValues.type !== "all") {
-        newParams.append("type", formValues.type);
-      }
+      if (formValues.district && formValues.district !== "all") newParams.append("district", formValues.district);
+      if (formValues.type && formValues.type !== "all") newParams.append("type", formValues.type);
+      if (formValues.dealType && formValues.dealType !== "all") newParams.append("dealType", formValues.dealType);
       if (formValues.priceRange && formValues.priceRange !== "all") {
-        const [minPrice, maxPrice] = formValues.priceRange.split("-");
-        if (minPrice && maxPrice) {
-          newParams.append("minPrice", minPrice);
-          newParams.append("maxPrice", maxPrice);
-        }
+        const [min, max] = formValues.priceRange.split("-");
+        newParams.append("minPrice", min);
+        newParams.append("maxPrice", max);
       }
+      if (formValues.sortBy) newParams.append("sortBy", formValues.sortBy);
     }
-
-    const newUrl = newParams.toString() ? `/properties?${newParams.toString()}` : '/properties';
-    setLocation(newUrl);
+    if (filterParams.tag) newParams.append("tag", filterParams.tag);
+    setLocation(newParams.toString() ? `/properties?${newParams.toString()}` : '/properties');
   }, [searchKeyword, setLocation]);
 
-  // 키워드 검색 초기화 (현재 폼 필터 값 유지)
   const clearKeyword = useCallback(() => {
     setSearchKeyword("");
-
     const newParams = new URLSearchParams();
-
-    // 현재 폼 값을 직접 사용
     const formValues = getFormValues.current?.();
     if (formValues) {
-      if (formValues.district && formValues.district !== "all") {
-        newParams.append("district", formValues.district);
-      }
-      if (formValues.type && formValues.type !== "all") {
-        newParams.append("type", formValues.type);
-      }
+      if (formValues.district && formValues.district !== "all") newParams.append("district", formValues.district);
+      if (formValues.type && formValues.type !== "all") newParams.append("type", formValues.type);
+      if (formValues.dealType && formValues.dealType !== "all") newParams.append("dealType", formValues.dealType);
       if (formValues.priceRange && formValues.priceRange !== "all") {
-        const [minPrice, maxPrice] = formValues.priceRange.split("-");
-        if (minPrice && maxPrice) {
-          newParams.append("minPrice", minPrice);
-          newParams.append("maxPrice", maxPrice);
-        }
+        const [min, max] = formValues.priceRange.split("-");
+        newParams.append("minPrice", min);
+        newParams.append("maxPrice", max);
       }
+      if (formValues.sortBy) newParams.append("sortBy", formValues.sortBy);
     }
-
-    // 태그 유지
-    if (filterParams.tag) {
-      newParams.append("tag", filterParams.tag);
-    }
-
-    const newUrl = newParams.toString() ? `/properties?${newParams.toString()}` : '/properties';
-    setLocation(newUrl);
+    if (filterParams.tag) newParams.append("tag", filterParams.tag);
+    setLocation(newParams.toString() ? `/properties?${newParams.toString()}` : '/properties');
   }, [setLocation, filterParams]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      district: initialDistrict,
-      type: initialType,
-      priceRange: initialPriceRange,
-    },
+    defaultValues: { district: initialDistrict, type: initialType, dealType: initialDealType, priceRange: initialPriceRange },
   });
-
-  // getFormValues ref 설정 (handleKeywordSearch에서 사용)
   getFormValues.current = () => form.getValues();
 
-  // URL이 변경될 때 폼 값 업데이트
   useEffect(() => {
-    // wouter의 useSearch 훅을 통해 쿼리 문자열 가져오기
     const params = new URLSearchParams(search);
     const district = params.get("district") || "all";
     const type = params.get("type") || "all";
+    const dealType = params.get("dealType") || "all";
     const minPrice = params.get("minPrice");
     const maxPrice = params.get("maxPrice");
     const keyword = params.get("keyword") || "";
     const tag = params.get("tag");
+    const sortBy = params.get("sortBy") || "latest";
 
     let priceRange = "all";
-    if (minPrice && maxPrice) {
-      priceRange = `${minPrice}-${maxPrice}`;
-    }
+    if (minPrice && maxPrice) priceRange = `${minPrice}-${maxPrice}`;
 
-    console.log("URL에서 파싱된 파라미터:", { district, type, minPrice, maxPrice, priceRange, keyword });
-
-    form.reset({
-      district,
-      type,
-      priceRange,
-    });
-
+    form.reset({ district, type, dealType, priceRange, sortBy });
     setSearchKeyword(keyword);
-
-    setFilterParams({
-      district,
-      type,
-      minPrice: minPrice,
-      maxPrice: maxPrice,
-      keyword: keyword,
-      tag: tag,
-    });
+    setFilterParams({ district, type, dealType, minPrice, maxPrice, keyword, tag, sortBy });
+    // 페이지 초기화
+    setExpertPage(1);
+    setCoBrokerPage(1);
   }, [search]);
 
-  const { data: properties, isLoading, error } = useQuery<Property[]>({
-    queryKey: ["/api/search", filterParams.district, filterParams.type, filterParams.minPrice, filterParams.maxPrice, filterParams.keyword, filterParams.tag, false], // includeCrawled=false for list
-    queryFn: async () => {
-      // 검색 파라미터 구성
-      const searchParams = new URLSearchParams();
-
-      // 키워드 검색
-      if (filterParams.keyword && filterParams.keyword.trim() !== "") {
-        searchParams.append("keyword", filterParams.keyword.trim());
-      }
-
-      if (filterParams.district && filterParams.district !== "all") {
-        searchParams.append("district", filterParams.district);
-      }
-
-      if (filterParams.type && filterParams.type !== "all") {
-        searchParams.append("type", filterParams.type);
-      }
-
-      if (filterParams.minPrice && filterParams.maxPrice) {
-        searchParams.append("minPrice", filterParams.minPrice);
-        searchParams.append("maxPrice", filterParams.maxPrice);
-      }
-
-      if (filterParams.tag) {
-        searchParams.append("tag", filterParams.tag);
-      }
-
-      // URL 생성 및 요청
-      const url = `/api/search?${searchParams.toString()}&includeCrawled=false`;
-      console.log("검색 요청 URL:", url);
-
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch properties");
-      return res.json();
-    },
-    placeholderData: (previousData) => previousData,
-  });
-
-  const onSubmit = (data: FormValues) => {
-    const newParams: Record<string, string | null> = {
-      district: data.district !== "all" ? data.district : null,
-      type: data.type !== "all" ? data.type : null,
-      minPrice: null,
-      maxPrice: null,
-    };
-
-    if (data.priceRange !== "all") {
-      const [min, max] = data.priceRange.split("-");
-      newParams.minPrice = min;
-      newParams.maxPrice = max;
-    }
-
-    // URL 파라미터 생성 및 페이지 이동
-    const searchParams = new URLSearchParams();
-    if (newParams.district) searchParams.append("district", newParams.district);
-    if (newParams.type) searchParams.append("type", newParams.type);
-    if (newParams.minPrice && newParams.maxPrice) {
-      searchParams.append("minPrice", newParams.minPrice);
-      searchParams.append("maxPrice", newParams.maxPrice);
-    }
-
-    // 태그 유지
-    if (filterParams.tag) {
-      searchParams.append("tag", filterParams.tag);
-    }
-
-    // 필터 적용 시 추천 해제? 
-    // 사용자가 직접 필터를 걸었으므로 추천 모드를 유지할지 해제할지 결정해야 함.
-    // 여기서는 사용자의 명시적 필터링 의도를 존중하여 추천 모드를 유지하지 않음(파라미터 미포함)
-
-    // wouter의 setLocation을 사용하여 URL 업데이트
-    const newUrl = searchParams.toString() ? `/properties?${searchParams.toString()}` : '/properties';
-    setLocation(newUrl);
-  };
-
-  // Saju-based Sorting
-  const sortedProperties = useMemo(() => {
-    if (!properties) return [];
-
-    if (isRecommend && sajuData) {
-      // Clone and sort by score
-      return [...properties].sort((a, b) => {
-        const scoreA = getCompatibilityScore(sajuData, { id: a.id, direction: a.direction, floor: a.floor }).score;
-        const scoreB = getCompatibilityScore(sajuData, { id: b.id, direction: b.direction, floor: b.floor }).score;
-        return scoreB - scoreA; // Descending
-      });
-    }
-
-    return properties;
-  }, [properties, isRecommend, sajuData]);
-
-  // Client-side safety filter: Ensure NO Naver properties (source='naver' or district='수집매물') are shown in the list
-  // irrespective of what the API returns.
-  const filteredList = sortedProperties?.filter((p: any) =>
-    p.source !== 'naver' &&
-    p.district !== '수집매물' &&
-    !String(p.id).startsWith('naver-')
-  );
-
-  // Backward compatibility for other references if any (though we updated JSX)
-  const listProperties = filteredList;
-
-
-  // Map Data: Fetch matching properties INCLUDING Naver crawled data
-  const { data: mapProperties } = useQuery<Property[]>({
-    queryKey: ["/api/search", filterParams.district, filterParams.type, filterParams.minPrice, filterParams.maxPrice, filterParams.keyword, filterParams.tag, true], // includeCrawled=true for MAP
+  // 1. 전문가 매물 쿼리
+  const { data: expertResponse, isLoading: isExpertLoading, isError: isExpertError } = useQuery<{ properties: Property[], total: number, totalPages: number }>({
+    queryKey: ["/api/search/expert", filterParams.district, filterParams.type, filterParams.dealType, filterParams.minPrice, filterParams.maxPrice, filterParams.keyword, filterParams.tag, filterParams.sortBy, expertPage],
     queryFn: async () => {
       const searchParams = new URLSearchParams();
-      if (filterParams.keyword && filterParams.keyword.trim() !== "") searchParams.append("keyword", filterParams.keyword.trim());
-      if (filterParams.district && filterParams.district !== "all") searchParams.append("district", filterParams.district);
-      if (filterParams.type && filterParams.type !== "all") searchParams.append("type", filterParams.type);
+      if (filterParams.keyword?.trim()) searchParams.append("keyword", filterParams.keyword.trim());
+      if (filterParams.district !== "all") searchParams.append("district", filterParams.district);
+      if (filterParams.type !== "all") searchParams.append("type", filterParams.type);
+      if (filterParams.dealType !== "all") searchParams.append("dealType", filterParams.dealType);
       if (filterParams.minPrice && filterParams.maxPrice) {
         searchParams.append("minPrice", filterParams.minPrice);
         searchParams.append("maxPrice", filterParams.maxPrice);
       }
       if (filterParams.tag) searchParams.append("tag", filterParams.tag);
-
-      // Request WITH crawled data for the map
-      const url = `/api/search?${searchParams.toString()}&includeCrawled=true`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch map properties");
-      return res.json();
+      searchParams.append("sortBy", filterParams.sortBy || "latest");
+      searchParams.append("page", expertPage.toString());
+      searchParams.append("limit", "12");
+      searchParams.append("includeCrawled", "false");
+      const res = await fetch(`/api/search?${searchParams.toString()}`);
+      if (!res.ok) throw new Error("전문가 매물을 불러오는데 실패했습니다.");
+      const data = await res.json();
+      return {
+        properties: Array.isArray(data.properties) ? data.properties : [],
+        total: data.total || 0,
+        totalPages: data.totalPages || 0
+      };
     },
-    staleTime: 1000 * 60 * 2, // 2 minutes cache for map data
+    placeholderData: (prev) => prev,
+  });
+
+  // 2. 공동 중개 매물 쿼리
+  const { data: coBrokerResponse, isLoading: isCoBrokerLoading, isError: isCoBrokerError } = useQuery<{ properties: Property[], total: number, totalPages: number }>({
+    queryKey: ["/api/search/co-broker", filterParams.district, filterParams.type, filterParams.dealType, filterParams.minPrice, filterParams.maxPrice, filterParams.keyword, filterParams.tag, filterParams.sortBy, coBrokerPage],
+    queryFn: async () => {
+      const searchParams = new URLSearchParams();
+      if (filterParams.keyword?.trim()) searchParams.append("keyword", filterParams.keyword.trim());
+      if (filterParams.district !== "all") searchParams.append("district", filterParams.district);
+      if (filterParams.type !== "all") searchParams.append("type", filterParams.type);
+      if (filterParams.dealType !== "all") searchParams.append("dealType", filterParams.dealType);
+      if (filterParams.minPrice && filterParams.maxPrice) {
+        searchParams.append("minPrice", filterParams.minPrice);
+        searchParams.append("maxPrice", filterParams.maxPrice);
+      }
+      searchParams.append("sortBy", filterParams.sortBy || "latest");
+      searchParams.append("page", coBrokerPage.toString());
+      searchParams.append("limit", "20");
+      searchParams.append("onlyCrawled", "true");
+      const res = await fetch(`/api/search?${searchParams.toString()}`);
+      if (!res.ok) throw new Error("공동 중개 매물을 불러오는데 실패했습니다.");
+      const data = await res.json();
+      return {
+        properties: Array.isArray(data.properties) ? data.properties : [],
+        total: data.total || 0,
+        totalPages: data.totalPages || 0
+      };
+    },
+    placeholderData: (prev) => prev,
+  });
+
+  const expertProperties = expertResponse && Array.isArray(expertResponse.properties) ? expertResponse.properties : [];
+  const coBrokerProperties = coBrokerResponse && Array.isArray(coBrokerResponse.properties) ? coBrokerResponse.properties : [];
+
+  const onSubmit = (data: FormValues) => {
+    const searchParams = new URLSearchParams();
+    if (data.district !== "all") searchParams.append("district", data.district);
+    if (data.type !== "all") searchParams.append("type", data.type);
+    if (data.dealType !== "all") searchParams.append("dealType", data.dealType);
+    if (data.priceRange !== "all") {
+      const [min, max] = data.priceRange.split("-");
+      searchParams.append("minPrice", min);
+      searchParams.append("maxPrice", max);
+    }
+    if (data.sortBy) searchParams.append("sortBy", data.sortBy);
+    if (filterParams.tag) searchParams.append("tag", filterParams.tag);
+    setLocation(searchParams.toString() ? `/properties?${searchParams.toString()}` : '/properties');
+  };
+
+  const sortedExpertProperties = useMemo(() => {
+    if (!expertProperties) return [];
+    if (isRecommend && sajuData) {
+      return [...expertProperties].sort((a, b) => {
+        const scoreA = getCompatibilityScore(sajuData, { id: a.id, direction: a.direction, floor: a.floor }).score;
+        const scoreB = getCompatibilityScore(sajuData, { id: b.id, direction: b.direction, floor: b.floor }).score;
+        return scoreB - scoreA;
+      });
+    }
+    return expertProperties;
+  }, [expertProperties, isRecommend, sajuData]);
+
+  // 지도용 데이터
+  const { data: mapProperties } = useQuery<Property[]>({
+    queryKey: ["/api/search/map", filterParams.district, filterParams.type, filterParams.dealType, filterParams.minPrice, filterParams.maxPrice, filterParams.keyword, filterParams.tag],
+    queryFn: async () => {
+      const searchParams = new URLSearchParams();
+      if (filterParams.keyword?.trim()) searchParams.append("keyword", filterParams.keyword.trim());
+      if (filterParams.district !== "all") searchParams.append("district", filterParams.district);
+      if (filterParams.type !== "all") searchParams.append("type", filterParams.type);
+      if (filterParams.dealType !== "all") searchParams.append("dealType", filterParams.dealType);
+      if (filterParams.minPrice && filterParams.maxPrice) {
+        searchParams.append("minPrice", filterParams.minPrice);
+        searchParams.append("maxPrice", filterParams.maxPrice);
+      }
+      if (filterParams.tag) searchParams.append("tag", filterParams.tag);
+      searchParams.append("limit", "1000"); // 지도용은 전체를 가져와야 함
+      const res = await fetch(`/api/search?${searchParams.toString()}&includeCrawled=true`);
+      if (!res.ok) throw new Error("지도 데이터를 불러오는데 실패했습니다.");
+      const data = await res.json();
+      return Array.isArray(data.properties) ? data.properties : []; // 객체 응답에서 배열만 안전하게 추출
+    },
+    staleTime: 1000 * 60 * 2,
   });
 
   return (
     <>
       <Helmet>
-        <title>매물 검색 | 이가이버부동산 - 강화도 부동산</title>
-        <meta name="description" content="강화도 토지, 주택, 아파트, 상가 매물을 검색하세요. 음성검색 지원, 지도보기로 편리하게 매물을 찾을 수 있습니다." />
-        <meta property="og:title" content="매물 검색 | 이가이버부동산" />
-        <meta property="og:description" content="강화도 토지, 주택, 아파트, 상가 매물 검색" />
+        <title>매물 검색 | 이가이버부동산</title>
       </Helmet>
-      <div className="bg-primary/10 py-4 mt-0">
-        <div className="container mx-auto px-4">
-          <h1 className="text-2xl font-bold mb-3">
-            {filterParams.tag === 'urgent' ? '🔥 급매물' :
-              filterParams.tag === 'negotiable' ? '🤝 가격 협의 가능' :
-                filterParams.tag === 'long-term' ? '📈 장기투자 추천' :
-                  filterParams.tag === 'recommended' ? '👍 추천 매물' :
-                    (filterParams.maxPrice === "100000000") ? '1억미만 부동산' :
-                      (
-                        <>
-                          {filterParams.district !== "all" && `${filterParams.district} `}
-                          {filterParams.type !== "all" && `${filterParams.type} `}
-                          매물
-                        </>
-                      )}
-          </h1>
 
-          {/* 음성검색 입력창 */}
-          <div className="bg-white p-4 rounded-lg shadow-md mb-4">
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  type="text"
-                  placeholder="음성검색 또는 입력"
-                  value={searchKeyword}
-                  onChange={(e) => setSearchKeyword(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleKeywordSearch();
-                    }
-                  }}
-                  className="pl-10 pr-10"
-                  data-testid="input-voice-search"
-                />
-                {searchKeyword && (
-                  <button
-                    type="button"
-                    onClick={clearKeyword}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    data-testid="button-clear-search"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-
-              {speechSupported && (
-                <Button
-                  type="button"
-                  variant={isListening ? "destructive" : "outline"}
-                  size="icon"
-                  onClick={toggleListening}
-                  className={`flex-shrink-0 ${isListening ? 'animate-pulse' : ''}`}
-                  title={isListening ? "음성인식 중지" : "음성으로 검색"}
-                  data-testid="button-voice-search"
-                >
-                  {isListening ? (
-                    <MicOff className="h-5 w-5" />
-                  ) : (
-                    <Mic className="h-5 w-5" />
-                  )}
-                </Button>
-              )}
-
-              <Button
-                type="button"
-                onClick={handleKeywordSearch}
-                className="flex-shrink-0"
-                data-testid="button-search"
-              >
-                <Search className="h-4 w-4 mr-2" />
-                검색
-              </Button>
+      {/* Hero Section */}
+      <div className="relative pt-12 pb-8 lg:pt-16 lg:pb-12 overflow-hidden bg-slate-950">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(37,99,235,0.1),transparent_50%),radial-gradient(circle_at_70%_50%,rgba(16,185,129,0.05),transparent_50%)]" />
+        <div className="container relative mx-auto px-4">
+          <div className="max-w-4xl mx-auto text-center space-y-8">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-bold tracking-wider uppercase">
+              <Sparkles className="w-4 h-4" />
+              강화도 No.1 프리미엄 매물 탐색
             </div>
+            <h1 className="text-4xl md:text-7xl font-black text-white leading-[1.1] tracking-tight">
+              당신에게 딱 맞는<br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-blue-500 to-indigo-400">강화도 명당</span>을 찾으세요
+            </h1>
 
-            {isListening && (
-              <div className="mt-3 flex items-center gap-2 text-sm text-primary">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                <span>음성을 듣고 있습니다... 말씀해 주세요</span>
+            <div className="relative group max-w-3xl mx-auto">
+              <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000" />
+              <div className="relative flex flex-col md:flex-row gap-2 p-2 bg-white/10 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
+                <div className="relative flex-1 group/input">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400 group-hover/input:text-blue-400 transition-colors" />
+                  <Input
+                    type="text"
+                    placeholder="지역 또는 키워드로 검색 (예: 길상면 토지)"
+                    value={searchKeyword}
+                    onChange={(e) => setSearchKeyword(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleKeywordSearch()}
+                    className="h-14 pl-12 pr-12 bg-transparent border-0 text-white text-lg placeholder:text-slate-500 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  />
+                  {searchKeyword && (
+                    <button onClick={clearKeyword} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors">
+                      <X className="h-5 w-5" />
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-2 p-1 md:p-0">
+                  {speechSupported && (
+                    <Button
+                      onClick={toggleListening}
+                      className={`h-12 w-12 rounded-xl border-white/10 ${isListening ? 'bg-red-500 hover:bg-red-600 animate-pulse' : 'bg-white/5 hover:bg-white/10'} transition-all duration-300`}
+                    >
+                      {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                    </Button>
+                  )}
+                  <Button onClick={handleKeywordSearch} className="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all duration-300">
+                    검색하기
+                  </Button>
+                </div>
               </div>
-            )}
-
-            {searchKeyword && filterParams.keyword && (
-              <div className="mt-3 text-sm text-gray-600">
-                <span className="font-medium">"{filterParams.keyword}"</span> 검색 결과
-              </div>
-            )}
-
-            {/* 읍면별 드롭다운 */}
-            <div className="mt-3">
-              <Select onValueChange={(value) => {
-                if (value === "전체") {
-                  setLocation("/properties");
-                } else {
-                  setLocation(`/properties?keyword=${encodeURIComponent(value)}`);
-                }
-              }}>
-                <SelectTrigger className="w-full" data-testid="select-district-filter">
-                  <SelectValue placeholder="읍면별 검색" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="전체">전체</SelectItem>
-                  <SelectItem value="강화읍">강화읍</SelectItem>
-                  <SelectItem value="교동면">교동면</SelectItem>
-                  <SelectItem value="길상면">길상면</SelectItem>
-                  <SelectItem value="내가면">내가면</SelectItem>
-                  <SelectItem value="불은면">불은면</SelectItem>
-                  <SelectItem value="삼산면">삼산면</SelectItem>
-                  <SelectItem value="서도면">서도면</SelectItem>
-                  <SelectItem value="선원면">선원면</SelectItem>
-                  <SelectItem value="송해면">송해면</SelectItem>
-                  <SelectItem value="양도면">양도면</SelectItem>
-                  <SelectItem value="양사면">양사면</SelectItem>
-                  <SelectItem value="하점면">하점면</SelectItem>
-                  <SelectItem value="화도면">화도면</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* 카테고리 필터 숨김 - 음성검색만 사용 */}
-          <div className="hidden">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="container mx-auto px-4 -mt-6 relative z-10">
+        <div className="bg-white rounded-3xl shadow-2xl shadow-slate-200/50 border border-slate-100 p-3 md:p-4">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col md:flex-row gap-2 items-end">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-1 w-full">
                 <FormField
                   control={form.control}
                   name="district"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>지역</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
+                    <FormItem className="space-y-0.5">
+                      <FormLabel className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">지역 선택</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="지역 선택" />
+                          <SelectTrigger className="h-12 bg-slate-50 border-slate-200 rounded-xl font-bold text-slate-700 hover:bg-slate-100 transition-colors">
+                            <SelectValue placeholder="모든 지역" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="all">전체</SelectItem>
-                          {/* 강화읍 옵션 */}
-                          <SelectItem value="강화읍 갑곳리">강화읍 갑곳리</SelectItem>
-                          <SelectItem value="강화읍 관청리">강화읍 관청리</SelectItem>
-                          <SelectItem value="강화읍 국화리">강화읍 국화리</SelectItem>
-                          <SelectItem value="강화읍 남산리">강화읍 남산리</SelectItem>
-                          <SelectItem value="강화읍 대산리">강화읍 대산리</SelectItem>
-                          <SelectItem value="강화읍 신문리">강화읍 신문리</SelectItem>
-                          <SelectItem value="강화읍 옥림리">강화읍 옥림리</SelectItem>
-                          <SelectItem value="강화읍 용정리">강화읍 용정리</SelectItem>
-                          <SelectItem value="강화읍 월곳리">강화읍 월곳리</SelectItem>
-
-                          {/* 교동면 옵션 */}
-                          <SelectItem value="교동면 고구리">교동면 고구리</SelectItem>
-                          <SelectItem value="교동면 난정리">교동면 난정리</SelectItem>
-                          <SelectItem value="교동면 대룡리">교동면 대룡리</SelectItem>
-                          <SelectItem value="교동면 동산리">교동면 동산리</SelectItem>
-                          <SelectItem value="교동면 무학리">교동면 무학리</SelectItem>
-                          <SelectItem value="교동면 봉소리">교동면 봉소리</SelectItem>
-                          <SelectItem value="교동면 삼선리">교동면 삼선리</SelectItem>
-                          <SelectItem value="교동면 상용리">교동면 상용리</SelectItem>
-                          <SelectItem value="교동면 서한리">교동면 서한리</SelectItem>
-                          <SelectItem value="교동면 양갑리">교동면 양갑리</SelectItem>
-                          <SelectItem value="교동면 읍내리">교동면 읍내리</SelectItem>
-                          <SelectItem value="교동면 인사리">교동면 인사리</SelectItem>
-                          <SelectItem value="교동면 지석리">교동면 지석리</SelectItem>
-
-                          {/* 길상면 옵션 */}
-                          <SelectItem value="길상면 길직리">길상면 길직리</SelectItem>
-                          <SelectItem value="길상면 동검리">길상면 동검리</SelectItem>
-                          <SelectItem value="길상면 선두리">길상면 선두리</SelectItem>
-                          <SelectItem value="길상면 온수리">길상면 온수리</SelectItem>
-                          <SelectItem value="길상면 장흥리">길상면 장흥리</SelectItem>
-                          <SelectItem value="길상면 초지리">길상면 초지리</SelectItem>
-
-                          {/* 내가면 옵션 */}
-                          <SelectItem value="내가면 고천리">내가면 고천리</SelectItem>
-                          <SelectItem value="내가면 구하리">내가면 구하리</SelectItem>
-                          <SelectItem value="내가면 오상리">내가면 오상리</SelectItem>
-                          <SelectItem value="내가면 외포리">내가면 외포리</SelectItem>
-                          <SelectItem value="내가면 황청리">내가면 황청리</SelectItem>
-
-                          {/* 불은면 옵션 */}
-                          <SelectItem value="불은면 고능리">불은면 고능리</SelectItem>
-                          <SelectItem value="불은면 넙성리">불은면 넙성리</SelectItem>
-                          <SelectItem value="불은면 덕성리">불은면 덕성리</SelectItem>
-                          <SelectItem value="불은면 두운리">불은면 두운리</SelectItem>
-                          <SelectItem value="불은면 삼동암리">불은면 삼동암리</SelectItem>
-                          <SelectItem value="불은면 삼성리">불은면 삼성리</SelectItem>
-                          <SelectItem value="불은면 신현리">불은면 신현리</SelectItem>
-                          <SelectItem value="불은면 오두리">불은면 오두리</SelectItem>
-
-                          {/* 삼산면 옵션 */}
-                          <SelectItem value="삼산면 매음리">삼산면 매음리</SelectItem>
-                          <SelectItem value="삼산면 미법리">삼산면 미법리</SelectItem>
-                          <SelectItem value="삼산면 상리">삼산면 상리</SelectItem>
-                          <SelectItem value="삼산면 서검리">삼산면 서검리</SelectItem>
-                          <SelectItem value="삼산면 석모리">삼산면 석모리</SelectItem>
-                          <SelectItem value="삼산면 석포리">삼산면 석포리</SelectItem>
-                          <SelectItem value="삼산면 하리">삼산면 하리</SelectItem>
-
-                          {/* 서도면 옵션 */}
-                          <SelectItem value="서도면 말도리">서도면 말도리</SelectItem>
-                          <SelectItem value="서도면 볼음도리">서도면 볼음도리</SelectItem>
-                          <SelectItem value="서도면 아차도리">서도면 아차도리</SelectItem>
-                          <SelectItem value="서도면 주문도리">서도면 주문도리</SelectItem>
-
-                          {/* 선원면 옵션 */}
-                          <SelectItem value="선원면 금월리">선원면 금월리</SelectItem>
-                          <SelectItem value="선원면 냉정리">선원면 냉정리</SelectItem>
-                          <SelectItem value="선원면 선행리">선원면 선행리</SelectItem>
-                          <SelectItem value="선원면 신정리">선원면 신정리</SelectItem>
-                          <SelectItem value="선원면 연리">선원면 연리</SelectItem>
-                          <SelectItem value="선원면 지산리">선원면 지산리</SelectItem>
-                          <SelectItem value="선원면 창리">선원면 창리</SelectItem>
-
-                          {/* 송해면 옵션 */}
-                          <SelectItem value="송해면 당산리">송해면 당산리</SelectItem>
-                          <SelectItem value="송해면 상도리">송해면 상도리</SelectItem>
-                          <SelectItem value="송해면 솔정리">송해면 솔정리</SelectItem>
-                          <SelectItem value="송해면 숭뢰리">송해면 숭뢰리</SelectItem>
-                          <SelectItem value="송해면 신당리">송해면 신당리</SelectItem>
-                          <SelectItem value="송해면 양오리">송해면 양오리</SelectItem>
-                          <SelectItem value="송해면 하도리">송해면 하도리</SelectItem>
-
-                          {/* 양도면 옵션 */}
-                          <SelectItem value="양도면 건평리">양도면 건평리</SelectItem>
-                          <SelectItem value="양도면 길정리">양도면 길정리</SelectItem>
-                          <SelectItem value="양도면 능내리">양도면 능내리</SelectItem>
-                          <SelectItem value="양도면 도장리">양도면 도장리</SelectItem>
-                          <SelectItem value="양도면 삼흥리">양도면 삼흥리</SelectItem>
-                          <SelectItem value="양도면 인산리">양도면 인산리</SelectItem>
-                          <SelectItem value="양도면 조산리">양도면 조산리</SelectItem>
-                          <SelectItem value="양도면 하일리">양도면 하일리</SelectItem>
-
-                          {/* 양사면 옵션 */}
-                          <SelectItem value="양사면 교산리">양사면 교산리</SelectItem>
-                          <SelectItem value="양사면 덕하리">양사면 덕하리</SelectItem>
-                          <SelectItem value="양사면 북성리">양사면 북성리</SelectItem>
-                          <SelectItem value="양사면 인화리">양사면 인화리</SelectItem>
-                          <SelectItem value="양사면 철산리">양사면 철산리</SelectItem>
-
-                          {/* 하점면 옵션 */}
-                          <SelectItem value="하점면 망월리">하점면 망월리</SelectItem>
-                          <SelectItem value="하점면 부근리">하점면 부근리</SelectItem>
-                          <SelectItem value="하점면 삼거리">하점면 삼거리</SelectItem>
-                          <SelectItem value="하점면 신봉리">하점면 신봉리</SelectItem>
-                          <SelectItem value="하점면 신삼리">하점면 신삼리</SelectItem>
-                          <SelectItem value="하점면 이강리">하점면 이강리</SelectItem>
-                          <SelectItem value="하점면 장정리">하점면 장정리</SelectItem>
-                          <SelectItem value="하점면 창후리">하점면 창후리</SelectItem>
-
-                          {/* 화도면 옵션 */}
-                          <SelectItem value="화도면 내리">화도면 내리</SelectItem>
-                          <SelectItem value="화도면 덕포리">화도면 덕포리</SelectItem>
-                          <SelectItem value="화도면 동막리">화도면 동막리</SelectItem>
-                          <SelectItem value="화도면 문산리">화도면 문산리</SelectItem>
-                          <SelectItem value="화도면 사기리">화도면 사기리</SelectItem>
-                          <SelectItem value="화도면 상방리">화도면 상방리</SelectItem>
-                          <SelectItem value="화도면 여차리">화도면 여차리</SelectItem>
-                          <SelectItem value="화도면 장화리">화도면 장화리</SelectItem>
-                          <SelectItem value="화도면 흥왕리">화도면 흥왕리</SelectItem>
-
-                          {/* 기타 옵션 */}
-                          <SelectItem value="기타지역">기타지역</SelectItem>
+                        <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                          <SelectItem value="all">강화군 전체</SelectItem>
+                          <SelectItem value="강화읍">강화읍</SelectItem>
+                          <SelectItem value="선원면">선원면</SelectItem>
+                          <SelectItem value="불은면">불은면</SelectItem>
+                          <SelectItem value="길상면">길상면</SelectItem>
+                          <SelectItem value="화도면">화도면</SelectItem>
+                          <SelectItem value="양도면">양도면</SelectItem>
+                          <SelectItem value="내가면">내가면</SelectItem>
+                          <SelectItem value="하점면">하점면</SelectItem>
+                          <SelectItem value="양사면">양사면</SelectItem>
+                          <SelectItem value="송해면">송해면</SelectItem>
+                          <SelectItem value="교동면">교동면</SelectItem>
+                          <SelectItem value="삼산면">삼산면</SelectItem>
+                          <SelectItem value="서도면">서도면</SelectItem>
                         </SelectContent>
                       </Select>
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="type"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>유형</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
+                    <FormItem className="space-y-0.5">
+                      <FormLabel className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">건물 종류</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="유형 선택" />
+                          <SelectTrigger className="h-12 bg-slate-50 border-slate-200 rounded-xl font-bold text-slate-700 hover:bg-slate-100 transition-colors">
+                            <SelectValue placeholder="모든 건물" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="all">전체</SelectItem>
+                        <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                          <SelectItem value="all">전체 건물</SelectItem>
                           <SelectItem value="토지">토지</SelectItem>
                           <SelectItem value="주택">주택</SelectItem>
-                          <SelectItem value="아파트연립다세대">아파트/연립/다세대</SelectItem>
+                          <SelectItem value="아파트연립다세대">아파트/빌라</SelectItem>
                           <SelectItem value="원투룸">원룸/투룸</SelectItem>
-                          <SelectItem value="상가공장창고펜션">상가/공장/창고/펜션</SelectItem>
+                          <SelectItem value="상가공장창고펜션">상가/공장/창고</SelectItem>
                         </SelectContent>
                       </Select>
                     </FormItem>
                   )}
                 />
-
+                <FormField
+                  control={form.control}
+                  name="dealType"
+                  render={({ field }) => (
+                    <FormItem className="space-y-0.5">
+                      <FormLabel className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">거래 유형</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="h-12 bg-slate-50 border-slate-200 rounded-xl font-bold text-slate-700 hover:bg-slate-100 transition-colors">
+                            <SelectValue placeholder="모든 유형" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                          <SelectItem value="all">전체 거래</SelectItem>
+                          <SelectItem value="매매">매매</SelectItem>
+                          <SelectItem value="전세">전세</SelectItem>
+                          <SelectItem value="월세">월세</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="priceRange"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>가격대</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
+                    <FormItem className="space-y-0.5">
+                      <FormLabel className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">희망 가격대</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="가격대 선택" />
+                          <SelectTrigger className="h-12 bg-slate-50 border-slate-200 rounded-xl font-bold text-slate-700 hover:bg-slate-100 transition-colors">
+                            <SelectValue placeholder="모든 가격" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="all">전체</SelectItem>
+                        <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                          <SelectItem value="all">전체 가격대</SelectItem>
                           <SelectItem value="0-100000000">1억 이하</SelectItem>
                           <SelectItem value="100000000-300000000">1억~3억</SelectItem>
                           <SelectItem value="300000000-500000000">3억~5억</SelectItem>
@@ -774,131 +472,263 @@ const PropertiesPage = () => {
                     </FormItem>
                   )}
                 />
-
-                <div className="flex items-end">
-                  <Button type="submit" className="w-full bg-primary hover:bg-secondary text-white">
-                    검색
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </div>
+                <FormField
+                  control={form.control}
+                  name="sortBy"
+                  render={({ field }) => (
+                    <FormItem className="space-y-0.5">
+                      <FormLabel className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">정렬 순서</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="h-12 bg-slate-50 border-slate-200 rounded-xl font-bold text-slate-700 hover:bg-slate-100 transition-colors">
+                            <SelectValue placeholder="최신순" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                          <SelectItem value="latest">최신 등록순</SelectItem>
+                          <SelectItem value="priceLow">가격 낮은순</SelectItem>
+                          <SelectItem value="priceHigh">가격 높은순</SelectItem>
+                          <SelectItem value="areaHigh">면적 넓은순</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <Button type="submit" className="w-full md:w-32 h-12 bg-slate-900 hover:bg-blue-600 text-white font-black rounded-xl transition-all duration-300">
+                조건 적용
+              </Button>
+            </form>
+          </Form>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-4">
-
-        {/* Saju Recommendation Banner */}
+      <div className="container mx-auto px-4 py-8">
         {isRecommend && sajuData && (
-          <div className="bg-gradient-to-r from-violet-100 to-purple-100 border border-violet-200 rounded-xl p-6 mb-8 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
-            <div className="flex items-center gap-4">
-              <div className="bg-white p-3 rounded-full shadow-md text-purple-600">
-                <Sparkles className="w-6 h-6" />
+          <div className="mb-12 bg-gradient-to-br from-indigo-600 via-blue-600 to-violet-700 rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden shadow-2xl shadow-blue-200">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32 blur-3xl" />
+            <div className="relative flex flex-col md:flex-row items-center gap-8">
+              <div className="bg-white/20 backdrop-blur-xl p-6 rounded-3xl shadow-inner border border-white/20">
+                <Sparkles className="w-10 h-10 text-yellow-300" />
               </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-800">
-                  {user?.username || '게스트'}님을 위한 사주 맞춤 추천 매물
+              <div className="flex-1 text-center md:text-left space-y-2">
+                <h2 className="text-2xl md:text-4xl font-black text-white tracking-tight">
+                  {user?.username || '게스트'}님 맞춤형 <span className="text-yellow-300">기운 명당</span>
                 </h2>
-                <p className="text-gray-600 mt-1">
-                  사주 분석 결과(행운의 방향, 층수 등)를 바탕으로 가장 기운이 좋은 매물부터 보여드립니다.
+                <p className="text-blue-100 text-lg font-medium opacity-90">
+                  사주 분석 결과가 반영되었습니다. 귀하의 기운과 가장 잘 맞는 매물을 최상단에 배치했습니다.
                 </p>
               </div>
+              <Button onClick={() => setLocation('/properties')} variant="secondary" className="h-14 px-8 bg-white text-blue-600 font-black rounded-2xl hover:bg-blue-50 transition-all">
+                전체 매물 보기
+              </Button>
             </div>
-            <Button
-              variant="outline"
-              className="whitespace-nowrap bg-white hover:bg-gray-50 border-purple-200 text-purple-700 hover:text-purple-800"
-              onClick={() => setLocation('/properties')}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              전체 매물 보기
-            </Button>
           </div>
         )}
 
-        {/* Map Section */}
-        <div className="mb-4">
-          <div className="mb-3 flex items-center">
-            <MapIcon className="h-5 w-5 mr-2 text-primary" />
-            <h2 className="text-lg font-bold">지도로 부동산찾기</h2>
+        <div className="mb-12">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
+              <MapIcon className="w-6 h-6 text-blue-600" />
+              매물 위치 전체보기
+            </h3>
+            <Badge className="bg-slate-100 text-slate-500 hover:bg-slate-100 border-none font-bold">인근 매물 추천 포함</Badge>
           </div>
-          {/* 메인 페이지 모델을 따라 props 없이 호출하여 데이터 갱신 시의 재로딩 현상을 해결합니다. */}
-          <div className="h-[400px] md:h-[500px] w-full rounded-2xl overflow-hidden shadow-lg border border-[#EBE5CE] relative">
+          <div className="h-[400px] md:h-[600px] w-full rounded-[2.5rem] overflow-hidden shadow-2xl shadow-slate-200 border border-slate-100 relative group">
             <PropertyMap properties={mapProperties} showCrawled={true} />
+            <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
           </div>
         </div>
 
-        {/* Properties Results */}
-        <div className="mb-6 flex justify-between items-center">
-          <h2 className="text-2xl font-bold">
-            {filterParams.tag === 'urgent' ? '🔥 급매물' :
-              filterParams.tag === 'negotiable' ? '🤝 가격 협의 가능' :
-                filterParams.tag === 'long-term' ? '📈 장기투자 추천' :
-                  filterParams.tag === 'recommended' ? '👍 추천 매물' :
-                    (filterParams.maxPrice === "100000000") ? '1억미만 부동산' :
-                      (
-                        <>
-                          {filterParams.district !== "all" && `${filterParams.district} `}
-                          {filterParams.type !== "all" && `${filterParams.type} `}
-                          매물
-                        </>
-                      )}
-          </h2>
-          <div className="flex items-center gap-3">
-            {isRecommend && sajuData && (
-              <Badge variant="secondary" className="bg-purple-100 text-purple-700 border-purple-200">
-                ✨ 사주 맞춤 정렬 중
-              </Badge>
-            )}
-            {filteredList && (
-              <p className="text-gray-medium">총 {filteredList.length}개의 매물</p>
-            )}
-          </div>
-        </div>
+        <div id="property-sections" className="space-y-12">
+          {/* Section 1: 강화도 전문가 매물 */}
+          <section id="expert-properties">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
+              <div className="space-y-2">
+                <Badge className="bg-blue-600 text-white font-black px-4 py-1.5 rounded-full mb-2">이가이버 공인중개사 추천</Badge>
+                <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">강화도 <span className="text-blue-600">전문가</span> 매물</h2>
+                <p className="text-slate-500 font-bold text-lg">이가이버 공인중개사가 검증한 실매물 입니다</p>
+              </div>
+            </div>
 
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[...Array(6)].map((_, index) => (
-              <Skeleton key={index} className="h-80 w-full" />
-            ))}
-          </div>
-        ) : error ? (
-          <div className="bg-red-50 p-6 rounded-lg text-red-600">
-            <h3 className="text-xl font-bold mb-2">매물을 불러오는 중 오류가 발생했습니다</h3>
-            <p>잠시 후 다시 시도해주세요.</p>
-          </div>
-        ) : filteredList && filteredList.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredList.map((property) => (
-              <PropertyCard key={property.id} property={property} />
-            ))}
-          </div>
-        ) : (
-          <div className="bg-gray-light p-8 rounded-lg text-center">
-            <h3 className="text-xl font-bold mb-4">검색 결과가 없습니다</h3>
-            <p className="text-gray-medium mb-6">검색 조건을 변경하여 다시 시도해보세요.</p>
-            <Button onClick={() => {
-              form.reset({
-                district: "all",
-                type: "all",
-                priceRange: "all",
-              });
-              setSearchKeyword("");
-              setFilterParams({
-                district: "all",
-                type: "all",
-                minPrice: null,
-                maxPrice: null,
-                keyword: "",
-                tag: null,
-              });
-              setLocation('/properties');
-            }}>
-              필터 초기화
-            </Button>
-          </div>
-        )}
+            {isExpertLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-[28rem] rounded-[2.5rem]" />)}
+              </div>
+            ) : isExpertError ? (
+              <div className="bg-red-50 p-8 rounded-[2.5rem] text-red-600 text-center font-bold">
+                전문가 매물을 불러오는 중 오류가 발생했습니다.
+              </div>
+            ) : expertProperties.length > 0 ? (
+              <div className="space-y-12">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                  {Array.isArray(expertProperties) && expertProperties.map((property) => (
+                    <PropertyCard key={property.id} property={property} />
+                  ))}
+                </div>
+
+                {expertResponse && expertResponse.totalPages > 1 && (
+                  <div className="flex justify-center pt-8 border-t border-slate-50">
+                    <Pagination>
+                      <PaginationContent className="gap-2">
+                        <PaginationItem>
+                          <PaginationPrevious
+                            onClick={() => {
+                              if (expertPage > 1) {
+                                setExpertPage(p => p - 1);
+                                document.getElementById('expert-properties')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                              }
+                            }}
+                            className={expertPage === 1 ? "pointer-events-none opacity-30 h-12 rounded-xl" : "cursor-pointer h-12 rounded-xl hover:bg-slate-100"}
+                          />
+                        </PaginationItem>
+                        {(() => {
+                          const maxVisible = 5;
+                          let start = Math.max(1, expertPage - 2);
+                          let end = Math.min(expertResponse.totalPages, start + maxVisible - 1);
+                          if (end - start < maxVisible - 1) start = Math.max(1, end - maxVisible + 1);
+
+                          const items = [];
+                          for (let i = start; i <= end; i++) {
+                            items.push(
+                              <PaginationItem key={i}>
+                                <PaginationLink
+                                  isActive={expertPage === i}
+                                  onClick={() => {
+                                    setExpertPage(i);
+                                    document.getElementById('expert-properties')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                  }}
+                                  className={`h-10 w-10 md:h-12 md:w-12 rounded-xl text-base md:text-lg font-black transition-all ${expertPage === i ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'hover:bg-slate-100'}`}
+                                >
+                                  {i}
+                                </PaginationLink>
+                              </PaginationItem>
+                            );
+                          }
+                          return items;
+                        })()}
+                        <PaginationItem>
+                          <PaginationNext
+                            onClick={() => {
+                              if (expertPage < expertResponse.totalPages) {
+                                setExpertPage(p => p + 1);
+                                document.getElementById('expert-properties')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                              }
+                            }}
+                            className={expertPage === expertResponse.totalPages ? "pointer-events-none opacity-30 h-12 rounded-xl" : "cursor-pointer h-12 rounded-xl hover:bg-slate-100"}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="bg-slate-50 border border-slate-100 rounded-[3rem] p-24 text-center">
+                <div className="max-w-md mx-auto space-y-6">
+                  <div className="bg-slate-200/50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Search className="w-10 h-10 text-slate-400" />
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-800">전문가 매물을 찾지 못했습니다</h3>
+                  <p className="text-slate-500 font-bold">필터를 조정하거나 검색어를 변경하여 더 많은 매물을 확인해보세요.</p>
+                  <Button variant="outline" className="h-12 px-8 rounded-xl font-bold border-slate-200 hover:bg-slate-100" onClick={() => {
+                    setLocation('/properties');
+                  }}>필터 초기화</Button>
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* Section 2: 공동 중개 매물 */}
+          <section id="cobroker-properties">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
+              <div className="space-y-2">
+                <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 font-black px-4 py-1.5 rounded-full mb-2">실시간 수집</Badge>
+                <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">강화도 <span className="text-emerald-600">공동 중개</span> 매물</h2>
+                <p className="text-slate-500 font-bold text-lg">공동중개 매물! 한번더 확인해 드리겠습니다</p>
+              </div>
+            </div>
+
+            {isCoBrokerLoading ? (
+              <div className="space-y-4">
+                {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-24 rounded-2xl" />)}
+              </div>
+            ) : isCoBrokerError ? (
+              <div className="bg-red-50 p-8 rounded-[2.5rem] text-red-600 text-center font-bold">
+                공동 중개 매물을 불러오는 중 오류가 발생했습니다.
+              </div>
+            ) : coBrokerProperties.length > 0 ? (
+              <div className="space-y-12">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {Array.isArray(coBrokerProperties) && coBrokerProperties.map((property) => (
+                    <CompactPropertyItem key={property.id} property={property} />
+                  ))}
+                </div>
+
+                {coBrokerResponse && coBrokerResponse.totalPages > 1 && (
+                  <div className="flex justify-center pt-8">
+                    <Pagination>
+                      <PaginationContent className="gap-2">
+                        <PaginationItem>
+                          <PaginationPrevious
+                            onClick={() => {
+                              if (coBrokerPage > 1) {
+                                setCoBrokerPage(p => p - 1);
+                                document.getElementById('cobroker-properties')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                              }
+                            }}
+                            className={coBrokerPage === 1 ? "pointer-events-none opacity-30 h-12 rounded-xl" : "cursor-pointer h-12 rounded-xl hover:bg-slate-100"}
+                          />
+                        </PaginationItem>
+                        {(() => {
+                          const maxVisible = 5;
+                          let start = Math.max(1, coBrokerPage - 2);
+                          let end = Math.min(coBrokerResponse.totalPages, start + maxVisible - 1);
+                          if (end - start < maxVisible - 1) start = Math.max(1, end - maxVisible + 1);
+
+                          const items = [];
+                          for (let i = start; i <= end; i++) {
+                            items.push(
+                              <PaginationItem key={i}>
+                                <PaginationLink
+                                  isActive={coBrokerPage === i}
+                                  onClick={() => {
+                                    setCoBrokerPage(i);
+                                    document.getElementById('cobroker-properties')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                  }}
+                                  className={`h-10 w-10 md:h-12 md:w-12 rounded-xl text-base md:text-lg font-black transition-all ${coBrokerPage === i ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200' : 'hover:bg-slate-100'}`}
+                                >
+                                  {i}
+                                </PaginationLink>
+                              </PaginationItem>
+                            );
+                          }
+                          return items;
+                        })()}
+                        <PaginationItem>
+                          <PaginationNext
+                            onClick={() => {
+                              if (coBrokerPage < coBrokerResponse.totalPages) {
+                                setCoBrokerPage(p => p + 1);
+                                document.getElementById('cobroker-properties')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                              }
+                            }}
+                            className={coBrokerPage === coBrokerResponse.totalPages ? "pointer-events-none opacity-30 h-12 rounded-xl" : "cursor-pointer h-12 rounded-xl hover:bg-slate-100"}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="bg-slate-50 border border-slate-100 rounded-[3rem] p-24 text-center text-slate-400 font-bold text-xl">
+                실시간 수집된 공동 중개 매물이 없습니다.
+              </div>
+            )}
+          </section>
+        </div>
       </div>
-
     </>
   );
 };

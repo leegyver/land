@@ -57,9 +57,23 @@ const BannerSlider = ({ location, description }: BannerSliderProps) => {
                                 >
                                     <img
                                         src={banner.imageUrl}
-                                        alt="Banner"
-                                        className="w-full h-full object-cover"
+                                        alt={banner.title || "Banner"}
+                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                     />
+                                    {(banner.title || banner.description) && (
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 md:p-6">
+                                            {banner.title && (
+                                                <h3 className="text-white font-bold text-lg md:text-xl mb-1 shadow-sm">
+                                                    {banner.title}
+                                                </h3>
+                                            )}
+                                            {banner.description && (
+                                                <p className="text-gray-200 text-xs md:text-sm font-medium line-clamp-2 shadow-sm">
+                                                    {banner.description}
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
                                 </a>
                             </div>
                         </CarouselItem>

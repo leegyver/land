@@ -27,7 +27,7 @@ export default defineConfig(async ({ mode }) => {
           }
           return html.replace(
             "<!-- %KAKAO_MAP_SCRIPT% -->",
-            `<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoKey}&libraries=services&autoload=false"></script>`
+            `<script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoKey}&libraries=services&autoload=false"></script>`
           );
         },
       },
@@ -48,6 +48,9 @@ export default defineConfig(async ({ mode }) => {
       },
     },
     root: path.resolve(import.meta.dirname, "client"),
+    server: {
+      allowedHosts: true,
+    },
     build: {
       outDir: path.resolve(import.meta.dirname, "dist/public"),
       emptyOutDir: true,

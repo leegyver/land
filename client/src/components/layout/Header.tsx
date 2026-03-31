@@ -18,6 +18,10 @@ const Header = () => {
   const { user, logoutMutation } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // 권한 판별 변수 통합 선언
+  const isAdminOrMaster = user?.role === "admin" || user?.role === "master";
+  const isEligibleRealtor = user?.role === "realtor" && ["monthly", "yearly", "approved", "lifetime"].includes(user?.subscriptionTier as string);
+
   const navItems = [
     { name: "홈", path: "/" },
     { name: "모든매물보기", path: "/properties" },
@@ -81,13 +85,13 @@ const Header = () => {
                       <span>내 프로필</span>
                     </Link>
                   </DropdownMenuItem>
-                  {(["admin", "master"].includes(user.role) || (user.role === "realtor" && ["monthly", "yearly", "approved", "lifetime"].includes(user.subscriptionTier as string))) && (
+                  {(isAdminOrMaster || isEligibleRealtor) && (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
                         <Link href="/admin" className="flex items-center w-full cursor-pointer">
                           <Settings className="mr-2 h-4 w-4" />
-                          <span>{["admin", "master"].includes(user.role) ? "관리자 패널" : "매물 관리"}</span>
+                          <span>{isAdminOrMaster ? "관리자 패널" : "매물 관리"}</span>
                         </Link>
                       </DropdownMenuItem>
                     </>
@@ -144,16 +148,6 @@ const Header = () => {
                             </span>
                           )}
                         </span>
-                        {user.role === "master" && (
-                          <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-800 text-xs rounded-full">
-                            마스터
-                          </span>
-                        )}
-                        {(user.role === "admin" || user.role === "master") && (
-                          <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full">
-                            관리자
-                          </span>
-                        )}
                       </div>
 
                       <Link
@@ -165,14 +159,14 @@ const Header = () => {
                         내 프로필
                       </Link>
 
-                      {(["admin", "master"].includes(user.role) || (user.role === "realtor" && ["monthly", "yearly", "approved", "lifetime"].includes(user.subscriptionTier as string))) && (
+                      {(isAdminOrMaster || isEligibleRealtor) && (
                         <Link
                           href="/admin"
                           onClick={() => setMobileMenuOpen(false)}
                           className="flex items-center py-2 text-lg font-medium text-neutral-800 hover:text-primary"
                         >
                           <Settings className="mr-2 h-5 w-5" />
-                          {["admin", "master"].includes(user.role) ? "관리자 패널" : "매물 관리"}
+                          {isAdminOrMaster ? "관리자 패널" : "매물 관리"}
                         </Link>
                       )}
 

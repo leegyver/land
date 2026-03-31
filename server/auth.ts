@@ -358,6 +358,7 @@ export function setupAuth(app: Express) {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
     // 비밀번호 정보는 클라이언트에 반환하지 않음
     const { password, ...userWithoutPassword } = req.user;
+    console.log(`[AUTH DEBUG] User API - ID: ${userWithoutPassword.id}, Role: ${userWithoutPassword.role}`);
     res.json(userWithoutPassword);
   });
 

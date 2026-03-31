@@ -402,7 +402,7 @@ const PropertyMap = ({ properties: passedProperties, showCrawled = false }: Prop
         position: position,
         title: property.title,
         image: markerImage,
-        zIndex: isNaver ? 1 : 10
+        zIndex: isNaver ? 1 : 1000
       });
 
       markersRef.current.push(marker);

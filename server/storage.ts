@@ -625,17 +625,13 @@ export class SQLiteStorage implements IStorage {
   // --- Properties ---
 
   async getProperties(): Promise<Property[]> {
-    const rows = db.prepare('SELECT * FROM properties WHERE isVisible = 1 ORDER BY displayOrder ASC, createdAt DESC').all();
-    const result = rows.map(row => this.mapProperty(row)).filter(p => p.district !== '수집매물');
-    console.log(`[Storage] getProperties: ${result.length} items (Filtered out Naver if any)`);
-    return result;
+    const rows = db.prepare('SELECT * FROM properties WHERE isVisible = 1 ORDER BY displayOrder ASC, createdAt DESC').all() as any[];
+    return rows.map(row => this.mapProperty(row));
   }
 
   async getAllProperties(): Promise<Property[]> {
-    const rows = db.prepare('SELECT * FROM properties ORDER BY displayOrder ASC, createdAt DESC').all();
-    const result = rows.map(row => this.mapProperty(row)).filter(p => p.district !== '수집매물');
-    console.log(`[Storage] getAllProperties: ${result.length} items (Filtered out Naver if any)`);
-    return result;
+    const rows = db.prepare('SELECT * FROM properties ORDER BY displayOrder ASC, createdAt DESC').all() as any[];
+    return rows.map(row => this.mapProperty(row));
   }
 
   async getProperty(id: number): Promise<Property | undefined> {
@@ -710,10 +706,8 @@ export class SQLiteStorage implements IStorage {
     }
 
     query += ' ORDER BY displayOrder ASC, createdAt DESC';
-    const rows = db.prepare(query).all(...params);
-    const result = rows.map(row => this.mapProperty(row)).filter(p => p.district !== '수집매물');
-    console.log(`[Storage] searchInternalProperties: ${result.length} items found with SQL Push-down`);
-    return result;
+    const rows = db.prepare(query).all(...params) as any[];
+    return rows.map(row => this.mapProperty(row));
   }
 
   async getPropertiesByType(type: string): Promise<Property[]> {

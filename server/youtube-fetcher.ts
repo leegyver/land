@@ -269,44 +269,75 @@ export async function fetchLatestYouTubeVideos(channelUrl: string, limit: number
       console.error('YouTube API 요청 실패, 대체 데이터 사용:', apiError);
       
       // API 실패 시 대체 데이터 제공
-      if (channelId === 'UCCG3_JlKhgalqhict7tKkbA') {
-        // 이가이버 유튜브 채널의 최신 동영상 데이터 (대체 데이터)
-        console.log('이가이버 유튜브 채널의 대체 데이터를 사용합니다.');
+      if (channelId === 'UCCG3_JlKhgalqhict7tKkbA' || channelId === 'default' || !channelId) {
+        // 이가이버 유튜브 채널의 최신 동영상 데이터 (실제 최신 영상 ID 반영)
+        console.log('API 키 누락/오류로 인해 이가이버 유튜브 채널의 최신 10개 영상을 대체 데이터로 제공합니다.');
         
         const videos: YouTubeVideo[] = [
           {
-            id: 'Kh-CoR26mAk',
-            title: '무엇을 보고 매입한 땅인데..이렇게...',
-            thumbnail: 'https://i.ytimg.com/vi/Kh-CoR26mAk/hqdefault.jpg',
-            url: 'https://www.youtube.com/watch?v=Kh-CoR26mAk'
+            id: 'El6SpdIvHi8',
+            title: '2024타경536036 장화리 임야 경매파악해보기 [강화도부동산 문의 01047873120]',
+            thumbnail: 'https://i.ytimg.com/vi/El6SpdIvHi8/hqdefault.jpg',
+            url: 'https://www.youtube.com/watch?v=El6SpdIvHi8'
           },
           {
-            id: 'lIMCvP9De8w',
-            title: '강화도 마니산 아래 힐링 할수 있는 전망좋은집',
-            thumbnail: 'https://i.ytimg.com/vi/lIMCvP9De8w/hqdefault.jpg',
-            url: 'https://www.youtube.com/watch?v=lIMCvP9De8w'
+            id: 'eIdVj1dG7rw',
+            title: 'Shade Beneath the Rainbow. AI tunes.',
+            thumbnail: 'https://i.ytimg.com/vi/eIdVj1dG7rw/hqdefault.jpg',
+            url: 'https://www.youtube.com/watch?v=eIdVj1dG7rw'
           },
           {
-            id: '3dJUkIVx42U',
-            title: '강화 천문 금송 전남권공간-강화부동산',
-            thumbnail: 'https://i.ytimg.com/vi/3dJUkIVx42U/hqdefault.jpg',
-            url: 'https://www.youtube.com/watch?v=3dJUkIVx42U'
+            id: 'YqbBCfzRJ2Y',
+            title: '올란도 주행중 시동꺼짐;; 연료차단밸브 셀프수리하기[강화도 이가이버 부동산] 문의 01047873120',
+            thumbnail: 'https://i.ytimg.com/vi/YqbBCfzRJ2Y/hqdefault.jpg',
+            url: 'https://www.youtube.com/watch?v=YqbBCfzRJ2Y'
           },
           {
-            id: 'wTxCLSPAktI',
-            title: '강화 마니산 중턱 전원주택 50평형 넘는 단독주택',
-            thumbnail: 'https://i.ytimg.com/vi/wTxCLSPAktI/hqdefault.jpg',
-            url: 'https://www.youtube.com/watch?v=wTxCLSPAktI'
+            id: 'k8zaWNHshl4',
+            title: '바다뷰 대박위치!! 고속도로예정지. 상가임대. 시설권리금 무!! 강화읍 5분거리 장어마을 대도로변. 장사선수 강추합니다!!',
+            thumbnail: 'https://i.ytimg.com/vi/k8zaWNHshl4/hqdefault.jpg',
+            url: 'https://www.youtube.com/watch?v=k8zaWNHshl4'
           },
           {
-            id: 'tlcv9i9m5CU',
-            title: '벤츠가 바퀴가 거의 없는 주책이야...뻘이 많다',
-            thumbnail: 'https://i.ytimg.com/vi/tlcv9i9m5CU/hqdefault.jpg',
-            url: 'https://www.youtube.com/watch?v=tlcv9i9m5CU'
+            id: 'VvTgTqUrZAY',
+            title: '주변 최저가!! 개발행위득한 교통편리한 조용한동네 임야. 저수지 낚시 및 고려산 등산등 힐링 최고의 자리.',
+            thumbnail: 'https://i.ytimg.com/vi/VvTgTqUrZAY/hqdefault.jpg',
+            url: 'https://www.youtube.com/watch?v=VvTgTqUrZAY'
+          },
+          {
+            id: 'EW2NJr5-5qA',
+            title: '황청리 정남향! 멋진바다뷰 별장지! 올대지![강화도 이가이버 부동산] 문의 01047873120',
+            thumbnail: 'https://i.ytimg.com/vi/EW2NJr5-5qA/hqdefault.jpg',
+            url: 'https://www.youtube.com/watch?v=EW2NJr5-5qA'
+          },
+          {
+            id: 'wKmGpQHJZP4',
+            title: '강화도와 체류형쉼터, 주택의 선택 과연 그 마지막은?[강화도 이가이버TV] 문의 01047873120',
+            thumbnail: 'https://i.ytimg.com/vi/wKmGpQHJZP4/hqdefault.jpg',
+            url: 'https://www.youtube.com/watch?v=wKmGpQHJZP4'
+          },
+          {
+            id: 'ZYV7wPOhX9M',
+            title: '강화도에 체류형쉼터와 농막, 주택의 선택. 전문가와 상담해야합니다02[강화도 이가이버TV] 문의 01047873120',
+            thumbnail: 'https://i.ytimg.com/vi/ZYV7wPOhX9M/hqdefault.jpg',
+            url: 'https://www.youtube.com/watch?v=ZYV7wPOhX9M'
+          },
+          {
+            id: 'w-MaSCGvDnI',
+            title: '강화도에 체류형쉼터와 농막, 주택의 선택. 전문가와 상담해야합니다01[강화도 이가이버TV] 문의 01047873120',
+            thumbnail: 'https://i.ytimg.com/vi/w-MaSCGvDnI/hqdefault.jpg',
+            url: 'https://www.youtube.com/watch?v=w-MaSCGvDnI'
+          },
+          {
+            id: 'jr6mFluKmjo',
+            title: '강화도와 맞는 체류형 쉼터는 과연 무엇일까? 시리즈01[강화도 이가이버TV] 문의 01047873120',
+            thumbnail: 'https://i.ytimg.com/vi/jr6mFluKmjo/hqdefault.jpg',
+            url: 'https://www.youtube.com/watch?v=jr6mFluKmjo'
           }
         ];
         
-        return videos.slice(0, limit);
+        // Return up to 15 items if requested, otherwise fallback default
+        return videos.slice(0, Math.max(limit, 10));
       }
 
       // 기타 채널의 대체 데이터

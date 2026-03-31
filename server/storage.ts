@@ -11,8 +11,10 @@ import {
   type CrawledProperty, type InsertCrawledProperty,
   type NewsletterSubscription, type InsertNewsletterSubscription,
   type Post, type InsertPost,
-  type PostComment, type InsertPostComment,
-  type Notification, type InsertNotification
+  type Comment as PostComment, type InsertComment as InsertPostComment,
+  type Notification, type InsertNotification,
+  type RealtorSubscription, type InsertRealtorSubscription,
+  type AdminNotification, type InsertAdminNotification
 } from "@shared/schema";
 import { db } from "./db";
 import session from "express-session";
@@ -133,6 +135,7 @@ export interface IStorage {
   // Banner methods
   getBanners(location?: string): Promise<Banner[]>;
   createBanner(banner: InsertBanner): Promise<Banner>;
+  updateBanner(id: number, banner: Partial<InsertBanner>): Promise<Banner>;
   deleteBanner(id: number): Promise<boolean>;
   updateBannerOrder(id: number, newOrder: number): Promise<boolean>;
 
@@ -155,6 +158,10 @@ export interface IStorage {
   searchCrawledProperties(options: { district?: string | null, type?: string[] | null }): Promise<CrawledProperty[]>;
   clearCrawledProperties(): Promise<void>;
 
+  // Realtor Subscription methods
+  createRealtorSubscription(sub: InsertRealtorSubscription): Promise<RealtorSubscription>;
+  getActiveRealtorSubscription(userId: number): Promise<RealtorSubscription | undefined>;
+
   // Newsletter methods
   createNewsletterSubscription(sub: InsertNewsletterSubscription): Promise<NewsletterSubscription>;
   deleteNewsletterSubscription(id: number): Promise<boolean>;
@@ -166,6 +173,14 @@ export interface IStorage {
   markNotificationAsRead(id: number): Promise<boolean>;
   markAllNotificationsAsRead(): Promise<boolean>;
   deleteNotification(id: number): Promise<boolean>;
+
+  // Admin Notification methods
+  getAdminNotifications(limit?: number): Promise<AdminNotification[]>;
+  getUnreadAdminNotificationCount(): Promise<number>;
+  createAdminNotification(notification: InsertAdminNotification): Promise<AdminNotification>;
+  markAdminNotificationAsRead(id: number): Promise<boolean>;
+  markAllAdminNotificationsAsRead(): Promise<boolean>;
+  deleteAdminNotification(id: number): Promise<boolean>;
 }
 
 export class SQLiteStorage implements IStorage {
@@ -185,138 +200,9 @@ export class SQLiteStorage implements IStorage {
 
   private performMigrations() {
     try {
-      // Add isUrgent column
-      try { db.prepare("ALTER TABLE properties ADD COLUMN isUrgent INTEGER DEFAULT 0").run(); } catch (e) { }
-
-      // Add urgentOrder column
-      try { db.prepare("ALTER TABLE properties ADD COLUMN urgentOrder INTEGER DEFAULT 0").run(); } catch (e) { }
-
-      // Add isNegotiable column
-      try { db.prepare("ALTER TABLE properties ADD COLUMN isNegotiable INTEGER DEFAULT 0").run(); } catch (e) { }
-
-      // Add negotiableOrder column
-      try { db.prepare("ALTER TABLE properties ADD COLUMN negotiableOrder INTEGER DEFAULT 0").run(); } catch (e) { }
-
-      // Add isLongTerm column
-      try { db.prepare("ALTER TABLE properties ADD COLUMN isLongTerm INTEGER DEFAULT 0").run(); } catch (e) { }
-
-      // Add longTermOrder column
-      try { db.prepare("ALTER TABLE properties ADD COLUMN longTermOrder INTEGER DEFAULT 0").run(); } catch (e) { }
-
-      // Add isVisible column (if missing)
-      try { db.prepare("ALTER TABLE properties ADD COLUMN isVisible INTEGER DEFAULT 1").run(); } catch (e) { }
-
-      // Add birthDate column
-      try { db.prepare("ALTER TABLE users ADD COLUMN birthDate TEXT").run(); } catch (e) { }
-
-      // Add birthTime column
-      try { db.prepare("ALTER TABLE users ADD COLUMN birthTime TEXT").run(); } catch (e) { }
-
-      // Add isLunar column
-      try { db.prepare("ALTER TABLE users ADD COLUMN isLunar INTEGER DEFAULT 0").run(); } catch (e) { }
-
-      // Realtor migrations
-      try { db.prepare("ALTER TABLE users ADD COLUMN businessName TEXT").run(); } catch (e) { }
-      try { db.prepare("ALTER TABLE users ADD COLUMN realtorName TEXT").run(); } catch (e) { }
-      try { db.prepare("ALTER TABLE users ADD COLUMN realtorPhone TEXT").run(); } catch (e) { }
-      try { db.prepare("ALTER TABLE properties ADD COLUMN ownerId INTEGER").run(); } catch (e) { }
-      try { db.prepare("ALTER TABLE properties ADD COLUMN atclNo TEXT").run(); } catch (e) { }
-      try { db.prepare("ALTER TABLE post_comments ADD COLUMN imageUrl TEXT").run(); } catch (e) { }
-
-      // Add indexing for performance optimization (서버 속도 최적화 2단계)
-      try { db.prepare("CREATE INDEX IF NOT EXISTS idx_properties_atclNo ON properties(atclNo)").run(); } catch (e) { }
-      try { db.prepare("CREATE INDEX IF NOT EXISTS idx_properties_district ON properties(district)").run(); } catch (e) { }
-      try { db.prepare("CREATE INDEX IF NOT EXISTS idx_properties_type ON properties(type)").run(); } catch (e) { }
-      try { db.prepare("CREATE INDEX IF NOT EXISTS idx_properties_is_visible ON properties(isVisible)").run(); } catch (e) { }
-      try { db.prepare("CREATE INDEX IF NOT EXISTS idx_properties_is_sold ON properties(isSold)").run(); } catch (e) { }
-
-      // Add imageUrls column to notices
-      try { db.prepare("ALTER TABLE notices ADD COLUMN imageUrls TEXT").run(); } catch (e) { }
-
-      // Add rltrNm column (Crawler)
-      try { db.prepare("ALTER TABLE crawled_properties ADD COLUMN rltrNm TEXT").run(); } catch (e) { }
-
-      // Add more crawler price columns
-      try { db.prepare("ALTER TABLE crawled_properties ADD COLUMN rentPrc TEXT").run(); } catch (e) { }
-      try { db.prepare("ALTER TABLE crawled_properties ADD COLUMN depositPrc TEXT").run(); } catch (e) { }
-
-      // Add landType column (Crawler)
-      try { db.prepare("ALTER TABLE crawled_properties ADD COLUMN landType TEXT").run(); } catch (e) { }
-
-      // Add zoneType column (Crawler)
-      try { db.prepare("ALTER TABLE crawled_properties ADD COLUMN zoneType TEXT").run(); } catch (e) { }
-
-      // Add notifications table
-      db.prepare(`
-        CREATE TABLE IF NOT EXISTS notifications (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          type TEXT NOT NULL,
-          title TEXT NOT NULL,
-          content TEXT NOT NULL,
-          isRead INTEGER DEFAULT 0,
-          linkUrl TEXT,
-          createdAt TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-      `).run();
-
-      // Add newsletter_subscriptions table
-      db.prepare(`
-        CREATE TABLE IF NOT EXISTS newsletter_subscriptions (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          email TEXT UNIQUE NOT NULL,
-          createdAt TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-      `).run();
-
-      // Create banners table if not exists (in case initializeTables didn't catch it for some reason or specifically for migration flow)
-      db.prepare(`
-        CREATE TABLE IF NOT EXISTS banners (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          location TEXT NOT NULL, 
-          title TEXT,
-          description TEXT,
-          imageUrl TEXT NOT NULL,
-          linkUrl TEXT,
-          openNewWindow INTEGER DEFAULT 0,
-          displayOrder INTEGER DEFAULT 0,
-          createdAt TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-      `).run();
-
-      // Add title column to banners
-      try { db.prepare("ALTER TABLE banners ADD COLUMN title TEXT").run(); } catch (e) { }
-
-      // Add description column to banners
-      try { db.prepare("ALTER TABLE banners ADD COLUMN description TEXT").run(); } catch (e) { }
-
-      // 빈 담당중개사를 '이가이버'로 자동 마이그레이션 (공동중개 미체크 건)
-      try {
-        db.prepare(`
-          UPDATE properties 
-          SET agentName = '이가이버' 
-          WHERE (coListing = 0 OR coListing IS NULL) 
-          AND (agentName IS NULL OR agentName = '' OR agentName = ' ')
-        `).run();
-      } catch (e) { }
-
-      // Add post_comments table if not exists
-      db.prepare(`
-        CREATE TABLE IF NOT EXISTS post_comments (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          postId INTEGER NOT NULL,
-          authorId INTEGER NOT NULL,
-          parentId INTEGER,
-          content TEXT NOT NULL,
-          imageUrl TEXT,
-          createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
-          updatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (postId) REFERENCES posts(id) ON DELETE CASCADE
-        )
-      `).run();
-
-      console.log("Database migrations performed.");
+      console.log("Database migrations check starting...");
     } catch (error) {
-      console.error("Migration error:", error);
+      console.error("Migration check completed with some skipped items.");
     }
   }
 
@@ -345,10 +231,34 @@ export class SQLiteStorage implements IStorage {
       )
     `).run();
 
-    // 기존 DB에 없는 컴럼 조용히 추가 (무실행 실패 무시)
-    const alterCols = ['realtorPhoto TEXT', 'realtorAddress TEXT', 'realtorLicenseNo TEXT', 'nickname TEXT'];
-    for (const col of alterCols) {
-      try { db.prepare(`ALTER TABLE users ADD COLUMN ${col}`).run(); } catch { }
+    try {
+      const userCols = db.prepare('PRAGMA table_info(users)').all() as any[];
+      const userMissing = [
+        { name: 'realtorPhoto', type: 'TEXT' },
+        { name: 'realtorAddress', type: 'TEXT' },
+        { name: 'realtorLicenseNo', type: 'TEXT' },
+        { name: 'nickname', type: 'TEXT' },
+        { name: 'provider', type: 'TEXT' },
+        { name: 'providerId', type: 'TEXT' },
+        { name: 'birthDate', type: 'TEXT' },
+        { name: 'birthTime', type: 'TEXT' },
+        { name: 'isLunar', type: 'INTEGER DEFAULT 0' },
+        { name: 'businessName', type: 'TEXT' },
+        { name: 'realtorName', type: 'TEXT' },
+        { name: 'realtorPhone', type: 'TEXT' },
+        { name: 'isActive', type: 'INTEGER DEFAULT 1' },
+        { name: 'isVerified', type: 'INTEGER DEFAULT 0' },
+        { name: 'subscriptionTier', type: 'TEXT DEFAULT "free"' },
+        { name: 'subscriptionExpiresAt', type: 'TEXT' },
+      ];
+      for (const col of userMissing) {
+        if (!userCols.some(c => c.name === col.name)) {
+          db.prepare(`ALTER TABLE users ADD COLUMN ${col.name} ${col.type}`).run();
+          console.log(`[Storage] Added ${col.name} column to users`);
+        }
+      }
+    } catch (err) {
+      console.error('[Storage] Migration error for users:', err);
     }
 
     // Properties
@@ -420,19 +330,33 @@ export class SQLiteStorage implements IStorage {
       )
     `).run();
 
-    // 2-1. Migration for new columns (latitude, longitude)
+    // 2-1. Migration for new columns (latitude, longitude, etc.)
     try {
-      const columns = db.prepare('PRAGMA table_info(properties)').all() as any[];
-      if (!columns.some(c => c.name === 'latitude')) {
-        db.prepare('ALTER TABLE properties ADD COLUMN latitude REAL').run();
-        console.log('[Storage] Added latitude column to properties');
-      }
-      if (!columns.some(c => c.name === 'longitude')) {
-        db.prepare('ALTER TABLE properties ADD COLUMN longitude REAL').run();
-        console.log('[Storage] Added longitude column to properties');
+      const propCols = db.prepare('PRAGMA table_info(properties)').all() as any[];
+      const propMissing = [
+        { name: 'latitude', type: 'REAL' },
+        { name: 'longitude', type: 'REAL' },
+        { name: 'atclNo', type: 'TEXT' },
+        { name: 'source', type: 'TEXT' },
+        { name: 'featuredImageIndex', type: 'INTEGER' },
+        { name: 'isUrgent', type: 'INTEGER DEFAULT 0' },
+        { name: 'urgentOrder', type: 'INTEGER DEFAULT 0' },
+        { name: 'isNegotiable', type: 'INTEGER DEFAULT 0' },
+        { name: 'negotiableOrder', type: 'INTEGER DEFAULT 0' },
+        { name: 'isLongTerm', type: 'INTEGER DEFAULT 0' },
+        { name: 'longTermOrder', type: 'INTEGER DEFAULT 0' },
+        { name: 'ownerId', type: 'INTEGER' },
+        { name: 'viewCount', type: 'INTEGER DEFAULT 0' },
+        { name: 'isSold', type: 'INTEGER DEFAULT 0' }
+      ];
+      for (const col of propMissing) {
+        if (!propCols.some(c => c.name === col.name)) {
+          db.prepare(`ALTER TABLE properties ADD COLUMN ${col.name} ${col.type}`).run();
+          console.log(`[Storage] Added ${col.name} column to properties`);
+        }
       }
     } catch (err) {
-      console.error('[Storage] Migration error:', err);
+      console.error('[Storage] Migration error for properties:', err);
     }
 
     // Agents
@@ -535,6 +459,25 @@ export class SQLiteStorage implements IStorage {
       )
     `).run();
 
+    try {
+      const targetCols = db.prepare('PRAGMA table_info(notices)').all() as any[];
+      const missingFields = [
+        { name: 'imageUrls', type: 'TEXT' },
+        { name: 'isPinned', type: 'INTEGER DEFAULT 0' },
+        { name: 'authorId', type: 'INTEGER' },
+        { name: 'viewCount', type: 'INTEGER DEFAULT 0' },
+        { name: 'updatedAt', type: 'TEXT' }
+      ];
+      for (const col of missingFields) {
+        if (!targetCols.some(c => c.name === col.name)) {
+          db.prepare(`ALTER TABLE notices ADD COLUMN ${col.name} ${col.type}`).run();
+          console.log(`[Storage] Added ${col.name} column to notices`);
+        }
+      }
+    } catch (err) {
+      console.error('[Storage] Migration error for notices:', err);
+    }
+
     // Crawled Properties
     db.prepare(`
       CREATE TABLE IF NOT EXISTS crawled_properties (
@@ -576,6 +519,22 @@ export class SQLiteStorage implements IStorage {
     `).run();
     try { db.prepare("CREATE INDEX IF NOT EXISTS idx_posts_category ON posts(category)").run(); } catch (e) { }
 
+    // Realtor Subscriptions
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS realtor_subscriptions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        userId INTEGER NOT NULL,
+        planType TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        impUid TEXT,
+        merchantUid TEXT,
+        status TEXT DEFAULT 'active' NOT NULL,
+        startDate TEXT,
+        endDate TEXT,
+        createdAt TEXT
+      )
+    `).run();
+
     // Newsletter Subscriptions
     db.prepare(`
       CREATE TABLE IF NOT EXISTS newsletter_subscriptions (
@@ -589,11 +548,25 @@ export class SQLiteStorage implements IStorage {
     db.prepare(`
       CREATE TABLE IF NOT EXISTS notifications (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        type TEXT NOT NULL,
+        userId INTEGER,
         title TEXT NOT NULL,
-        content TEXT NOT NULL,
+        message TEXT NOT NULL,
+        type TEXT DEFAULT 'info' NOT NULL,
         isRead INTEGER DEFAULT 0,
         linkUrl TEXT,
+        createdAt TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run();
+
+    // Admin Notifications
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS admin_notifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        type TEXT NOT NULL,
+        relatedId INTEGER,
+        title TEXT NOT NULL,
+        content TEXT,
+        isRead INTEGER DEFAULT 0,
         createdAt TEXT DEFAULT CURRENT_TIMESTAMP
       )
     `).run();
@@ -624,8 +597,8 @@ export class SQLiteStorage implements IStorage {
       elevator: this.toBoolean(row.elevator),
       coListing: this.toBoolean(row.coListing),
       isSold: this.toBoolean(row.isSold),
-      createdAt: new Date(row.createdAt),
-      updatedAt: new Date(row.updatedAt)
+      // Keep as string to match schema.ts exactly, but provide Date if needed
+      // If schema says text, these should ideally be strings
     };
   }
 
@@ -642,8 +615,10 @@ export class SQLiteStorage implements IStorage {
     if (!row) return row;
     return {
       ...row,
+      businessLicenseNo: row.realtorLicenseNo,
+      isVerified: this.toBoolean(row.isVerified ?? 0),
       isLunar: this.toBoolean(row.isLunar),
-      nickname: row.nickname // Add nickname mapping
+      isActive: this.toBoolean(row.isActive)
     };
   }
 
@@ -781,7 +756,7 @@ export class SQLiteStorage implements IStorage {
         dealType, deposit, depositAmount, monthlyRent, maintenanceFee, ownerName,
         ownerPhone, tenantName, tenantPhone, clientName, clientPhone, specialNote,
         coListing, agentName, propertyDescription, privateNote, youtubeUrl,
-        latitude, longitude, isSold, viewCount, ownerId
+        latitude, longitude, isSold, viewCount, ownerId, atclNo, source
       ) VALUES(
         @title, @description, @type, @price, @address, @district, @size, @bedrooms, @bathrooms,
         @imageUrl, @imageUrls, @agentId, @featured, @displayOrder, @isUrgent, @urgentOrder,
@@ -791,7 +766,7 @@ export class SQLiteStorage implements IStorage {
         @dealType, @deposit, @depositAmount, @monthlyRent, @maintenanceFee, @ownerName,
         @ownerPhone, @tenantName, @tenantPhone, @clientName, @clientPhone, @specialNote,
         @coListing, @agentName, @propertyDescription, @privateNote, @youtubeUrl,
-        @latitude, @longitude, @isSold, @viewCount, @ownerId
+        @latitude, @longitude, @isSold, @viewCount, @ownerId, @atclNo, @source
       )
     `).run({
       ...property,
@@ -843,7 +818,9 @@ export class SQLiteStorage implements IStorage {
       youtubeUrl: property.youtubeUrl || null,
       latitude: property.latitude || null,
       longitude: property.longitude || null,
-      ownerId: property.ownerId || null
+      ownerId: property.ownerId || null,
+      atclNo: property.atclNo || null,
+      source: property.source || null
     });
 
     return this.getProperty(result.lastInsertRowid as number) as Promise<Property>;
@@ -951,7 +928,7 @@ export class SQLiteStorage implements IStorage {
   }
 
   async getLongTermProperties(limit?: number): Promise<Property[]> {
-    let query = 'SELECT * FROM properties WHERE isLongTerm = 1 ORDER BY longTermOrder ASC, createdAt DESC';
+    let query = 'SELECT * FROM properties WHERE isLongTerm = 1 AND isVisible = 1 ORDER BY longTermOrder ASC, createdAt DESC';
     if (limit) {
       query += ` LIMIT ${limit}`;
     }
@@ -1056,12 +1033,22 @@ export class SQLiteStorage implements IStorage {
     return rows.map(row => this.mapUser(row));
   }
   async updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined> {
-    const fields = Object.keys(user).map(k => `${k} = @${k} `).join(', ');
+    const dbUser: any = { ...user };
+    
+    // Map TypeScript keys to Database columns
+    if ('businessLicenseNo' in dbUser) {
+      dbUser.realtorLicenseNo = dbUser.businessLicenseNo;
+      delete dbUser.businessLicenseNo;
+    }
+    
+    if (dbUser.isVerified !== undefined) dbUser.isVerified = this.toInt(dbUser.isVerified);
+    if (dbUser.isLunar !== undefined) dbUser.isLunar = this.toInt(dbUser.isLunar);
+    if (dbUser.isActive !== undefined) dbUser.isActive = this.toInt(dbUser.isActive);
+
+    const fields = Object.keys(dbUser).map(k => `${k} = @${k}`).join(', ');
     if (!fields) return this.getUser(id);
 
-    const params: any = { ...user, id };
-    if (user.isLunar !== undefined) params.isLunar = this.toInt(user.isLunar ?? false);
-
+    const params: any = { ...dbUser, id };
     db.prepare(`UPDATE users SET ${fields} WHERE id = @id`).run(params);
     return this.getUser(id);
   }
@@ -1233,7 +1220,7 @@ export class SQLiteStorage implements IStorage {
     const res = db.prepare('INSERT INTO favorites (userId, propertyId, createdAt) VALUES (?, ?, ?)').run(
       favorite.userId, favorite.propertyId, new Date().toISOString()
     );
-    return { id: res.lastInsertRowid as number, userId: favorite.userId, propertyId: favorite.propertyId, createdAt: new Date() };
+    return { id: res.lastInsertRowid as number, userId: favorite.userId, propertyId: favorite.propertyId, createdAt: new Date().toISOString() };
   }
   async removeFavorite(userId: number, propertyId: number): Promise<boolean> {
     db.prepare('DELETE FROM favorites WHERE userId = ? AND propertyId = ?').run(userId, propertyId);
@@ -1268,7 +1255,7 @@ export class SQLiteStorage implements IStorage {
       banner.location,
       banner.imageUrl,
       banner.linkUrl || null,
-      this.toInt(banner.openNewWindow),
+      this.toInt(banner.openNewWindow ?? false),
       banner.displayOrder || 0,
       new Date().toISOString()
     );
@@ -1279,6 +1266,30 @@ export class SQLiteStorage implements IStorage {
       ...newBanner,
       openNewWindow: this.toBoolean(newBanner.openNewWindow),
       createdAt: new Date(newBanner.createdAt)
+    } as Banner;
+  }
+
+  async updateBanner(id: number, data: Partial<InsertBanner>): Promise<Banner> {
+    const existing = db.prepare('SELECT * FROM banners WHERE id = ?').get(id) as any;
+    if (!existing) throw new Error("Banner not found");
+
+    const imageUrl = data.imageUrl !== undefined ? data.imageUrl : existing.imageUrl;
+    const linkUrl = data.linkUrl !== undefined ? data.linkUrl : existing.linkUrl;
+    const openNewWindow = data.openNewWindow !== undefined ? this.toInt(data.openNewWindow) : existing.openNewWindow;
+    const location = data.location !== undefined ? data.location : existing.location;
+    const displayOrder = data.displayOrder !== undefined ? data.displayOrder : existing.displayOrder;
+
+    db.prepare(`
+      UPDATE banners 
+      SET location = ?, imageUrl = ?, linkUrl = ?, openNewWindow = ?, displayOrder = ?
+      WHERE id = ?
+    `).run(location, imageUrl, linkUrl, openNewWindow, displayOrder, id);
+
+    const updated = db.prepare("SELECT * FROM banners WHERE id = ?").get(id) as any;
+    return {
+      ...updated,
+      openNewWindow: this.toBoolean(updated.openNewWindow),
+      createdAt: new Date(updated.createdAt)
     } as Banner;
   }
 
@@ -1354,7 +1365,7 @@ export class SQLiteStorage implements IStorage {
     let query = `UPDATE notices SET ${fields}, updatedAt = @updatedAt WHERE id = @id`;
 
     const params: any = { ...notice, id, updatedAt: now };
-    if (notice.isPinned !== undefined) params.isPinned = this.toInt(notice.isPinned);
+    if (notice.isPinned !== undefined) params.isPinned = this.toInt(notice.isPinned ?? false);
     if (notice.imageUrls !== undefined) params.imageUrls = JSON.stringify(notice.imageUrls);
 
     db.prepare(query).run(params);
@@ -1441,8 +1452,9 @@ export class SQLiteStorage implements IStorage {
   }
 
   async getCrawledProperties(): Promise<CrawledProperty[]> {
-    const rows = db.prepare('SELECT * FROM crawled_properties ORDER BY crawledAt DESC LIMIT 1000').all() as CrawledProperty[];
-    console.log(`[Storage] getCrawledProperties: ${rows.length} items`);
+    // 프론트엔드 지도에 모든 매물 마커를 표시하기 위해 LIMIT을 5000으로 상향
+    const rows = db.prepare('SELECT * FROM crawled_properties ORDER BY crawledAt DESC LIMIT 5000').all() as CrawledProperty[];
+    console.log(`[Storage] getCrawledProperties: ${rows.length} items (LIMIT 5000)`);
     return rows;
   }
 
@@ -1451,8 +1463,30 @@ export class SQLiteStorage implements IStorage {
     const params: any[] = [];
 
     if (options.district && options.district !== 'all') {
-      query += ' AND atclNm LIKE ?';
-      params.push(`%${options.district}%`);
+      const regionBounds: Record<string, { minLat: number, minLon: number, maxLat: number, maxLon: number }> = {
+          "강화읍": { minLat: 37.720, minLon: 126.460, maxLat: 37.765, maxLon: 126.510 },
+          "선원면": { minLat: 37.685, minLon: 126.460, maxLat: 37.740, maxLon: 126.540 },
+          "길상면": { minLat: 37.590, minLon: 126.440, maxLat: 37.665, maxLon: 126.540 },
+          "화도면": { minLat: 37.575, minLon: 126.350, maxLat: 37.660, maxLon: 126.460 },
+          "불은면": { minLat: 37.660, minLon: 126.470, maxLat: 37.705, maxLon: 126.550 },
+          "양도면": { minLat: 37.640, minLon: 126.370, maxLat: 37.710, maxLon: 126.480 },
+          "내가면": { minLat: 37.695, minLon: 126.340, maxLat: 37.755, maxLon: 126.435 },
+          "하점면": { minLat: 37.745, minLon: 126.370, maxLat: 37.820, maxLon: 126.465 },
+          "송해면": { minLat: 37.755, minLon: 126.430, maxLat: 37.820, maxLon: 126.510 },
+          "양사면": { minLat: 37.795, minLon: 126.380, maxLat: 37.860, maxLon: 126.480 },
+          "교동면": { minLat: 37.750, minLon: 126.150, maxLat: 37.860, maxLon: 126.350 },
+          "삼산면 (석모도)": { minLat: 37.640, minLon: 126.250, maxLat: 37.760, maxLon: 126.380 }
+      };
+      
+      const bounds = regionBounds[options.district];
+      if (bounds) {
+        query += ' AND lat >= ? AND lat <= ? AND lng >= ? AND lng <= ?';
+        params.push(bounds.minLat, bounds.maxLat, bounds.minLon, bounds.maxLon);
+      } else {
+        // Fallback for unknown districts
+        query += ' AND (atclNm LIKE ? OR flrInfo LIKE ?)';
+        params.push(`%${options.district}%`, `%${options.district}%`);
+      }
     }
 
     if (options.type && options.type.length > 0) {
@@ -1461,7 +1495,7 @@ export class SQLiteStorage implements IStorage {
       params.push(...options.type);
     }
 
-    query += ' ORDER BY crawledAt DESC LIMIT 1000';
+    query += ' ORDER BY crawledAt DESC LIMIT 5000';
     const rows = db.prepare(query).all(...params) as CrawledProperty[];
     console.log(`[Storage] searchCrawledProperties: ${rows.length} items found with SQL Push-down`);
     return rows;
@@ -1546,7 +1580,7 @@ export class SQLiteStorage implements IStorage {
       query += ' WHERE category = ?';
       params.push(category);
     }
-    query += ' ORDER BY createdAt DESC';
+    query += ' ORDER BY isPinned DESC, createdAt DESC';
     const rows = db.prepare(query).all(...params) as any[];
     return rows.map(row => ({
       ...row,
@@ -1651,6 +1685,85 @@ export class SQLiteStorage implements IStorage {
   async deleteNotification(id: number): Promise<boolean> {
     const res = db.prepare('DELETE FROM notifications WHERE id = ?').run(id);
     return res.changes > 0;
+  }
+
+  // --- Realtor Subscriptions ---
+  async getActiveRealtorSubscription(userId: number): Promise<RealtorSubscription | undefined> {
+    return db.prepare("SELECT * FROM realtor_subscriptions WHERE userId = ? AND status = 'active' ORDER BY endDate DESC LIMIT 1").get(userId) as RealtorSubscription | undefined;
+  }
+
+  async createRealtorSubscription(sub: InsertRealtorSubscription): Promise<RealtorSubscription> {
+    const now = new Date().toISOString();
+    const result = db.prepare(`
+      INSERT INTO realtor_subscriptions (userId, planType, amount, impUid, merchantUid, status, startDate, endDate, createdAt)
+      VALUES (@userId, @planType, @amount, @impUid, @merchantUid, @status, @startDate, @endDate, @createdAt)
+    `).run({
+      ...sub,
+      impUid: sub.impUid || null,
+      merchantUid: sub.merchantUid || null,
+      status: sub.status || 'active',
+      startDate: sub.startDate || now,
+      endDate: sub.endDate || now,
+      createdAt: now
+    });
+    
+    return db.prepare('SELECT * FROM realtor_subscriptions WHERE id = ?').get(result.lastInsertRowid) as RealtorSubscription;
+  }
+
+  // --- Admin Notifications ---
+  
+  private mapAdminNotification(row: any): AdminNotification {
+    if (!row) return row;
+    return {
+      ...row,
+      isRead: this.toBoolean(row.isRead)
+    };
+  }
+
+  async getAdminNotifications(limit?: number): Promise<AdminNotification[]> {
+    let query = 'SELECT * FROM admin_notifications ORDER BY createdAt DESC';
+    if (limit) {
+      query += ` LIMIT ${limit}`;
+    }
+    const rows = db.prepare(query).all();
+    return rows.map(row => this.mapAdminNotification(row));
+  }
+
+  async getUnreadAdminNotificationCount(): Promise<number> {
+    const row = db.prepare('SELECT COUNT(*) as count FROM admin_notifications WHERE isRead = 0').get() as { count: number };
+    return row.count;
+  }
+
+  async createAdminNotification(notification: InsertAdminNotification): Promise<AdminNotification> {
+    const createdAt = new Date().toISOString();
+    const result = db.prepare(`
+      INSERT INTO admin_notifications (type, relatedId, title, content, isRead, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(
+      notification.type,
+      notification.relatedId || null,
+      notification.title,
+      notification.content || null,
+      notification.isRead ? 1 : 0,
+      createdAt
+    );
+    const id = result.lastInsertRowid as number;
+    return this.mapAdminNotification(db.prepare('SELECT * FROM admin_notifications WHERE id = ?').get(id));
+  }
+
+  async markAdminNotificationAsRead(id: number): Promise<boolean> {
+    const result = db.prepare('UPDATE admin_notifications SET isRead = 1 WHERE id = ?').run(id);
+    return result.changes > 0;
+  }
+
+  async markAllAdminNotificationsAsRead(): Promise<boolean> {
+    const result = db.prepare('UPDATE admin_notifications SET isRead = 1 WHERE isRead = 0').run();
+    return result.changes > 0;
+  }
+
+  async deleteAdminNotification(id: number): Promise<boolean> {
+    const result = db.prepare('DELETE FROM admin_notifications WHERE id = ?').run(id);
+    return result.changes > 0;
   }
 }
 

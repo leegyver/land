@@ -142,7 +142,7 @@ export default function NewsPage() {
         </div>
 
         {/* 전체 뉴스 (게시판 형식) */}
-        <div>
+        <div id="board-top" className="scroll-mt-20">
           <h2 className="text-2xl font-bold mb-6">전체 부동산뉴스</h2>
 
           {isLoadingAll ? (
@@ -207,7 +207,7 @@ export default function NewsPage() {
                       size="sm"
                       onClick={() => {
                         goToPreviousPage();
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        document.getElementById('board-top')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                       }}
                       disabled={currentPage === 1}
                       className="flex items-center gap-1"
@@ -233,7 +233,7 @@ export default function NewsPage() {
                             isActive={currentPage === i}
                             onClick={() => {
                               goToPage(i);
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                              document.getElementById('board-top')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                             }}
                           >
                             {i}
@@ -250,7 +250,7 @@ export default function NewsPage() {
                       size="sm"
                       onClick={() => {
                         goToNextPage();
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        document.getElementById('board-top')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                       }}
                       disabled={currentPage === totalPages}
                       className="flex items-center gap-1"

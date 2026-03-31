@@ -122,7 +122,7 @@ const PostDetailPage = () => {
     );
 
     const category = (categories as any)[post.category] || { name: post.category, color: "bg-slate-600" };
-    const isAuthor = user?.id === post.authorId || user?.role === "admin";
+    const isAuthor = user?.id === post.authorId || user?.role === "admin" || user?.role === "master";
 
     return (
         <div className="bg-slate-50 min-h-screen pb-24">

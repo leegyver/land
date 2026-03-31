@@ -21,7 +21,7 @@ export default function NoticeBanner() {
     return (
         <div className="bg-slate-900 text-white border-b border-slate-800">
             <div className="container mx-auto px-4 py-3">
-                <Link href="/contact?tab=notice">
+                <a href="/contact?tab=notice" className="block">
                     <div className="flex items-center gap-3 cursor-pointer group">
                         <div className="bg-white/10 p-1.5 rounded-full group-hover:bg-red-600 transition-colors">
                             <Megaphone className="h-4 w-4 text-red-400 group-hover:text-white transition-colors" />
@@ -34,7 +34,7 @@ export default function NoticeBanner() {
                         </div>
                         <ChevronRight className="h-4 w-4 text-slate-500 group-hover:text-white transition-colors" />
                     </div>
-                </Link>
+                </a>
             </div>
         </div>
     );

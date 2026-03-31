@@ -61,6 +61,9 @@ export interface PropertyFormData {
     youtubeUrl: string;
     featuredImageIndex: number;
     ownerId: number | null;
+    isActive: boolean;
+    isSold: boolean;
+    isVisible: boolean;
 }
 
 export interface PropertyFormProps {

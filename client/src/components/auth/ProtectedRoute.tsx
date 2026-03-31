@@ -22,7 +22,7 @@ export function ProtectedRoute({
     if (!isLoading) {
       if (!user) {
         setShouldRedirect("/auth");
-      } else if (admin && user.role !== "admin") {
+      } else if (admin && !["admin", "master"].includes(user.role)) {
         setShouldRedirect("/");
       }
     }

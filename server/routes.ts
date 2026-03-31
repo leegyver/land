@@ -19,16 +19,19 @@ import {
   insertNoticeSchema,
   insertNewsletterSubscriptionSchema,
   insertPostSchema,
-  insertPostCommentSchema
+  insertCommentSchema,
+  realtorSubscriptions,
+  users
 } from "@shared/schema";
+import { eq, desc } from "drizzle-orm";
 import { memoryCache } from "./cache";
 import { setupAuth } from "./auth";
 import { fetchAndSaveNews, setupNewsScheduler } from "./news-fetcher";
-import { sendEmail, createInquiryEmailTemplate } from "./mailer";
+import { sendEmail, createInquiryEmailTemplate, createInquiryReceiptTemplate, createNewsletterWelcomeTemplate } from "./mailer";
 import { getRecentTransactions } from "./real-estate-api";
 // import { testRealEstateAPI } from "./test-api";
 import { getLatestBlogPosts } from "./blog-fetcher";
-import { getLatestYouTubeVideos, getChannelIdByHandle, fetchYouTubeShorts, fetchLatestYouTubeVideosWithAPI } from "./youtube-fetcher";
+import { getLatestYouTubeVideos, getChannelIdByHandle, fetchYouTubeShorts, fetchLatestYouTubeVideosWithAPI, fetchLatestYouTubeVideos } from "./youtube-fetcher";
 import { importPropertiesFromSheet, checkDuplicatesFromSheet } from "./sheet-importer";
 import { naverCrawler } from "./services/naver-crawler";
 import { log } from "./vite";
@@ -39,6 +42,23 @@ const siteConfig = {
   siteDescription: "강화도 부동산 중개 서비스",
   siteContactEmail: "contact@ganghwaestate.com"
 };
+
+// Multer 설정
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      const uploadDir = path.join(process.cwd(), "public", "uploads");
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      cb(null, uniqueSuffix + path.extname(file.originalname));
+    },
+  }),
+});
 
 /**
  * 상세주소 마스킹 처리 함수
@@ -347,14 +367,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const finalType = detectedType || typeQuery;
 
       const typeMap: Record<string, string[]> = {
-        '토지': ['토지'],
-        '전체건물': ['단독', '근린', '아파트', '다세대', '연립', '원투룸', '다가구', '오피스텔', '기타', '주택', '상가공장창고펜션', '아파트연립다세대'],
-        '주택': ['단독', '아파트', '다세대', '연립', '다가구', '주택'],
-        '아파트연립다세대': ['아파트', '다세대', '연립', '아파트연립다세대'],
-        '원투룸': ['원룸', '투룸', '원투룸', '다가구'],
-        '상가공장창고펜션': ['근린', '오피스텔', '상가공장창고펜션', '상가', '공장', '창고', '펜션'],
+        '토지': ['토지', '임야'],
+        '주택': ['단독', '다가구', '단독주택', '단독/다가구', '주택', '전원주택', '상가주택', '한옥주택'],
+        '단독주택': ['단독', '다가구', '단독주택', '단독/다가구', '주택'],
+        '빌라': ['빌라', '다세대', '연립', '아파트연립다세대'],
+        '아파트연립다세대': ['빌라', '다세대', '연립', '아파트연립다세대', '아파트', '오피스텔', '도시형생활주택'],
+        '원룸/투룸': ['원룸', '투룸', '원투룸', '원룸/투룸'],
+        '원투룸': ['원룸', '투룸', '원투룸', '원룸/투룸'],
+        '상가/사무실': ['상가', '사무실', '상가/사무실', '근린', '상가공장창고펜션'],
+        '상가공장창고펜션': ['상가', '사무실', '상가/사무실', '근린', '상가공장창고펜션', '공장', '창고', '공장/창고', '펜션'],
+        '공장/창고': ['공장', '창고', '공장/창고'],
+        '상가주택': ['상가주택'],
+        '전원주택': ['전원주택'],
+        '아파트': ['아파트'],
+        '전체건물': ['단독', '근린', '아파트', '다세대', '연립', '원투룸', '다가구', '오피스텔', '기타', '주택', '상가공장창고펜션', '아파트연립다세대', '단독/다가구', '빌라', '상가주택', '전원주택', '상가', '사무실', '공장', '창고', '한옥주택'],
         '기타': ['기타']
       };
+      
       const allowedTypes = finalType && finalType !== 'all' ? (typeMap[finalType] || [finalType]) : null;
 
       // 2. Fetch data using SQL push-down (서버 속도 최적화 1단계)
@@ -439,9 +468,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const mappedNaver = naverProps
         .filter(p => {
           // If a district is selected, check if it's mentioned in the title (e.g. "선원면")
+          // Naver items rarely contain the district name in title, so fallback to coordinate bounds if available
           if (finalDistrict && finalDistrict !== 'all') {
             const dMatch = p.atclNm?.includes(finalDistrict) || p.flrInfo?.includes(finalDistrict);
-            if (!dMatch) return false;
+            if (dMatch) return true;
+
+            const regionBounds: Record<string, { minLat: number, minLon: number, maxLat: number, maxLon: number }> = {
+                "강화읍": { minLat: 37.720, minLon: 126.460, maxLat: 37.765, maxLon: 126.510 },
+                "선원면": { minLat: 37.685, minLon: 126.460, maxLat: 37.740, maxLon: 126.540 },
+                "길상면": { minLat: 37.590, minLon: 126.440, maxLat: 37.665, maxLon: 126.540 },
+                "화도면": { minLat: 37.575, minLon: 126.350, maxLat: 37.660, maxLon: 126.460 },
+                "불은면": { minLat: 37.660, minLon: 126.470, maxLat: 37.705, maxLon: 126.550 },
+                "양도면": { minLat: 37.640, minLon: 126.370, maxLat: 37.710, maxLon: 126.480 },
+                "내가면": { minLat: 37.695, minLon: 126.340, maxLat: 37.755, maxLon: 126.435 },
+                "하점면": { minLat: 37.745, minLon: 126.370, maxLat: 37.820, maxLon: 126.465 },
+                "송해면": { minLat: 37.755, minLon: 126.430, maxLat: 37.820, maxLon: 126.510 },
+                "양사면": { minLat: 37.795, minLon: 126.380, maxLat: 37.860, maxLon: 126.480 },
+                "교동면": { minLat: 37.750, minLon: 126.150, maxLat: 37.860, maxLon: 126.350 },
+                "삼산면 (석모도)": { minLat: 37.640, minLon: 126.250, maxLat: 37.760, maxLon: 126.380 }
+            };
+
+            const bounds = regionBounds[finalDistrict];
+            if (bounds) {
+                const inBounds = p.lat >= bounds.minLat && p.lat <= bounds.maxLat && p.lng >= bounds.minLon && p.lng <= bounds.maxLon;
+                if (!inBounds) return false;
+            } else {
+                return false;
+            }
           }
 
           // Inclusive type matching for Naver properties
@@ -467,7 +520,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .map(p => ({
           ...p,
-          id: Number(p.atclNo),
+          id: `naver-${p.atclNo}`,
           title: p.atclNm,
           description: `[네이버 매물] ${p.rletTpNm} - ${p.tradTpNm}`,
           type: p.rletTpNm,
@@ -502,16 +555,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let isAdmin = false;
       if (req.isAuthenticated()) {
         const user = req.user as Express.User;
-        isAdmin = user.role === "admin";
+        isAdmin = (["admin", "master"].includes(user.role as string));
       }
 
       // Apply masking to all combined properties
       const user = req.user as any;
       combined = combined.map(p => {
         // 소유자 권한: 관리자이거나, 해당 매물을 등록한 중개사(agentId)이거나 소유자(ownerId)인 경우
-        const isAuthorized = isAdmin || (user?.id && (p.ownerId === user.id || p.agentId === user.id));
+        const isAuthorized = isAdmin || (user?.id && (Number(p.ownerId) === Number(user.id) || Number(p.agentId) === Number(user.id)));
         return getSafeProperty(p, isAuthorized);
       });
+
+      // 5.5 Tag-based filtering (urgent, featured, negotiable, long-term)
+      if (tag) {
+        console.log(`[TAG_FILTER] active tag: "${tag}"`);
+        combined = combined.filter(p => {
+          if (tag === 'urgent') return !!p.isUrgent;
+          if (tag === 'featured') return !!p.featured;
+          if (tag === 'negotiable') return !!p.isNegotiable;
+          if (tag === 'long-term') return !!p.isLongTerm;
+          return true;
+        });
+      }
+
 
       // 6. 정렬 로직 및 우선순위 적용
       // sortBy에 따라 값이 0인 데이터는 아예 리스트에서 배제 (사용자 요청)
@@ -643,7 +709,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           break;
         case 'latest':
         default:
-          combined.sort((a, b) => compare(a, b, 0));
+          combined.sort((a, b) => {
+            if (tag) {
+              let orderA = 0;
+              let orderB = 0;
+              if (tag === 'featured') {
+                orderA = a.displayOrder || 0;
+                orderB = b.displayOrder || 0;
+              } else if (tag === 'urgent') {
+                orderA = a.urgentOrder || 0;
+                orderB = b.urgentOrder || 0;
+              } else if (tag === 'negotiable') {
+                orderA = a.negotiableOrder || 0;
+                orderB = b.negotiableOrder || 0;
+              } else if (tag === 'long-term') {
+                orderA = a.longTermOrder || 0;
+                orderB = b.longTermOrder || 0;
+              }
+              if (orderA !== orderB) {
+                return orderA - orderB; // ASC (0 is highest priority)
+              }
+            }
+            return compare(a, b, 0);
+          });
           break;
       }
 
@@ -652,7 +740,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totalCount = combined.length;
       const totalPages = Math.ceil(totalCount / limit);
       const startIndex = (page - 1) * limit;
-      const pagedProperties = combined.slice(startIndex, startIndex + limit);
+      const pagedProperties = limit >= 1000 && page === 1 ? combined : combined.slice(startIndex, startIndex + limit);
 
       res.json({
         properties: pagedProperties,
@@ -674,7 +762,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let isAdmin = false;
       if (req.isAuthenticated()) {
         const user = req.user as Express.User;
-        isAdmin = user.role === "admin";
+        isAdmin = (["admin", "master"].includes(user.role as string));
       }
 
       // 캐시 확인 여부를 쿼리 파라미터로 제어
@@ -717,7 +805,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Import Crawled Property to Internal Properties (One-click Import)
   app.post("/api/properties/import-crawled", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
         return res.status(403).json({ message: "관리자 전용 기능입니다." });
       }
 
@@ -763,7 +851,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             '공장': '기타',
             '사무실': '근린'
           };
-          const propertyType = typeMap[crawled.rletTpNm] || '기타';
+          const propertyType = (crawled.rletTpNm && typeMap[crawled.rletTpNm]) || '기타';
 
           // 지역명 추출 (flrInfo에 읍/면/리 정보가 포함된 경우가 많음)
           // 예: "강화군 양도면 능내리"
@@ -859,25 +947,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           longitude: p.lng,
           dealType: p.tradTpNm ? [p.tradTpNm] : [],
           source: 'naver',
-          // Omit detailed fields for list to keep homepage fast
-          address: ``,
+          // Images and more
+          imageUrl: p.imgUrl || "/uploads/default-property.png",
+          imageUrls: p.imgUrl ? [p.imgUrl] : [],
+          address: `인천광역시 강화군 ${p.flrInfo || ''}`,
           district: '수집매물',
-          size: '',
-          imageUrls: [],
-          direction: '',
-          rltrNm: '',
+          size: p.spc1 || '',
+          direction: p.direction || '',
+          rltrNm: p.rltrNm || '',
           ownerId: null
         }))
       ];
 
       const user = req.user as any;
-      const isAdmin = user && user.role === "admin";
+      const isAdmin = user && (["admin", "master"].includes(user.role as string));
       const safeIntegrated = integrated.map(p => {
         const isAuthorized = isAdmin || (user?.id && p.ownerId === user.id);
         return getSafeProperty(p, isAuthorized);
       });
 
-      console.log(`[API] Integrated fetch: ${safeIntegrated.length} items (Internal: ${internalProps.length}, Crawled: ${crawledProps.length})`);
+      console.log(`[API] Integrated fetch: ${safeIntegrated.length} items (Internal: ${internalProps.length}, Crawled: ${crawledProps.length}) - user=${user?.username || 'GUEST'}`);
       res.json(safeIntegrated);
     } catch (error) {
       console.error("Integrated fetch failed:", error);
@@ -894,7 +983,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = req.user as Express.User;
-      const isAdmin = user.role === "admin";
+      const isAdmin = (["admin", "master"].includes(user.role as string));
       const isRealtor = user.role === "realtor";
 
       if (!isAdmin && !isRealtor) {
@@ -909,11 +998,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const filterAgent = req.query.agent as string;
 
       let properties: any[] = [];
+      console.log(`[API] /api/admin/properties: user=${user.username}, role=${user.role}, isAdmin=${isAdmin}, isRealtor=${isRealtor}`);
+      
       if (isAdmin) {
         properties = await storage.getAllProperties();
-      } else {
+        console.log(`[API] Admin fetch: ${properties.length} items`);
+      } else if (isRealtor) {
         // Realtor: Only their own properties
         properties = await storage.getPropertiesByOwner(user.id);
+        console.log(`[API] Realtor fetch (id=${user.id}): ${properties.length} items`);
+      } else {
+        console.log(`[API] Access denied for role: ${user.role}`);
+        return res.status(403).json({ message: "접근 권한이 없습니다." });
       }
 
       // 백엔드 필터링 적용
@@ -947,13 +1043,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sortedProperties = filteredProperties.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
       const paginatedProperties = sortedProperties.slice(offset, offset + limit);
 
-      res.json({
-        properties: paginatedProperties,
-        total,
-        totalPages,
-        currentPage: page
-      });
+      // sortedProperties를 직접 반환 (프론트엔드 호환성 및 클라이언트 사이드 필터링 지원)
+      res.json(sortedProperties);
     } catch (error) {
+      console.error("Failed to fetch admin properties:", error);
       res.status(500).json({ message: "Failed to fetch all properties" });
     }
   });
@@ -964,7 +1057,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const properties = await storage.getFeaturedProperties(limit);
 
       const user = req.user as any;
-      const isAdmin = user && user.role === "admin";
+      const isAdmin = user && (["admin", "master"].includes(user.role as string));
       const safeProperties = properties.map(p => {
         const isAuthorized = isAdmin || (user?.id && p.ownerId === user.id);
         return getSafeProperty(p, isAuthorized);
@@ -985,7 +1078,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let isAdmin = false;
       const user = req.user as any;
-      if (req.isAuthenticated()) isAdmin = user.role === "admin";
+      if (req.isAuthenticated()) isAdmin = (["admin", "master"].includes(user.role as string));
 
       res.json(properties.map(p => {
         const isAuthorized = isAdmin || (user?.id && p.ownerId === user.id);
@@ -1003,7 +1096,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let isAdmin = false;
       const user = req.user as any;
-      if (req.isAuthenticated()) isAdmin = user.role === "admin";
+      if (req.isAuthenticated()) isAdmin = (["admin", "master"].includes(user.role as string));
 
       res.json(properties.map(p => {
         const isAuthorized = isAdmin || (user?.id && p.ownerId === user.id);
@@ -1021,7 +1114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let isAdmin = false;
       const user = req.user as any;
-      if (req.isAuthenticated()) isAdmin = user.role === "admin";
+      if (req.isAuthenticated()) isAdmin = (["admin", "master"].includes(user.role as string));
 
       res.json(properties.map(p => {
         const isAuthorized = isAdmin || (user?.id && p.ownerId === user.id);
@@ -1039,7 +1132,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let isAdmin = false;
       const user = req.user as any;
-      if (req.isAuthenticated()) isAdmin = user.role === "admin";
+      if (req.isAuthenticated()) isAdmin = (["admin", "master"].includes(user.role as string));
 
       res.json(properties.map(p => {
         const isAuthorized = isAdmin || (user?.id && p.ownerId === user.id);
@@ -1050,53 +1143,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Toggle Property Status (Urgent, Negotiable, Long-term)
-  app.patch("/api/properties/:id/urgent", async (req, res) => {
-    try {
-      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
-        return res.status(403).send("Unauthorized");
-      }
-      const id = parseInt(req.params.id);
-      const { isUrgent } = req.body;
-      await storage.togglePropertyUrgent(id, isUrgent);
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to toggle urgent status" });
-    }
-  });
 
-  app.patch("/api/properties/:id/negotiable", async (req, res) => {
-    try {
-      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
-        return res.status(403).send("Unauthorized");
-      }
-      const id = parseInt(req.params.id);
-      const { isNegotiable } = req.body;
-      await storage.togglePropertyNegotiable(id, isNegotiable);
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to toggle negotiable status" });
-    }
-  });
-
-  app.patch("/api/properties/:id/long-term", async (req, res) => {
-    try {
-      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
-        return res.status(403).send("Unauthorized");
-      }
-      const id = parseInt(req.params.id);
-      const { isLongTerm } = req.body;
-      await storage.togglePropertyLongTerm(id, isLongTerm);
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to toggle long-term status" });
-    }
-  });
 
   // Reorder Properties
   app.put("/api/properties/urgent/order", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
         return res.status(403).send("Unauthorized");
       }
       const { items } = req.body; // Array of { id, order }
@@ -1111,7 +1163,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/properties/negotiable/order", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
         return res.status(403).send("Unauthorized");
       }
       const { items } = req.body;
@@ -1126,7 +1178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/properties/long-term/order", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
         return res.status(403).send("Unauthorized");
       }
       const { items } = req.body;
@@ -1194,43 +1246,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Property not found" });
       }
 
-      // 중개사 정보 결정 (leegyver를 기본으로 사용)
-      const defaultRealtor = await storage.getUserByUsername('leegyver');
-      const d = defaultRealtor as any;
-      const defaultInfo = d ? {
-        businessName: d.businessName,
-        realtorName: d.realtorName,
-        realtorPhone: d.realtorPhone,
-        realtorPhoto: d.realtorPhoto,
-        realtorAddress: d.realtorAddress,
-        realtorLicenseNo: d.realtorLicenseNo
-      } : null;
+      // 중개사 정보 결정 (master 또는 admin 조회 후 하드코딩된 이가이버 원장 데이터 fallback 적용)
+      let defaultRealtor = null;
+      try {
+        defaultRealtor = db.prepare("SELECT * FROM users WHERE role = 'master' LIMIT 1").get();
+      } catch (e) {
+        console.error("Failed to fetch master user:", e);
+      }
 
-      if (property.ownerId) {
-        const owner = await storage.getUser(property.ownerId);
-        const o = owner as any;
-        if (o && o.role === 'realtor') {
+      const d = defaultRealtor as any;
+      const defaultInfo = {
+        businessName: d?.businessName || "이가이버 공인중개사사무소",
+        realtorName: d?.realtorName || "이민호",
+        realtorPhone: d?.realtorPhone || "010-4787-3120",
+        realtorPhoto: d?.realtorPhoto || null,
+        realtorAddress: d?.realtorAddress || "인천광역시 강화군 강화읍 남문로 51, 1호",
+        realtorLicenseNo: d?.businessLicenseNo || d?.realtorLicenseNo || "28710-2021-00012"
+      };
+
+      if (property.agentId) {
+        const agent = await storage.getUser(property.agentId);
+        const a = agent as any;
+        if (a && a.role === 'realtor') {
           (property as any).realtorInfo = {
-            businessName: o.businessName,
-            realtorName: o.realtorName,
-            realtorPhone: o.realtorPhone,
-            realtorPhoto: o.realtorPhoto,
-            realtorAddress: o.realtorAddress,
-            realtorLicenseNo: o.realtorLicenseNo
+            businessName: a.businessName,
+            realtorName: a.realtorName,
+            realtorPhone: a.realtorPhone,
+            realtorPhoto: a.realtorPhoto,
+            realtorAddress: a.realtorAddress,
+            realtorLicenseNo: a.businessLicenseNo || a.realtorLicenseNo // Handle both possible field names
           };
-        } else if (o && o.role === 'admin') {
+        } else if (a && a.role === 'admin') {
+          (property as any).realtorInfo = defaultInfo;
+        } else {
           (property as any).realtorInfo = defaultInfo;
         }
       } else {
-        // 소유주 정보가 없는 경우 기본 중개사 노출
+        // 소유주/중개사 정보가 없는 경우 기본 중개사 노출
         (property as any).realtorInfo = defaultInfo;
       }
 
       // 관리자인 경우 원본 데이터 반환, 일반 사용자는 마스킹 (등록 중개사 혹은 소유자면 마스킹 해제)
       let isAdmin = false;
       const user = req.user as any;
-      if (req.isAuthenticated()) isAdmin = user.role === "admin";
-      const isAuthorized = isAdmin || (user?.id && (property.ownerId === user.id || property.agentId === user.id));
+      if (req.isAuthenticated()) isAdmin = (["admin", "master"].includes(user.role as string));
+      const isAuthorized = isAdmin || (user?.id && (Number(property.ownerId) === Number(user.id) || Number(property.agentId) === Number(user.id)));
       res.json(getSafeProperty(property, isAuthorized));
     } catch (error) {
       console.error("Property ID fetch error:", error);
@@ -1238,65 +1298,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/properties/:id/featured", async (req, res) => {
-    try {
-      if (!req.isAuthenticated() || req.user?.role !== "admin") {
-        return res.status(403).send("Unauthorized");
-      }
-      const id = parseInt(req.params.id);
-      const { featured } = req.body;
-      await storage.togglePropertyFeatured(id, featured);
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to toggle property featured status" });
-    }
-  });
-
-  app.patch("/api/properties/:id/urgent", async (req, res) => {
-    try {
-      if (!req.isAuthenticated() || req.user?.role !== "admin") {
-        return res.status(403).send("Unauthorized");
-      }
-      const id = parseInt(req.params.id);
-      const { isUrgent } = req.body;
-      await storage.togglePropertyUrgent(id, isUrgent);
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to toggle property urgent status" });
-    }
-  });
-
-  app.patch("/api/properties/:id/negotiable", async (req, res) => {
-    try {
-      if (!req.isAuthenticated() || req.user?.role !== "admin") {
-        return res.status(403).send("Unauthorized");
-      }
-      const id = parseInt(req.params.id);
-      const { isNegotiable } = req.body;
-      await storage.togglePropertyNegotiable(id, isNegotiable);
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to toggle property negotiable status" });
-    }
-  });
-
-  app.patch("/api/properties/:id/long-term", async (req, res) => {
-    try {
-      if (!req.isAuthenticated() || req.user?.role !== "admin") {
-        return res.status(403).send("Unauthorized");
-      }
-      const id = parseInt(req.params.id);
-      const { isLongTerm } = req.body;
-      await storage.togglePropertyLongTerm(id, isLongTerm);
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to toggle property long-term status" });
-    }
-  });
 
   app.put("/api/properties/:id/urgent-order", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || req.user?.role !== "admin") {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes(req.user?.role as string))) {
         return res.status(403).send("Unauthorized");
       }
       const id = parseInt(req.params.id);
@@ -1310,7 +1315,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/properties/:id/negotiable-order", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || req.user?.role !== "admin") {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes(req.user?.role as string))) {
         return res.status(403).send("Unauthorized");
       }
       const id = parseInt(req.params.id);
@@ -1324,7 +1329,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/properties/:id/long-term-order", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || req.user?.role !== "admin") {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes(req.user?.role as string))) {
         return res.status(403).send("Unauthorized");
       }
       const id = parseInt(req.params.id);
@@ -1412,7 +1417,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = req.user as Express.User;
-      if (user.role !== "admin") {
+      if ((!["admin", "master"].includes(user.role as string))) {
         return res.status(403).json({ message: "Admin permission required" });
       }
 
@@ -1431,7 +1436,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = req.user as Express.User;
-      if (user.role !== "admin") {
+      if ((!["admin", "master"].includes(user.role as string))) {
         return res.status(403).json({ message: "Admin permission required" });
       }
 
@@ -1456,7 +1461,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = req.user as Express.User;
-      if (user.role !== "admin") {
+      if ((!["admin", "master"].includes(user.role as string))) {
         return res.status(403).json({ message: "Admin permission required" });
       }
 
@@ -1483,13 +1488,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 이메일 발송 시도
       try {
-        // 이메일 템플릿 생성
+        // 이메일 템플릿 생성 (관리자용)
         const emailTemplate = createInquiryEmailTemplate({
           name: validatedData.name,
           email: validatedData.email,
           phone: validatedData.phone,
           message: validatedData.message
         });
+
+        // 사용자에게 문의 접수 확인 메일 발송
+        if (validatedData.email) {
+          sendEmail(
+            validatedData.email,
+            "[이가이버 부동산] 문의가 성공적으로 접수되었습니다",
+            createInquiryReceiptTemplate({ name: validatedData.name })
+          ).catch(console.error);
+        }
 
         // 수신자 이메일 주소를 명시적으로 설정 
         const recipientEmail = '9551304@naver.com'; // 여기에 원하는 수신자 이메일을 직접 입력
@@ -1504,6 +1518,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         if (emailSent) {
           console.log(`문의 ID ${inquiry.id}에 대한 알림 이메일 전송 완료`);
+          // 관리자 통합 알림 생성
+          storage.createAdminNotification({
+            type: "inquiry",
+            relatedId: inquiry.id,
+            title: `새로운 일반 문의: ${validatedData.name}님`,
+            content: validatedData.message.length > 50 ? validatedData.message.substring(0, 50) + "..." : validatedData.message,
+            isRead: false
+          }).catch(console.error);
         } else {
           console.error(`문의 ID ${inquiry.id}에 대한 알림 이메일 전송 실패`);
         }
@@ -1537,7 +1559,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (req.isAuthenticated()) {
         user = req.user as Express.User;
-        isAdmin = user.role === "admin";
+        isAdmin = (["admin", "master"].includes(user.role as string));
       }
 
       // 해당 매물에 대한 문의글 목록 가져오기
@@ -1597,7 +1619,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 답변을 작성하는 경우 권한 확인 (관리자만 가능)
       if (req.body.isReply) {
-        const isAdmin = user.role === "admin";
+        const isAdmin = (["admin", "master"].includes(user.role as string));
 
         if (!isAdmin) {
           return res.status(403).json({ message: "답변은 관리자만 작성할 수 있습니다." });
@@ -1669,8 +1691,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           console.log(`매물 문의 알림 이메일 발송 준비: ${recipientEmail}`);
           await sendEmail(recipientEmail, emailSubject, emailContent);
+
+          // 관리자 통합 알림 생성
+          storage.createAdminNotification({
+            type: "property_inquiry",
+            relatedId: property.id,
+            title: `새로운 매물 문의: [${property.type}] ${property.title}`,
+            content: `${user.nickname || user.username}님이 문의를 남겼습니다.\n${inquiry.content.substring(0, 50)}${inquiry.content.length > 50 ? "..." : ""}`,
+            isRead: false
+          }).catch(console.error);
+          
+          // 사용자에게 문의 접수 확인 메일 발송
+          if (user.email) {
+            sendEmail(
+              user.email,
+              `[이가이버 부동산] '${property.title}' 매물에 대한 문의가 접수되었습니다`,
+              createInquiryReceiptTemplate({ name: user.nickname || user.username, title: property.title })
+            ).catch(console.error);
+          }
         } catch (emailError) {
-          console.error("매물 문의 알림 이메일 발송 실패:", emailError);
+          console.error("매물 문의 알림 처리 실패:", emailError);
           // 이메일 실패해도 API 요청은 성공 처리
         }
       }
@@ -1701,7 +1741,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 접근 권한 확인 (작성자 또는 관리자만 삭제 가능)
       const user = req.user as Express.User;
-      const isAdmin = user.role === "admin";
+      const isAdmin = (["admin", "master"].includes(user.role as string));
       const isAuthor = inquiry.userId === user.id;
 
       if (!isAdmin && !isAuthor) {
@@ -1729,7 +1769,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = req.user as Express.User;
-      if (user.role !== "admin") {
+      if ((!["admin", "master"].includes(user.role as string))) {
         return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
       }
 
@@ -1749,7 +1789,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = req.user as Express.User;
-      if (user.role !== "admin") {
+      if ((!["admin", "master"].includes(user.role as string))) {
         return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
       }
 
@@ -1769,7 +1809,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = req.user as Express.User;
-      if (user.role !== "admin") {
+      if ((!["admin", "master"].includes(user.role as string))) {
         return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
       }
 
@@ -1795,7 +1835,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = req.user as Express.User;
-      if (user.role !== "admin") {
+      if ((!["admin", "master"].includes(user.role as string))) {
         return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
       }
 
@@ -1836,6 +1876,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // 타입을 변환하지 않고 원래 타입 그대로 유지
         // bedrooms, bathrooms와 숫자 타입 필드의 빈 문자열을 변환
         const user = req.user as Express.User;
+        const isAdmin = ["admin", "master"].includes(user.role as string);
+        const isPaidRealtor = user.role === 'realtor' && ["monthly", "yearly", "approved", "lifetime"].includes(user.subscriptionTier as string);
+
+        if (!isAdmin && !isPaidRealtor) {
+          return res.status(403).json({ message: "부동산 등록은 유료 중개사 회원 또는 관리자만 가능합니다." });
+        }
+
         const processedData = {
           ...req.body,
           bedrooms: req.body.bedrooms !== undefined ? req.body.bedrooms : 0,
@@ -1845,6 +1892,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // dealType 처리 - 배열로 변환
           dealType: Array.isArray(req.body.dealType) ? req.body.dealType :
             (req.body.dealType ? [req.body.dealType] : ['매매']),
+          // 필수 필드 방어 (NOT NULL)
+          title: req.body.title || "제목 없음",
+          description: req.body.description || "내용 없음",
+          type: req.body.type || "주택",
+          address: req.body.address || "주소 미입력",
+          district: req.body.district || "기타지역",
+          imageUrl: req.body.imageUrl || (Array.isArray(req.body.imageUrls) && req.body.imageUrls.length > 0 ? req.body.imageUrls[0] : "/uploads/default-property.png"),
           // 숫자 필드들 - 쉼표 제거 후 처리
           price: stripCommas(req.body.price) || "0",
           size: stripCommas(req.body.size) || "0",
@@ -1884,9 +1938,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         throw e;
       }
-    } catch (error) {
-      console.error('부동산 등록 오류:', error);
-      res.status(500).json({ message: "Failed to create property" });
+    } catch (error: any) {
+      console.error('부동산 등록 오류 세부 정보:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("UNIQUE constraint failed")) {
+        return res.status(400).json({ message: "중복된 데이터가 존재합니다.", details: errorMessage });
+      }
+      if (errorMessage.includes("NOT NULL constraint failed")) {
+        return res.status(400).json({ message: "필수 입력값이 누락되었습니다.", details: errorMessage });
+      }
+      res.status(500).json({ message: "Failed to create property", details: errorMessage });
     }
   });
 
@@ -1915,12 +1976,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const user = req.user as Express.User;
-      const isAdmin = user.role === "admin";
-      const isRealtor = user.role === "realtor";
+      const isAdmin = ["admin", "master"].includes(user.role as string);
+      const isPaidRealtor = user.role === 'realtor' && ["monthly", "yearly", "approved", "lifetime"].includes(user.subscriptionTier as string);
 
-      // Realtor: Only their own properties
-      if (isRealtor && existingProperty.ownerId !== user.id) {
-        return res.status(403).json({ message: "본인의 매물만 수정할 수 있습니다." });
+      if (!isAdmin) {
+        if (!isPaidRealtor) {
+          return res.status(403).json({ message: "매물 수정 권한이 없습니다. 유료 중개사 회원이 필요합니다." });
+        }
+        if (existingProperty.ownerId !== user.id) {
+          return res.status(403).json({ message: "본인의 매물만 수정할 수 있습니다." });
+        }
       }
 
       console.log(`[API] Property Update Request for ID ${id}:`, JSON.stringify(req.body, null, 2));
@@ -1935,6 +2000,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // dealType 처리 - 배열로 변환
         dealType: Array.isArray(req.body.dealType) ? req.body.dealType :
           (req.body.dealType ? [req.body.dealType] : (existingProperty.dealType || ['매매'])),
+        // 필수 필드 방어 (NOT NULL)
+        title: req.body.title || existingProperty.title || "제목 없음",
+        description: req.body.description || existingProperty.description || "내용 없음",
+        type: req.body.type || existingProperty.type || "주택",
+        address: req.body.address || existingProperty.address || "주소 미입력",
+        district: req.body.district || existingProperty.district || "기타지역",
+        imageUrl: req.body.imageUrl || (Array.isArray(req.body.imageUrls) && req.body.imageUrls.length > 0 ? req.body.imageUrls[0] : existingProperty.imageUrl || "/uploads/default-property.png"),
         // 숫자 필드들 - 쉼표 제거 후 처리
         price: stripCommas(req.body.price) || existingProperty.price || "0",
         size: stripCommas(req.body.size) || existingProperty.size || "0",
@@ -1970,20 +2042,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json(updatedProperty);
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
         console.error('부동산 수정 유효성 검사 오류:', JSON.stringify(error.errors, null, 2));
         return res.status(400).json({ message: "Invalid property data", errors: error.errors });
       }
-      console.error('부동산 수정 오류:', error);
-      res.status(500).json({ message: "Failed to update property" });
+      console.error('부동산 수정 오류 세부 정보:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("UNIQUE constraint failed")) {
+        return res.status(400).json({ message: "중복된 데이터가 존재합니다.", details: errorMessage });
+      }
+      if (errorMessage.includes("NOT NULL constraint failed")) {
+        return res.status(400).json({ message: "필수 입력값이 누락되었습니다.", details: errorMessage });
+      }
+      res.status(500).json({ message: "Failed to update property", details: errorMessage });
     }
   });
 
   // --- Admin User Management API ---
   app.get("/api/admin/users", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
         return res.status(403).json({ message: "접근 권한이 없습니다." });
       }
       const users = await storage.getAllUsers();
@@ -1995,7 +2074,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/admin/users/:id/role", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
         return res.status(403).json({ message: "접근 권한이 없습니다." });
       }
       const id = parseInt(req.params.id);
@@ -2010,7 +2089,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/admin/users/:id", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
         return res.status(403).json({ message: "접근 권한이 없습니다." });
       }
       const id = parseInt(req.params.id);
@@ -2025,6 +2104,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/newsletter", async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (!user || !["admin", "master"].includes(user.role)) {
+        return res.status(403).json({ message: "권한이 없습니다." });
+      }
+      const subs = await storage.getNewsletterSubscriptions();
+      res.json(subs);
+    } catch (error) {
+      console.error("[API Error] Failed to fetch newsletter subscriptions:", error);
+      res.status(500).json({ message: "구독자 목록을 불러오지 못했습니다." });
+    }
+  });
+
   // --- Admin Batch Delete API ---
   app.post("/api/admin/batch-delete/:type", async (req, res) => {
     try {
@@ -2033,7 +2126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = req.user as any;
-      const isAdmin = user.role === "admin";
+      const isAdmin = (["admin", "master"].includes(user.role as string));
       const isRealtor = user.role === "realtor";
 
       if (!isAdmin && !isRealtor) {
@@ -2291,7 +2384,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // 최신 유튜브 영상 가져오기
   app.get("/api/youtube/latest", async (req, res) => {
     try {
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
       const channelUrlParam = req.query.channelUrl as string;
 
       // 캐시에서 확인
@@ -2340,7 +2433,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // 채널 ID로 직접 영상 가져오기 (일반 영상만 - medium/long duration)
-      const videos = await fetchLatestYouTubeVideosWithAPI(channelId, limit);
+      // fetchLatestYouTubeVideos를 호출하여 API 실패 시 대체 데이터(Mock) 반환 로직을 타도록 수정
+      const channelUrl = `https://www.youtube.com/channel/${channelId}`;
+      const videos = await fetchLatestYouTubeVideos(channelUrl, limit);
 
       // 캐시에 저장 (6시간)
       memoryCache.set(cacheKey, videos, 6 * 60 * 60 * 1000);
@@ -2694,7 +2789,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = req.user as Express.User;
-      if (user.role !== "admin") {
+      if ((!["admin", "master"].includes(user.role as string))) {
         return res.status(403).json({ message: "관리자 권한이 필요합니다." });
       }
 
@@ -2732,7 +2827,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = req.user as Express.User;
-      if (user.role !== "admin") {
+      if ((!["admin", "master"].includes(user.role as string))) {
         return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
       }
 
@@ -2764,18 +2859,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = req.user as Express.User;
-      if (user.role !== "admin") {
+      if ((!["admin", "master"].includes(user.role as string))) {
         return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
       }
 
       const propertyId = parseInt(req.params.id);
-      const { isVisible } = req.body;
+      const { isVisible, visibility } = req.body;
+      const targetVisibility = isVisible !== undefined ? isVisible : visibility;
 
-      if (!propertyId || typeof isVisible !== 'boolean') {
+      if (!propertyId || typeof targetVisibility !== 'boolean') {
         return res.status(400).json({ message: "Property ID and visibility state are required" });
       }
 
-      const success = await storage.togglePropertyVisibility(propertyId, isVisible);
+      const success = await storage.togglePropertyVisibility(propertyId, targetVisibility);
 
       if (!success) {
         return res.status(404).json({ message: "Property not found" });
@@ -2797,7 +2893,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = req.user as Express.User;
-      if (user.role !== "admin") {
+      if ((!["admin", "master"].includes(user.role as string))) {
         return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
       }
 
@@ -2821,14 +2917,128 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 매물 급매 상태 토글 API
+  app.patch("/api/properties/:id/urgent", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      const user = req.user as Express.User;
+      if (!["admin", "master"].includes(user.role as string)) return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+      
+      const propertyId = parseInt(req.params.id);
+      const { urgent } = req.body;
+      if (!propertyId || typeof urgent !== 'boolean') return res.status(400).json({ message: "Property ID and urgent state are required" });
+      
+      const success = await storage.togglePropertyUrgent(propertyId, urgent);
+      if (!success) return res.status(404).json({ message: "Property not found" });
+      res.json({ message: "Property urgent status updated successfully" });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to update property urgent status" });
+    }
+  });
+
+  // 매물 협의 상태 토글 API
+  app.patch("/api/properties/:id/negotiable", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      const user = req.user as Express.User;
+      if (!["admin", "master"].includes(user.role as string)) return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+      
+      const propertyId = parseInt(req.params.id);
+      const { negotiable } = req.body;
+      if (!propertyId || typeof negotiable !== 'boolean') return res.status(400).json({ message: "Property ID and negotiable state are required" });
+      
+      const success = await storage.togglePropertyNegotiable(propertyId, negotiable);
+      if (!success) return res.status(404).json({ message: "Property not found" });
+      res.json({ message: "Property negotiable status updated successfully" });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to update property negotiable status" });
+    }
+  });
+
+  // 매물 장기 상태 토글 API
+  app.patch("/api/properties/:id/long-term", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      const user = req.user as Express.User;
+      if (!["admin", "master"].includes(user.role as string)) return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+      
+      const propertyId = parseInt(req.params.id);
+      const { 'long-term': longTerm } = req.body;
+      if (!propertyId || typeof longTerm !== 'boolean') return res.status(400).json({ message: "Property ID and long-term state are required" });
+      
+      const success = await storage.togglePropertyLongTerm(propertyId, longTerm);
+      if (!success) return res.status(404).json({ message: "Property not found" });
+      res.json({ message: "Property long-term status updated successfully" });
+    } catch (err) {
+      res.status(500).json({ message: "Failed to update property long-term status" });
+    }
+  });
+
   // 누락된 ownerId 일괄 매핑 API (관리자용 데이터 보정)
+  app.post("/api/admin/fix-property-metadata", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+      }
+      const user = req.user as Express.User;
+      if ((!["admin", "master"].includes(user.role as string))) {
+        return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+      }
+
+      const allProperties = await storage.getAllProperties();
+      const allCrawled = await storage.getCrawledProperties();
+      let updatedCount = 0;
+
+      for (const prop of allProperties) {
+        // 이미 제목이 있거나 atclNo가 없는 경우 건너뜀 (이미 수동 수정한 경우 등)
+        const hasPlaceholderTitle = !prop.title || prop.title.startsWith("제목을");
+        const hasMissingImage = !prop.imageUrl || prop.imageUrl === "" || prop.imageUrl.includes("default");
+
+        if (prop.atclNo && (hasPlaceholderTitle || hasMissingImage)) {
+          const matchedCrawled = allCrawled.find(c => c.atclNo === prop.atclNo);
+          
+          if (matchedCrawled) {
+            const updates: any = {};
+            
+            if (hasPlaceholderTitle && matchedCrawled.atclNm) {
+              updates.title = matchedCrawled.atclNm;
+            }
+            
+            if (hasMissingImage && matchedCrawled.imgUrl) {
+              updates.imageUrl = matchedCrawled.imgUrl;
+              updates.imageUrls = JSON.stringify([matchedCrawled.imgUrl]);
+            }
+
+            if (Object.keys(updates).length > 0) {
+              await storage.updateProperty(prop.id, updates);
+              updatedCount++;
+              console.log(`[Fix-Metadata] 매물 ID ${prop.id}: '${prop.atclNo}' 정보 업데이트 완료`);
+            }
+          }
+        }
+      }
+
+      // 캐시 무효화
+      memoryCache.deleteByPrefix("properties_");
+
+      res.json({
+        message: "매물 메타데이터(제목/이미지) 일괄 업데이트가 완료되었습니다.",
+        updatedCount,
+        totalProperties: allProperties.length
+      });
+    } catch (error) {
+      console.error("매물 메타데이터 업데이트 중 오류:", error);
+      res.status(500).json({ message: "매물 메타데이터 업데이트 중 오류가 발생했습니다." });
+    }
+  });
+
   app.post("/api/admin/fix-ownerids", async (req, res) => {
     try {
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
       }
       const user = req.user as Express.User;
-      if (user.role !== "admin") {
+      if ((!["admin", "master"].includes(user.role as string))) {
         return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
       }
 
@@ -2882,7 +3092,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = req.user as Express.User;
-      if (user.role !== "admin") {
+      if ((!["admin", "master"].includes(user.role as string))) {
         return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
       }
 
@@ -2922,7 +3132,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // 관리자: 모든 사용자 목록 가져오기
   app.get("/api/admin/users", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || req.user?.role !== "admin") {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes(req.user?.role as string))) {
         return res.status(403).json({ message: "관리자만 접근할 수 있습니다" });
       }
       const users = await storage.getAllUsers();
@@ -2932,10 +3142,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+
+
   // 관리자: 사용자 역할 및 중개사 정보 업데이트
   app.patch("/api/admin/users/:id/role", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || req.user?.role !== "admin") {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes(req.user?.role as string))) {
         return res.status(403).json({ message: "관리자 권한이 필요합니다" });
       }
 
@@ -2966,7 +3178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // 관리자: 모든 뉴스레터 구독자 목록 가져오기
   app.get("/api/admin/newsletter/subscriptions", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || req.user?.role !== "admin") {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes(req.user?.role as string))) {
         return res.status(403).json({ message: "관리자만 접근할 수 있습니다" });
       }
       const subs = await storage.getNewsletterSubscriptions();
@@ -2985,7 +3197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = req.user as Express.User;
-      if (user.role !== "admin") {
+      if ((!["admin", "master"].includes(user.role as string))) {
         return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
       }
 
@@ -3031,7 +3243,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = req.user as Express.User;
-      if (user.role !== "admin") {
+      if ((!["admin", "master"].includes(user.role as string))) {
         return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
       }
 
@@ -3082,7 +3294,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = req.user as Express.User;
-      if (user.role !== "admin") {
+      if ((!["admin", "master"].includes(user.role as string))) {
         return res.status(403).json({ message: "관리자 권한이 필요합니다." });
       }
 
@@ -3161,6 +3373,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // 블로그 포스트 관련 API 제거됨
 
+  // 뉴스레터 구독 API
+  app.post("/api/newsletter/subscribe", async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email || typeof email !== 'string' || !email.includes('@')) {
+        return res.status(400).json({ message: "유효한 이메일 주소를 입력해주세요." });
+      }
+
+      // 중복 구독 확인
+      const existingSubscription = await storage.getNewsletterSubscriptionByEmail(email);
+      if (existingSubscription) {
+        return res.status(409).json({ message: "이미 구독된 이메일 주소입니다." });
+      }
+
+      // 구독 정보 저장
+      const subscription = await storage.createNewsletterSubscription({ email });
+
+      // 관리자 통합 알림 생성
+      storage.createAdminNotification({
+        type: "newsletter",
+        relatedId: subscription.id,
+        title: "새로운 뉴스레터 구독",
+        content: email,
+        isRead: false
+      }).catch(console.error);
+
+      // 자동 응답 이메일 발송
+      try {
+        const welcomeHtml = createNewsletterWelcomeTemplate({ email });
+        
+        await sendEmail(
+          email, 
+          "[이가이버부동산] 뉴스레터 구독을 환영합니다", 
+          welcomeHtml
+        );
+      } catch (emailError) {
+        console.error('뉴스레터 구독 환영 이메일 발송 중 오류:', emailError);
+      }
+
+      res.status(201).json(subscription);
+    } catch (error) {
+      console.error("뉴스레터 구독 오류:", error);
+      res.status(500).json({ message: "뉴스레터 구독 중 오류가 발생했습니다." });
+    }
+  });
+
   // --- 배너 관리 API ---
   app.get("/api/banners", async (req, res) => {
     try {
@@ -3175,7 +3434,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/banners", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
         return res.status(403).json({ message: "관리자 권한이 필요합니다." });
       }
 
@@ -3192,10 +3451,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/banners/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
+        return res.status(403).json({ message: "관리자 권한이 필요합니다." });
+      }
+
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "유효하지 않은 배너 ID입니다." });
+      }
+
+      const parsed = insertBannerSchema.partial().safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "잘못된 데이터 형식입니다.", errors: parsed.error });
+      }
+
+      const updatedBanner = await storage.updateBanner(id, parsed.data);
+      res.json(updatedBanner);
+    } catch (error) {
+      console.error("배너 수정 오류:", error);
+      res.status(500).json({ message: "배너 수정 중 오류가 발생했습니다." });
+    }
+  });
+
   // 배너 순서 변경 API
   app.put("/api/banners/order", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
         return res.status(403).json({ message: "관리자 권한이 필요합니다." });
       }
 
@@ -3271,9 +3554,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 온라인 이미지 (타 웹사이트에서 드래그앤드롭) URL 업로드 API
+  app.post("/api/upload-url", async (req, res) => {
+    try {
+      const { url } = req.body;
+      if (!url) {
+        return res.status(400).json({ message: "URL이 제공되지 않았습니다." });
+      }
+
+      console.log(`[Upload-URL DEBUG] Requesting: ${url}`);
+      
+      // 1. 이미지 다운로드
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+          'Referer': 'https://m.land.naver.com/'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.statusText}`);
+      }
+
+      const buffer = Buffer.from(await response.arrayBuffer());
+      const filename = `online_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+      const originalPath = path.join(uploadDir, filename);
+
+      try {
+        // 2. Jimp로 이미지 리사이징 및 16:9 크롭
+        const image = await Jimp.read(buffer);
+        const currentWidth = image.getWidth();
+
+        if (currentWidth > 1200) {
+          image.resize(1200, Jimp.AUTO);
+        }
+
+        const targetRatio = 16 / 9;
+        const currentRatio = image.getWidth() / image.getHeight();
+
+        if (Math.abs(currentRatio - targetRatio) > 0.01) {
+          let cropWidth = image.getWidth();
+          let cropHeight = image.getHeight();
+
+          if (currentRatio > targetRatio) {
+            cropWidth = cropHeight * targetRatio;
+          } else {
+            cropHeight = cropWidth / targetRatio;
+          }
+
+          const cropX = (image.getWidth() - cropWidth) / 2;
+          const cropY = (image.getHeight() - cropHeight) / 2;
+
+          image.crop(cropX, cropY, cropWidth, cropHeight);
+        }
+
+        // JPEG 형식으로 저장
+        await image.quality(85).writeAsync(originalPath);
+      } catch (jimpError) {
+        console.error("Jimp image processing failed for online URL:", jimpError);
+        // 처리 실패 시 원본 저장 시도
+        require('fs').writeFileSync(originalPath, buffer);
+      }
+
+      const fileUrl = `/uploads/${filename}`;
+      res.json({ url: fileUrl });
+    } catch (error: any) {
+      console.error("URL upload error:", error);
+      res.status(500).json({ message: "온라인 이미지 업로드 중 오류가 발생했습니다.", details: error.message });
+    }
+  });
+
   app.delete("/api/banners/:id", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
         return res.status(403).json({ message: "관리자 권한이 필요합니다." });
       }
 
@@ -3298,7 +3652,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = req.user as Express.User;
-      if (user.role !== "admin") {
+      if ((!["admin", "master"].includes(user.role as string))) {
         return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
       }
 
@@ -3345,7 +3699,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const user = req.user as Express.User;
-      if (user.role !== "admin") {
+      if ((!["admin", "master"].includes(user.role as string))) {
         return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
       }
 
@@ -3453,7 +3807,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       if (!req.isAuthenticated()) return res.status(401).send("Unauthorized");
       const user = req.user as Express.User;
-      if (user.role !== "admin") return res.status(403).send("Forbidden");
+      if ((!["admin", "master"].includes(user.role as string))) return res.status(403).send("Forbidden");
       // const user = { id: 1, role: 'admin' } as any;
 
       const noticeData = insertNoticeSchema.parse(req.body);
@@ -3467,6 +3821,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         res.status(400).json({ message: "Invalid notice data", errors: error.errors });
       } else {
+        console.error("[POST /api/notices] Error:", error);
         res.status(500).json({ message: "Failed to create notice" });
       }
     }
@@ -3476,7 +3831,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       if (!req.isAuthenticated()) return res.status(401).send("Unauthorized");
       const user = req.user as Express.User;
-      if (user.role !== "admin") return res.status(403).send("Forbidden");
+      if ((!["admin", "master"].includes(user.role as string))) return res.status(403).send("Forbidden");
 
       const id = parseInt(req.params.id);
       const noticeData = insertNoticeSchema.partial().parse(req.body);
@@ -3498,7 +3853,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       if (!req.isAuthenticated()) return res.status(401).send("Unauthorized");
       const user = req.user as Express.User;
-      if (user.role !== "admin") return res.status(403).send("Forbidden");
+      if ((!["admin", "master"].includes(user.role as string))) return res.status(403).send("Forbidden");
 
       const id = parseInt(req.params.id);
       const success = await storage.deleteNotice(id);
@@ -3513,78 +3868,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // --- Newsletter API ---
-  app.post("/api/newsletter/subscribe", async (req, res) => {
-    try {
-      const parsed = insertNewsletterSubscriptionSchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({ message: "유효한 이메일 주소를 입력해주세요.", errors: parsed.error });
-      }
-
-      const { email } = parsed.data;
-
-      // 중복 구독 확인
-      const existing = await storage.getNewsletterSubscriptionByEmail(email);
-      if (existing) {
-        return res.status(400).json({ message: "이미 구독 중인 이메일입니다." });
-      }
-
-      // 구독 정보 저장
-      const subscription = await storage.createNewsletterSubscription({ email });
-
-      // 자동 응답 이메일 발송
-      try {
-        const welcomeHtml = `
-          <div style="font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #333; line-height: 1.6;">
-            <div style="text-align: center; margin-bottom: 30px;">
-              <h1 style="color: #2563eb; margin: 0; font-size: 24px;">이가이버부동산 뉴스레터 구독을 감사드립니다!</h1>
-            </div>
-            
-            <p>안녕하세요,</p>
-            <p><strong>강화도 전문가 '이가이버'</strong>의 부동산 뉴스레터를 구독해주셔서 진심으로 감사드립니다.</p>
-            
-            <div style="background-color: #f8fafc; border-radius: 8px; padding: 25px; margin: 30px 0; border: 1px solid #e2e8f0;">
-              <h3 style="margin-top: 0; color: #1e40af; border-bottom: 1px solid #cbd5e1; padding-bottom: 10px;">앞으로 이런 소식을 전해드려요:</h3>
-              <ul style="padding-left: 20px; margin-bottom: 0;">
-                <li style="margin-bottom: 8px;"><strong>강화도 주간 부동산 시장 동향</strong> (실거래가 분석)</li>
-                <li style="margin-bottom: 8px;"><strong>이가이버가 엄선한 금주의 추천 매물</strong></li>
-                <li style="margin-bottom: 8px;"><strong>강화도 거주 및 투자 팁</strong> (직접 경험한 노하우)</li>
-                <li><strong>부동산 관련 법률 및 세제 소식</strong></li>
-              </ul>
-            </div>
-            
-            <p>매주 알찬 정보를 담아 찾아뵙겠습니다. 혹시 궁금하신 사항이 있다면 언제든 편하게 문의해 주시기 바랍니다.</p>
-            
-            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; font-size: 14px; color: #666;">
-              <p style="margin-bottom: 5px;"><strong>이가이버 부동산 중개사무소</strong></p>
-              <p style="margin-top: 5px;">인천광역시 강화군 강화읍 | 대표: 이민호</p>
-              <p><a href="${req.protocol}://${req.get('host')}" style="color: #2563eb; text-decoration: none;">홈페이지 방문하기</a></p>
-            </div>
-          </div>
-        `;
-
-        await sendEmail(
-          email,
-          "[이가이버부동산] 뉴스레터 구독 신청이 완료되었습니다.",
-          welcomeHtml
-        );
-        // console.log(`[Newsletter] Auto-reply sent to ${email}`);
-      } catch (emailError) {
-        console.error(`[Newsletter] Failed to send auto-reply to ${email}:`, emailError);
-        // 구독 저장은 성공했으므로 계속 진행
-      }
-
-      res.status(201).json({ message: "구독 신청이 완료되었습니다. 감사 메일을 확인해주세요!", subscription });
-    } catch (error) {
-      console.error("Newsletter subscription error:", error);
-      res.status(500).json({ message: "구독 신청 중 오류가 발생했습니다." });
-    }
-  });
+// Removed duplicated newsletter subscribe endpoint
 
   // 관리자용 뉴스레터 구독자 목록 조회
   app.get("/api/admin/newsletter/subscriptions", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
         return res.status(401).json({ message: "관리자 권한이 필요합니다." });
       }
 
@@ -3599,7 +3888,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // 관리자용 뉴스레터 구독 삭제
   app.delete("/api/admin/newsletter/subscriptions/:id", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
         return res.status(401).json({ message: "관리자 권한이 필요합니다." });
       }
 
@@ -3618,11 +3907,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Crawler API
+  app.get("/api/admin/crawler/status", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "인증이 필요합니다." });
+      res.json({ isCrawling: naverCrawler.isCrawling });
+    } catch (error) {
+      res.status(500).json({ isCrawling: false });
+    }
+  });
+
   app.post("/api/admin/crawler/run", async (req, res) => {
     try {
       if (!req.isAuthenticated()) return res.status(401).json({ message: "인증이 필요합니다." });
       const user = req.user as Express.User;
-      if (user.role !== "admin") return res.status(403).json({ message: "관리자 권한이 필요합니다." });
+      if ((!["admin", "master"].includes(user.role as string))) return res.status(403).json({ message: "관리자 권한이 필요합니다." });
+
+      if (naverCrawler.isCrawling) {
+        return res.status(429).json({ message: "현재 다른 수집 작업이 진행 중입니다." });
+      }
 
       const bounds = req.body.bounds;
       const mode = req.body.mode;
@@ -3636,7 +3938,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        message: "수집이 백그라운드에서 시작되었습니다. 수 분 내에 매물 목록에서 확인하실 수 있습니다."
+        message: "수집이 백그라운드에서 시작되었습니다. 잠시 후 목록이 자동으로 업데이트됩니다."
       });
     } catch (error) {
       res.status(500).json({ message: "Crawler start failed", error: String(error) });
@@ -3647,7 +3949,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       if (!req.isAuthenticated()) return res.status(401).json({ message: "인증이 필요합니다." });
       const user = req.user as Express.User;
-      if (user.role !== "admin") return res.status(403).json({ message: "관리자 권한이 필요합니다." });
+      if ((!["admin", "master"].includes(user.role as string))) return res.status(403).json({ message: "관리자 권한이 필요합니다." });
 
       const properties = await storage.getCrawledProperties();
       res.json(properties);
@@ -3660,7 +3962,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       if (!req.isAuthenticated()) return res.status(401).json({ message: "인증이 필요합니다." });
       const user = req.user as Express.User;
-      if (user.role !== "admin") return res.status(403).json({ message: "관리자 권한이 필요합니다." });
+      if ((!["admin", "master"].includes(user.role as string))) return res.status(403).json({ message: "관리자 권한이 필요합니다." });
 
       await storage.clearCrawledProperties();
       res.json({ success: true });
@@ -3716,15 +4018,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 커뮤니티 게시글 알림
       try {
-        await storage.createNotification({
-          type: "post",
-          title: "새로운 커뮤니티 게시글",
+        await storage.createAdminNotification({
+          type: "community_post",
+          relatedId: post.id,
+          title: "새로운 커뮤니티 게시판 글",
           content: `[${post.category}] ${post.title}`,
-          isRead: false,
-          linkUrl: `/admin?tab=posts`
+          isRead: false
         });
       } catch (e) {
-        console.error("Failed to create post notification:", e);
+        console.error("Failed to create post admin_notification:", e);
       }
 
       res.status(201).json(post);
@@ -3741,7 +4043,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!existing) return res.status(404).json({ message: "게시글을 찾을 수 없습니다." });
 
       const user = req.user as any;
-      if (user.role !== "admin" && existing.authorId !== user.id) {
+      if ((!["admin", "master"].includes(user.role as string)) && existing.authorId !== user.id) {
         return res.status(403).json({ message: "수정 권한이 없습니다." });
       }
 
@@ -3762,7 +4064,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!existing) return res.status(404).json({ message: "게시글을 찾을 수 없습니다." });
 
       const user = req.user as any;
-      if (user.role !== "admin" && existing.authorId !== user.id) {
+      if ((!["admin", "master"].includes(user.role as string)) && existing.authorId !== user.id) {
         return res.status(403).json({ message: "삭제 권한이 없습니다." });
       }
 
@@ -3811,7 +4113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const postId = parseInt(req.params.id);
       const user = req.user as any;
 
-      const parsed = insertPostCommentSchema.safeParse({
+      const parsed = insertCommentSchema.safeParse({
         ...req.body,
         postId,
         authorId: user.id
@@ -3833,7 +4135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!existing) return res.status(404).json({ message: "댓글을 찾을 수 없습니다." });
 
       const user = req.user as any;
-      if (user.role !== "admin" && existing.authorId !== user.id) {
+      if ((!["admin", "master"].includes(user.role as string)) && existing.authorId !== user.id) {
         return res.status(403).json({ message: "삭제 권한이 없습니다." });
       }
 
@@ -3844,59 +4146,362 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // --- Subscription Management ---
+  app.get("/api/subscription/me", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+    const user = req.user as any;
+    try {
+      const history = db.prepare("SELECT * FROM realtor_subscriptions WHERE userId = ? ORDER BY createdAt DESC").all(user.id);
+
+      let businessStatus = "none";
+      if (user.isVerified) {
+        businessStatus = "approved";
+      } else if (user.businessLicenseNo || user.realtorLicenseNo) { // Added realtorLicenseNo check just in case
+        businessStatus = "pending";
+      }
+
+      // Compute active status: If they have history, or if an admin granted them a tier directly
+      let currentStatus = "none";
+      if (history.length > 0) {
+        const latest = history[0] as any;
+        currentStatus = latest.status;
+      }
+      
+      if (["monthly", "yearly", "lifetime", "approved"].includes(user.subscriptionTier)) {
+        currentStatus = "active";
+      }
+
+      res.json({
+        tier: user.subscriptionTier || "free",
+        expiresAt: user.subscriptionExpiresAt,
+        history,
+        businessStatus,
+        status: currentStatus
+      });
+    } catch (e) {
+      console.error("Fetch subscription error:", e);
+      res.status(500).json({ message: "구독 정보 조회 실패" });
+    }
+  });
+
+  app.post("/api/subscription/subscribe", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+    const user = req.user as any;
+    const { planType, imp_uid, merchant_uid } = req.body;
+
+    if (!planType || !imp_uid) {
+      return res.status(400).json({ message: "필수 결제 정보가 누락되었습니다." });
+    }
+
+    try {
+      // 1. 멱등성 검증 (해당 impUid가 이미 DB에 존재하는지 확인하여 중복/재사용 방어)
+      const existing = db.prepare("SELECT * FROM realtor_subscriptions WHERE impUid = ? LIMIT 1").get(imp_uid);
+      if (existing) {
+        return res.status(400).json({ message: "이미 처리된 결제건(중복된 영수증)입니다. 어뷰징이 의심됩니다." });
+      }
+
+      // 2. 포트원 결제내역 단건 조회 (V2 / V1 자동 분기)
+      let payment: any = null;
+
+      if (process.env.PORTONE_V2_API_SECRET) {
+        // [V2 검증 로직]
+        const v2Res = await fetch(`https://api.portone.io/payments/${imp_uid}`, {
+          method: "GET",
+          headers: { "Authorization": `PortOne ${process.env.PORTONE_V2_API_SECRET}` },
+        });
+        
+        if (!v2Res.ok) {
+          const errData = await v2Res.json().catch(() => ({}));
+          throw new Error(`포트원 V2 결제 조회 실패: ${errData.message || v2Res.statusText}`);
+        }
+        
+        const v2Data = await v2Res.json();
+        payment = {
+          status: v2Data.status === "PAID" ? "paid" : v2Data.status,
+          amount: v2Data.amount.total,
+          merchant_uid: v2Data.id
+        };
+      } else {
+        // [V1 검증 로직]
+        const PORTONE_API_KEY = process.env.PORTONE_API_KEY;
+        const PORTONE_API_SECRET = process.env.PORTONE_API_SECRET;
+        
+        if (!PORTONE_API_KEY || !PORTONE_API_SECRET) {
+          console.error("[CRITICAL] 포트원 API 연동 키가 누락되었습니다. (.env 확인)");
+          throw new Error("서버 환경설정 오류: 포트원 API 키 누락. 관리자에게 문의하세요.");
+        }
+
+        const tokenRes = await fetch("https://api.iamport.kr/users/getToken", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imp_key: PORTONE_API_KEY, imp_secret: PORTONE_API_SECRET })
+        });
+        
+        const tokenData = await tokenRes.json();
+        if (tokenData.code !== 0) throw new Error(`포트원 인증 실패: ${tokenData.message}`);
+        const access_token = tokenData.response.access_token;
+
+        const paymentRes = await fetch(`https://api.iamport.kr/payments/${imp_uid}`, {
+          method: "GET",
+          headers: { "Authorization": `Bearer ${access_token}` },
+        });
+        const paymentData = await paymentRes.json();
+        if (paymentData.code !== 0) throw new Error(`포트원 결제 조회 실패: ${paymentData.message}`);
+        payment = paymentData.response;
+      }
+
+      // 4. 결제 상태 및 금액 크로스 체크 (보안 핵심)
+      if (payment.status !== "paid") {
+        return res.status(400).json({ message: `결제 상태가 정상이 아닙니다. (현재 상태: ${payment.status})` });
+      }
+
+      const expectedAmount = planType === "monthly" ? 5000 : 50000;
+      if (payment.amount !== expectedAmount) {
+        return res.status(400).json({ message: `결제 금액 위변조가 감지되었습니다. (요청: ${expectedAmount}원, 실제 결제: ${payment.amount}원)` });
+      }
+
+      // 5. 서버 검증 완료 - DB 반영
+      const now = new Date();
+      const endDate = new Date(now);
+      if (planType === "monthly") endDate.setMonth(endDate.getMonth() + 1);
+      else endDate.setFullYear(endDate.getFullYear() + 1);
+
+      await storage.createRealtorSubscription({
+        userId: user.id,
+        planType,
+        amount: expectedAmount,
+        impUid: imp_uid,
+        merchantUid: payment.merchant_uid || merchant_uid || "",
+        status: "active",
+        startDate: now.toISOString(),
+        endDate: endDate.toISOString()
+      });
+
+      await storage.updateUser(user.id, {
+        subscriptionTier: planType,
+        subscriptionExpiresAt: endDate.toISOString()
+      } as any);
+
+      res.json({ message: "결제 검증 및 구독 처리가 성공적으로 완료되었습니다.", tier: planType, expiresAt: endDate.toISOString() });
+    } catch (e: any) {
+      console.error("구독 결제 오류:", e);
+      res.status(500).json({ message: e.message || "결제 검증 처리 중 서버 오류가 발생했습니다." });
+    }
+  });
+
+  app.post("/api/subscription/cancel", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+    const user = req.user as any;
+    try {
+      await storage.updateUser(user.id, {
+        subscriptionTier: "free",
+        subscriptionExpiresAt: null
+      } as any);
+      
+      db.prepare("UPDATE realtor_subscriptions SET status = 'cancelled' WHERE userId = ? AND status = 'active'").run(user.id);
+
+      res.json({ message: "구독이 취소되었습니다." });
+    } catch (e) {
+      console.error("구독 취소 실패:", e);
+      res.status(500).json({ message: "구독 취소 실패" });
+    }
+  });
+
+  // --- Admin Realtor Verification Management ---
+  app.get("/api/admin/realtors/pending", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+    const user = req.user as any;
+    if (user.role !== "admin" && user.role !== "master") return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+
+    try {
+      const pendingUsers = db.prepare("SELECT * FROM users WHERE role = 'realtor' AND (isVerified = 0 OR isVerified IS NULL)").all();
+      res.json(pendingUsers);
+    } catch (e) {
+      console.error("Pending realtors fetch error:", e);
+      res.status(500).json({ message: "목록 조회 실패" });
+    }
+  });
+
+  app.post("/api/admin/realtors/:id/verify", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+    const user = req.user as any;
+    if (user.role !== "admin" && user.role !== "master") return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+    
+    const id = parseInt(req.params.id);
+    const { status, licenseNo } = req.body;
+    try {
+      if (status === "approved") {
+        await storage.updateUser(id, {
+          isVerified: true,
+          businessLicenseNo: licenseNo || undefined 
+        } as any);
+        res.json({ message: "중개사가 승인되었습니다." });
+      } else {
+        await storage.updateUser(id, {
+          role: "user",
+          isVerified: false
+        } as any);
+        res.json({ message: "중개사 신청이 거부되었습니다." });
+      }
+    } catch (e) {
+      console.error("verify realtor error:", e);
+      res.status(500).json({ message: "처리 실패" });
+    }
+  });
+
+  app.get("/api/admin/users", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+    const user = req.user as any;
+    if (!["admin", "master"].includes(user.role as string)) return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+    
+    try {
+      const allUsers = await storage.getAllUsers();
+      res.json(allUsers);
+    } catch (e) {
+      console.error("Fetch all users error:", e);
+      res.status(500).json({ message: "목록 조회 실패" });
+    }
+  });
+
+  app.patch("/api/admin/users/:id/role", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+    const user = req.user as any;
+    if (!["admin", "master"].includes(user.role as string)) return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+    
+    const targetId = parseInt(req.params.id);
+    const { role } = req.body;
+    try {
+      await storage.updateUserRole(targetId, role);
+      res.json({ success: true });
+    } catch (e) {
+      console.error("Update role error:", e);
+      res.status(500).json({ message: "권한 변경 실패" });
+    }
+  });
+
+  app.patch("/api/admin/users/:id/tier", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
+    const user = req.user as any;
+    if (!["admin", "master"].includes(user.role as string)) return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+    
+    const targetId = parseInt(req.params.id);
+    const { subscriptionTier, id, durationDays: bodyDurationDays, ...businessData } = req.body;
+    let durationDays = bodyDurationDays;
+    
+    try {
+      let expiresAt: string | null = null;
+      
+      // Auto-calculate default duration days based on tier if missing
+      if (!durationDays) {
+          if (subscriptionTier === 'monthly') durationDays = 30;
+          else if (subscriptionTier === 'yearly') durationDays = 365;
+      }
+      
+      if (durationDays && subscriptionTier !== "lifetime" && subscriptionTier !== "approved") {
+        const now = new Date();
+        now.setDate(now.getDate() + durationDays);
+        expiresAt = now.toISOString();
+      }
+
+      await storage.updateUser(targetId, {
+        subscriptionTier,
+        subscriptionExpiresAt: expiresAt,
+        isVerified: true,
+        ...businessData
+      } as any);
+      
+      // Also register this manual approval in the subscription history
+      if (["monthly", "yearly", "lifetime", "approved"].includes(subscriptionTier)) {
+          await storage.createRealtorSubscription({
+              userId: targetId,
+              planType: subscriptionTier,
+              amount: 0,
+              status: "active",
+              startDate: new Date().toISOString(),
+              endDate: expiresAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+              impUid: `admin_grant_${Date.now()}`,
+              merchantUid: `order_admin_${Date.now()}`
+          });
+      }
+      
+      res.json({ success: true, message: "등급 및 인증 정보가 변경되었습니다." });
+    } catch (e) {
+      console.error("Update tier error:", e);
+      res.status(500).json({ message: "등급 변경 실패" });
+    }
+  });
+
   // 뉴스 자동 업데이트 스케줄러 실행 (사용자 요청에 따라 활성화)
   setupNewsScheduler();
 
   // --- Admin Notification Management ---
   app.get("/api/admin/notifications", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
         return res.status(401).json({ message: "관리자 권한이 필요합니다." });
       }
       const limit = parseInt(req.query.limit as string) || 50;
-      const notifications = await storage.getNotifications(limit);
-      const unreadCount = await storage.getUnreadNotificationCount();
+      const notifications = await storage.getAdminNotifications(limit);
+      const unreadCount = await storage.getUnreadAdminNotificationCount();
       res.json({ notifications, unreadCount });
     } catch (error) {
+      console.error("Failed to load admin notifications:", error);
       res.status(500).json({ message: "알림을 불러오는 중 오류가 발생했습니다." });
     }
   });
 
   app.patch("/api/admin/notifications/:id/read", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
         return res.status(401).json({ message: "관리자 권한이 필요합니다." });
       }
       const id = parseInt(req.params.id);
-      await storage.markNotificationAsRead(id);
+      await storage.markAdminNotificationAsRead(id);
       res.json({ success: true });
     } catch (error) {
+      console.error("Failed to mark admin notification as read:", error);
       res.status(500).json({ message: "알림 상태 변경 중 오류가 발생했습니다." });
     }
   });
 
   app.post("/api/admin/notifications/read-all", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
         return res.status(401).json({ message: "관리자 권한이 필요합니다." });
       }
-      await storage.markAllNotificationsAsRead();
+      await storage.markAllAdminNotificationsAsRead();
       res.json({ success: true });
     } catch (error) {
+      console.error("Failed to mark all admin notifications as read:", error);
       res.status(500).json({ message: "알림 일괄 읽음 처리 중 오류가 발생했습니다." });
     }
   });
 
   app.delete("/api/admin/notifications/:id", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || (req.user as any).role !== "admin") {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
         return res.status(401).json({ message: "관리자 권한이 필요합니다." });
       }
       const id = parseInt(req.params.id);
-      await storage.deleteNotification(id);
+      await storage.deleteAdminNotification(id);
       res.json({ success: true });
     } catch (error) {
+      console.error("Failed to delete admin notification:", error);
       res.status(500).json({ message: "알림 삭제 중 오류가 발생했습니다." });
+    }
+  });
+
+  // --- Upload API ---
+  app.post("/api/upload", upload.single("file"), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "파일이 업로드되지 않았습니다." });
+      }
+      // Return the URL path
+      res.status(200).json({ url: `/uploads/${req.file.filename}` });
+    } catch (error) {
+      console.error("File upload error:", error);
+      res.status(500).json({ message: "파일 업로드 중 오류가 발생했습니다." });
     }
   });
 

@@ -210,8 +210,12 @@ const PropertiesPage = () => {
       }
       if (filterParams.tag) searchParams.append("tag", filterParams.tag);
       searchParams.append("sortBy", filterParams.sortBy || "latest");
-      searchParams.append("page", expertPage.toString());
-      searchParams.append("limit", "12");
+      if (!isRecommend) {
+        searchParams.append("page", expertPage.toString());
+        searchParams.append("limit", "12");
+      } else {
+        searchParams.append("limit", "1000"); // 운세 추천일 때는 전체를 가져와서 프론트에서 정렬&페이징
+      }
       searchParams.append("includeCrawled", "false");
       const res = await fetch(`/api/search?${searchParams.toString()}`);
       if (!res.ok) throw new Error("전문가 매물을 불러오는데 실패했습니다.");
@@ -239,8 +243,12 @@ const PropertiesPage = () => {
         searchParams.append("maxPrice", filterParams.maxPrice);
       }
       searchParams.append("sortBy", filterParams.sortBy || "latest");
-      searchParams.append("page", coBrokerPage.toString());
-      searchParams.append("limit", "20");
+      if (!isRecommend) {
+        searchParams.append("page", coBrokerPage.toString());
+        searchParams.append("limit", "20");
+      } else {
+        searchParams.append("limit", "1000"); // 운세 추천일 때는 전체를 가져와서 프론트에서 정렬&페이징
+      }
       searchParams.append("onlyCrawled", "true");
       const res = await fetch(`/api/search?${searchParams.toString()}`);
       if (!res.ok) throw new Error("공동 중개 매물을 불러오는데 실패했습니다.");
@@ -284,6 +292,49 @@ const PropertiesPage = () => {
     return expertProperties;
   }, [expertProperties, isRecommend, sajuData]);
 
+  const sortedCoBrokerProperties = useMemo(() => {
+    if (!coBrokerProperties) return [];
+    if (isRecommend && sajuData) {
+      return [...coBrokerProperties].sort((a, b) => {
+        const scoreA = getCompatibilityScore(sajuData, { id: a.id, direction: a.direction, floor: a.floor }).score;
+        const scoreB = getCompatibilityScore(sajuData, { id: b.id, direction: b.direction, floor: b.floor }).score;
+        return scoreB - scoreA;
+      });
+    }
+    return coBrokerProperties;
+  }, [coBrokerProperties, isRecommend, sajuData]);
+
+  // 프론트엔드 페이징 슬라이싱 (운세 추천 모드일 경우)
+  const paginatedExpertProperties = useMemo(() => {
+    if (isRecommend) {
+      const start = (expertPage - 1) * 12;
+      return sortedExpertProperties.slice(start, start + 12);
+    }
+    return sortedExpertProperties;
+  }, [sortedExpertProperties, expertPage, isRecommend]);
+
+  const expertTotalPages = useMemo(() => {
+    if (isRecommend) {
+      return Math.ceil(sortedExpertProperties.length / 12) || 1;
+    }
+    return expertResponse?.totalPages || 0;
+  }, [sortedExpertProperties.length, expertResponse?.totalPages, isRecommend]);
+
+  const paginatedCoBrokerProperties = useMemo(() => {
+    if (isRecommend) {
+      const start = (coBrokerPage - 1) * 20;
+      return sortedCoBrokerProperties.slice(start, start + 20);
+    }
+    return sortedCoBrokerProperties;
+  }, [sortedCoBrokerProperties, coBrokerPage, isRecommend]);
+
+  const coBrokerTotalPages = useMemo(() => {
+    if (isRecommend) {
+      return Math.ceil(sortedCoBrokerProperties.length / 20) || 1;
+    }
+    return coBrokerResponse?.totalPages || 0;
+  }, [sortedCoBrokerProperties.length, coBrokerResponse?.totalPages, isRecommend]);
+
   // 지도용 데이터
   const { data: mapProperties } = useQuery<Property[]>({
     queryKey: ["/api/search/map", filterParams.district, filterParams.type, filterParams.dealType, filterParams.minPrice, filterParams.maxPrice, filterParams.keyword, filterParams.tag],
@@ -298,7 +349,7 @@ const PropertiesPage = () => {
         searchParams.append("maxPrice", filterParams.maxPrice);
       }
       if (filterParams.tag) searchParams.append("tag", filterParams.tag);
-      searchParams.append("limit", "1000"); // 지도용은 전체를 가져와야 함
+      searchParams.append("limit", "5000"); // 지도용 전체 스캔 (최대 5000개)
       const res = await fetch(`/api/search?${searchParams.toString()}&includeCrawled=true`);
       if (!res.ok) throw new Error("지도 데이터를 불러오는데 실패했습니다.");
       const data = await res.json();
@@ -559,15 +610,15 @@ const PropertiesPage = () => {
               <div className="bg-red-50 p-8 rounded-[2.5rem] text-red-600 text-center font-bold">
                 전문가 매물을 불러오는 중 오류가 발생했습니다.
               </div>
-            ) : expertProperties.length > 0 ? (
+            ) : paginatedExpertProperties.length > 0 ? (
               <div className="space-y-12">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                  {Array.isArray(expertProperties) && expertProperties.map((property) => (
+                  {paginatedExpertProperties.map((property) => (
                     <PropertyCard key={property.id} property={property} />
                   ))}
                 </div>
 
-                {expertResponse && expertResponse.totalPages > 1 && (
+                {expertTotalPages > 1 && (
                   <div className="flex justify-center pt-8 border-t border-slate-50">
                     <Pagination>
                       <PaginationContent className="gap-2">
@@ -585,7 +636,7 @@ const PropertiesPage = () => {
                         {(() => {
                           const maxVisible = 5;
                           let start = Math.max(1, expertPage - 2);
-                          let end = Math.min(expertResponse.totalPages, start + maxVisible - 1);
+                          let end = Math.min(expertTotalPages, start + maxVisible - 1);
                           if (end - start < maxVisible - 1) start = Math.max(1, end - maxVisible + 1);
 
                           const items = [];
@@ -610,12 +661,12 @@ const PropertiesPage = () => {
                         <PaginationItem>
                           <PaginationNext
                             onClick={() => {
-                              if (expertPage < expertResponse.totalPages) {
+                              if (expertPage < expertTotalPages) {
                                 setExpertPage(p => p + 1);
                                 document.getElementById('expert-properties')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                               }
                             }}
-                            className={expertPage === expertResponse.totalPages ? "pointer-events-none opacity-30 h-12 rounded-xl" : "cursor-pointer h-12 rounded-xl hover:bg-slate-100"}
+                            className={expertPage === expertTotalPages ? "pointer-events-none opacity-30 h-12 rounded-xl" : "cursor-pointer h-12 rounded-xl hover:bg-slate-100"}
                           />
                         </PaginationItem>
                       </PaginationContent>
@@ -657,15 +708,15 @@ const PropertiesPage = () => {
               <div className="bg-red-50 p-8 rounded-[2.5rem] text-red-600 text-center font-bold">
                 공동 중개 매물을 불러오는 중 오류가 발생했습니다.
               </div>
-            ) : coBrokerProperties.length > 0 ? (
+            ) : paginatedCoBrokerProperties.length > 0 ? (
               <div className="space-y-12">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {Array.isArray(coBrokerProperties) && coBrokerProperties.map((property) => (
+                  {paginatedCoBrokerProperties.map((property) => (
                     <CompactPropertyItem key={property.id} property={property} />
                   ))}
                 </div>
 
-                {coBrokerResponse && coBrokerResponse.totalPages > 1 && (
+                {coBrokerTotalPages > 1 && (
                   <div className="flex justify-center pt-8">
                     <Pagination>
                       <PaginationContent className="gap-2">
@@ -683,7 +734,7 @@ const PropertiesPage = () => {
                         {(() => {
                           const maxVisible = 5;
                           let start = Math.max(1, coBrokerPage - 2);
-                          let end = Math.min(coBrokerResponse.totalPages, start + maxVisible - 1);
+                          let end = Math.min(coBrokerTotalPages, start + maxVisible - 1);
                           if (end - start < maxVisible - 1) start = Math.max(1, end - maxVisible + 1);
 
                           const items = [];
@@ -708,12 +759,12 @@ const PropertiesPage = () => {
                         <PaginationItem>
                           <PaginationNext
                             onClick={() => {
-                              if (coBrokerPage < coBrokerResponse.totalPages) {
+                              if (coBrokerPage < coBrokerTotalPages) {
                                 setCoBrokerPage(p => p + 1);
                                 document.getElementById('cobroker-properties')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                               }
                             }}
-                            className={coBrokerPage === coBrokerResponse.totalPages ? "pointer-events-none opacity-30 h-12 rounded-xl" : "cursor-pointer h-12 rounded-xl hover:bg-slate-100"}
+                            className={coBrokerPage === coBrokerTotalPages ? "pointer-events-none opacity-30 h-12 rounded-xl" : "cursor-pointer h-12 rounded-xl hover:bg-slate-100"}
                           />
                         </PaginationItem>
                       </PaginationContent>

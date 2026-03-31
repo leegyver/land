@@ -45,8 +45,7 @@ async function fetchNaverNews(keyword: string) {
     });
 
     if (!response.ok) {
-      // API Key가 없거나 오류 발생 시 빈 배열 반환하고 로그만 남김
-      // throw new Error(...) 대신 조용히 실패 처리
+      log(`네이버 뉴스 검색 연동 실패: ${response.status}`, 'warn');
       return [];
     }
 

@@ -314,22 +314,11 @@ const KakaoMap = ({ zoom = 8, properties: externalProperties, singleProperty }: 
             ✕
           </button>
 
-          {selectedProperty.imageUrl && (
-            <div className="h-32 mb-3 rounded-md overflow-hidden bg-gray-100">
-              <img
-                src={selectedProperty.imageUrl}
-                alt={selectedProperty.title}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          )}
-
-          <h4 className="font-bold text-lg mb-1 truncate text-slate-900 pr-6">{selectedProperty.title}</h4>
-          <p className="text-slate-500 text-xs mb-3 truncate">{selectedProperty.address}</p>
+          <h4 className="font-bold text-lg mb-2 truncate text-slate-900 pr-6 mt-2">{selectedProperty.title}</h4>
 
           <div className="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-100 mb-3">
             <span className="text-primary font-bold text-base">
-              {typeof selectedProperty.price === 'string' ? selectedProperty.price : selectedProperty.price?.toLocaleString() + '만원'}
+              {selectedProperty.price}{!selectedProperty.price.includes('만원') && '만원'}
             </span>
             <a
               href={`/properties/${selectedProperty.id}`}

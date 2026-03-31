@@ -8,6 +8,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser, User } from "@shared/schema";
+import { sendEmail, createWelcomeEmailTemplate } from "./mailer";
 
 declare global {
   namespace Express {
@@ -65,7 +66,7 @@ export function setupAuth(app: Express) {
   // APP_URL 정제 (말단 슬래시 제거, 프로토콜 강제)
   // 사용자가 환경변수를 설정하지 않아도 작동하도록 프로덕션 도메인을 기본값으로 설정
   const defaultUrl = process.env.NODE_ENV === "production"
-    ? "http://1.234.53.82" // Cafe24 VPS IP (기본값 변경)
+    ? "https://leegyver.com" // Production 도메인으로 변경 (IP 접속 시 Nginx 404 방지)
     : "http://localhost:5000";
 
   let rawAppUrl = (process.env.APP_URL || defaultUrl).replace(/\/$/, "");
@@ -97,7 +98,7 @@ export function setupAuth(app: Express) {
 
   // Naver Strategy
   if (profiles.naver.clientID && profiles.naver.clientSecret) {
-    passport.use(new NaverStrategy(profiles.naver,
+    passport.use(new NaverStrategy(profiles.naver as any,
       async (accessToken: string, refreshToken: string, profile: any, done: any) => {
         try {
           const username = `naver_${profile.id}`;
@@ -108,19 +109,27 @@ export function setupAuth(app: Express) {
               password: "", // Social login users don't have a local password
               email: profile.emails?.[0]?.value || null,
               nickname: profile.displayName || profile._json?.nickname || null,
-              phone: profile._json?.mobile || null,
+              phone: profile._json?.mobile || "",
               role: "user",
               provider: "naver",
               providerId: profile.id
             });
-            // 네이버 가입 알림
-            await storage.createNotification({
-              type: "signup",
+            // 네이버 가입 관리자 알림 및 이메일 전송
+            storage.createAdminNotification({
+              type: "user_registration",
+              relatedId: user.id,
               title: "새로운 네이버 가입",
               content: `${user.nickname || user.username}님이 네이버로 가입하셨습니다.`,
-              isRead: false,
-              linkUrl: "/admin?tab=users"
-            });
+              isRead: false
+            }).catch(console.error);
+
+            if (user.email) {
+              sendEmail(
+                user.email,
+                "[이가이버 부동산] 가입을 환영합니다!",
+                createWelcomeEmailTemplate({ username: user.username, name: user.nickname || undefined })
+              ).catch(console.error);
+            }
           }
           return done(null, user);
         } catch (err) {
@@ -132,7 +141,7 @@ export function setupAuth(app: Express) {
 
   // Kakao Strategy
   if (profiles.kakao.clientID) {
-    passport.use(new KakaoStrategy(profiles.kakao,
+    passport.use(new KakaoStrategy(profiles.kakao as any,
       async (accessToken: string, refreshToken: string, profile: any, done: any) => {
         try {
           const username = `kakao_${profile.id}`;
@@ -143,19 +152,27 @@ export function setupAuth(app: Express) {
               password: "", // Social login users don't have a local password
               email: profile._json?.kakao_account?.email || null,
               nickname: profile.displayName || profile._json?.properties?.nickname || null,
-              phone: null, // Kakao often doesn't provide phone directly
+              phone: "", // Kakao often doesn't provide phone directly
               role: "user",
               provider: "kakao",
               providerId: profile.id
             });
             // 카카오 가입 알림
-            await storage.createNotification({
-              type: "signup",
+            storage.createAdminNotification({
+              type: "user_registration",
+              relatedId: user.id,
               title: "새로운 카카오 가입",
               content: `${user.nickname || user.username}님이 카카오로 가입하셨습니다.`,
-              isRead: false,
-              linkUrl: "/admin?tab=users"
-            });
+              isRead: false
+            }).catch(console.error);
+
+            if (user.email) {
+              sendEmail(
+                user.email,
+                "[이가이버 부동산] 가입을 환영합니다!",
+                createWelcomeEmailTemplate({ username: user.username, name: user.nickname || undefined })
+              ).catch(console.error);
+            }
           }
           return done(null, user);
         } catch (err) {
@@ -174,6 +191,11 @@ export function setupAuth(app: Express) {
   app.post("/api/register", async (req, res, next) => {
     try {
       const { username, password, email, phone, nickname, birthDate, birthTime, isLunar } = req.body;
+      
+      if (!phone || phone.trim() === "") {
+        return res.status(400).json({ message: "전화번호를 반드시 입력해주세요." });
+      }
+
       const existingUser = await storage.getUserByUsername(username);
 
       if (existingUser) {
@@ -194,13 +216,21 @@ export function setupAuth(app: Express) {
       });
 
       // 일반 가입 알림
-      await storage.createNotification({
-        type: "signup",
+      storage.createAdminNotification({
+        type: "user_registration",
+        relatedId: user.id,
         title: "새로운 회원 가입",
         content: `${user.nickname || user.username}님이 가입하셨습니다.`,
-        isRead: false,
-        linkUrl: "/admin?tab=users"
-      });
+        isRead: false
+      }).catch(console.error);
+
+      if (user.email) {
+        sendEmail(
+          user.email,
+          "[이가이버 부동산] 가입을 환영합니다!",
+          createWelcomeEmailTemplate({ username: user.username, name: user.nickname || undefined })
+        ).catch(console.error);
+      }
 
       req.login(user, (err) => {
         if (err) return next(err);
@@ -208,6 +238,96 @@ export function setupAuth(app: Express) {
         const { password, ...userWithoutPassword } = user;
         res.status(201).json(userWithoutPassword);
       });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // 아이디 찾기 API
+  app.post("/api/auth/find-username", async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { email, phone } = req.body;
+      if (!email && !phone) {
+        return res.status(400).json({ message: "이메일 또는 전화번호를 입력해주세요." });
+      }
+
+      // storage에 getAllUsers가 없다면 다른 방법 사용, 혹은 추가해야 함
+      // 현재 존재하는 storage.getAllUsers() 사용
+      const users = await storage.getAllUsers();
+      const matchedUser = users.find(u => 
+        (email && u.email === email) || (phone && u.phone === phone)
+      );
+
+      if (!matchedUser) {
+        return res.status(404).json({ message: "가입된 사용자 정보를 찾을 수 없습니다." });
+      }
+
+      if (matchedUser.provider) {
+        return res.status(400).json({ message: `해당 연락처는 소셜 로그인(${matchedUser.provider}) 계정으로 가입되어 있습니다.` });
+      }
+
+      // 아이디 마스킹 (ex: abc***)
+      const username = matchedUser.username;
+      const maskedUsername = username.length > 3 
+        ? username.substring(0, 3) + "*".repeat(username.length - 3)
+        : username.substring(0, 1) + "*".repeat(username.length - 1);
+
+      res.json({ username: maskedUsername, message: "아이디 찾기 성공" });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // 비밀번호 찾기 API (임시 비밀번호 발급)
+  app.post("/api/auth/find-password", async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { username, email, phone } = req.body;
+      if (!username || (!email && !phone)) {
+        return res.status(400).json({ message: "아이디와 이메일(또는 전화번호)을 정확히 입력해주세요." });
+      }
+
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(404).json({ message: "일치하는 회원 정보가 없습니다." });
+      }
+
+      if (user.provider) {
+        return res.status(400).json({ message: `해당 계정은 소셜 로그인(${user.provider}) 전용입니다. 제공자를 통해 로그인해주세요.` });
+      }
+
+      const isMatch = (email && user.email === email) || (phone && user.phone === phone);
+      if (!isMatch) {
+         return res.status(404).json({ message: "일치하는 회원 정보가 없습니다." });
+      }
+
+      // 임시 비밀번호 생성 (8자리 영숫자)
+      const tempPassword = Math.random().toString(36).slice(-8);
+      const hashedPassword = await hashPassword(tempPassword);
+      
+      await storage.updateUser(user.id, { password: hashedPassword });
+
+      // 이메일이 있으면 이메일로 전송
+      if (user.email) {
+        const htmlContent = `
+          <div style="font-family: 'Malgun Gothic', Dotum, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #eaeaea; border-radius: 8px; border-top: 5px solid #3b82f6;">
+            <h2 style="color: #1e293b; margin-bottom: 20px; font-size: 24px; text-align: center;">이가이버 부동산 임시 비밀번호 안내</h2>
+            <p style="color: #475569; font-size: 16px; line-height: 1.6; text-align: center;">
+              요청하신 임시 비밀번호가 발급되었습니다.
+            </p>
+            <div style="margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 6px; text-align: center;">
+              <span style="font-size: 24px; font-weight: bold; letter-spacing: 4px; color: #3b82f6;">${tempPassword}</span>
+            </div>
+            <p style="color: #64748b; font-size: 14px; margin-top: 20px; text-align: center;">
+              로그인 후 반드시 내 프로필에서 비밀번호를 변경해 주시기 바랍니다.
+            </p>
+          </div>
+        `;
+        await sendEmail(user.email, "[이가이버 부동산] 임시 비밀번호 안내", htmlContent);
+        return res.json({ message: "등록된 이메일로 임시 비밀번호를 발송했습니다." });
+      } else {
+        // 이메일이 없는 경우
+        return res.json({ message: `임시 비밀번호가 발급되었습니다: [ ${tempPassword} ]\n로그인 후 즉시 비밀번호를 변경해 주세요.` });
+      }
     } catch (error) {
       next(error);
     }
@@ -243,7 +363,7 @@ export function setupAuth(app: Express) {
 
   // 관리자 권한 검사 미들웨어
   const isAdmin = (req: Request, res: Response, next: NextFunction) => {
-    if (!req.isAuthenticated() || req.user.role !== "admin") {
+    if (!req.isAuthenticated() || (req.user.role !== "admin" && req.user.role !== "master")) {
       return res.status(403).json({ message: "관리자 권한이 필요합니다." });
     }
     next();
@@ -272,7 +392,10 @@ export function setupAuth(app: Express) {
       }
 
       const userId = req.user.id;
-      const { currentPassword, password, email, phone, birthDate, birthTime, isLunar, nickname } = req.body;
+      const { 
+        currentPassword, password, email, phone, birthDate, birthTime, isLunar, nickname,
+        businessName, realtorName, realtorPhone, realtorAddress, businessLicenseNo, realtorPhoto 
+      } = req.body;
 
       // 현재 사용자 정보 가져오기
       const user = await storage.getUser(userId);
@@ -305,6 +428,12 @@ export function setupAuth(app: Express) {
       if (nickname !== undefined) {
         updateData.nickname = nickname;
       }
+      if (businessName !== undefined) updateData.businessName = businessName;
+      if (realtorName !== undefined) updateData.realtorName = realtorName;
+      if (realtorPhone !== undefined) updateData.realtorPhone = realtorPhone;
+      if (realtorAddress !== undefined) updateData.realtorAddress = realtorAddress;
+      if (businessLicenseNo !== undefined) updateData.businessLicenseNo = businessLicenseNo;
+      if (realtorPhoto !== undefined) updateData.realtorPhoto = realtorPhoto;
 
       // 사용자 정보 업데이트
       const updatedUser = await storage.updateUser(userId, updateData);
@@ -370,6 +499,11 @@ export function setupAuth(app: Express) {
       // 관리자는 자기 자신을 삭제할 수 없음
       if (req.user && userId === req.user.id) {
         return res.status(400).json({ message: "관리자는 자신의 계정을 삭제할 수 없습니다." });
+      }
+
+      const targetUser = await storage.getUser(userId);
+      if (targetUser && targetUser.role === 'master') {
+        return res.status(403).json({ message: "마스터 계정은 삭제할 수 없습니다." });
       }
 
       const success = await storage.deleteUser(userId);

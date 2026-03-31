@@ -49,42 +49,77 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
 }) => {
     const { toast } = useToast();
 
-    const handleImageCompression = (file: File): Promise<any> => {
-        return new Promise((resolve) => {
+    const processAndUploadImage = (file: File): Promise<any> => {
+        return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = (event) => {
                 const img = new Image();
                 img.src = event.target?.result as string;
                 img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const MAX_SIZE = 1200;
-                    let width = img.width;
-                    let height = img.height;
+                    const TARGET_RATIO = 16 / 9;
+                    const MAX_WIDTH = 1200;
+                    
+                    let srcX = 0, srcY = 0, srcWidth = img.width, srcHeight = img.height;
+                    const imgRatio = img.width / img.height;
 
-                    if (width > height) {
-                        if (width > MAX_SIZE) {
-                            height *= MAX_SIZE / width;
-                            width = MAX_SIZE;
-                        }
-                    } else {
-                        if (height > MAX_SIZE) {
-                            width *= MAX_SIZE / height;
-                            height = MAX_SIZE;
-                        }
+                    if (imgRatio > TARGET_RATIO) {
+                        srcWidth = img.height * TARGET_RATIO;
+                        srcX = (img.width - srcWidth) / 2;
+                    } else if (imgRatio < TARGET_RATIO) {
+                        srcHeight = img.width / TARGET_RATIO;
+                        srcY = (img.height - srcHeight) / 2;
                     }
 
-                    canvas.width = width;
-                    canvas.height = height;
+                    let destWidth = srcWidth;
+                    let destHeight = srcHeight;
+                    
+                    if (destWidth > MAX_WIDTH) {
+                        destWidth = MAX_WIDTH;
+                        destHeight = MAX_WIDTH / TARGET_RATIO;
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = destWidth;
+                    canvas.height = destHeight;
                     const ctx = canvas.getContext('2d');
-                    ctx?.drawImage(img, 0, 0, width, height);
-                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                    resolve({
-                        id: Date.now() + Math.random(),
-                        url: compressedDataUrl,
-                        file: file
-                    });
+                    
+                    if (ctx) {
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.fillRect(0, 0, destWidth, destHeight);
+                        ctx.drawImage(img, srcX, srcY, srcWidth, srcHeight, 0, 0, destWidth, destHeight);
+                    }
+                    
+                    canvas.toBlob(async (blob) => {
+                        if (!blob) {
+                            reject(new Error("Canvas to Blob failed"));
+                            return;
+                        }
+                        
+                        const formData = new FormData();
+                        formData.append("file", blob, file.name || "image.jpg");
+                        
+                        try {
+                            const res = await fetch("/api/upload", {
+                                method: "POST",
+                                body: formData
+                            });
+                            
+                            if (!res.ok) throw new Error("Upload failed");
+                            const data = await res.json();
+                            
+                            resolve({
+                                id: Date.now() + Math.random(),
+                                url: data.url,
+                                file: file
+                            });
+                        } catch (err) {
+                            reject(err);
+                        }
+                    }, 'image/jpeg', 0.85);
                 };
+                img.onerror = () => reject(new Error("Image load failed"));
             };
+            reader.onerror = () => reject(new Error("File read failed"));
             reader.readAsDataURL(file);
         });
     };
@@ -100,7 +135,7 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
 
         setIsUploading(true);
         try {
-            const newImages = await Promise.all(files.map(file => handleImageCompression(file)));
+            const newImages = await Promise.all(files.map(file => processAndUploadImage(file)));
             const updatedImages = [...uploadedImages, ...newImages];
 
             if (updatedImages.length > 20) {
@@ -312,13 +347,82 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
                                                 e.stopPropagation();
                                                 e.currentTarget.classList.remove('border-primary', 'bg-blue-50');
                                             }}
-                                            onDrop={(e) => {
+                                            onDrop={async (e) => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
                                                 e.currentTarget.classList.remove('border-primary', 'bg-blue-50');
 
+                                                // 1. 일반 로컬 파일 (PC에서 드래그)
                                                 const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
-                                                if (files.length > 0) handleImageUpload(files);
+                                                if (files.length > 0) {
+                                                    handleImageUpload(files);
+                                                    return;
+                                                }
+
+                                                // 2. 온라인 이미지 타 탭에서 드래그 (예: 네이버 부동산)
+                                                const htmlData = e.dataTransfer.getData('text/html');
+                                                const urlData = e.dataTransfer.getData('URL') || e.dataTransfer.getData('text/uri-list');
+                                                
+                                                let extractedUrl = "";
+                                                if (htmlData) {
+                                                    const match = htmlData.match(/<img[^>]+src="?([^"\s]+)"?\s*/i);
+                                                    if (match && match[1]) extractedUrl = match[1];
+                                                }
+                                                if (!extractedUrl && urlData) {
+                                                    extractedUrl = urlData;
+                                                }
+
+                                                if (extractedUrl && extractedUrl.startsWith('http')) {
+                                                    if (uploadedImages.length >= 20) {
+                                                        toast({ title: "최대 20장까지 업로드 가능합니다", variant: "destructive" });
+                                                        return;
+                                                    }
+                                                    
+                                                    setIsUploading(true);
+                                                    try {
+                                                        const res = await fetch('/api/upload-url', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({ url: extractedUrl })
+                                                        });
+                                                        
+                                                        if (!res.ok) {
+                                                            const errorData = await res.json().catch(() => ({}));
+                                                            throw new Error(errorData.message || '온라인 이미지 업로드 실패');
+                                                        }
+                                                        
+                                                        const data = await res.json();
+                                                        
+                                                        const newImage = {
+                                                            id: Date.now() + Math.random(),
+                                                            url: data.url,
+                                                            file: null
+                                                        };
+                                                        
+                                                        const updatedImages = [...uploadedImages, newImage];
+                                                        setUploadedImages(updatedImages);
+                                                        
+                                                        if (uploadedImages.length === 0) {
+                                                            setFeaturedImageIndex(0);
+                                                        }
+                                                        
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            imageUrls: updatedImages.map(img => img.url)
+                                                        }));
+                                                        
+                                                        toast({ title: "온라인 이미지 추출 완료", description: "외부 식별 이미지를 성공적으로 가져왔습니다." });
+                                                    } catch (error: any) {
+                                                        console.error("온라인 이미지 업로드 중 오류:", error);
+                                                        toast({ 
+                                                            title: "이미지 추출 실패", 
+                                                            description: "해당 사이트가 이미지 복사를 막아두었거나 엑세스가 거부되었습니다. 직접 다운로드 후 업로드해주세요.", 
+                                                            variant: "destructive" 
+                                                        });
+                                                    } finally {
+                                                        setIsUploading(false);
+                                                    }
+                                                }
                                             }}
                                         >
                                             <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -401,16 +505,35 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
                             </div>
                         </div>
                     </div>
-
                     {user?.role === 'admin' && (
-                        <div className="flex items-center space-x-2 pt-4">
-                            <Checkbox
-                                id="featured"
-                                name="featured"
-                                checked={formData.featured}
-                                onCheckedChange={(checked) => handleCheckboxChange("featured", checked as boolean)}
-                            />
-                            <Label htmlFor="featured">추천 매물로 등록</Label>
+                        <div className="flex flex-wrap gap-6 pt-4 border-t">
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="isActive"
+                                    name="isActive"
+                                    checked={formData.isActive}
+                                    onCheckedChange={(checked) => handleCheckboxChange("isActive", checked as boolean)}
+                                />
+                                <Label htmlFor="isActive" className="text-sm font-bold text-slate-700">활성 매물</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="isVisible"
+                                    name="isVisible"
+                                    checked={formData.isVisible}
+                                    onCheckedChange={(checked) => handleCheckboxChange("isVisible", checked as boolean)}
+                                />
+                                <Label htmlFor="isVisible" className="text-sm font-bold text-slate-700">홈페이지 노출</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="isSold"
+                                    name="isSold"
+                                    checked={formData.isSold}
+                                    onCheckedChange={(checked) => handleCheckboxChange("isSold", checked as boolean)}
+                                />
+                                <Label htmlFor="isSold" className="text-sm font-bold text-red-600">매각 완료</Label>
+                            </div>
                         </div>
                     )}
                 </CardContent>

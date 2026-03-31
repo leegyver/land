@@ -111,3 +111,70 @@ export function createInquiryEmailTemplate(data: {
     </div>
   `;
 }
+
+// 1. 회원가입 환영 이메일 템플릿
+export function createWelcomeEmailTemplate(data: { username: string; name?: string }): string {
+  const displayName = data.name || data.username;
+  return `
+    <div style="font-family: 'Malgun Gothic', Dotum, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #eaeaea; border-radius: 8px; border-top: 5px solid #3b82f6;">
+      <h2 style="color: #1e293b; margin-bottom: 20px; font-size: 24px; text-align: center;">🎉 환영합니다!</h2>
+      <p style="color: #475569; font-size: 16px; line-height: 1.6; text-align: center;">
+        <strong>${displayName}</strong>님, 이가이버 부동산에 가입해 주셔서 진심으로 감사드립니다.<br/>
+        앞으로 강화도의 가장 빠르고 정확한 부동산 소식을 전해드리겠습니다.
+      </p>
+      
+      <div style="margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 6px; text-align: center;">
+        <p style="color: #64748b; font-size: 14px; margin: 0;">로그인하여 관심 있는 매물을 찜하고 다양한 소식을 받아보세요!</p>
+        <a href="https://leegyver.co.kr" style="display: inline-block; margin-top: 15px; padding: 12px 24px; background-color: #3b82f6; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold;">홈페이지 바로가기</a>
+      </div>
+      
+      <div style="font-size: 12px; color: #94a3b8; margin-top: 30px; text-align: center; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+        <p>본 메일은 발신 전용이며, 회신되지 않습니다.<br/>© 이가이버 부동산. All rights reserved.</p>
+      </div>
+    </div>
+  `;
+}
+
+// 2. 뉴스레터 구독 환영 이메일 템플릿
+export function createNewsletterWelcomeTemplate(data: { email: string }): string {
+  return `
+    <div style="font-family: 'Malgun Gothic', Dotum, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #eaeaea; border-radius: 8px; border-top: 5px solid #10b981;">
+      <h2 style="color: #047857; margin-bottom: 20px; font-size: 24px; text-align: center;">📰 뉴스레터 구독 완료!</h2>
+      <p style="color: #475569; font-size: 16px; line-height: 1.6; text-align: center;">
+        감사합니다!<br/>
+        <strong>${data.email}</strong> 주소로 이가이버 부동산의 알찬 구독 소식이 배달될 예정입니다.
+      </p>
+      
+      <div style="margin-top: 30px; padding: 20px; background-color: #ecfdf5; border-radius: 6px; text-align: center;">
+        <p style="color: #059669; font-size: 14px; margin: 0; line-height: 1.5;">매월 강화도 핵심 부동산 정보와 최신 뉴스들을 가장 먼저 받아보실 수 있습니다.</p>
+      </div>
+      
+      <div style="font-size: 12px; color: #94a3b8; margin-top: 30px; text-align: center; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+        <p>본 메일은 발신 전용이며, 회신되지 않습니다.<br/>© 이가이버 부동산. All rights reserved.</p>
+      </div>
+    </div>
+  `;
+}
+
+// 3. 문의 접수 확인 이메일 템플릿
+export function createInquiryReceiptTemplate(data: { name: string; title?: string }): string {
+  const inquiryContext = data.title ? `'[${data.title}]' 에 대한 ` : "작성하신 ";
+  return `
+    <div style="font-family: 'Malgun Gothic', Dotum, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #eaeaea; border-radius: 8px; border-top: 5px solid #f59e0b;">
+      <h2 style="color: #b45309; margin-bottom: 20px; font-size: 24px; text-align: center;">✅ 문의가 정상적으로 접수되었습니다.</h2>
+      <p style="color: #475569; font-size: 16px; line-height: 1.6;">
+        안녕하세요, <strong>${data.name}</strong>님.<br/><br/>
+        ${inquiryContext}문의가 성공적으로 접수되었습니다.<br/>
+        담당자가 확인 후 입력해주신 연락처로 신속히 답변 드리겠습니다.
+      </p>
+      
+      <div style="margin-top: 30px; padding: 20px; background-color: #fffbeb; border-radius: 6px;">
+        <p style="color: #b45309; font-size: 14px; margin: 0;">조금만 대기해주시면 친절하고 정확하게 안내해 드리겠습니다. 감사합니다!</p>
+      </div>
+      
+      <div style="font-size: 12px; color: #94a3b8; margin-top: 30px; text-align: center; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+        <p>본 메일은 발신 전용이며, 회신되지 않습니다.<br/>© 이가이버 부동산. All rights reserved.</p>
+      </div>
+    </div>
+  `;
+}

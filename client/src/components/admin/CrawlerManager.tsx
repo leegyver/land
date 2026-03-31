@@ -7,8 +7,9 @@ import { Loader2, RefreshCw, Trash2, MapPin, ExternalLink, Search } from "lucide
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CloudDownload, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import CrawlerMap from "@/components/admin/CrawlerMap";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     Select,
@@ -68,63 +69,121 @@ export default function CrawlerManager() {
     const [filterDealType, setFilterDealType] = useState<string>("all");
     const [currentPage, setCurrentPage] = useState(1);
     const [highlightedPropertyId, setHighlightedPropertyId] = useState<number | null>(null);
-    const [selectedAtclNos, setSelectedAtclNos] = useState<string[]>([]);
+    const [sortOption, setSortOption] = useState<string>("newest");
+    const [selectedDetailProperty, setSelectedDetailProperty] = useState<CrawledProperty | null>(null);
+
     const ITEMS_PER_PAGE = 20;
 
-    // 지역별 좌표 프리셋
+    // Helper to extract numeric price
+    const parsePrice = (prcStr: string | undefined | null) => {
+        if (!prcStr) return 0;
+        let num = 0;
+        if (prcStr.includes('억')) {
+            const parts = prcStr.split('억');
+            num += parseInt(parts[0].replace(/[^0-9]/g, '')) * 10000;
+            if (parts[1]) num += parseInt(parts[1].replace(/[^0-9]/g, '')) || 0;
+        } else {
+            num += parseInt(prcStr.replace(/[^0-9]/g, '')) || 0;
+        }
+        return num;
+    };
+
+    // 지역별 좌표 프리셋 (Non-overlapping bounds for accurate filtering)
     const regionPresets: Record<string, { label: string, bounds: any }> = {
-        "eup": { label: "강화읍", bounds: { minLat: 37.730, minLon: 126.470, maxLat: 37.760, maxLon: 126.510 } },
-        "gilsang": { label: "길상면", bounds: { minLat: 37.600, minLon: 126.450, maxLat: 37.660, maxLon: 126.530 } },
-        "hwado": { label: "화도면", bounds: { minLat: 37.580, minLon: 126.350, maxLat: 37.670, maxLon: 126.460 } },
-        "bureun": { label: "불은면", bounds: { minLat: 37.660, minLon: 126.470, maxLat: 37.720, maxLon: 126.530 } },
-        "seonwon": { label: "선원면", bounds: { minLat: 37.700, minLon: 126.470, maxLat: 37.740, maxLon: 126.520 } },
-        "yangdo": { label: "양도면", bounds: { minLat: 37.650, minLon: 126.370, maxLat: 37.710, maxLon: 126.450 } },
-        "naega": { label: "내가면", bounds: { minLat: 37.700, minLon: 126.350, maxLat: 37.760, maxLon: 126.425 } },
-        "hajeom": { label: "하점면", bounds: { minLat: 37.750, minLon: 126.370, maxLat: 37.820, maxLon: 126.460 } },
-        "songhae": { label: "송해면", bounds: { minLat: 37.770, minLon: 126.440, maxLat: 37.820, maxLon: 126.510 } },
-        "yangsa": { label: "양사면", bounds: { minLat: 37.800, minLon: 126.380, maxLat: 37.850, maxLon: 126.480 } },
-        "gyodong": { label: "교동면", bounds: { minLat: 37.750, minLon: 126.250, maxLat: 37.840, maxLon: 126.350 } },
-        "samsan": { label: "삼산면 (석모도)", bounds: { minLat: 37.640, minLon: 126.290, maxLat: 37.760, maxLon: 126.360 } }
+        "eup": { label: "강화읍", bounds: { minLat: 37.720, minLon: 126.460, maxLat: 37.765, maxLon: 126.510 } },
+        "seonwon": { label: "선원면", bounds: { minLat: 37.685, minLon: 126.460, maxLat: 37.740, maxLon: 126.540 } },
+        "gilsang": { label: "길상면", bounds: { minLat: 37.590, minLon: 126.440, maxLat: 37.665, maxLon: 126.540 } },
+        "hwado": { label: "화도면", bounds: { minLat: 37.575, minLon: 126.350, maxLat: 37.660, maxLon: 126.460 } },
+        "bureun": { label: "불은면", bounds: { minLat: 37.660, minLon: 126.470, maxLat: 37.705, maxLon: 126.550 } },
+        "yangdo": { label: "양도면", bounds: { minLat: 37.640, minLon: 126.370, maxLat: 37.710, maxLon: 126.480 } },
+        "naega": { label: "내가면", bounds: { minLat: 37.695, minLon: 126.340, maxLat: 37.755, maxLon: 126.435 } },
+        "hajeom": { label: "하점면", bounds: { minLat: 37.745, minLon: 126.370, maxLat: 37.820, maxLon: 126.465 } },
+        "songhae": { label: "송해면", bounds: { minLat: 37.755, minLon: 126.430, maxLat: 37.820, maxLon: 126.510 } },
+        "yangsa": { label: "양사면", bounds: { minLat: 37.795, minLon: 126.380, maxLat: 37.860, maxLon: 126.480 } },
+        "gyodong": { label: "교동면", bounds: { minLat: 37.750, minLon: 126.150, maxLat: 37.860, maxLon: 126.350 } },
+        "samsan": { label: "삼산면 (석모도)", bounds: { minLat: 37.640, minLon: 126.250, maxLat: 37.760, maxLon: 126.380 } }
     };
 
     // Category filtering logic
     const categoryGroups = {
         land: ["토지", "임야"],
-        house: ["단독/다가구", "전원주택", "상가주택", "빌라", "다세대", "아파트", "원룸", "오피스텔"],
-        comm: ["상가", "사무실"],
-        other: ["공장/창고"]
+        single: ["단독/다가구", "전원주택", "상가주택", "한옥주택"],
+        house: ["아파트", "빌라", "다세대", "원룸", "오피스텔", "도시형생활주택"],
+        comm: ["상가", "사무실", "공장/창고"]
     };
 
     const getCategoryGroup = (rletTpNm: string) => {
         if (categoryGroups.land.includes(rletTpNm)) return "land";
+        if (categoryGroups.single.includes(rletTpNm) || rletTpNm.includes("단독") || rletTpNm.includes("전원")) return "single";
         if (categoryGroups.house.some(h => rletTpNm.includes(h)) || rletTpNm.includes("주택")) return "house";
-        if (categoryGroups.comm.includes(rletTpNm)) return "comm";
+        if (categoryGroups.comm.includes(rletTpNm) || rletTpNm.includes("공장") || rletTpNm.includes("상가")) return "comm";
         return "other";
     };
+
+    const { data: crawlerStatus } = useQuery<{ isCrawling: boolean }>({
+        queryKey: ["/api/admin/crawler/status"],
+        refetchInterval: 3000,
+    });
+
+    // We'll define isActivelyCrawling below after runCrawlerMutation is declared
 
     // Fetch Crawled Properties
     const { data: properties, isLoading } = useQuery<CrawledProperty[]>({
         queryKey: ["/api/admin/crawled-properties"],
+        refetchInterval: (crawlerStatus?.isCrawling || isRunning) ? 3000 : false,
     });
 
     const filteredProperties = properties?.filter(p => {
         const matchesSearch = p.atclNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
             p.atclNm.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesCategory = selectedCategory === "all" || getCategoryGroup(p.rletTpNm) === selectedCategory;
-        const matchesRegion = filterRegion === "all" || (p.flrInfo && p.flrInfo.includes(filterRegion));
+        
+        let matchesRegion = true;
+        if (filterRegion !== "all") {
+            const regionData = Object.values(regionPresets).find(r => r.label === filterRegion);
+            if (regionData) {
+                const { minLat, maxLat, minLon, maxLon } = regionData.bounds;
+                matchesRegion = p.lat >= minLat && p.lat <= maxLat && p.lng >= minLon && p.lng <= maxLon;
+            }
+        }
+        
         const matchesDealType = filterDealType === "all" || p.tradTpNm === filterDealType;
 
         return matchesSearch && matchesCategory && matchesRegion && matchesDealType;
     }) || [];
 
+    const sortedProperties = [...filteredProperties].sort((a, b) => {
+        if (sortOption === "price_asc") {
+            return parsePrice(a.prc) - parsePrice(b.prc);
+        }
+        if (sortOption === "price_desc") {
+            return parsePrice(b.prc) - parsePrice(a.prc);
+        }
+        if (sortOption === "area_desc") {
+            return (Number(b.spc1) || 0) - (Number(a.spc1) || 0);
+        }
+        // default "newest"
+        return new Date(b.crawledAt).getTime() - new Date(a.crawledAt).getTime();
+    });
+
     // Pagination logic
-    const totalPages = Math.ceil(filteredProperties.length / ITEMS_PER_PAGE);
-    const paginatedProperties = filteredProperties.slice(
+    const totalPages = Math.ceil(sortedProperties.length / ITEMS_PER_PAGE);
+    const paginatedProperties = sortedProperties.slice(
         (currentPage - 1) * ITEMS_PER_PAGE,
         currentPage * ITEMS_PER_PAGE
     );
 
     // Run Crawler Mutation
+        const scrollToTarget = () => {
+        const target = document.getElementById('crawler-list-top');
+        if (target) {
+            const y = target.getBoundingClientRect().top + window.scrollY - 80;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+        } else {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+
     const runCrawlerMutation = useMutation({
         mutationFn: async ({ mode, bounds }: { mode: 'single' | 'grid', bounds?: any }) => {
             const res = await fetch("/api/admin/crawler/run", {
@@ -164,6 +223,8 @@ export default function CrawlerManager() {
         }
     });
 
+    const isActivelyCrawling = isRunning || runCrawlerMutation.isPending || !!crawlerStatus?.isCrawling;
+
     // Clear Properties Mutation
     const clearPropertiesMutation = useMutation({
         mutationFn: async () => {
@@ -189,36 +250,8 @@ export default function CrawlerManager() {
         }
     });
 
-    // Import Mutation
-    const importMutation = useMutation({
-        mutationFn: async (atclNos: string[]) => {
-            const res = await fetch("/api/properties/import-crawled", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ atclNos })
-            });
-            if (!res.ok) throw new Error("가져오기 실패");
-            return res.json();
-        },
-        onSuccess: (data: any) => {
-            toast({
-                title: "가져오기 완료",
-                description: `${data.success}건 성공, ${data.skipped}건 스킵, ${data.failed}건 실패`,
-            });
-            setSelectedAtclNos([]);
-            queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
-        },
-        onError: (error: any) => {
-            toast({
-                title: "오류",
-                description: error.message,
-                variant: "destructive",
-            });
-        }
-    });
-
     const handleRunCrawler = (mode: 'single' | 'grid') => {
-        if (mode === 'grid' && !confirm("강화군 전체(4x4 그리드) 수집을 시작하시겠습니까?\n이 작업은 시간이 다소 걸릴 수 있습니다 (약 4분).")) {
+        if (mode === 'grid' && !confirm("강화군 전체(5x5 최적화 격자) 수집을 시작하시겠습니까?\n이 작업은 서버 과부하 방지를 위해 약 5~10분이 소요됩니다.")) {
             return;
         }
         setIsRunning(true);
@@ -229,25 +262,6 @@ export default function CrawlerManager() {
     const handleClear = () => {
         if (confirm("정말로 수집된 목록을 모두 삭제하시겠습니까?")) {
             clearPropertiesMutation.mutate();
-        }
-    };
-
-    const handleImportSelected = () => {
-        if (selectedAtclNos.length === 0) return;
-        importMutation.mutate(selectedAtclNos);
-    };
-
-    const toggleSelection = (atclNo: string) => {
-        setSelectedAtclNos(prev =>
-            prev.includes(atclNo) ? prev.filter(n => n !== atclNo) : [...prev, atclNo]
-        );
-    };
-
-    const toggleAllSelection = () => {
-        if (selectedAtclNos.length === paginatedProperties.length) {
-            setSelectedAtclNos([]);
-        } else {
-            setSelectedAtclNos(paginatedProperties.map(p => p.atclNo));
         }
     };
 
@@ -286,10 +300,10 @@ export default function CrawlerManager() {
                         <div className="flex gap-2">
                             <Button
                                 onClick={() => handleRunCrawler('single')}
-                                disabled={isRunning || runCrawlerMutation.isPending}
+                                disabled={isActivelyCrawling}
                                 className="bg-green-600 hover:bg-green-700"
                             >
-                                {(isRunning || runCrawlerMutation.isPending) ? (
+                                {isActivelyCrawling ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 수집 중...
                                     </>
@@ -300,10 +314,10 @@ export default function CrawlerManager() {
 
                             <Button
                                 onClick={() => handleRunCrawler('grid')}
-                                disabled={isRunning || runCrawlerMutation.isPending}
+                                disabled={isActivelyCrawling}
                                 className="bg-blue-600 hover:bg-blue-700"
                             >
-                                {(isRunning || runCrawlerMutation.isPending) ? (
+                                {isActivelyCrawling ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 수집 중...
                                     </>
@@ -320,21 +334,6 @@ export default function CrawlerManager() {
                             >
                                 <Trash2 className="mr-2 h-4 w-4" /> 목록 초기화
                             </Button>
-
-                            {selectedAtclNos.length > 0 && (
-                                <Button
-                                    onClick={handleImportSelected}
-                                    disabled={importMutation.isPending}
-                                    className="bg-purple-600 hover:bg-purple-700 animate-pulse-subtle shadow-lg shadow-purple-200"
-                                >
-                                    {importMutation.isPending ? (
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <CloudDownload className="mr-2 h-4 w-4" />
-                                    )}
-                                    {selectedAtclNos.length}건 내부 DB로 가져오기
-                                </Button>
-                            )}
                         </div>
                     </div>
                 </CardContent>
@@ -387,7 +386,7 @@ export default function CrawlerManager() {
             )}
 
             {(viewMode === "list" || viewMode === "split") && (
-                <Card>
+                <Card id="crawler-list-top">
                     <CardHeader className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
                         <CardTitle>수집 결과 ({filteredProperties?.length || 0}건)</CardTitle>
                         <div className="flex flex-wrap gap-4 items-center">
@@ -415,12 +414,25 @@ export default function CrawlerManager() {
                                 </SelectContent>
                             </Select>
 
+                            <Select value={sortOption} onValueChange={(val) => { setSortOption(val); setCurrentPage(1); }}>
+                                <SelectTrigger className="w-[120px] h-9">
+                                    <SelectValue placeholder="정렬기준" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="newest">최신순</SelectItem>
+                                    <SelectItem value="price_asc">가격 낮은순</SelectItem>
+                                    <SelectItem value="price_desc">가격 높은순</SelectItem>
+                                    <SelectItem value="area_desc">넓은 면적순</SelectItem>
+                                </SelectContent>
+                            </Select>
+
                             <div className="flex bg-gray-100 p-1 rounded-lg">
                                 {[
                                     { id: "all", label: "전체" },
+                                    { id: "house", label: "아파트/빌라" },
+                                    { id: "single", label: "단독/다가구" },
+                                    { id: "comm", label: "상가/공장" },
                                     { id: "land", label: "토지" },
-                                    { id: "house", label: "주택" },
-                                    { id: "comm", label: "상가" },
                                     { id: "other", label: "기타" }
                                 ].map((cat) => (
                                     <Button
@@ -460,12 +472,6 @@ export default function CrawlerManager() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead className="w-[40px]">
-                                                    <Checkbox
-                                                        checked={selectedAtclNos.length > 0 && selectedAtclNos.length === paginatedProperties.length}
-                                                        onCheckedChange={toggleAllSelection}
-                                                    />
-                                                </TableHead>
                                                 <TableHead>매물번호</TableHead>
                                                 <TableHead>종류/지목</TableHead>
                                                 <TableHead>매물명 (설명)</TableHead>
@@ -478,12 +484,6 @@ export default function CrawlerManager() {
                                         <TableBody>
                                             {paginatedProperties.map((item) => (
                                                 <TableRow key={item.id}>
-                                                    <TableCell>
-                                                        <Checkbox
-                                                            checked={selectedAtclNos.includes(item.atclNo)}
-                                                            onCheckedChange={() => toggleSelection(item.atclNo)}
-                                                        />
-                                                    </TableCell>
                                                     <TableCell className="font-mono text-xs">{item.atclNo}</TableCell>
                                                     <TableCell>
                                                         <Badge variant="outline">{item.rletTpNm}</Badge>
@@ -522,25 +522,14 @@ export default function CrawlerManager() {
                                                     </TableCell>
                                                     <TableCell className="text-right">
                                                         <div className="flex justify-end gap-1">
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                className="h-8 w-8 p-0 text-purple-600 border-purple-200 hover:bg-purple-50"
-                                                                onClick={() => importMutation.mutate([item.atclNo])}
-                                                                title="내부 DB로 가져오기"
-                                                                disabled={importMutation.isPending}
+                                                            <Button 
+                                                                size="sm" 
+                                                                variant="ghost" 
+                                                                className="h-8 w-8 p-0"
+                                                                onClick={() => setSelectedDetailProperty(item)}
                                                             >
-                                                                <CloudDownload className="h-4 w-4" />
+                                                                <ExternalLink className="h-4 w-4 text-blue-600" />
                                                             </Button>
-                                                            <a
-                                                                href={`https://m.land.naver.com/article/info/${item.atclNo}`}
-                                                                target="_blank"
-                                                                rel="noreferrer"
-                                                            >
-                                                                <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                                                                    <ExternalLink className="h-4 w-4" />
-                                                                </Button>
-                                                            </a>
                                                         </div>
                                                     </TableCell>
                                                 </TableRow>
@@ -556,7 +545,7 @@ export default function CrawlerManager() {
                                                     <PaginationPrevious
                                                         onClick={() => {
                                                             setCurrentPage(p => Math.max(1, p - 1));
-                                                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                            scrollToTarget();
                                                         }}
                                                         className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                                                     />
@@ -570,7 +559,7 @@ export default function CrawlerManager() {
                                                                 <PaginationLink
                                                                     onClick={() => {
                                                                         setCurrentPage(page);
-                                                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                                        scrollToTarget();
                                                                     }}
                                                                     isActive={currentPage === page}
                                                                     className="cursor-pointer"
@@ -588,7 +577,7 @@ export default function CrawlerManager() {
                                                     <PaginationNext
                                                         onClick={() => {
                                                             setCurrentPage(p => Math.min(totalPages, p + 1));
-                                                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                            scrollToTarget();
                                                         }}
                                                         className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                                                     />
@@ -602,6 +591,98 @@ export default function CrawlerManager() {
                     </CardContent>
                 </Card>
             )}
+
+            {/* 내부 컨텐츠 전용 팝업 (네이버 링크 비작동) */}
+            <Dialog open={!!selectedDetailProperty} onOpenChange={(open) => !open && setSelectedDetailProperty(null)}>
+                <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl">
+                    {selectedDetailProperty && (
+                        <div className="flex flex-col">
+                            {/* 헤더 / 썸네일 */}
+                            <div className="relative h-48 bg-slate-100 flex items-center justify-center overflow-hidden">
+                                {selectedDetailProperty.imgUrl ? (
+                                    <>
+                                        <div className="absolute inset-0 bg-black/20 z-10"></div>
+                                        <img src={selectedDetailProperty.imgUrl} alt={selectedDetailProperty.atclNm} className="w-full h-full object-cover" />
+                                    </>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center text-slate-400">
+                                        <MapPin className="w-10 h-10 mb-2 opacity-30" />
+                                        <span className="text-sm font-medium">이미지 없음</span>
+                                    </div>
+                                )}
+                                <Badge className="absolute top-4 left-4 z-20 bg-black/60 hover:bg-black/60 text-white backdrop-blur-md border-0">
+                                    {selectedDetailProperty.rletTpNm} {selectedDetailProperty.landType ? `· ${selectedDetailProperty.landType}` : ''}
+                                </Badge>
+                                <DialogClose className="absolute top-4 right-4 z-20 rounded-full bg-black/40 p-1.5 text-white hover:bg-black/60 transition" />
+                            </div>
+
+                            {/* 메인 텍스트 컨텐츠 */}
+                            <div className="p-6 space-y-6">
+                                <div>
+                                    <h2 className="text-2xl font-bold tracking-tight text-slate-900 leading-tight">
+                                        {selectedDetailProperty.atclNm}
+                                    </h2>
+                                    <p className="text-sm text-slate-500 mt-1 flex items-center gap-1.5 font-medium">
+                                        매물번호 <span className="font-mono text-slate-400">{selectedDetailProperty.atclNo}</span>
+                                    </p>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                                        <span className="text-sm font-semibold text-slate-500">거래 조건</span>
+                                        <span className="text-xl font-bold text-blue-600 tracking-tight">
+                                            {selectedDetailProperty.tradTpNm} {selectedDetailProperty.tradTpNm === "월세" && selectedDetailProperty.rentPrc ? `${selectedDetailProperty.prc} / ${selectedDetailProperty.rentPrc}` : selectedDetailProperty.prc}
+                                        </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-y-4 gap-x-6">
+                                        <div>
+                                            <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase mb-1">면적 (공급/전용)</p>
+                                            <p className="text-sm font-medium text-slate-800">
+                                                {selectedDetailProperty.spc1 ? `${selectedDetailProperty.spc1}㎡` : '-'} / {selectedDetailProperty.spc2 ? `${selectedDetailProperty.spc2}㎡` : '-'}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase mb-1">층수 (해당/총)</p>
+                                            <p className="text-sm font-medium text-slate-800">{selectedDetailProperty.flrInfo || '-'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase mb-1">방향</p>
+                                            <p className="text-sm font-medium text-slate-800">{selectedDetailProperty.direction || '-'}</p>
+                                        </div>
+                                        {selectedDetailProperty.zoneType && (
+                                            <div>
+                                                <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase mb-1">용도지역</p>
+                                                <p className="text-sm font-medium text-blue-600">{selectedDetailProperty.zoneType}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="pt-4 border-t border-slate-100 space-y-4">
+                                        <div className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border">
+                                            <p className="text-xs font-semibold tracking-wider text-slate-500 uppercase">제공 중개사</p>
+                                            <div className="text-right">
+                                                <p className="text-sm font-bold text-slate-800">{selectedDetailProperty.rltrNm || '<정보 없음>'}</p>
+                                                <p className="text-xs text-slate-500 mt-0.5">상세 연락처는 원본 매물 참조</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <Button 
+                                            className="w-full h-14 text-base font-bold bg-[#03c75a] hover:bg-[#02b350] text-white shadow-lg shadow-green-500/20 rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-95"
+                                            onClick={() => window.open(`https://fin.land.naver.com/articles/${selectedDetailProperty.atclNo}`, '_blank')}
+                                        >
+                                            <span className="text-xl leading-none font-black mb-0.5">N</span>
+                                            네이버 원본 매물 보기
+                                            <ExternalLink className="w-4 h-4 ml-1 opacity-70" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
         </div>
     );
 }

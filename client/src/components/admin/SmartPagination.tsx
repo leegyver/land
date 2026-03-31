@@ -13,18 +13,33 @@ export interface SmartPaginationProps {
     currentPage: number;
     totalPages: number;
     onPageChange: (page: number) => void;
+    scrollTargetId?: string;
 }
 
 export const SmartPagination: React.FC<SmartPaginationProps> = ({
     currentPage,
     totalPages,
-    onPageChange
+    onPageChange,
+    scrollTargetId
 }) => {
     if (totalPages <= 1) return null;
 
     const handlePageChange = (page: number) => {
         onPageChange(page);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        const activeTargetId = scrollTargetId || 'admin-list-top';
+        let target = document.getElementById(activeTargetId);
+        
+        if (!target && !scrollTargetId) {
+            target = document.getElementById('admin-tab-content');
+        }
+        
+        if (target) {
+            const y = target.getBoundingClientRect().top + window.scrollY - 80; // 80px offset for sticky header
+            window.scrollTo({ top: y, behavior: 'smooth' });
+        } else {
+            // Fallback for non-admin pages using SmartPagination
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     };
 
     const getPageNumbers = () => {

@@ -1,17 +1,32 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { useLocation } from "wouter";
+import { Loader2 } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProfileEditTab } from "@/components/profile/ProfileEditTab";
 import { PasswordChangeTab } from "@/components/profile/PasswordChangeTab";
 import { FavoritesTab } from "@/components/profile/FavoritesTab";
+import { SubscriptionTab } from "@/components/profile/SubscriptionTab";
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("profile");
-  const { user } = useAuth();
+  const { user, isLoading: isUserLoading } = useAuth();
+  const [, setLocation] = useLocation();
+
+  if (isUserLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <span className="ml-3 font-medium text-slate-500">Loading...</span>
+      </div>
+    );
+  }
 
   if (!user) {
-    return <div>Loading...</div>;
+    // Return empty while redirecting
+    setTimeout(() => setLocation("/auth"), 0);
+    return null;
   }
 
   return (
@@ -31,9 +46,10 @@ export default function ProfilePage() {
       </h1>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="profile">기본 정보</TabsTrigger>
           <TabsTrigger value="password">비밀번호 변경</TabsTrigger>
+          <TabsTrigger value="subscription">구독 관리</TabsTrigger>
           <TabsTrigger value="favorites">관심매물</TabsTrigger>
         </TabsList>
 
@@ -45,6 +61,9 @@ export default function ProfilePage() {
           <PasswordChangeTab />
         </TabsContent>
 
+        <TabsContent value="subscription">
+          <SubscriptionTab user={user} />
+        </TabsContent>
         <TabsContent value="favorites">
           <FavoritesTab user={user} />
         </TabsContent>

@@ -300,23 +300,48 @@ const PostFormPage = () => {
                                                     </FormItem>
                                                 )}
                                             />
-                                            <FormField
-                                                control={form.control}
-                                                name="title"
-                                                render={({ field }) => (
-                                                    <FormItem className="md:col-span-2">
-                                                        <FormLabel className="text-slate-400 font-black text-xs uppercase tracking-widest pl-1">제목</FormLabel>
-                                                        <FormControl>
-                                                            <Input
-                                                                placeholder="제목을 입력하세요"
-                                                                className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-black text-slate-700 focus-visible:ring-blue-500"
-                                                                {...field}
-                                                            />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
+                                            <div className="md:col-span-2 space-y-4">
+                                                <FormField
+                                                    control={form.control}
+                                                    name="title"
+                                                    render={({ field }) => (
+                                                        <FormItem>
+                                                            <FormLabel className="text-slate-400 font-black text-xs uppercase tracking-widest pl-1">제목</FormLabel>
+                                                            <FormControl>
+                                                                <Input
+                                                                    placeholder="제목을 입력하세요"
+                                                                    className="h-14 bg-slate-50 border-slate-200 rounded-2xl font-black text-slate-700 focus-visible:ring-blue-500"
+                                                                    {...field}
+                                                                />
+                                                            </FormControl>
+                                                            <FormMessage />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                {(user?.role === "admin" || user?.role === "master") && (
+                                                    <FormField
+                                                        control={form.control}
+                                                        name="isPinned"
+                                                        render={({ field }) => (
+                                                            <FormItem className="flex flex-row items-center space-x-3 space-y-0 p-4 border rounded-2xl bg-red-50/50 border-red-100">
+                                                                <FormControl>
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        className="w-5 h-5 accent-red-600 cursor-pointer"
+                                                                        checked={field.value || false}
+                                                                        onChange={(e) => field.onChange(e.target.checked)}
+                                                                    />
+                                                                </FormControl>
+                                                                <div className="space-y-1 leading-none">
+                                                                    <FormLabel className="text-sm font-black text-red-700 cursor-pointer">
+                                                                        [관리자 전용] 이 게시글을 상단에 고정합니다. (공지)
+                                                                    </FormLabel>
+                                                                </div>
+                                                            </FormItem>
+                                                        )}
+                                                    />
                                                 )}
-                                            />
+                                            </div>
                                         </div>
 
                                         <FormField

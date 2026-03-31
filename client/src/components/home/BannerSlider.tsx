@@ -48,32 +48,18 @@ const BannerSlider = ({ location, description }: BannerSliderProps) => {
                 <CarouselContent>
                     {banners.map((banner) => (
                         <CarouselItem key={banner.id}>
-                            <div className="p-1">
+                            <div className="p-0">
                                 <a
                                     href={banner.linkUrl || "#"}
                                     target={banner.openNewWindow ? "__blank" : "_self"}
                                     rel={banner.openNewWindow ? "noopener noreferrer" : undefined}
-                                    className="block relative aspect-[16/9] md:aspect-[2/1] overflow-hidden rounded-xl border border-slate-200 shadow-sm transition-transform hover:scale-[1.01]"
+                                    className="block relative aspect-[16/9] md:aspect-[2/1] overflow-hidden transition-transform hover:scale-[1.01]"
                                 >
                                     <img
                                         src={banner.imageUrl}
-                                        alt={banner.title || "Banner"}
-                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                        alt="Banner"
+                                        className="w-full h-full object-cover"
                                     />
-                                    {(banner.title || banner.description) && (
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 md:p-6">
-                                            {banner.title && (
-                                                <h3 className="text-white font-bold text-lg md:text-xl mb-1 shadow-sm">
-                                                    {banner.title}
-                                                </h3>
-                                            )}
-                                            {banner.description && (
-                                                <p className="text-gray-200 text-xs md:text-sm font-medium line-clamp-2 shadow-sm">
-                                                    {banner.description}
-                                                </p>
-                                            )}
-                                        </div>
-                                    )}
                                 </a>
                             </div>
                         </CarouselItem>

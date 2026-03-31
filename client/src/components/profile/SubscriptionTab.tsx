@@ -79,6 +79,21 @@ export function SubscriptionTab({ user }: SubscriptionTabProps) {
         rejected: "인증 반려",
     };
 
+    const getKoreanTierName = (tier: string | undefined, userTier: string | null, role: string) => {
+        if (role === 'master') return "👑 마스터 (모든 권한 무제한)";
+        if (role === 'admin') return "🛠️ 관리자 (매물 무제한 등록 가능)";
+        
+        const activeTier = tier || userTier || 'free';
+        switch (activeTier) {
+            case 'lifetime': return "🔥 평생회원";
+            case 'approved': return "✨ 특강 우수중개사 (승인됨)";
+            case 'yearly': return "💎 공인중개사 (연결제)";
+            case 'monthly': return "💎 공인중개사 (월결제)";
+            case 'free': return "🌱 무료회원";
+            default: return "🌱 무료회원";
+        }
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -94,7 +109,7 @@ export function SubscriptionTab({ user }: SubscriptionTabProps) {
                                 <CardDescription>현재 이용 중인 요금제 및 상태</CardDescription>
                             </div>
                             <Badge className={statusColors[subData?.status as keyof typeof statusColors] || "bg-slate-100"}>
-                                {subData?.status === 'active' ? '이용 중' : subData?.status === 'expired' ? '만료됨' : '구독 없음'}
+                                {user.role === 'admin' || user.role === 'master' ? '관리자 권한' : (subData?.status === 'active' || user.subscriptionTier === 'lifetime' || user.subscriptionTier === 'approved' ? '이용 중' : subData?.status === 'expired' ? '만료됨' : '구독 없음')}
                             </Badge>
                         </div>
                     </CardHeader>
@@ -102,19 +117,32 @@ export function SubscriptionTab({ user }: SubscriptionTabProps) {
                         <div className="space-y-4">
                             <div className="flex justify-between items-center p-4 bg-slate-50 rounded-xl">
                                 <span className="text-sm font-medium text-slate-500">현재 요금제</span>
-                                <span className="text-lg font-bold text-primary uppercase">
-                                    {subData?.tier || 'FREE'}
+                                <span className="text-base md:text-lg font-bold text-primary">
+                                    {getKoreanTierName(subData?.tier, user.subscriptionTier, user.role)}
                                 </span>
                             </div>
 
-                            <div className="flex items-center gap-3 text-sm text-slate-600">
-                                <Clock className="w-4 h-4" />
-                                <span>만료일: {subData?.expiresAt ? format(new Date(subData.expiresAt), "yyyy년 MM월 dd일", { locale: ko }) : "해당 없음"}</span>
+                            <div className="flex flex-col gap-2">
+                                {subData?.history && subData.history.length > 0 && (
+                                    <div className="flex items-center gap-3 text-sm text-slate-600">
+                                        <Clock className="w-4 h-4 text-emerald-500" />
+                                        <span>결제(승인)일: {format(new Date((subData.history[0].createdAt || subData.history[0].startDate) as string), "yyyy년 MM월 dd일", { locale: ko })}</span>
+                                    </div>
+                                )}
+                                <div className="flex items-center gap-3 text-sm text-slate-600">
+                                    <Clock className="w-4 h-4 text-blue-500" />
+                                    <span>만료일: {subData?.expiresAt ? format(new Date(subData.expiresAt as string), "yyyy년 MM월 dd일", { locale: ko }) : 
+                                        (user.role === 'admin' || user.role === 'master' ? "만료일 없음 (최고 관리자)" :
+                                        (subData?.tier === 'lifetime' ? "만료일 없음 (평생회원)" : 
+                                         (subData?.tier === 'free' || !subData?.tier ? "해당 없음" : "기한 없음 (관리자 특별 승인)")))
+                                    }</span>
+                                </div>
                             </div>
 
-                            {subData?.status !== 'active' && (
+                            {(subData?.status !== 'active' && user.role !== 'admin' && user.role !== 'master') && (
                                 <div className="mt-4 p-3 bg-amber-50 border border-amber-100 rounded-lg flex gap-3 text-xs text-amber-700">
                                     <AlertTriangle className="w-4 h-4 shrink-0" />
+
                                     <p>구독이 활성화되지 않은 경우 매물을 등록할 수 없습니다.</p>
                                 </div>
                             )}
@@ -197,14 +225,40 @@ export function SubscriptionTab({ user }: SubscriptionTabProps) {
                             </div>
                         )}
 
-                        <div className="space-y-3">
-                            <div className="flex justify-between text-sm">
-                                <span className="text-slate-500">등록번호</span>
-                                <span className="font-medium">{user.businessLicenseNo || "정보 없음"}</span>
+                        <div className="space-y-3 pt-4 border-t border-slate-100 mt-4">
+                            {user.realtorPhoto && (
+                                <div className="flex flex-col sm:flex-row sm:justify-between text-sm gap-2 sm:gap-4 pb-3 border-b border-slate-50/50">
+                                    <span className="text-slate-500 whitespace-nowrap">제출 서류</span>
+                                    <div className="flex justify-end pr-1 pb-1">
+                                        <div className="relative group overflow-hidden rounded-lg border border-slate-200 hover:border-primary/50 transition-colors shadow-sm">
+                                            <img 
+                                                src={user.realtorPhoto} 
+                                                alt="사업자/자격증명" 
+                                                className="w-32 h-auto object-cover hover:scale-105 transition-transform duration-300" 
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            <div className="flex flex-col sm:flex-row sm:justify-between text-sm gap-1 sm:gap-4">
+                                <span className="text-slate-500 whitespace-nowrap">상호명</span>
+                                <span className="font-medium text-right break-words">{user.businessName || "정보 없음"}</span>
                             </div>
-                            <div className="flex justify-between text-sm">
-                                <span className="text-slate-500">상호명</span>
-                                <span className="font-medium">{user.businessName || "정보 없음"}</span>
+                            <div className="flex flex-col sm:flex-row sm:justify-between text-sm gap-1 sm:gap-4">
+                                <span className="text-slate-500 whitespace-nowrap">대표 공인중개사</span>
+                                <span className="font-medium text-right break-words">{user.realtorName || "정보 없음"}</span>
+                            </div>
+                            <div className="flex flex-col sm:flex-row sm:justify-between text-sm gap-1 sm:gap-4">
+                                <span className="text-slate-500 whitespace-nowrap">연락처</span>
+                                <span className="font-medium text-right break-words">{user.realtorPhone || "정보 없음"}</span>
+                            </div>
+                            <div className="flex flex-col sm:flex-row sm:justify-between text-sm gap-1 sm:gap-4">
+                                <span className="text-slate-500 whitespace-nowrap">사무실 주소</span>
+                                <span className="font-medium text-right break-words">{user.realtorAddress || "정보 없음"}</span>
+                            </div>
+                            <div className="flex flex-col sm:flex-row sm:justify-between text-sm gap-1 sm:gap-4">
+                                <span className="text-slate-500 whitespace-nowrap">등록번호</span>
+                                <span className="font-medium text-right break-words">{user.businessLicenseNo || "정보 없음"}</span>
                             </div>
                         </div>
                     </CardContent>
@@ -235,7 +289,7 @@ export function SubscriptionTab({ user }: SubscriptionTabProps) {
                                     {subData.history.map((sub) => (
                                         <tr key={sub.id} className="border-b last:border-0 hover:bg-slate-50 transition-colors">
                                             <td className="py-3 px-2">
-                                                {format(new Date(sub.startDate), "yyyy-MM-dd")}
+                                                {sub.startDate ? format(new Date(sub.startDate as string), "yyyy-MM-dd") : "-"}
                                             </td>
                                             <td className="py-3 px-2 font-bold text-primary uppercase">
                                                 {sub.planType}
@@ -245,7 +299,7 @@ export function SubscriptionTab({ user }: SubscriptionTabProps) {
                                             </td>
                                             <td className="py-3 px-2">
                                                 <Badge variant="outline" className="text-[10px] h-5">
-                                                    {sub.status === 'success' ? '결제완료' : sub.status}
+                                                    {sub.status === 'success' || sub.status === 'active' ? '결제완료' : sub.status === 'expired' ? '만료됨' : sub.status}
                                                 </Badge>
                                             </td>
                                         </tr>

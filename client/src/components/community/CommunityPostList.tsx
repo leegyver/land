@@ -52,7 +52,7 @@ export function CommunityPostList({ posts, isLoading, activeCategory }: Communit
         <div className="grid grid-cols-1 gap-6 pb-20">
             {posts.map((post) => (
                 <Link key={post.id} href={`/community/${post.id}`}>
-                    <Card className="hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-300 border-slate-100 rounded-[2rem] overflow-hidden group cursor-pointer bg-white">
+                    <Card className={`hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-300 rounded-[2rem] overflow-hidden group cursor-pointer ${post.isPinned ? "bg-indigo-50/70 border-indigo-200" : "bg-white border-slate-100"}`}>
                         <div className="p-6 md:p-8 flex flex-col md:flex-row gap-6">
                             {post.imageUrls && post.imageUrls.length > 0 && (
                                 <div className="w-full md:w-48 h-48 rounded-2xl overflow-hidden shrink-0">
@@ -65,6 +65,11 @@ export function CommunityPostList({ posts, isLoading, activeCategory }: Communit
                             )}
                             <div className="flex-1 space-y-4">
                                 <div className="flex items-center gap-2">
+                                    {post.isPinned && (
+                                        <Badge className="font-black bg-indigo-600 text-white border-none px-3 py-1 rounded-full">
+                                            📌 공지
+                                        </Badge>
+                                    )}
                                     <Badge className={`font-black ${getCategoryInfo(post.category).color} text-white border-none px-3 py-1 rounded-full`}>
                                         {getCategoryInfo(post.category).name}
                                     </Badge>

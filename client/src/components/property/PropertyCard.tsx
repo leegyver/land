@@ -32,6 +32,10 @@ const hasValidPrice = (value: string | number | null | undefined): boolean => {
 };
 
 const PropertyCard = ({ property }: PropertyCardProps) => {
+  // 데이터 안전성 확보 (가끔 title 대신 atclNm 등을 사용하는 경우 대비)
+  const title = property.title || (property as any).atclNm || "강화도 우수 매물";
+  const imageUrl = property.imageUrl || (property as any).imgUrl || (property.imageUrls && property.imageUrls[0]) || siteConfig.defaultImageUrl;
+
   const { toast } = useToast();
   const { user } = useAuth();
   const { sajuData } = useSaju();
@@ -161,8 +165,8 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
         <Link href={`/properties/${property.id}`}>
           <div className="w-full h-full cursor-pointer relative">
             <img
-              src={property.imageUrl || siteConfig.defaultImageUrl}
-              alt={property.title}
+              src={imageUrl}
+              alt={title}
               className="w-full h-full object-cover group-hover:scale-110 transition duration-500"
               loading="lazy"
               decoding="async"
@@ -176,7 +180,7 @@ const PropertyCard = ({ property }: PropertyCardProps) => {
         <Link href={`/properties/${property.id}`}>
           <div>
             <h3 className="text-lg font-bold mb-1.5 text-slate-900 line-clamp-2 leading-tight">
-              {property.title}
+              {title}
             </h3>
 
             {/* 위치 및 배지 - 한 줄로 배치 시도하거나 간격 최소화 */}

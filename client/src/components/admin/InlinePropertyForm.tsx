@@ -742,24 +742,7 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="featured"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 py-4">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>추천 매물로 표시</FormLabel>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+
 
               <FormField
                 control={form.control}
@@ -791,27 +774,7 @@ export function InlinePropertyForm({ onClose, property }: InlinePropertyFormProp
 
               {/* 추가정보 - 공동중개 및 담당중개사 */}
               <div className="md:col-span-2 flex items-center gap-4 py-2">
-                <FormField
-                  control={form.control}
-                  name="coListing"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={(checked) => {
-                            field.onChange(checked);
-                            if (!checked) {
-                              form.setValue("agentName", "이가이버 공인중개사");
-                            }
-                          }}
-                          data-testid="checkbox-co-listing"
-                        />
-                      </FormControl>
-                      <FormLabel className="font-normal">공동중개</FormLabel>
-                    </FormItem>
-                  )}
-                />
+
 
                 <FormField
                   control={form.control}

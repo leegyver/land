@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -58,7 +59,8 @@ type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("profile");
-  const { user } = useAuth();
+  const { user, isLoading: isUserLoading } = useAuth();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   
   // 관심 매물 조회
@@ -143,8 +145,19 @@ export default function ProfilePage() {
     changePasswordMutation.mutate(data);
   };
 
+  if (isUserLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <span className="ml-3 font-medium text-slate-500">Loading...</span>
+      </div>
+    );
+  }
+
   if (!user) {
-    return <div>Loading...</div>;
+    // Return empty while redirecting
+    setTimeout(() => setLocation("/auth"), 0);
+    return null;
   }
 
   return (

@@ -60,7 +60,7 @@ import { Badge } from "@/components/ui/badge";
 
 export default function NoticeBoard() {
     const { user } = useAuth();
-    const isAdmin = user?.role === "admin";
+    const isAdmin = user?.role === "admin" || user?.role === "master";
     const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingNotice, setEditingNotice] = useState<Notice | null>(null);
@@ -88,6 +88,80 @@ export default function NoticeBoard() {
         return (
             <div className="flex justify-center p-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
+    if (isFormOpen) {
+        return (
+            <div className="bg-white rounded-lg border shadow-sm p-6 space-y-6">
+                <div className="flex items-center justify-between border-b pb-4">
+                    <h2 className="text-xl font-bold flex items-center gap-2">
+                        <Megaphone className="h-5 w-5 text-primary" />
+                        {editingNotice ? "공지사항 수정" : "새 공지사항 작성"}
+                    </h2>
+                    <Button variant="ghost" onClick={() => setIsFormOpen(false)}>
+                        <X className="h-4 w-4 mr-2" />
+                        취소 및 돌아가기
+                    </Button>
+                </div>
+                <NoticeForm
+                    notice={editingNotice}
+                    onSuccess={() => setIsFormOpen(false)}
+                    onCancel={() => setIsFormOpen(false)}
+                />
+            </div>
+        );
+    }
+
+    if (selectedNotice && !isFormOpen) {
+        return (
+            <div className="bg-white rounded-lg border shadow-sm p-6 space-y-6 animate-in fade-in zoom-in-95 duration-300">
+                <div className="border-b pb-4">
+                    <div className="flex justify-between items-start mb-4">
+                        <h2 className="text-2xl font-bold flex items-center gap-2">
+                            {selectedNotice.isPinned && <Pin className="h-5 w-5 text-primary fill-primary" />}
+                            {selectedNotice.title}
+                        </h2>
+                        <Button variant="ghost" onClick={() => setSelectedNotice(null)}>
+                            <X className="h-4 w-4 mr-2" />
+                            목록으로 돌아가기
+                        </Button>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            {selectedNotice.createdAt && format(new Date(selectedNotice.createdAt), "yyyy.MM.dd HH:mm")}
+                        </span>
+                        <span className="flex items-center gap-1">
+                            <Eye className="h-4 w-4" />
+                            조회 {selectedNotice.viewCount}
+                        </span>
+                    </div>
+                </div>
+
+                <div className="py-6 min-h-[300px]">
+                    <div className="prose prose-sm md:prose-base max-w-none dark:prose-invert"
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedNotice.content || "") }}
+                    />
+                </div>
+
+                <div className="border-t pt-4 flex justify-between items-center">
+                    <div className="space-x-2">
+                         {isAdmin && (
+                            <Button 
+                                variant="outline" 
+                                onClick={(e) => handleEdit(selectedNotice, e)}
+                            >
+                                <Pencil className="h-4 w-4 mr-2" />
+                                수정
+                            </Button>
+                         )}
+                    </div>
+                    <Button variant="default" onClick={() => setSelectedNotice(null)}>
+                        목록으로
+                    </Button>
+                </div>
             </div>
         );
     }
@@ -173,56 +247,8 @@ export default function NoticeBoard() {
                 </Table>
             </div>
 
-            {/* Detail Dialog */}
-            <Dialog open={!!selectedNotice} onOpenChange={(open) => !open && setSelectedNotice(null)}>
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl flex items-center gap-2">
-                            {selectedNotice?.isPinned && <Pin className="h-4 w-4 text-primary fill-primary" />}
-                            {selectedNotice?.title}
-                        </DialogTitle>
-                        <DialogDescription className="flex items-center gap-4 mt-2 text-sm">
-                            <span className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                {selectedNotice?.createdAt && format(new Date(selectedNotice.createdAt), "yyyy.MM.dd HH:mm")}
-                            </span>
-                            <span className="flex items-center gap-1">
-                                <Eye className="h-3 w-3" />
-                                {selectedNotice?.viewCount}
-                            </span>
-                        </DialogDescription>
-                    </DialogHeader>
 
 
-
-                    <div className="py-6 min-h-[200px] space-y-6">
-                        <div className="prose prose-sm max-w-none dark:prose-invert"
-                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedNotice?.content || "") }}
-                        />
-
-                    </div>
-
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setSelectedNotice(null)}>
-                            닫기
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Create/Edit Form Dialog */}
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                        <DialogTitle>{editingNotice ? "공지사항 수정" : "새 공지사항 작성"}</DialogTitle>
-                    </DialogHeader>
-                    <NoticeForm
-                        notice={editingNotice}
-                        onSuccess={() => setIsFormOpen(false)}
-                        onCancel={() => setIsFormOpen(false)}
-                    />
-                </DialogContent>
-            </Dialog>
         </div>
     );
 }
@@ -462,9 +488,9 @@ function NoticeForm({ notice, onSuccess, onCancel }: { notice: Notice | null, on
                                 <FormLabel>
                                     상단 고정 (메인 페이지 노출)
                                 </FormLabel>
-                                <DialogDescription>
+                                <p className="text-sm text-muted-foreground mt-1">
                                     이 공지사항을 목록 상단과 메인 페이지 배너에 노출합니다.
-                                </DialogDescription>
+                                </p>
                             </div>
                         </FormItem>
                     )}
@@ -498,15 +524,15 @@ function NoticeForm({ notice, onSuccess, onCancel }: { notice: Notice | null, on
                     )}
                 />
 
-                <DialogFooter>
-                    <Button type="button" variant="outline" onClick={onCancel}>
+                <div className="flex justify-end gap-2 pt-6 border-t mt-8">
+                    <Button type="button" variant="outline" size="lg" onClick={onCancel}>
                         취소
                     </Button>
-                    <Button type="submit" disabled={mutation.isPending}>
+                    <Button type="submit" size="lg" disabled={mutation.isPending}>
                         {mutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {notice ? "수정하기" : "등록하기"}
                     </Button>
-                </DialogFooter>
+                </div>
             </form>
         </Form>
     );

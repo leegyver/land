@@ -58,7 +58,7 @@ const Hero = () => {
   };
 
   return (
-    <section className="relative w-full h-[85vh] min-h-[600px] flex items-center justify-center overflow-hidden">
+    <section className="relative w-full py-2 lg:py-2 flex items-center justify-center overflow-hidden">
       {/* Background Image with Parallax */}
       <motion.div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat z-0"

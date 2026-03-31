@@ -19,116 +19,77 @@ export default function PricingPage() {
     const subscribeMutation = useMutation({
         mutationFn: async (planType: string) => {
             return new Promise((resolve, reject) => {
-                const { IMP, PortOne } = window as any;
-                const STORE_ID = import.meta.env.VITE_PORTONE_STORE_ID || "imp31646628";
-                const CHANNEL_KEY = import.meta.env.VITE_PORTONE_CHANNEL_KEY;
+                const { PortOne } = window as any;
+                const STORE_ID = "store-c394141a-87d5-4c2b-bae2-9a1c91b73b03";
+                const CHANNEL_KEY = "channel-key-0041cf8e-396a-45eb-90ec-1f4d18e92afd";
 
-                const isV2 = STORE_ID.startsWith('store-');
-
-                if (isV2 && !PortOne) {
-                    return reject(new Error("포트원 V2 결제 모듈을 불러오지 못했습니다."));
+                if (!PortOne) {
+                    return reject(new Error("포트원 V2 결제 모듈 스크립트를 로드하지 못했습니다."));
                 }
-                if (isV2 && !CHANNEL_KEY) {
-                    return reject(new Error("V2 결제를 위한 '채널 키(Channel Key)'가 설정되지 않았습니다. 관리자에게 문의하세요."));
+                if (!STORE_ID || !STORE_ID.startsWith("store-")) {
+                    return reject(new Error("유효한 V2 스토어 ID(store-...)가 설정되지 않았습니다."));
                 }
-                if (!isV2 && !IMP) {
-                    return reject(new Error("포트원 V1 결제 모듈을 불러오지 못했습니다."));
+                if (!CHANNEL_KEY) {
+                    return reject(new Error("V2 결제를 위한 '채널 키(Channel Key)'가 설정되지 않았습니다."));
                 }
 
-                const amount = planType === 'monthly' ? 5000 : 50000;
+                // 부가세 10% 포함된 실결제 금액
+                const amount = planType === 'monthly' ? 5500 : 55000;
                 const merchant_uid = `ORD_${Date.now()}`;
                 const orderName = `이가이버 부동산 ${planType === 'monthly' ? '월간' : '연간'} 멤버십`;
 
-                if (isV2) {
-                    // PortOne V2 결제 요청
-                    PortOne.requestPayment({
-                        storeId: STORE_ID,
-                        channelKey: CHANNEL_KEY,
-                        paymentId: merchant_uid,
-                        orderName: orderName,
-                        totalAmount: amount,
-                        currency: "CURRENCY_KRW",
-                        payMethod: "CARD",
-                        customer: {
-                            fullName: user?.nickname || user?.username || '고객',
-                            phoneNumber: user?.phone || '',
-                            email: user?.email || '',
-                        },
-                    }).then(async (rsp: any) => {
-                        if (rsp.code != null) {
-                            // 오류 발생
-                            return reject(new Error(`결제 실패: ${rsp.message}`));
+                console.log("[이가이버 디버깅] 요청 채널키:", CHANNEL_KEY);
+                console.log("[이가이버 디버깅] 스토어ID:", STORE_ID);
+
+                PortOne.requestPayment({
+                    storeId: STORE_ID,
+                    channelKey: CHANNEL_KEY,
+                    paymentId: merchant_uid,
+                    orderName: orderName,
+                    totalAmount: amount,
+                    currency: "CURRENCY_KRW",
+                    payMethod: "CARD",
+                    customer: {
+                        fullName: user?.nickname || user?.username || '고객',
+                        phoneNumber: user?.phone || '010-0000-0000',
+                        email: user?.email || 'admin@leegyver.com',
+                    },
+                }).then(async (rsp: any) => {
+                    if (rsp.code != null) {
+                        return reject(new Error(`결제 실패: ${rsp.message}`));
+                    }
+                    
+                    try {
+                        const res = await fetch("/api/subscription/subscribe", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ 
+                                planType, 
+                                imp_uid: rsp.paymentId,
+                                merchant_uid: rsp.paymentId 
+                            }),
+                        });
+
+                        if (!res.ok) {
+                            const errorData = await res.json();
+                            throw new Error(errorData.message || "결제 검증에 실패했습니다.");
                         }
-                        
-                        try {
-                            const res = await fetch("/api/subscription/subscribe", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ 
-                                    planType, 
-                                    imp_uid: rsp.paymentId, // V2에서는 paymentId가 imp_uid 역할을 함 (백엔드 호환을 위해 유지)
-                                    merchant_uid: rsp.paymentId 
-                                }),
-                            });
 
-                            if (!res.ok) {
-                                const errorData = await res.json();
-                                throw new Error(errorData.message || "결제 검증에 실패했습니다.");
-                            }
-
-                            const result = await res.json();
-                            resolve(result);
-                        } catch (err: any) {
-                            reject(err);
-                        }
-                    }).catch(reject);
-                } else {
-                    // PortOne V1 (IMP) 결제 요청
-                    IMP.init(STORE_ID);
-                    IMP.request_pay({
-                        pg: "html5_inicis",
-                        pay_method: "card",
-                        merchant_uid: merchant_uid,
-                        name: orderName,
-                        amount: amount,
-                        buyer_email: user?.email || '',
-                        buyer_name: user?.nickname || user?.username || '',
-                        buyer_tel: user?.phone || '',
-                    }, async (rsp: any) => {
-                        if (rsp.success) {
-                            try {
-                                const res = await fetch("/api/subscription/subscribe", {
-                                    method: "POST",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ 
-                                        planType, 
-                                        imp_uid: rsp.imp_uid, 
-                                        merchant_uid: rsp.merchant_uid 
-                                    }),
-                                });
-
-                                if (!res.ok) {
-                                    const errorData = await res.json();
-                                    throw new Error(errorData.message || "결제 검증에 실패했습니다.");
-                                }
-
-                                const result = await res.json();
-                                resolve(result);
-                            } catch (err: any) {
-                                reject(err);
-                            }
-                        } else {
-                            reject(new Error(`결제 실패: ${rsp.error_msg}`));
-                        }
-                    });
-                }
+                        const result = await res.json();
+                        resolve(result);
+                    } catch (err: any) {
+                        reject(err);
+                    }
+                }).catch((err: any) => {
+                    reject(new Error(`SDK 에러: ${err.message || '알 수 없는 오류'}`));
+                });
             });
         },
         onSuccess: () => {
-            toast({ title: "구독 성공", description: "프리미엄 서비스 이용이 시작되었습니다! 대박 나세요!" });
+            toast({ title: "구독 성공", description: "프리미엄 결제가 정상적으로 처리되었습니다! 영수증 내역은 프로필에서 확인 가능합니다." });
             queryClient.invalidateQueries({ queryKey: ["/api/subscription/me"] });
             queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-            setLocation("/admin"); // 관리자 페이지(매물 등록)로 이동
+            setLocation("/profile"); // 관리자 페이지 대신 프로필(구독관리)로 이동하여 결제 내역을 즉시 확인하게 함
         },
         onError: (error: Error) => {
             toast({ title: "결제 오류", description: error.message, variant: "destructive" });
@@ -137,52 +98,70 @@ export default function PricingPage() {
 
     const plans = [
         {
+            id: "free",
+            name: "무료 멤버십",
+            price: "0",
+            period: "/ 무료",
+            description: "이가이버 부동산 플랫폼 기본 기능 체험",
+            features: [
+                "매물 검색 및 문의",
+                "실시간 전화, 카톡, 이메일상담",
+                "운세 카테고리 사용"
+            ],
+            icon: <Info className="w-8 h-8 text-slate-500" />,
+            color: "border-slate-200 hover:shadow-slate-100",
+            buttonColor: "bg-slate-600 hover:bg-slate-700 shadow-slate-200",
+            info: "가입 즉시 누구나 무료로 이용 가능",
+            delay: 0.0,
+        },
+        {
             id: "monthly",
             name: "월간 멤버십",
             price: "5,000",
-            period: "/ 월",
+            period: "/ 월 (부가세 불포함)",
             description: "부담 없는 월간 구독으로 시작하는 실속형 중개 전문 서비스",
             features: [
-                "무제한 매물 등록",
-                "기본 노출 순위 지원",
-                "실시간 상담 버튼 제공",
-                "공인중개사 인증 마크",
-                "매물 관리 대시보드",
-                "유튜브 영상 다이렉트 연동",
-                "인기/추천 매물 큐레이션"
+                "공인중개사 매물등록",
+                "최신매물 자동등록",
+                "실시간 전화연결 버튼 제공",
+                "공인중개사 인증마크",
+                "매물관리 대시보드 제공",
+                "인기/추천매물 큐레이션"
             ],
             icon: <Zap className="w-8 h-8 text-blue-500" />,
             color: "border-blue-200 hover:shadow-blue-100",
             buttonColor: "bg-blue-600 hover:bg-blue-700 shadow-blue-200",
-            info: "결제일로부터 30일간 이용 / 기간 만료 시 자동 연장",
+            info: "결제일로부터 30일간 이용 / 기간 만료 시 수동연장",
             delay: 0.1,
         },
         {
             id: "annual",
             name: "연간 멤버십",
             price: "50,000",
-            period: "/ 년",
+            period: "/ 년 (부가세 불포함)",
             description: "연간 구독으로 17% 할인 혜택과 강력한 홍보 효과를 동시에",
             features: [
-                "무제한 매물 등록",
-                "최상단 노출 순위 지원",
-                "프리미엄 상담 버튼 제공",
-                "공인중개사 골드 인증 마크",
-                "고급 매물 관리 대시보드",
-                "유튜브 영상 다이렉트 연동",
-                "추천 매물 상단 고정 서비스"
+                "공인중개사 매물등록",
+                "최신매물 자동등록",
+                "급매물, 추천매물, 투자매물 등록",
+                "실시간 전화연결 버튼 제공",
+                "공인중개사 인증마크",
+                "매물관리 대시보드 제공",
+                "인기/추천매물 큐레이션",
+                "유튜브 영상 페이지 연동",
+                "공동중개 연계 서비스"
             ],
             icon: <Crown className="w-8 h-8 text-amber-500" />,
-            color: "border-amber-200 shadow-amber-50 md:scale-105 z-10",
+            color: "border-amber-200 shadow-amber-50",
             buttonColor: "bg-amber-600 hover:bg-amber-700 shadow-amber-200",
-            info: "결제일로부터 1년간 이용 / 기간 만료 시 자동 연장",
+            info: "결제일로부터 1년간 이용 / 기간 만료 시 수동연장",
             isPopular: true,
             delay: 0.2,
         }
     ];
 
     return (
-        <div className="relative min-h-screen w-full pt-32 pb-24 bg-gradient-to-b from-slate-50 to-white">
+        <div className="relative min-h-screen w-full pt-8 pb-24 bg-gradient-to-b from-slate-50 to-white">
             <Helmet>
                 <title>비즈니스 요금제 | 이가이버 부동산</title>
             </Helmet>
@@ -247,7 +226,7 @@ export default function PricingPage() {
                     </motion.p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch max-w-4xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start max-w-6xl mx-auto">
                     {plans.map((plan) => (
                         <motion.div
                             key={plan.id}
@@ -276,7 +255,7 @@ export default function PricingPage() {
                                 <CardContent className="space-y-10 px-8 flex-grow">
                                     <div className="flex items-baseline gap-1.5">
                                         <span className="text-5xl font-black text-slate-900 tracking-tighter">₩{plan.price}</span>
-                                        <span className="text-slate-400 text-sm font-bold uppercase tracking-wider">{plan.period}</span>
+                                        <span className="text-slate-400 text-sm font-bold uppercase tracking-wider break-keep">{plan.period}</span>
                                     </div>
 
                                     <div className="space-y-4">
@@ -295,13 +274,13 @@ export default function PricingPage() {
                                 <CardFooter className="pt-10 pb-12 px-8 flex flex-col gap-4">
                                     <Button
                                         className={`w-full h-16 text-xl font-black rounded-2xl shadow-xl hover:-translate-y-1 active:translate-y-0 transition-all active:shadow-md ${plan.buttonColor} text-white`}
-                                        onClick={() => subscribeMutation.mutate(plan.id)}
-                                        disabled={subscribeMutation.isPending}
+                                        onClick={() => plan.id === 'free' ? setLocation('/') : subscribeMutation.mutate(plan.id)}
+                                        disabled={plan.id !== 'free' && subscribeMutation.isPending}
                                     >
                                         {subscribeMutation.isPending ? "결제 처리 중..." : `${plan.name} 지금 시작하기`}
                                     </Button>
                                     {plan.info && (
-                                        <p className="text-center text-xs font-bold text-slate-400 mt-2 bg-slate-50 py-2 px-4 rounded-xl border border-slate-100 italic">
+                                        <p className="text-center text-[11.5px] font-bold text-slate-400 mt-2 bg-slate-50 py-2 px-2 rounded-xl border border-slate-100 italic break-keep tracking-tighter">
                                             {plan.info}
                                         </p>
                                     )}

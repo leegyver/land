@@ -8,7 +8,7 @@ import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 
 const NoticePreview = () => {
-    const { data } = useQuery<{ items: Notice[]; total: number }>({
+    const { data } = useQuery<any>({
         queryKey: ["/api/notices", { limit: 4 }],
         queryFn: async () => {
             const res = await fetch("/api/notices?page=1&limit=4");
@@ -17,7 +17,7 @@ const NoticePreview = () => {
         }
     });
 
-    const notices = data?.items || [];
+    const notices: Notice[] = Array.isArray(data) ? data : (data?.items || []);
 
     return (
         <section className="bg-white border-b border-slate-100 py-1 md:py-2">
@@ -37,7 +37,7 @@ const NoticePreview = () => {
                     <div className="flex-grow grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {notices.length > 0 ? (
                             notices.map((notice) => (
-                                <Link key={notice.id} href={`/notices`}>
+                                <a key={notice.id} href={`/contact?tab=notice`}>
                                     <div className="group cursor-pointer p-4 rounded-2xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100 relative overflow-hidden">
                                         <div className="flex flex-col gap-2 relative z-10">
                                             <div className="flex items-center gap-2 mb-1">
@@ -54,7 +54,7 @@ const NoticePreview = () => {
                                         </div>
                                         <ChevronRight className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-hover:text-orange-400 group-hover:translate-x-1 transition-all opacity-0 group-hover:opacity-100" />
                                     </div>
-                                </Link>
+                                </a>
                             ))
                         ) : (
                             <div className="col-span-full py-4 text-slate-400 text-sm font-medium">등록된 공지사항이 없습니다.</div>
@@ -62,14 +62,14 @@ const NoticePreview = () => {
                     </div>
 
                     {/* More Button */}
-                    <Link href="/notices" className="flex-shrink-0">
-                        <Button variant="ghost" size="sm" className="hidden lg:flex items-center text-slate-400 hover:text-slate-900 font-bold group">
+                    <a href="/contact?tab=notice" className="flex-shrink-0 cursor-pointer block">
+                        <Button variant="ghost" size="sm" className="hidden lg:flex items-center text-slate-400 hover:text-slate-900 font-bold group pointer-events-none">
                             전체보기 <ArrowRight className="ml-1 w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </Button>
-                        <Button variant="outline" className="lg:hidden w-full border-slate-200 text-slate-600 font-bold h-12 rounded-xl">
+                        <Button variant="outline" className="lg:hidden w-full border-slate-200 text-slate-600 font-bold h-12 rounded-xl pointer-events-none">
                             공지사항 전체보기
                         </Button>
-                    </Link>
+                    </a>
                 </div>
             </div>
         </section>

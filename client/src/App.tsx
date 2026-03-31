@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -27,12 +27,13 @@ const YoutubePage = lazy(() => import("@/pages/YoutubePage"));
 const SajuPage = lazy(() => import("@/pages/SajuPage"));
 const ContactPage = lazy(() => import("@/pages/ContactPage"));
 const ProfilePage = lazy(() => import("@/pages/profile-page-v2"));
-const AdminPage = lazy(() => import("@/pages/admin-page-v2"));
+const AdminPage = lazy(() => import("@/pages/admin-page-fixed-new"));
 // @ts-ignore
 const PropertyForm = lazy(() => import("@/pages/PropertyForm"));
 const CommunityPage = lazy(() => import("@/pages/CommunityPage"));
 const PostDetailPage = lazy(() => import("@/pages/PostDetailPage"));
 const PostFormPage = lazy(() => import("@/pages/PostFormPage"));
+const PricingPage = lazy(() => import("@/pages/PricingPage"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 // 페이지 로딩 중 표시할 최소한의 스켈레톤
@@ -42,7 +43,7 @@ const PageLoader = () => (
   </div>
 );
 
-function Router() {
+function Router({ user }: { user: any }) {
   return (
     <Suspense fallback={<PageLoader />}>
       <Switch>
@@ -58,7 +59,20 @@ function Router() {
         <Route path="/saju" component={SajuPage} />
         <Route path="/contact" component={ContactPage} />
         <Route path="/profile" component={ProfilePage} />
-        <Route path="/admin" component={AdminPage} />
+        <Route path="/pricing" component={PricingPage} />
+        <Route path="/admin">
+          {() => (
+            user ? (
+              (["admin", "master"].includes(user.role) || (user.role === "realtor" && ["monthly", "yearly", "approved", "lifetime"].includes(user.subscriptionTier as string))) ? (
+                <AdminPage />
+              ) : (
+                <Redirect to="/" />
+              )
+            ) : (
+              <Redirect to="/auth" />
+            )
+          )}
+        </Route>
         <Route path="/admin/properties/new" component={PropertyForm} />
         <Route path="/admin/properties/edit/:id" component={PropertyForm} />
         <Route path="/community" component={CommunityPage} />
@@ -80,7 +94,7 @@ function AppContent() {
       <SwipeHandler />
       <Header />
       <main className="flex-grow">
-        <Router />
+        <Router user={user} />
       </main>
       <Footer />
       <FloatingCTA />

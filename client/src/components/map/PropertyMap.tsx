@@ -401,7 +401,8 @@ const PropertyMap = ({ properties: passedProperties, showCrawled = false }: Prop
         map: map,
         position: position,
         title: property.title,
-        image: markerImage
+        image: markerImage,
+        zIndex: isNaver ? 1 : 10
       });
 
       markersRef.current.push(marker);
@@ -423,63 +424,6 @@ const PropertyMap = ({ properties: passedProperties, showCrawled = false }: Prop
 
           setSelectedProperty(property);
           setClickedInfo(null); // Clear clicked info if selecting property
-
-          const dealTypes = property.dealType || [];
-          let priceContent = '';
-
-          // 매매 가격 표시
-          if (dealTypes.includes('매매') && property.price && Number(property.price) > 0) {
-            priceContent += `<div style="color: #2563eb; font-weight: 800; font-size: 14px;">매매 ${formatKoreanPrice(property.price)}</div>`;
-          }
-
-          // 전세 가격 표시
-          if (dealTypes.includes('전세') && property.deposit && Number(property.deposit) > 0) {
-            priceContent += `<div style="color: #059669; font-weight: 800; font-size: 14px;">전세 ${formatKoreanPrice(property.deposit)}</div>`;
-          }
-
-          // 월세 가격 표시
-          if (dealTypes.includes('월세') && (Number(property.deposit) > 0 || Number(property.depositAmount) > 0 || Number(property.monthlyRent) > 0)) {
-            const deposit = Number(property.deposit) || Number(property.depositAmount) || 0;
-            const monthly = Number(property.monthlyRent) || 0;
-            const depositText = deposit === 0 ? "0" : formatKoreanPrice(deposit);
-            const monthlyText = monthly === 0 ? "0" : formatKoreanPrice(monthly);
-
-            priceContent += `<div style="color: #7c3aed; font-weight: 800; font-size: 14px;">보증금 ${depositText} / 월 ${monthlyText}</div>`;
-          }
-
-          // 가격 정보가 없는 경우 기본 처리
-          if (!priceContent) {
-            priceContent = `<div style="color: #2563eb; font-weight: 800; font-size: 14px;">${formatKoreanPrice(property.price || 0) || '가격문의'}</div>`;
-          }
-
-          // Disclaimer for Naver properties
-          const disclaimer = isNaver
-            ? `<div style="margin-top: 5px; font-size: 10px; color: #666; line-height: 1.3; background-color: #f9fafb; padding: 4px; border-radius: 4px; border: 1px solid #e5e7eb;">
-               이 매물은 공동중개를 진행해야하는 관계로 물건의 정확한 파악이 필요합니다. 정확한 정보를 원하시면 문의하기버튼을 누르시고 문의를 해주세요
-             </div>`
-            : '';
-
-          // Use direct window.location.href for safer navigation in map context
-          const actionButton = isNaver
-            ? `<div onclick="window.location.href='/contact?tab=inquiry&atclNo=${property.atclNo}&title=${encodeURIComponent(property.title)}'" style="cursor:pointer; display:block; margin-top:5px; padding:5px; background:#10b981; color:white; text-align:center; border-radius:4px; font-size:12px; font-weight:bold;">문의하기</div>`
-            : '';
-
-          const closeButton = `<div onclick="window.closePropertyInfoWindow()" style="position: absolute; top: 6px; right: 8px; cursor: pointer; color: #999; font-size: 14px; font-weight: bold; line-height: 1; z-index:10;">✕</div>`;
-
-          const content = `
-                      <div style="padding: 15px 10px 10px 10px; width: 250px; height: auto; font-family: 'Pretendard', sans-serif; line-height: 1.25; display: flex; flex-direction: column; justify-content: center; position: relative;">
-                        ${closeButton}
-                        <div style="font-weight: 800; font-size: 13.5px; margin-bottom: 2px; word-break: keep-all; white-space: normal; color: #191919; padding-right: 15px;">${property.title}</div>
-                        <div style="color: #6b7280; font-size: 11px; margin-bottom: 3px;">${property.type}</div>
-                        <div style="display: flex; flex-direction: column; gap: 1px;">
-                          ${priceContent}
-                        </div>
-                        ${disclaimer}
-                        ${actionButton}
-                      </div>
-                    `;
-          infoWindowRef.current?.setContent(content);
-          infoWindowRef.current?.open(map, marker);
         }
       });
     }
@@ -701,9 +645,11 @@ const PropertyMap = ({ properties: passedProperties, showCrawled = false }: Prop
 
         {/* Property Info Panel */}
         {selectedProperty && (
-          <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-72 bg-white rounded-xl shadow-2xl p-2 z-30 animate-in slide-in-from-bottom-5 border border-slate-200 max-h-[95%] overflow-y-auto scrollbar-hide">
+          <div className="absolute top-4 right-4 md:w-72 bg-white rounded-xl shadow-2xl p-4 z-30 animate-in fade-in slide-in-from-top-2 border border-slate-200"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
-              className="absolute top-1 right-1 text-slate-400 hover:text-slate-900 transition-colors p-1 z-10"
+              className="absolute top-2 right-2 text-slate-400 hover:text-slate-900 transition-colors p-1 z-10"
               onClick={() => {
                 setSelectedProperty(null);
                 infoWindowRef.current?.close();
@@ -712,57 +658,91 @@ const PropertyMap = ({ properties: passedProperties, showCrawled = false }: Prop
               <span className="text-xs font-bold font-mono">✕</span>
             </button>
 
+            <h4 className="font-bold text-lg mb-2 truncate text-slate-900 pr-6 mt-2">{selectedProperty.title}</h4>
+
+            <div className="flex flex-col gap-1 mb-3 bg-slate-50 p-2 rounded border border-slate-100">
+              {selectedProperty.dealType?.includes('매매') && (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-500 font-bold">매매</span>
+                  <span className="text-blue-600 font-black">{formatKoreanPrice(selectedProperty.price || 0)}</span>
+                </div>
+              )}
+              {selectedProperty.dealType?.includes('전세') && (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-500 font-bold">전세</span>
+                  <span className="text-emerald-600 font-black">{formatKoreanPrice(selectedProperty.deposit || 0)}</span>
+                </div>
+              )}
+              {selectedProperty.dealType?.includes('월세') && (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-500 font-bold">월세</span>
+                  <span className="text-purple-600 font-black">
+                    {formatKoreanPrice(selectedProperty.deposit || selectedProperty.depositAmount || 0)} / {formatKoreanPrice(selectedProperty.monthlyRent || 0)}
+                  </span>
+                </div>
+              )}
+              {!['매매', '전세', '월세'].some(t => selectedProperty.dealType?.includes(t)) && (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-blue-600 font-black">{formatKoreanPrice(selectedProperty.price || 0) || '가격문의'}</span>
+                </div>
+              )}
+            </div>
+
+            {selectedProperty.source === 'naver' && (
+              <div className="mb-3 text-[10px] text-slate-500 bg-slate-50 p-2 rounded border border-slate-200 leading-tight">
+                이 매물은 공동중개를 진행해야하는 관계로 물건의 정확한 파악이 필요합니다. 정확한 정보를 원하시면 문의하기 버튼을 누르시고 문의를 해주세요.
+              </div>
+            )}
+
             {sajuData && compatibility ? (
-              // Simplified Fortune View - Compact
-              <div className="py-1">
-                <div className="flex items-center justify-between mb-2 px-1">
+              <div className="py-1 mb-2 border-t border-slate-100 pt-3">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-black text-slate-700 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-purple-600" /> 내 운세와의 궁합
+                    <Sparkles className="w-3 h-3 text-purple-600" /> 사주 궁합
                   </span>
                   <Badge className={cn(
                     "font-black text-[10px] px-2 py-0 h-5",
-                    compatibility.score >= 80 ? 'bg-green-100 text-green-700 hover:bg-green-100' :
-                      compatibility.score >= 50 ? 'bg-amber-100 text-amber-700 hover:bg-amber-100' :
-                        'bg-red-100 text-red-700 hover:bg-red-100'
+                    compatibility.score >= 80 ? 'bg-green-100 text-green-700' :
+                      compatibility.score >= 50 ? 'bg-amber-100 text-amber-700' :
+                        'bg-red-100 text-red-700'
                   )}>
                     {compatibility.score}점
                   </Badge>
                 </div>
-
-                <div className="p-2.5 bg-purple-50 rounded-lg text-[11px] leading-tight text-slate-700 font-bold border border-purple-100 mb-2 shadow-inner">
+                <div className="p-2 bg-purple-50 rounded-md text-[10px] leading-tight text-slate-700 font-bold shadow-inner">
                   {compatibility.comment}
                 </div>
-
-                <Button
-                  size="sm"
-                  className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-black py-2 h-9 rounded-lg shadow-sm transition-all active:scale-[0.98] text-xs"
-                  onClick={() => setLocation(`/properties/${selectedProperty.id}`)}
-                >
-                  운세와 상세정보 확인하기
-                </Button>
               </div>
             ) : (
-              // Ultra-Minimal Standard View - Compact
-              <div className="py-0.5">
                 <div
                   onClick={user ? openSajuModal : () => setLocation('/auth')}
-                  className="flex items-center justify-between cursor-pointer group py-2 px-3 bg-slate-50 rounded-lg border border-slate-100 hover:bg-purple-50 hover:border-purple-100 transition-all mb-2"
+                  className="flex items-center justify-between cursor-pointer group py-2 px-3 bg-slate-50 rounded-lg border border-slate-100 hover:bg-purple-50 hover:border-purple-100 transition-all mb-3"
                 >
                   <span className="text-xs text-slate-600 font-bold flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-slate-400 group-hover:text-purple-500 transition-colors" /> 내 운세와 맞을까?
+                    <Sparkles className="w-3.5 h-3.5 text-slate-400 group-hover:text-purple-500 transition-colors" /> 사주 궁합 보기
                   </span>
-                  <span className="text-[10px] text-purple-600 font-black bg-white px-1.5 py-0.5 rounded border border-purple-100 shadow-sm">분석하기</span>
+                  <span className="text-[10px] text-purple-600 font-black bg-white px-1.5 py-0.5 rounded border border-purple-100 shadow-sm">분석</span>
                 </div>
+            )}
 
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                className="flex-1 bg-slate-900 hover:bg-blue-600 text-white font-black py-2 h-9 rounded-lg shadow-sm transition-all text-xs"
+                onClick={() => setLocation(`/properties/${selectedProperty.id}`)}
+              >
+                상세 정보 보기
+              </Button>
+              {selectedProperty.source === 'naver' && (
                 <Button
                   size="sm"
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-2 h-9 rounded-lg shadow-sm transition-all active:scale-[0.98] text-xs"
-                  onClick={() => setLocation(`/properties/${selectedProperty.id}`)}
+                  className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-black py-2 h-9 rounded-lg shadow-sm transition-all text-xs"
+                  onClick={() => setLocation(`/contact?tab=inquiry&atclNo=${(selectedProperty as any).atclNo}&title=${encodeURIComponent(selectedProperty.title)}`)}
                 >
-                  상세보기
+                  문의하기
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
       </div>

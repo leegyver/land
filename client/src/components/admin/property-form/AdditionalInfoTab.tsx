@@ -42,21 +42,7 @@ export const AdditionalInfoTab: React.FC<AdditionalInfoTabProps> = ({
                 </div>
 
                 <div className="flex items-center space-x-2 pt-2 gap-4">
-                    <div className="flex items-center space-x-2">
-                        <Checkbox
-                            id="coListing"
-                            checked={formData.coListing}
-                            onCheckedChange={(checked) => {
-                                const isChecked = checked as boolean;
-                                setFormData(prev => ({
-                                    ...prev,
-                                    coListing: isChecked,
-                                    agentName: !isChecked ? "이가이버 공인중개사" : (prev.agentName === "이가이버 공인중개사" ? "" : prev.agentName)
-                                }));
-                            }}
-                        />
-                        <Label htmlFor="coListing">공동중개</Label>
-                    </div>
+
 
                     {user?.role === 'admin' && (
                         <div className="flex items-center space-x-2">

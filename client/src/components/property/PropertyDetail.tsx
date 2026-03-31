@@ -296,20 +296,29 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
     );
   }
 
-  // 상세주소 비공개 로직 (토지, 단독, 근린) - 관리자는 예외
+  // 상세주소 비공개 로직 (토지, 단독, 근린) - 관리자(admin, master) 및 매물 등록 당사자는 예외
   const privacyTypes = ["토지", "단독", "근린"];
-  const isPrivacyType = property && property.type && privacyTypes.some(t => property.type.includes(t)) && user?.role !== 'admin';
+  const isAdminOrMaster = user?.role === 'admin' || user?.role === 'master';
+  const isOwner = (user?.id && property?.agentId) ? Number(user.id) === Number(property.agentId) : false;
+  const isPrivacyType = property && property.type && privacyTypes.some(t => property.type.includes(t)) && !isAdminOrMaster && !isOwner;
   const displayAddress = property
     ? isPrivacyType
       ? `${property.district} (상세주소 비공개)`
       : `${property.district}${property.address ? ` ${property.address}` : ""}`
     : "";
 
+  // 제목/이미지 보강 로직 (대표님 요청사항)
+  const displayTitle = (property.title === "제목을 입력하세요" || !property.title || property.title.length > 50) 
+    ? (property.description && property.description.length > 5 && property.description.length < 50 
+        ? property.description 
+        : `${property.type} - ${property.district} ${property.address || ""}`)
+    : property.title;
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* 헤더 섹션 */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">{property.title}</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">{displayTitle}</h1>
         <div className="flex flex-wrap items-center gap-1 mb-1">
           {property.type && (
             <Badge className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-1">
@@ -793,10 +802,10 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
             <Badge className="bg-yellow-400 text-slate-900 font-bold border-none">PREMIUM AGENT</Badge>
           </div>
 
-          <div className="p-8 md:flex items-center gap-10">
+          <div className="p-6 py-5 md:flex items-center gap-8">
             {/* 왼쪽: 프로필 이미지/아이콘 */}
-            <div className="flex-shrink-0 mb-6 md:mb-0 relative self-center">
-              <div className="w-24 h-24 md:w-32 md:h-32 bg-slate-100 rounded-full flex items-center justify-center border-4 border-slate-900 overflow-hidden">
+            <div className="flex-shrink-0 mb-4 md:mb-0 relative self-center">
+              <div className="w-20 h-20 md:w-28 md:h-28 bg-slate-100 rounded-full flex items-center justify-center border-4 border-slate-900 overflow-hidden">
                 {property.realtorInfo.realtorPhoto ? (
                   <img
                     src={property.realtorInfo.realtorPhoto}
@@ -816,43 +825,43 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
 
             {/* 중간: 중개사 정보 */}
             <div className="flex-grow">
-              <div className="mb-4">
-                <div className="text-blue-600 font-black text-sm uppercase tracking-widest mb-1">{property.realtorInfo.businessName || "공인중개사사무소"}</div>
-                <h4 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight">
-                  {property.realtorInfo.realtorName || "이가이버 공인중개사"} <span className="text-lg md:text-xl font-bold text-slate-500">Representative</span>
+              <div className="mb-3">
+                <div className="text-blue-600 font-black text-xs md:text-sm uppercase tracking-widest mb-1">{property.realtorInfo.businessName || "공인중개사사무소"}</div>
+                <h4 className="text-2xl md:text-3xl font-black text-slate-900 leading-tight">
+                  {property.realtorInfo.realtorName || "이가이버 공인중개사"} <span className="text-base md:text-lg font-bold text-slate-500">Representative</span>
                 </h4>
               </div>
 
-              <div className="space-y-3 mb-6">
+              <div className="space-y-2 mb-2 md:mb-0">
                 <div className="flex items-center gap-3 text-slate-700 font-bold">
-                  <div className="p-2 bg-slate-100 rounded-lg">
-                    <Phone className="w-5 h-5 text-slate-900" />
+                  <div className="p-1.5 bg-slate-100 rounded-lg">
+                    <Phone className="w-4 h-4 md:w-5 md:h-5 text-slate-900" />
                   </div>
-                  <span className="text-lg md:text-xl">{property.realtorInfo.realtorPhone || "010-0000-0000"}</span>
+                  <span className="text-base md:text-lg">{property.realtorInfo.realtorPhone || "010-0000-0000"}</span>
                 </div>
 
                 {property.realtorInfo.realtorAddress && (
-                  <div className="flex items-center gap-3 text-slate-600">
-                    <div className="p-2 bg-slate-100 rounded-lg">
-                      <MapPin className="w-5 h-5 text-slate-900" />
+                  <div className="flex items-center gap-3 text-slate-600 text-sm md:text-base">
+                    <div className="p-1.5 bg-slate-100 rounded-lg">
+                      <MapPin className="w-4 h-4 text-slate-900" />
                     </div>
                     <span className="font-bold">{property.realtorInfo.realtorAddress}</span>
                   </div>
                 )}
 
                 {property.realtorInfo.realtorLicenseNo && (
-                  <div className="flex items-center gap-3 text-slate-600">
-                    <div className="p-2 bg-slate-100 rounded-lg">
-                      <FileBadge className="w-5 h-5 text-slate-900" />
+                  <div className="flex items-center gap-3 text-slate-600 text-sm md:text-base">
+                    <div className="p-1.5 bg-slate-100 rounded-lg">
+                      <FileBadge className="w-4 h-4 text-slate-900" />
                     </div>
                     <span className="font-bold">등록번호: {property.realtorInfo.realtorLicenseNo}</span>
                   </div>
                 )}
 
                 {!property.realtorInfo.realtorAddress && (
-                  <div className="flex items-center gap-3 text-slate-600">
-                    <div className="p-2 bg-slate-100 rounded-lg">
-                      <MapPin className="w-5 h-5 text-slate-900" />
+                  <div className="flex items-center gap-3 text-slate-600 text-sm md:text-base">
+                    <div className="p-1.5 bg-slate-100 rounded-lg">
+                      <MapPin className="w-4 h-4 text-slate-900" />
                     </div>
                     <span className="font-bold">{property.district} Area Expert</span>
                   </div>
@@ -861,15 +870,15 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
             </div>
 
             {/* 오른쪽: 액션 버튼 */}
-            <div className="flex-shrink-0 flex flex-col gap-3 min-w-[200px]">
+            <div className="flex-shrink-0 flex flex-col gap-2 min-w-[180px]">
               <a href={`tel:${property.realtorInfo.realtorPhone}`} className="block">
-                <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black h-14 rounded-lg flex items-center justify-center gap-3 shadow-[4px_4px_0px_0px_rgba(59,130,246,1)] active:translate-y-1 active:shadow-none transition-all">
-                  <Phone className="w-5 h-5 fill-white" />
+                <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black h-12 rounded-lg flex items-center justify-center gap-2 shadow-[3px_3px_0px_0px_rgba(59,130,246,1)] active:translate-y-1 active:shadow-none transition-all">
+                  <Phone className="w-4 h-4 fill-white" />
                   CALL NOW
                 </Button>
               </a>
               <a href={siteConfig.kakaoChannelUrl} target="_blank" rel="noopener noreferrer" className="block">
-                <Button className="w-full bg-[#FEE500] hover:bg-[#FDD000] text-[#191919] font-black h-14 rounded-lg flex items-center justify-center gap-3 shadow-[4px_4px_0px_0px_rgba(25,25,25,0.2)] active:translate-y-1 active:shadow-none transition-all">
+                <Button className="w-full bg-[#FEE500] hover:bg-[#FDD000] text-[#191919] font-black h-12 rounded-lg flex items-center justify-center gap-2 shadow-[3px_3px_0px_0px_rgba(25,25,25,0.2)] active:translate-y-1 active:shadow-none transition-all">
                   <SiKakaotalk className="w-5 h-5" />
                   CONSULT
                 </Button>
@@ -877,7 +886,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
             </div>
           </div>
 
-          <div className="bg-slate-50 px-8 py-4 border-t border-slate-100 flex flex-wrap items-center gap-6">
+          <div className="bg-slate-50 px-6 py-3 border-t border-slate-100 flex flex-wrap items-center gap-6">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
               REAL-TIME RESPONSE

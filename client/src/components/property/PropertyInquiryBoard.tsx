@@ -205,7 +205,7 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
 
   // 사용자 권한 체크 (본인이 작성한 글이거나 관리자인 경우)
   const canManageInquiry = (inquiry: PropertyInquiry) => {
-    return user?.id === inquiry.userId || user?.role === "admin";
+    return user?.id === inquiry.userId || user?.role === "admin" || user?.role === "master";
   };
 
   // 로그인하지 않은 사용자에게는 제한된 뷰를 제공, 문의 작성 제한
@@ -261,7 +261,7 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
                         </td>
                         <td className="p-3">
                           <div className="flex space-x-1">
-                            {!inquiry.isReply && user?.role === "admin" && (
+                            {!inquiry.isReply && (user?.role === "admin" || user?.role === "master") && (
                               <Button
                                 variant="outline"
                                 size="icon"
@@ -315,7 +315,7 @@ const PropertyInquiryBoard = ({ propertyId }: PropertyInquiryBoardProps) => {
                 </div>
               )}
 
-              {replyToId && user?.role === "admin" && (
+              {replyToId && (user?.role === "admin" || user?.role === "master") && (
                 <Card className="mt-6">
                   <CardContent className="pt-6">
                     <h3 className="text-lg font-bold mb-4">답변 작성</h3>

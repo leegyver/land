@@ -1,11 +1,5 @@
 
-import {
-    Carousel,
-    CarouselContent,
-    CarouselItem,
-    CarouselNext,
-    CarouselPrevious,
-} from "@/components/ui/carousel";
+
 import { Button } from "@/components/ui/button";
 import { reviews } from "@/data/reviews";
 import { ArrowRight } from "lucide-react";
@@ -14,11 +8,11 @@ import { ReviewCard } from "./ReviewCard";
 
 const ReviewSection = () => {
     return (
-        <section className="py-16 bg-[#F8FAFC]">
+        <section className="py-2 bg-[#F8FAFC]">
             <div className="container mx-auto px-4">
-                <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
+                <div className="flex flex-col md:flex-row justify-between items-end mb-2 md:mb-8 gap-2 md:gap-4">
                     <div>
-                        <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1 md:mb-2">
                             고객님들의 생생한 후기
                         </h2>
                         <p className="text-gray-600">
@@ -32,27 +26,16 @@ const ReviewSection = () => {
                     </Link>
                 </div>
 
-                <div className="relative px-2 md:px-12">
-                    <Carousel
-                        opts={{
-                            align: "start",
-                            loop: true,
-                        }}
-                        className="w-full"
-                    >
-                        <CarouselContent className="-ml-4 pb-4">
-                            {reviews.map((review) => (
-                                <CarouselItem key={review.id} className="pl-4 md:basis-1/2 lg:basis-1/3">
-                                    <ReviewCard review={review} />
-                                </CarouselItem>
-                            ))}
-                        </CarouselContent>
-                        <CarouselPrevious className="hidden md:flex -left-4" />
-                        <CarouselNext className="hidden md:flex -right-4" />
-                    </Carousel>
+                {/* Desktop: Grid / Mobile: Horizontal Scroll Slider */}
+                <div className="flex overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory md:grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 md:pb-0 md:mx-0 md:px-0 md:overflow-visible [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                    {reviews.slice(0, 3).map((review) => (
+                        <div key={review.id} className="w-[85vw] flex-none snap-center md:w-auto md:flex-initial">
+                            <ReviewCard review={review} />
+                        </div>
+                    ))}
                 </div>
 
-                <div className="mt-6 text-center md:hidden">
+                <div className="mt-2 text-center md:hidden">
                     <Link href="/reviews">
                         <Button variant="outline" className="w-full">
                             후기 더 보기 <ArrowRight className="ml-2 w-4 h-4" />

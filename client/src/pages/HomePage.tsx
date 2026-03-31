@@ -231,7 +231,7 @@ const HomePage = () => {
           {/* 추천 매물 섹션 */}
           <div className="flex justify-between items-center mb-1 mt-6">
             <h2 className="text-2xl font-bold flex items-center"><ThumbsUp className="w-6 h-6 mr-2 text-primary" />추천 매물</h2>
-            <Link href="/properties?tag=recommended">
+            <Link href="/properties?tag=featured">
               <Button variant="ghost" size="sm" className="text-gray-500 hover:text-primary">
                 더보기 <ArrowRight className="ml-1 h-3 w-3" />
               </Button>
@@ -261,7 +261,7 @@ const HomePage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
             <div className="flex flex-col h-full justify-between gap-6">
               {/* Banners integrated into Map Section */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <BannerSlider location="left" />
                 <BannerSlider location="right" />
               </div>
@@ -342,9 +342,9 @@ const HomePage = () => {
                 </h2>
                 <Link href="/news" className="text-primary hover:underline text-xs font-medium">전체보기</Link>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-[2px]">
                 {latestNews?.slice(0, 3).map((news) => (
-                  <Link key={news.id} href={`/news/${news.id}`}>
+                  <Link key={news.id} href={`/news/${news.id}`} className="block">
                     <div className="group flex gap-3 cursor-pointer">
                       <div className="w-20 h-20 flex-shrink-0 bg-gray-100 rounded-xl overflow-hidden shadow-sm">
                         <img src={news.imageUrl ?? "https://via.placeholder.com/150"} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
@@ -369,9 +369,9 @@ const HomePage = () => {
                 </h2>
                 <Link href="/community" className="text-primary hover:underline text-xs font-medium">전체보기</Link>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-[2px]">
                 {latestPosts?.slice(0, 3).map((post) => (
-                  <Link key={post.id} href={`/community/${post.id}`}>
+                  <Link key={post.id} href={`/community/${post.id}`} className="block">
                     <div className="group flex gap-3 cursor-pointer">
                       <div className="w-20 h-20 flex-shrink-0 bg-orange-50 rounded-xl overflow-hidden flex items-center justify-center shadow-sm">
                         {post.imageUrls && post.imageUrls.length > 0 ? (
@@ -408,9 +408,9 @@ const HomePage = () => {
                 </h2>
                 <a href="https://blog.naver.com/9551304" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-xs font-medium">전체보기</a>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-[2px]">
                 {latestBlogPosts?.slice(0, 3).map((post) => (
-                  <a key={post.id} href={post.link} target="_blank" rel="noopener noreferrer">
+                  <a key={post.id} href={post.link} target="_blank" rel="noopener noreferrer" className="block">
                     <div className="group flex gap-3 cursor-pointer">
                       <div className="w-20 h-20 flex-shrink-0 bg-gray-100 rounded-xl overflow-hidden shadow-sm">
                         <img

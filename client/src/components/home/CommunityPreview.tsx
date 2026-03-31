@@ -9,7 +9,7 @@ import { ko } from "date-fns/locale";
 import { getCategoryInfo } from "@/components/community/constants";
 
 const CommunityPreview = () => {
-    const { data } = useQuery<{ items: Post[]; total: number }>({
+    const { data } = useQuery<any>({
         queryKey: ["/api/posts", { limit: 6 }],
         queryFn: async () => {
             const res = await fetch("/api/posts?page=1&limit=6");
@@ -18,7 +18,8 @@ const CommunityPreview = () => {
         }
     });
 
-    const posts = data?.items || [];
+    const posts: Post[] = Array.isArray(data) ? data : (data?.items || []);
+    const displayPosts = posts.slice(0, 3);
 
     const { getCategoryName } = {
         getCategoryName: (category: string) => {
@@ -27,8 +28,8 @@ const CommunityPreview = () => {
     };
 
     return (
-        <section className="py-4 bg-slate-50/50">
-            <div className="container mx-auto px-4">
+        <section className="w-full bg-transparent">
+            <div className="w-full">
                 <div className="flex justify-between items-center mb-4">
                     <div>
                         <h2 className="text-xl font-black text-slate-900 flex items-center tracking-tight">
@@ -43,9 +44,9 @@ const CommunityPreview = () => {
                     </Link>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                    {posts.length > 0 ? (
-                        posts.map((post) => (
+                <div className="grid grid-cols-1 gap-3">
+                    {displayPosts.length > 0 ? (
+                        displayPosts.map((post) => (
                             <Link key={post.id} href={`/community/${post.id}`}>
                                 <div className="flex gap-4 p-4 rounded-3xl bg-white border border-slate-100 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 cursor-pointer items-center group relative overflow-hidden shadow-sm">
                                     <div className="w-20 h-20 flex-shrink-0 rounded-2xl overflow-hidden flex items-center justify-center bg-slate-50 border border-slate-100 relative z-10 group-hover:scale-105 transition-transform duration-500">
@@ -80,7 +81,9 @@ const CommunityPreview = () => {
                                         <div className="flex items-center gap-4 text-slate-400">
                                             <div className="flex items-center gap-1">
                                                 <User className="w-3 h-3 text-slate-300" />
-                                                <span className="text-[11px] font-bold text-slate-500">{(post as any).author?.nickname || "익명"}</span>
+                                                <span className="text-[11px] font-bold text-slate-500">
+                                                    {(post as any).author?.nickname || (post as any).author?.username?.split('@')[0] || "이가이버 파트너"}
+                                                </span>
                                             </div>
                                             <div className="flex items-center gap-3 ml-auto">
                                                 <div className="flex items-center gap-1">

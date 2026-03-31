@@ -13,8 +13,8 @@ const PropertyDetailPage = () => {
     enabled: !!id,
   });
 
-  // Naver Property Check
-  const isNaverProperty = (property as any)?.source === 'naver' || (id && id.startsWith('naver-'));
+  // Naver Property Check: Only for explicit crawled IDs
+  const isNaverProperty = id && id.startsWith('naver-');
 
   if (isNaverProperty && property) {
     return (

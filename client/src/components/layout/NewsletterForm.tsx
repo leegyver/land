@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Loader2, Mail, CheckCircle2 } from "lucide-react";
 
 const subscribeSchema = z.object({
@@ -19,6 +20,7 @@ type SubscribeFormValues = z.infer<typeof subscribeSchema>;
 const NewsletterForm = () => {
     const { toast } = useToast();
     const [isSubscribed, setIsSubscribed] = useState(false);
+    const [showAlreadySubscribed, setShowAlreadySubscribed] = useState(false);
 
     const form = useForm<SubscribeFormValues>({
         resolver: zodResolver(subscribeSchema),
@@ -41,11 +43,15 @@ const NewsletterForm = () => {
             form.reset();
         },
         onError: (error: Error) => {
-            toast({
-                variant: "destructive",
-                title: "구독 신청 실패",
-                description: error.message || "이미 구독 중인 이메일이거나 오류가 발생했습니다.",
-            });
+            if (error.message.includes("이미 구독") || error.message.includes("409")) {
+                setShowAlreadySubscribed(true);
+            } else {
+                toast({
+                    variant: "destructive",
+                    title: "구독 신청 실패",
+                    description: "오류가 발생했습니다: " + error.message,
+                });
+            }
         }
     });
 
@@ -73,7 +79,8 @@ const NewsletterForm = () => {
     }
 
     return (
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-8 md:p-12 text-white shadow-xl">
+        <>
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-8 md:p-12 text-white shadow-xl">
             {/* Decorative elements */}
             <div className="absolute top-0 right-0 -mt-8 -mr-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
             <div className="absolute bottom-0 left-0 -mb-8 -ml-8 h-32 w-32 rounded-full bg-blue-400/20 blur-2xl" />
@@ -134,6 +141,41 @@ const NewsletterForm = () => {
                 </div>
             </div>
         </div>
+            
+            {/* 이미 구독된 사용자 전용 이쁜 팝업 */}
+            <Dialog open={showAlreadySubscribed} onOpenChange={setShowAlreadySubscribed}>
+                <DialogContent className="sm:max-w-md rounded-[2rem] border-none shadow-2xl p-0 overflow-hidden bg-gradient-to-br from-blue-900 to-indigo-950">
+                    <div className="relative p-8 md:p-10 flex flex-col items-center text-center">
+                        {/* Background decorative glowing orbs */}
+                        <div className="absolute top-0 right-0 -mt-16 -mr-16 h-40 w-40 rounded-full bg-white/10 blur-3xl pointer-events-none" />
+                        <div className="absolute bottom-0 left-0 -mb-16 -ml-16 h-40 w-40 rounded-full bg-blue-400/20 blur-3xl pointer-events-none" />
+                        
+                        <div className="relative z-10 flex flex-col items-center justify-center w-full">
+                            <div className="h-24 w-24 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center mb-8 shadow-inner ring-1 ring-white/20">
+                                <Mail className="h-12 w-12 text-yellow-400 drop-shadow-md animate-pulse" />
+                            </div>
+                            
+                            <DialogTitle className="text-2xl md:text-3xl font-black text-white mb-4 tracking-tight">
+                                이미 만난 사이군요!
+                            </DialogTitle>
+                            
+                            <DialogDescription className="text-blue-100/90 text-base md:text-lg mb-8 leading-relaxed max-w-[280px] mx-auto font-medium">
+                                해당 이메일은 이미 이가이버부동산의<br/>
+                                <span className="text-white font-bold inline-block mt-1">소중한 소식통</span>에 등록되어 있습니다.<br/><br/>
+                                <span className="text-yellow-400 font-bold inline-block bg-yellow-400/10 px-3 py-1 rounded-lg">다음 뉴스레터를 기대해 주세요!</span>
+                            </DialogDescription>
+                            
+                            <Button 
+                                className="bg-white hover:bg-slate-100 text-blue-900 font-black h-14 px-10 rounded-2xl shadow-xl w-full sm:w-auto text-lg transition-transform hover:scale-105 active:scale-95"
+                                onClick={() => setShowAlreadySubscribed(false)}
+                            >
+                                확인
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 };
 

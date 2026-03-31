@@ -3,11 +3,11 @@ import PropertyCard from "@/components/property/PropertyCard";
 import { Property } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-    Carousel,
-    CarouselContent,
-    CarouselItem,
-    CarouselNext,
-    CarouselPrevious,
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
 } from "@/components/ui/carousel";
 
 interface PropertySectionProps {
@@ -17,7 +17,7 @@ interface PropertySectionProps {
     limit?: number;
 }
 
-const PropertySection = ({ title, queryKey, bgColor = "bg-white", limit = 4 }: PropertySectionProps) => {
+const PropertySection = ({ title, queryKey, bgColor = "bg-white", limit = 12 }: PropertySectionProps) => {
     const { data: properties, isLoading, error } = useQuery<Property[]>({
         queryKey: [queryKey],
     });
@@ -29,8 +29,8 @@ const PropertySection = ({ title, queryKey, bgColor = "bg-white", limit = 4 }: P
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-2xl font-bold">{title}</h2>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {[...Array(limit)].map((_, index) => (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {[...Array(4)].map((_, index) => (
                             <div key={index} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200">
                                 <Skeleton className="h-60 w-full" />
                                 <div className="p-6">
@@ -66,40 +66,36 @@ const PropertySection = ({ title, queryKey, bgColor = "bg-white", limit = 4 }: P
         );
     }
 
+    const displayProperties = properties.slice(0, 12);
+
     return (
-        <section className={`py-4 ${bgColor}`}>
+        <section className={`py-1 ${bgColor}`}>
             <div className="container mx-auto px-4">
                 {title && (
-                    <div className="text-left mb-4">
+                    <div className="text-left mb-6">
                         <h2 className="text-xl md:text-2xl font-bold text-slate-900">{title}</h2>
                     </div>
                 )}
 
-                {/* Desktop Grid View */}
-                <div className="hidden lg:grid grid-cols-4 gap-4">
-                    {properties.slice(0, limit).map((property) => (
-                        <PropertyCard key={property.id} property={property} />
-                    ))}
-                </div>
-
-                {/* Mobile/Tablet Carousel View */}
-                <div className="lg:hidden">
+                <div className="relative px-0 md:px-4">
                     <Carousel
                         opts={{
                             align: "start",
-                            loop: true,
+                            loop: false,
                         }}
                         className="w-full"
                     >
-                        <CarouselContent className="-ml-2 md:-ml-4">
-                            {properties.slice(0, limit).map((property) => (
-                                <CarouselItem key={property.id} className="pl-2 md:pl-4 basis-[85%] md:basis-[45%]">
+                        <CarouselContent className="">
+                            {displayProperties.map((property) => (
+                                <CarouselItem key={property.id} className="pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
                                     <PropertyCard property={property} />
                                 </CarouselItem>
                             ))}
                         </CarouselContent>
-                        {/* <CarouselPrevious className="hidden md:flex" />
-                        <CarouselNext className="hidden md:flex" /> */}
+                        <div className="hidden md:flex">
+                            <CarouselPrevious className="-left-4 border-slate-200 bg-white hover:bg-slate-100 shadow-md" />
+                            <CarouselNext className="-right-4 border-slate-200 bg-white hover:bg-slate-100 shadow-md" />
+                        </div>
                     </Carousel>
                 </div>
             </div>

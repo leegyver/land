@@ -5,6 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatKoreanPrice } from "@/lib/formatter";
 import { siteConfig } from "@/config/siteConfig";
+import { useSaju } from "@/contexts/SajuContext";
+import { getCompatibilityScore } from "@/lib/saju";
+import { Sparkles } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { useMemo } from "react";
 
 interface CompactPropertyItemProps {
     property: Property;
@@ -20,6 +25,17 @@ const hasValidPrice = (value: string | number | null | undefined): boolean => {
 
 const CompactPropertyItem = ({ property }: CompactPropertyItemProps) => {
     const phoneNumber = siteConfig.phoneNumber;
+    const { user } = useAuth();
+    const { sajuData } = useSaju();
+
+    const compatibility = useMemo(() => {
+        if (!user || !sajuData || !property) return null;
+        return getCompatibilityScore(sajuData, {
+            id: property.id,
+            direction: property.direction,
+            floor: property.floor
+        });
+    }, [user, sajuData, property]);
 
     return (
         <div className="bg-white border border-slate-100 rounded-2xl hover:border-blue-200 hover:shadow-lg hover:shadow-slate-200/50 transition-all p-3 group relative h-full flex flex-col justify-between">
@@ -37,6 +53,15 @@ const CompactPropertyItem = ({ property }: CompactPropertyItemProps) => {
                         {property.district}
                     </div>
                 </div>
+
+                {compatibility && (
+                    <div className="flex w-full mb-1">
+                        <Badge className="bg-purple-600/90 text-white border-purple-400/20 font-bold shadow-sm px-2 py-0.5 rounded-full text-[10px] backdrop-blur-md flex items-center gap-1">
+                            <Sparkles className="w-3 h-3" />
+                            사주 궁합 {compatibility.score}점
+                        </Badge>
+                    </div>
+                )}
 
                 <Link href={`/properties/${property.id}`}>
                     <h3 className="text-sm md:text-base font-black text-slate-800 line-clamp-2 group-hover:text-blue-600 transition-colors cursor-pointer leading-tight tracking-tight h-10">

@@ -108,6 +108,9 @@ function PropertyFormContent() {
         youtubeUrl: "", // 유튜브 영상 URL
         featuredImageIndex: 0, // 대표 이미지 인덱스 추가
         ownerId: null, // 소유자 ID (중개사 ID) 추가
+        isActive: true, // 활성 상태 추가
+        isSold: false, // 매각 여부 추가
+        isVisible: true, // 노출 여부 추가
     });
 
     // 편집 모드일 경우 기존 데이터 로드
@@ -170,6 +173,9 @@ function PropertyFormContent() {
                         coListing: safeBoolean(data.coListing),
                         featured: safeBoolean(data.featured),
                         isLongTerm: safeBoolean(data.isLongTerm),
+                        isActive: data.isActive !== undefined ? safeBoolean(data.isActive) : true,
+                        isSold: safeBoolean(data.isSold),
+                        isVisible: data.isVisible !== undefined ? safeBoolean(data.isVisible) : true,
 
                         agentName: safeString(data.agentName) || (!safeBoolean(data.coListing) ? "이가이버 공인중개사" : ""),
 
@@ -325,18 +331,29 @@ function PropertyFormContent() {
                 featuredImageIndex: featuredImageIndex
             };
 
-            // 이미지 전처리 로직
+            // 이미지 전처리 로직 및 대표이미지 정렬
             if (!formData.imageUrls || formData.imageUrls.length === 0) {
                 try {
                     const defaultImage = getDefaultImageForPropertyType(formData.type);
                     submissionData.imageUrls = [defaultImage];
                     submissionData.imageUrl = defaultImage;
+                    submissionData.featuredImageIndex = 0;
                     console.log(`이미지가 없어 기본 이미지를 적용합니다. 유형: ${formData.type}, 이미지: ${defaultImage}`);
                 } catch (error) {
                     console.error("기본 이미지 적용 중 오류 발생:", error);
                 }
-            } else if (formData.imageUrls && formData.imageUrls.length > 0 && featuredImageIndex >= 0) {
-                submissionData.imageUrl = formData.imageUrls[featuredImageIndex] || formData.imageUrls[0];
+            } else if (formData.imageUrls && formData.imageUrls.length > 0) {
+                // 대표 이미지를 무조건 배열의 0번째 인덱스로 переме(이동)합니다.
+                let updatedImageUrls = [...formData.imageUrls];
+                
+                if (featuredImageIndex > 0 && featuredImageIndex < updatedImageUrls.length) {
+                    const featuredImage = updatedImageUrls.splice(featuredImageIndex, 1)[0];
+                    updatedImageUrls.unshift(featuredImage); // 배열 맨 앞에 추가
+                }
+                
+                submissionData.imageUrls = updatedImageUrls;
+                submissionData.imageUrl = updatedImageUrls[0];
+                submissionData.featuredImageIndex = 0; // 프론트엔드/백엔드 모두 최우선 인덱스는 이제 항상 0입니다.
             }
 
             console.log("부동산 저장 요청 데이터:", submissionData);
@@ -396,7 +413,7 @@ function PropertyFormContent() {
                     <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setLocation("/admin")}
+                        onClick={() => window.history.back()}
                         className="mr-2 h-9 px-3 rounded-full hover:bg-slate-100"
                     >
                         <ArrowLeft className="h-4 w-4 mr-2" />
@@ -486,7 +503,7 @@ function PropertyFormContent() {
                             type="button"
                             variant="outline"
                             size="lg"
-                            onClick={() => setLocation("/admin")}
+                            onClick={() => window.history.back()}
                             className="flex-1 sm:flex-none border-slate-300 hover:bg-slate-100 hover:text-slate-900 rounded-xl font-medium"
                         >
                             취소

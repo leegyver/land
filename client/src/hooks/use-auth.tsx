@@ -9,6 +9,7 @@ import { User, insertUserSchema } from "@shared/schema";
 import { getQueryFn, apiRequest } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { useLocation } from "wouter";
 
 // 로그인 데이터 타입
 type LoginData = {
@@ -18,7 +19,7 @@ type LoginData = {
 
 // 회원가입 데이터 스키마 (비밀번호 확인, 이메일, 전화번호 추가)
 export const registerSchema = insertUserSchema.extend({
-  email: z.string().email("유효한 이메일 주소를 입력해주세요").optional(),
+  email: z.union([z.string().email("유효한 이메일 주소를 입력해주세요"), z.literal("")]).optional(),
   phone: z.string().optional(),
   nickname: z.string().optional(),
   birthDate: z.string().optional(),
@@ -49,6 +50,7 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
 
   // 현재 로그인한 사용자 정보 조회
   const {
@@ -130,6 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "로그아웃",
         description: "로그아웃 되었습니다.",
       });
+      setLocation("/");
     },
     onError: (error: Error) => {
       toast({

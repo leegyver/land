@@ -10,13 +10,16 @@ export default defineConfig(async ({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
   return {
+    define: {
+      'import.meta.env.VITE_KAKAO_MAP_KEY': JSON.stringify(env.VITE_KAKAO_MAP_KEY || env.KAKAO_API_KEY || ""),
+    },
     plugins: [
       react(),
       runtimeErrorOverlay(),
       // Custom plugin to inject Kakao Map script
       {
         name: "html-transform",
-        transformIndexHtml(html) {
+        transformIndexHtml(html: string) {
           // 사용자가 VITE_KAKAO_MAP_KEY를 지우고 KAKAO_API_KEY를 같이 쓰기로 함
           // 둘 중 하나라도 있으면 사용
           const kakaoKey = env.VITE_KAKAO_MAP_KEY || env.KAKAO_API_KEY;

@@ -1,160 +1,260 @@
+import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
+import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// --- Property ---
-export const propertySchema = z.object({
-  id: z.number(),
+// Property schema - Matched to actual SQLite column names (camelCase)
+export const properties = sqliteTable("properties", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  type: text("type").notNull(),
+  price: text("price").notNull(),
+  address: text("address").notNull(),
+  district: text("district").notNull(),
+  size: text("size").notNull(),
+  bedrooms: integer("bedrooms").notNull(),
+  bathrooms: integer("bathrooms").notNull(),
+  imageUrl: text("imageUrl").notNull(),
+  imageUrls: text("imageUrls"),
+  featuredImageIndex: integer("featuredImageIndex"),
+  agentId: integer("agentId").notNull(),
+  featured: integer("featured", { mode: 'boolean' }).default(false),
+  displayOrder: integer("displayOrder").default(0),
+  isUrgent: integer("isUrgent", { mode: 'boolean' }).default(false),
+  urgentOrder: integer("urgentOrder").default(0),
+  isNegotiable: integer("isNegotiable", { mode: 'boolean' }).default(false),
+  negotiableOrder: integer("negotiableOrder").default(0),
+  isVisible: integer("isVisible", { mode: 'boolean' }).default(true),
+  isActive: integer("isActive", { mode: 'boolean' }).default(true),
+  createdAt: text("createdAt"),
+
+  updatedAt: text("updatedAt"),
+  buildingName: text("buildingName"),
+  unitNumber: text("unitNumber"),
+  supplyArea: text("supplyArea"),
+  privateArea: text("privateArea"),
+  areaSize: text("areaSize"),
+  floor: integer("floor"),
+  totalFloors: integer("totalFloors"),
+  direction: text("direction"),
+  elevator: integer("elevator", { mode: 'boolean' }),
+  parking: text("parking"),
+  heatingSystem: text("heatingSystem"),
+  approvalDate: text("approvalDate"),
+  landType: text("landType"),
+  zoneType: text("zoneType"),
+  dealType: text("dealType"),
+  deposit: text("deposit"),
+  depositAmount: text("depositAmount"),
+  monthlyRent: text("monthlyRent"),
+  maintenanceFee: text("maintenanceFee"),
+  ownerName: text("ownerName"),
+  ownerPhone: text("ownerPhone"),
+  tenantName: text("tenantName"),
+  tenantPhone: text("tenantPhone"),
+  clientName: text("clientName"),
+  clientPhone: text("clientPhone"),
+  specialNote: text("specialNote"),
+  coListing: integer("coListing", { mode: 'boolean' }).default(false),
+  agentName: text("agentName"),
+  propertyDescription: text("propertyDescription"),
+  privateNote: text("privateNote"),
+  youtubeUrl: text("youtubeUrl"),
+  isSold: integer("isSold", { mode: 'boolean' }).default(false),
+  viewCount: integer("viewCount").default(0),
+  isLongTerm: integer("isLongTerm", { mode: 'boolean' }).default(false),
+  longTermOrder: integer("longTermOrder").default(0),
+  latitude: real("latitude"),
+  longitude: real("longitude"),
+  source: text("source"),
+  atclNo: text("atclNo"),
+  ownerId: integer("ownerId"),
+});
+
+// 헬퍼: Drizzle의 inferred insert type에서 Zod schema 생성시 발생하는 추론 오류(SomeType) 방지용 수동 정의
+export const insertPropertySchema = z.object({
   title: z.string(),
-  description: z.string(),
+  description: z.string().optional(),
   type: z.string(),
-  price: z.string().or(z.number()),
-  address: z.string(),
-  district: z.string(),
-  size: z.string().or(z.number()),
-  bedrooms: z.number(),
-  bathrooms: z.number(),
-  imageUrl: z.string(),
-  imageUrls: z.array(z.string()).optional().default([]),
-  featuredImageIndex: z.number().optional().nullable(),
-  agentId: z.number(),
-  featured: z.boolean().default(false).optional(),
-  displayOrder: z.number().default(0).optional(),
-
-  // New fields for Urgent and Negotiable sections
-  isUrgent: z.boolean().default(false).optional(),
-  urgentOrder: z.number().default(0).optional(),
-  isNegotiable: z.boolean().default(false).optional(),
-  negotiableOrder: z.number().default(0).optional(),
-  isLongTerm: z.boolean().default(false).optional(),
-  longTermOrder: z.number().default(0).optional(),
-
-  isVisible: z.boolean().default(true).optional(),
-  createdAt: z.date().or(z.string()).optional(),
-  updatedAt: z.date().or(z.string()).optional(),
-
-  // Optional fields
-  buildingName: z.string().optional().nullable(),
-  unitNumber: z.string().optional().nullable(),
-  supplyArea: z.string().or(z.number()).optional().nullable(),
-  privateArea: z.string().or(z.number()).optional().nullable(),
-  areaSize: z.string().optional().nullable(),
-  floor: z.number().optional().nullable(),
-  totalFloors: z.number().optional().nullable(),
-  direction: z.string().optional().nullable(),
-  elevator: z.boolean().optional().nullable(),
-  parking: z.string().optional().nullable(),
-  heatingSystem: z.string().optional().nullable(),
-  approvalDate: z.string().optional().nullable(),
-  landType: z.string().optional().nullable(),
-  zoneType: z.string().optional().nullable(),
-  dealType: z.array(z.string()).optional().nullable(),
-  deposit: z.string().or(z.number()).optional().nullable(),
-  depositAmount: z.string().or(z.number()).optional().nullable(),
-  monthlyRent: z.string().or(z.number()).optional().nullable(),
-  maintenanceFee: z.string().or(z.number()).optional().nullable(),
-  ownerName: z.string().optional().nullable(),
-  ownerPhone: z.string().optional().nullable(),
-  tenantName: z.string().optional().nullable(),
-  tenantPhone: z.string().optional().nullable(),
-  clientName: z.string().optional().nullable(),
-  clientPhone: z.string().optional().nullable(),
-  specialNote: z.string().optional().nullable(),
-  coListing: z.boolean().default(false).optional(),
-  agentName: z.string().optional().nullable(),
-  propertyDescription: z.string().optional().nullable(),
-  privateNote: z.string().optional().nullable(),
-  youtubeUrl: z.string().optional().nullable(),
-  latitude: z.number().optional().nullable(),
-  longitude: z.number().optional().nullable(),
-  isSold: z.boolean().default(false).optional(),
-  viewCount: z.number().default(0).optional(),
-  source: z.string().optional().nullable(), // 'naver' or undefined
-  atclNo: z.string().optional().nullable(), // Naver Article ID for imported properties
-  ownerId: z.number().optional().nullable(), // The user ID of the realtor who owns this property
+  price: z.string().optional(),
+  address: z.string().optional(),
+  district: z.string().optional(),
+  size: z.string().optional(),
+  bedrooms: z.number().optional(),
+  bathrooms: z.number().optional(),
+  imageUrl: z.string().optional(),
+  imageUrls: z.array(z.string()).optional(),
+  agentId: z.number().optional(),
+  featured: z.boolean().optional(),
+  displayOrder: z.number().optional(),
+  isUrgent: z.boolean().optional(),
+  isNegotiable: z.boolean().optional(),
+  isVisible: z.boolean().optional(),
+  buildingName: z.string().nullable().optional(),
+  unitNumber: z.string().nullable().optional(),
+  supplyArea: z.string().nullable().optional(),
+  privateArea: z.string().nullable().optional(),
+  areaSize: z.string().nullable().optional(),
+  floor: z.number().nullable().optional(),
+  totalFloors: z.number().nullable().optional(),
+  direction: z.string().nullable().optional(),
+  elevator: z.boolean().nullable().optional(),
+  parking: z.string().nullable().optional(),
+  heatingSystem: z.string().nullable().optional(),
+  approvalDate: z.string().nullable().optional(),
+  landType: z.string().nullable().optional(),
+  zoneType: z.string().nullable().optional(),
+  dealType: z.array(z.string()).optional(),
+  deposit: z.string().nullable().optional(),
+  depositAmount: z.string().nullable().optional(),
+  monthlyRent: z.string().nullable().optional(),
+  maintenanceFee: z.string().nullable().optional(),
+  ownerName: z.string().nullable().optional(),
+  ownerPhone: z.string().nullable().optional(),
+  tenantName: z.string().nullable().optional(),
+  tenantPhone: z.string().nullable().optional(),
+  clientName: z.string().nullable().optional(),
+  clientPhone: z.string().nullable().optional(),
+  specialNote: z.string().nullable().optional(),
+  coListing: z.boolean().optional(),
+  agentName: z.string().nullable().optional(),
+  propertyDescription: z.string().nullable().optional(),
+  privateNote: z.string().nullable().optional(),
+  youtubeUrl: z.string().nullable().optional(),
+  latitude: z.number().nullable().optional(),
+  longitude: z.number().nullable().optional(),
+  isSold: z.boolean().optional(),
+  viewCount: z.number().optional(),
+  ownerId: z.number().nullable().optional(),
+  atclNo: z.string().nullable().optional(),
+  source: z.string().nullable().optional(),
+  urgentOrder: z.number().optional(),
+  negotiableOrder: z.number().optional(),
+  isLongTerm: z.boolean().optional(),
+  longTermOrder: z.number().optional(),
 });
 
-export type Property = z.infer<typeof propertySchema>;
-
-export const insertPropertySchema = propertySchema.omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
-}).extend({
-  // Form data preprocessing
-  price: z.union([z.string(), z.number()]).optional().transform(val => val === "" || val === undefined || val === null ? "0" : String(val)),
+// User schema
+export const users = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
+  email: text("email"),
+  phone: text("phone"),
+  role: text("role").default("user").notNull(),
+  provider: text("provider"),
+  providerId: text("providerId"),
+  birthDate: text("birthDate"),
+  birthTime: text("birthTime"),
+  isLunar: integer("isLunar", { mode: 'boolean' }).default(false),
+  realtorPhoto: text("realtorPhoto"),
+  realtorAddress: text("realtorAddress"),
+  businessLicenseNo: text("realtorLicenseNo"),
+  subscriptionTier: text("subscriptionTier").default("free"),
+  nickname: text("nickname"),
+  businessName: text("businessName"),
+  realtorName: text("realtorName"),
+  realtorPhone: text("realtorPhone"),
+  isActive: integer("isActive", { mode: 'boolean' }).default(true),
+  isVerified: integer("isVerified", { mode: 'boolean' }).default(false),
+  subscriptionExpiresAt: text("subscriptionExpiresAt"),
+  createdAt: text("createdAt"),
 });
-export type InsertProperty = z.infer<typeof insertPropertySchema>;
 
-// --- Agent ---
-export const agentSchema = z.object({
-  id: z.number(),
+export const insertUserSchema = z.object({
+  username: z.string(),
+  password: z.string(),
+  email: z.string().nullable().optional(),
+  phone: z.string().min(1, "전화번호를 입력해주세요."),
+  role: z.string().optional(),
+  provider: z.string().nullable().optional(),
+  providerId: z.string().nullable().optional(),
+  birthDate: z.string().nullable().optional(),
+  birthTime: z.string().nullable().optional(),
+  isLunar: z.boolean().optional(),
+  realtorPhoto: z.string().nullable().optional(),
+  realtorAddress: z.string().nullable().optional(),
+  businessLicenseNo: z.string().nullable().optional(),
+  subscriptionTier: z.string().optional(),
+  nickname: z.string().nullable().optional(),
+  businessName: z.string().nullable().optional(),
+  realtorName: z.string().nullable().optional(),
+  realtorPhone: z.string().nullable().optional(),
+  isActive: z.boolean().optional(),
+  isVerified: z.boolean().optional(),
+  subscriptionExpiresAt: z.string().nullable().optional(),
+});
+export const agents = sqliteTable("agents", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  email: text("email"),
+  phone: text("phone"),
+  position: text("position"),
+  photo: text("photo"),
+  bio: text("bio"),
+  isActive: integer("isActive", { mode: 'boolean' }).default(true),
+  createdAt: text("createdAt"),
+});
+
+export const insertAgentSchema = z.object({
   name: z.string(),
-  email: z.string().optional().nullable(),
-  phone: z.string().optional().nullable(),
-  position: z.string().optional().nullable(),
-  photo: z.string().optional().nullable(),
-  bio: z.string().optional().nullable(),
-  isActive: z.boolean().default(true).optional(),
-  createdAt: z.date().optional()
+  email: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  position: z.string().nullable().optional(),
+  photo: z.string().nullable().optional(),
+  bio: z.string().nullable().optional(),
+  isActive: z.boolean().optional(),
 });
-export type Agent = z.infer<typeof agentSchema>;
-export const insertAgentSchema = agentSchema.omit({ id: true, createdAt: true });
-export type InsertAgent = z.infer<typeof insertAgentSchema>;
 
-// --- Inquiry ---
-export const inquirySchema = z.object({
-  id: z.number(),
+// Inquiry schema
+export const inquiries = sqliteTable("inquiries", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone").notNull(),
+  message: text("message").notNull(),
+  inquiryType: text("inquiryType").notNull(),
+  propertyId: integer("propertyId"),
+  createdAt: text("createdAt"),
+});
+
+export const insertInquirySchema = z.object({
   name: z.string(),
   email: z.string(),
   phone: z.string(),
   message: z.string(),
   inquiryType: z.string(),
-  propertyId: z.number().optional().nullable(),
-  createdAt: z.date().optional()
+  propertyId: z.number().nullable().optional(),
 });
-export type Inquiry = z.infer<typeof inquirySchema>;
-export const insertInquirySchema = inquirySchema.omit({ id: true, createdAt: true });
-export type InsertInquiry = z.infer<typeof insertInquirySchema>;
 
-// --- User ---
-export const userSchema = z.object({
-  id: z.number(),
-  username: z.string(),
-  password: z.string(),
-  email: z.string().optional().nullable(),
-  phone: z.string().optional().nullable(),
-  nickname: z.string().optional().nullable(),
-  role: z.string().default("user").optional(),
-  provider: z.string().optional().nullable(),
-  providerId: z.string().or(z.number()).optional().nullable(),
-  birthDate: z.string().optional().nullable(), // YYYY-MM-DD
-  birthTime: z.string().optional().nullable(),  // HH:MM
-  isLunar: z.boolean().default(false).optional(), // Added: Lunar Calendar flag
-  businessName: z.string().optional().nullable(), // Realtor's business name
-  realtorName: z.string().optional().nullable(),   // Realtor's actual name
-  realtorPhone: z.string().optional().nullable(), // Realtor's contact phone
-});
-export type User = z.infer<typeof userSchema>;
-export const insertUserSchema = userSchema.pick({
-  username: true,
-  password: true,
-  email: true,
-  phone: true,
-  nickname: true,
-  role: true,
-  provider: true,
-  providerId: true,
-  birthDate: true,
-  birthTime: true,
-  isLunar: true,
-  businessName: true,
-  realtorName: true,
-  realtorPhone: true
-});
+
+
+export type Property = typeof properties.$inferSelect;
+export type InsertProperty = z.infer<typeof insertPropertySchema>;
+export type Agent = typeof agents.$inferSelect;
+export type InsertAgent = z.infer<typeof insertAgentSchema>;
+export type Inquiry = typeof inquiries.$inferSelect;
+export type InsertInquiry = z.infer<typeof insertInquirySchema>;
+export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
-// --- News ---
-export const newsSchema = z.object({
-  id: z.number(),
+// News schema
+export const news = sqliteTable("news", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  summary: text("summary").notNull(),
+  description: text("description").notNull(),
+  content: text("content").notNull(),
+  source: text("source").notNull(),
+  sourceUrl: text("sourceUrl").notNull(),
+  url: text("url").notNull(),
+  imageUrl: text("imageUrl"),
+  category: text("category").notNull(),
+  isPinned: integer("isPinned", { mode: 'boolean' }).default(false),
+  createdAt: text("createdAt"),
+});
+
+export const insertNewsSchema = z.object({
   title: z.string(),
   summary: z.string(),
   description: z.string(),
@@ -162,152 +262,283 @@ export const newsSchema = z.object({
   source: z.string(),
   sourceUrl: z.string(),
   url: z.string(),
-  imageUrl: z.string().optional().nullable(),
+  imageUrl: z.string().nullable().optional(),
   category: z.string(),
-  isPinned: z.boolean().default(false).optional(),
-  createdAt: z.date().optional()
+  isPinned: z.boolean().optional(),
 });
-export type News = z.infer<typeof newsSchema>;
-export const insertNewsSchema = newsSchema.omit({ id: true, createdAt: true });
+
+export type News = typeof news.$inferSelect;
 export type InsertNews = z.infer<typeof insertNewsSchema>;
 
-// --- PropertyInquiry ---
-export const propertyInquirySchema = z.object({
-  id: z.number(),
+// Property inquiry board schema
+export const propertyInquiries = sqliteTable("property_inquiries", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  propertyId: integer("propertyId").notNull(),
+  userId: integer("userId").notNull(),
+  title: text("title"), // UI에서 입력받지 않으므로 선택 사항으로 변경
+  content: text("content").notNull(),
+  isReply: integer("isReply", { mode: 'boolean' }).default(false).notNull(),
+  parentId: integer("parentId"),
+  isReadByAdmin: integer("isReadByAdmin", { mode: 'boolean' }).default(false).notNull(),
+  createdAt: text("createdAt"),
+});
+
+export const insertPropertyInquirySchema = z.object({
   propertyId: z.number(),
   userId: z.number(),
-  title: z.string(),
+  title: z.string().nullable().optional(),
   content: z.string(),
-  isReply: z.boolean().default(false).optional(),
-  parentId: z.number().optional().nullable(),
-  isReadByAdmin: z.boolean().default(false).optional(),
-  createdAt: z.date().optional()
+  isReply: z.boolean().optional(),
+  parentId: z.number().nullable().optional(),
+  isReadByAdmin: z.boolean().optional(),
 });
-export type PropertyInquiry = z.infer<typeof propertyInquirySchema>;
-export const insertPropertyInquirySchema = propertyInquirySchema.omit({ id: true, createdAt: true });
+
+export type PropertyInquiry = typeof propertyInquiries.$inferSelect;
 export type InsertPropertyInquiry = z.infer<typeof insertPropertyInquirySchema>;
 
-// --- Favorite ---
-export const favoriteSchema = z.object({
-  id: z.number(),
+// Favorites schema
+export const favorites = sqliteTable("favorites", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("userId").notNull(),
+  propertyId: integer("propertyId").notNull(),
+  createdAt: text("createdAt").notNull(),
+});
+
+export const insertFavoriteSchema = z.object({
   userId: z.number(),
   propertyId: z.number(),
-  createdAt: z.date().optional()
 });
-export type Favorite = z.infer<typeof favoriteSchema>;
-export const insertFavoriteSchema = favoriteSchema.omit({ id: true, createdAt: true });
+
+export type Favorite = typeof favorites.$inferSelect;
 export type InsertFavorite = z.infer<typeof insertFavoriteSchema>;
 
-// --- Banner ---
-export const bannerSchema = z.object({
-  id: z.number(),
-  location: z.string(), // 'left' or 'right'
-  title: z.string().optional().nullable(),
-  description: z.string().optional().nullable(),
-  imageUrl: z.string(),
-  linkUrl: z.string().optional().nullable(),
-  openNewWindow: z.boolean().default(false),
-  displayOrder: z.number().default(0),
-  createdAt: z.date().optional()
+// Notices schema
+export const notices = sqliteTable("notices", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  imageUrls: text("imageUrls", { mode: "json" }).$type<string[]>(),
+  isPinned: integer("isPinned", { mode: 'boolean' }).default(false),
+  authorId: integer("authorId"),
+  viewCount: integer("viewCount").default(0),
+  createdAt: text("createdAt"),
+  updatedAt: text("updatedAt"),
 });
-export type Banner = z.infer<typeof bannerSchema>;
-export const insertBannerSchema = bannerSchema.omit({ id: true, createdAt: true });
-export type InsertBanner = z.infer<typeof insertBannerSchema>;
 
-// --- Notice ---
-export const noticeSchema = z.object({
-  id: z.number(),
+export const insertNoticeSchema = z.object({
   title: z.string(),
   content: z.string(),
-  imageUrls: z.array(z.string()).optional().default([]),
-  isPinned: z.boolean().default(false).optional(),
-  authorId: z.number().optional().nullable(),
-  viewCount: z.number().default(0).optional(),
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional()
+  imageUrls: z.array(z.string()).optional(),
+  isPinned: z.boolean().optional(),
+  authorId: z.number().optional(),
 });
-export type Notice = z.infer<typeof noticeSchema>;
-export const insertNoticeSchema = noticeSchema.omit({ id: true, createdAt: true, updatedAt: true, viewCount: true });
+export type Notice = typeof notices.$inferSelect;
 export type InsertNotice = z.infer<typeof insertNoticeSchema>;
 
-// --- Crawled Property ---
-export const crawledPropertySchema = z.object({
-  id: z.number(),
-  atclNo: z.string(), // Naver Article ID
-  atclNm: z.string(), // Title/Name
-  rletTpNm: z.string(), // Real Estate Type Name (e.g. 토지)
-  tradTpNm: z.string(), // Trade Type Name (e.g. 매매)
-  flrInfo: z.string().optional().nullable(), // Floor Info
-  prc: z.string().or(z.number()), // Price (Man Won or string)
-  rentPrc: z.string().or(z.number()).optional().nullable(), // Monthly Rent (월세액)
-  depositPrc: z.string().or(z.number()).optional().nullable(), // Deposit for Monthly Rent/Jeonse
-  spc1: z.string().or(z.number()).optional().nullable(), // Area 1
-  spc2: z.string().or(z.number()).optional().nullable(), // Area 2
-  direction: z.string().optional().nullable(),
-  lat: z.number().optional().nullable(),
-  lng: z.number().optional().nullable(),
-  imgUrl: z.string().optional().nullable(),
-  rltrNm: z.string().optional().nullable(), // Realtor Name
-  landType: z.string().optional().nullable(), // Land Category (지목)
-  zoneType: z.string().optional().nullable(), // Zone Type (용도지역)
-  crawledAt: z.date().optional()
+// Posts (Community) schema
+export const posts = sqliteTable("posts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  category: text("category").notNull().default("free"),
+  authorId: integer("authorId").notNull(),
+  authorName: text("authorName"),
+  imageUrls: text("imageUrls", { mode: "json" }).$type<string[]>(),
+  viewCount: integer("viewCount").default(0),
+  likeCount: integer("likeCount").default(0),
+  commentCount: integer("commentCount").default(0),
+  isPinned: integer("isPinned", { mode: 'boolean' }).default(false),
+  createdAt: text("createdAt"),
+  updatedAt: text("updatedAt"),
 });
-export type CrawledProperty = z.infer<typeof crawledPropertySchema>;
-export const insertCrawledPropertySchema = crawledPropertySchema.omit({ id: true, crawledAt: true });
-export type InsertCrawledProperty = z.infer<typeof insertCrawledPropertySchema>;
 
-// --- Posts (Community) ---
-export const postSchema = z.object({
-  id: z.number(),
-  category: z.string(), // 'qna', 'architecture', 'story'
+export const insertPostSchema = z.object({
   title: z.string(),
   content: z.string(),
-  imageUrls: z.array(z.string()).optional().default([]),
-  authorId: z.number().optional().nullable(),
-  viewCount: z.number().default(0).optional(),
-  createdAt: z.date().or(z.string()).optional(),
-  updatedAt: z.date().or(z.string()).optional(),
+  category: z.string().optional(),
+  authorId: z.number().optional(),
+  authorName: z.string().optional(),
+  imageUrls: z.array(z.string()).optional(),
+  isPinned: z.boolean().optional(),
 });
-export type Post = z.infer<typeof postSchema>;
-export const insertPostSchema = postSchema.omit({ id: true, createdAt: true, updatedAt: true, viewCount: true });
+export type Post = typeof posts.$inferSelect;
 export type InsertPost = z.infer<typeof insertPostSchema>;
 
-// --- Post Comments ---
-export const postCommentSchema = z.object({
-  id: z.number(),
+// Comments schema
+export const comments = sqliteTable("comments", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  postId: integer("postId").notNull(),
+  authorId: integer("authorId").notNull(),
+  content: text("content").notNull(),
+  imageUrl: text("imageUrl"),
+  createdAt: text("createdAt"),
+});
+
+export const insertCommentSchema = z.object({
   postId: z.number(),
   authorId: z.number(),
-  parentId: z.number().optional().nullable(), // For future replies
   content: z.string(),
-  imageUrl: z.string().optional().nullable(),
-  createdAt: z.date().or(z.string()).optional(),
-  updatedAt: z.date().or(z.string()).optional()
+  imageUrl: z.string().optional(),
 });
-export type PostComment = z.infer<typeof postCommentSchema>;
-export const insertPostCommentSchema = postCommentSchema.omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertPostComment = z.infer<typeof insertPostCommentSchema>;
+export type Comment = typeof comments.$inferSelect;
+export type InsertComment = z.infer<typeof insertCommentSchema>;
 
-// --- Newsletter Subscription ---
-export const newsletterSubscriptionSchema = z.object({
-  id: z.number(),
+// Banners schema
+export const banners = sqliteTable("banners", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title"),
+
+  imageUrl: text("imageUrl").notNull(),
+  linkUrl: text("linkUrl"),
+  location: text("location").notNull().default("left"),
+  openNewWindow: integer("openNewWindow", { mode: 'boolean' }).default(false),
+  isActive: integer("isActive", { mode: 'boolean' }).default(true),
+  displayOrder: integer("displayOrder").default(0),
+  createdAt: text("createdAt"),
+});
+
+export const insertBannerSchema = z.object({
+  title: z.string().nullable().optional(),
+  imageUrl: z.string(),
+  displayOrder: z.number().optional(),
+  isActive: z.boolean().optional(),
+  linkUrl: z.string().nullable().optional(),
+  location: z.string().nullable().optional(),
+  openNewWindow: z.boolean().optional(),
+});
+export type Banner = typeof banners.$inferSelect;
+export type InsertBanner = z.infer<typeof insertBannerSchema>;
+
+// Newsletter Subscriptions schema
+export const newsletterSubscriptions = sqliteTable("newsletter_subscriptions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  email: text("email").notNull().unique(),
+  name: text("name"),
+  isActive: integer("isActive", { mode: 'boolean' }).default(true),
+  createdAt: text("createdAt"),
+});
+
+export const insertNewsletterSubscriptionSchema = z.object({
   email: z.string().email(),
-  createdAt: z.date().or(z.string()).optional()
+  name: z.string().nullable().optional(),
+  isActive: z.boolean().optional(),
 });
-export type NewsletterSubscription = z.infer<typeof newsletterSubscriptionSchema>;
-
-export const insertNewsletterSubscriptionSchema = newsletterSubscriptionSchema.omit({ id: true, createdAt: true });
+export type NewsletterSubscription = typeof newsletterSubscriptions.$inferSelect;
 export type InsertNewsletterSubscription = z.infer<typeof insertNewsletterSubscriptionSchema>;
 
-// --- Notifications ---
-export const notificationSchema = z.object({
-  id: z.number(),
-  type: z.string(), // 'signup', 'post', 'inquiry', 'property_inquiry'
-  title: z.string(),
-  content: z.string(),
-  isRead: z.boolean().default(false).optional(),
-  linkUrl: z.string().optional().nullable(),
-  createdAt: z.date().or(z.string()).optional()
+// Realtor Subscriptions schema
+export const realtorSubscriptions = sqliteTable("realtor_subscriptions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("userId").notNull(),
+  planType: text("planType").notNull(),
+  amount: integer("amount").notNull(),
+  impUid: text("impUid"),
+  merchantUid: text("merchantUid"),
+  status: text("status").default("active").notNull(),
+  startDate: text("startDate"),
+  endDate: text("endDate"),
+  createdAt: text("createdAt"),
 });
-export type Notification = z.infer<typeof notificationSchema>;
-export const insertNotificationSchema = notificationSchema.omit({ id: true, createdAt: true });
+
+export const insertRealtorSubscriptionSchema = z.object({
+  userId: z.number(),
+  planType: z.string(),
+  amount: z.number(),
+  impUid: z.string().nullable().optional(),
+  merchantUid: z.string().nullable().optional(),
+  status: z.string().optional(),
+  startDate: z.string().nullable().optional(),
+  endDate: z.string().nullable().optional(),
+});
+export type RealtorSubscription = typeof realtorSubscriptions.$inferSelect;
+export type InsertRealtorSubscription = z.infer<typeof insertRealtorSubscriptionSchema>;
+
+// Notifications schema
+export const notifications = sqliteTable("notifications", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("userId"),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  type: text("type").notNull().default("info"),
+  isRead: integer("isRead", { mode: 'boolean' }).default(false),
+  linkUrl: text("linkUrl"),
+  createdAt: text("createdAt"),
+});
+
+export const insertNotificationSchema = z.object({
+  userId: z.number().nullable().optional(),
+  title: z.string(),
+  message: z.string(),
+  type: z.string().optional(),
+  isRead: z.boolean().optional(),
+  linkUrl: z.string().nullable().optional(),
+});
+export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+// Crawled Properties schema
+export const crawledProperties = sqliteTable("crawled_properties", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  atclNo: text("atclNo").notNull().unique(),
+  atclNm: text("atclNm"),
+  rletTpNm: text("rletTpNm"),
+  tradTpNm: text("tradTpNm"),
+  flrInfo: text("flrInfo"),
+  prc: text("prc"),
+  spc1: text("spc1"),
+  spc2: text("spc2"),
+  direction: text("direction"),
+  lat: real("lat"),
+  lng: real("lng"),
+  imgUrl: text("imgUrl"),
+  rltrNm: text("rltrNm"),
+  rentPrc: text("rentPrc"),
+  depositPrc: text("depositPrc"),
+  landType: text("landType"),
+  zoneType: text("zoneType"),
+  crawledAt: text("crawledAt"),
+});
+
+export const insertCrawledPropertySchema = z.object({
+  atclNo: z.string(),
+  atclNm: z.string().nullable().optional(),
+  rletTpNm: z.string().nullable().optional(),
+  tradTpNm: z.string().nullable().optional(),
+  flrInfo: z.string().nullable().optional(),
+  prc: z.string().nullable().optional(),
+  spc1: z.string().nullable().optional(),
+  spc2: z.string().nullable().optional(),
+  direction: z.string().nullable().optional(),
+  lat: z.number().nullable().optional(),
+  lng: z.number().nullable().optional(),
+  imgUrl: z.string().nullable().optional(),
+  rltrNm: z.string().nullable().optional(),
+  rentPrc: z.string().nullable().optional(),
+  depositPrc: z.string().nullable().optional(),
+  landType: z.string().nullable().optional(),
+  zoneType: z.string().nullable().optional(),
+});
+export type CrawledProperty = typeof crawledProperties.$inferSelect;
+export type InsertCrawledProperty = z.infer<typeof insertCrawledPropertySchema>;
+
+// Admin Notifications schema
+export const adminNotifications = sqliteTable("admin_notifications", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  type: text("type").notNull(), // 'subscription', 'user_registration', 'inquiry'
+  relatedId: integer("relatedId"),
+  title: text("title").notNull(),
+  content: text("content"),
+  isRead: integer("isRead", { mode: 'boolean' }).default(false),
+  createdAt: text("createdAt"),
+});
+
+export const insertAdminNotificationSchema = z.object({
+  type: z.string(),
+  relatedId: z.number().nullable().optional(),
+  title: z.string(),
+  content: z.string().nullable().optional(),
+  isRead: z.boolean().optional(),
+});
+export type AdminNotification = typeof adminNotifications.$inferSelect;
+export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSchema>;
+

@@ -21,6 +21,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Loader2, UserPlus, LogIn, Home, AlertCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 // SVG 로고 가져오기
 import kakaoLogo from "../assets/kakao-logo.svg";
@@ -43,6 +47,62 @@ export default function AuthPage() {
 
   // URL에서 에러 파라미터 확인
   const [error, setError] = useState<string | null>(null);
+
+  // 계정 찾기 모달 관련 상태
+  const [findMode, setFindMode] = useState<"username" | "password" | null>(null);
+  const [findEmail, setFindEmail] = useState("");
+  const [findPhone, setFindPhone] = useState("");
+  const [findUsernameInput, setFindUsernameInput] = useState("");
+  const [findResult, setFindResult] = useState<string | null>(null);
+  const [isFinding, setIsFinding] = useState(false);
+  
+  const { toast } = useToast();
+
+  const handleFindUsername = async () => {
+    if (!findEmail && !findPhone) {
+      toast({ variant: "destructive", description: "이메일 또는 전화번호를 입력하세요." });
+      return;
+    }
+    setIsFinding(true);
+    setFindResult(null);
+    try {
+      const res = await apiRequest("POST", "/api/auth/find-username", { email: findEmail, phone: findPhone });
+      const data = await res.json();
+      setFindResult(data.username);
+    } catch (e: any) {
+      toast({ variant: "destructive", description: e.message });
+    } finally {
+      setIsFinding(false);
+    }
+  };
+
+  const handleFindPassword = async () => {
+    if (!findUsernameInput || (!findEmail && !findPhone)) {
+      toast({ variant: "destructive", description: "아이디와 이메일(또는 전화번호)을 모두 입력하세요." });
+      return;
+    }
+    setIsFinding(true);
+    setFindResult(null);
+    try {
+      const res = await apiRequest("POST", "/api/auth/find-password", { username: findUsernameInput, email: findEmail, phone: findPhone });
+      const data = await res.json();
+      setFindResult(data.message);
+    } catch (e: any) {
+      toast({ variant: "destructive", description: e.message });
+    } finally {
+      setIsFinding(false);
+    }
+  };
+
+  const resetFindState = (open: boolean) => {
+    if (!open) {
+      setFindMode(null);
+      setFindEmail("");
+      setFindPhone("");
+      setFindUsernameInput("");
+      setFindResult(null);
+    }
+  };
 
   useEffect(() => {
     // URL 에러 파라미터 확인
@@ -116,6 +176,61 @@ export default function AuthPage() {
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
+      {/* 계정 찾기 다이얼로그 */}
+      <Dialog open={findMode !== null} onOpenChange={resetFindState}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl">
+              {findMode === "username" ? "아이디 찾기" : "비밀번호 찾기"}
+            </DialogTitle>
+            <DialogDescription>
+              {findMode === "username" 
+                ? "가입 시 등록한 이메일 또는 전화번호를 입력해주세요."
+                : "가입 시 등록한 아이디와 이메일(또는 전화번호)을 입력해주세요."}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {findMode === "password" && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">아이디</Label>
+                <Input value={findUsernameInput} onChange={e => setFindUsernameInput(e.target.value)} placeholder="아이디를 입력하세요" />
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">이메일</Label>
+              <Input value={findEmail} onChange={e => setFindEmail(e.target.value)} placeholder="ex) example@naver.com" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase my-2">
+              <span className="bg-white px-2 text-muted-foreground z-10">또는</span>
+              <Separator className="absolute top-1/2 w-full" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">전화번호</Label>
+              <Input value={findPhone} onChange={e => setFindPhone(e.target.value)} placeholder="ex) 010-1234-5678" />
+            </div>
+
+            {findResult && (
+              <Alert className="mt-4 bg-blue-50 border-blue-200">
+                <AlertCircle className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-slate-800 font-medium ml-2 whitespace-pre-wrap">
+                  {findMode === "username" ? `회원님의 아이디는 [ ${findResult} ] 입니다.` : findResult}
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            <Button 
+              className="w-full mt-4 h-11 bg-blue-600 hover:bg-blue-700" 
+              onClick={findMode === "username" ? handleFindUsername : handleFindPassword} 
+              disabled={isFinding}
+            >
+              {isFinding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {findMode === "username" ? "아이디 찾기" : "임시 비밀번호 이메일 발송"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* 왼쪽: 폼 */}
       <div className="flex flex-col items-center justify-center w-full lg:w-1/2 p-6 md:p-12">
         <div className="w-full max-w-md">
@@ -242,10 +357,16 @@ export default function AuthPage() {
                     </form>
                   </Form>
                 </CardContent>
-                <CardFooter className="flex flex-col pt-0">
-                  <p className="text-sm text-muted-foreground">
+                <CardFooter className="flex flex-col pt-0 gap-3">
+                  <div className="flex items-center justify-center w-full text-sm text-slate-500 font-medium">
+                    <button type="button" onClick={() => setFindMode("username")} className="hover:text-slate-800 transition-colors">아이디 찾기</button>
+                    <span className="mx-3 border-l h-3 border-slate-300"></span>
+                    <button type="button" onClick={() => setFindMode("password")} className="hover:text-slate-800 transition-colors">비밀번호 찾기</button>
+                  </div>
+                  <Separator className="w-full my-1 opacity-50" />
+                  <p className="text-sm text-muted-foreground mt-1">
                     계정이 없으신가요?{" "}
-                    <Button variant="link" className="p-0 text-blue-600" onClick={() => setActiveTab("register")}>
+                    <Button variant="link" className="p-0 text-blue-600 font-semibold" onClick={() => setActiveTab("register")}>
                       회원가입
                     </Button>
                   </p>

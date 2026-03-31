@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Trash2, ExternalLink, GripVertical } from "lucide-react";
+import { Loader2, Plus, Trash2, Edit2, GripVertical, Check, X } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import { Card, CardContent } from "@/components/ui/card"; // Assuming Card components are from shadcn/ui
 
@@ -23,6 +23,9 @@ export function BannerColumn({ location, title }: BannerColumnProps) {
     const [newLinkUrl, setNewLinkUrl] = useState("");
     const [newOpenNewWindow, setNewOpenNewWindow] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
+    
+    // Edit state
+    const [editingBannerId, setEditingBannerId] = useState<number | null>(null);
 
     // 강제 복구 (화면 깜빡임 대비)
     useEffect(() => {
@@ -102,20 +105,66 @@ export function BannerColumn({ location, title }: BannerColumnProps) {
         },
     });
 
-    const handleAdd = () => {
-        // 비상 대책: state가 비어있으면 localStorage에서라도 긁어옵니다.
+    const updateMutation = useMutation({
+        mutationFn: async (data: any) => {
+            await apiRequest("PATCH", `/api/banners/${data.id}`, {
+                imageUrl: data.imageUrl,
+                linkUrl: data.linkUrl,
+                openNewWindow: data.openNewWindow,
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [`/api/banners?location=${location}`] });
+            setEditingBannerId(null);
+            setNewImageUrl("");
+            localStorage.removeItem("draftBannerImage_" + location);
+            setNewLinkUrl("");
+            setNewOpenNewWindow(false);
+            toast({ title: "배너 수정 성공", description: "배너 속성이 수정되었습니다." });
+        },
+        onError: (error: Error) => {
+            toast({ title: "배너 수정 실패", description: error.message, variant: "destructive" });
+        },
+    });
+
+    const handleAddOrUpdate = () => {
         const effectiveImageUrl = newImageUrl || localStorage.getItem("draftBannerImage_" + location);
 
         if (!effectiveImageUrl) {
-            toast({ title: "배너 이미지 필수", description: "배너 이미지를 먼저 업로드해주세요.", variant: "destructive" });
+            toast({ title: "배너 이미지 필수", description: "배너 이미지를 먼저 업로드하거나 설정해주세요.", variant: "destructive" });
             return;
         }
 
-        createMutation.mutate({
-            imageUrl: effectiveImageUrl,
-            linkUrl: newLinkUrl,
-            openNewWindow: newOpenNewWindow
-        });
+        if (editingBannerId) {
+            updateMutation.mutate({
+                id: editingBannerId,
+                imageUrl: effectiveImageUrl,
+                linkUrl: newLinkUrl,
+                openNewWindow: newOpenNewWindow
+            });
+        } else {
+            createMutation.mutate({
+                imageUrl: effectiveImageUrl,
+                linkUrl: newLinkUrl,
+                openNewWindow: newOpenNewWindow
+            });
+        }
+    };
+
+    const handleEditClick = (banner: Banner) => {
+        setEditingBannerId(banner.id);
+        setNewImageUrl(banner.imageUrl);
+        setNewLinkUrl(banner.linkUrl || "");
+        setNewOpenNewWindow(banner.openNewWindow || false);
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); // Scroll to form
+    };
+
+    const cancelEdit = () => {
+        setEditingBannerId(null);
+        setNewImageUrl("");
+        setNewLinkUrl("");
+        setNewOpenNewWindow(false);
+        localStorage.removeItem("draftBannerImage_" + location);
     };
 
     const handleDelete = (id: number) => {
@@ -210,18 +259,36 @@ export function BannerColumn({ location, title }: BannerColumnProps) {
                                                                         <span>{new Date(banner.createdAt!).toLocaleDateString()}</span>
                                                                     </div>
                                                                 </div>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={(e) => {
-                                                                        e.preventDefault();
-                                                                        e.stopPropagation();
-                                                                        handleDelete(banner.id);
-                                                                    }}
-                                                                    disabled={deleteMutation.isPending}
-                                                                    className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors"
-                                                                >
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                </button>
+                                                                <div className="flex flex-col gap-1">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            e.stopPropagation();
+                                                                            handleEditClick(banner);
+                                                                        }}
+                                                                        disabled={deleteMutation.isPending || updateMutation.isPending}
+                                                                        className="text-blue-500 hover:text-blue-700 p-2 rounded-full hover:bg-blue-50 transition-colors"
+                                                                        title="수정"
+                                                                    >
+                                                                        <Edit2 className="h-4 w-4" />
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            e.stopPropagation();
+                                                                            if (window.confirm("정말로 삭제하시겠습니까?")) {
+                                                                                handleDelete(banner.id);
+                                                                            }
+                                                                        }}
+                                                                        disabled={deleteMutation.isPending || updateMutation.isPending}
+                                                                        className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors"
+                                                                        title="삭제"
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4" />
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     )}
@@ -234,8 +301,17 @@ export function BannerColumn({ location, title }: BannerColumnProps) {
                             </Droppable>
                         </DragDropContext>
 
-                        <div className="border-t pt-4 mt-4">
-                            <h4 className="text-sm font-medium mb-3">새 배너 추가</h4>
+                        <div className={`border-t pt-4 mt-4 transition-colors duration-300 ${editingBannerId ? 'bg-blue-50/30 rounded-lg p-3 -mx-3' : ''}`}>
+                            <h4 className="text-sm font-medium mb-3 flex items-center justify-between">
+                                <span className={editingBannerId ? "text-blue-700 font-bold" : ""}>
+                                    {editingBannerId ? `배너 #${editingBannerId} 수정 중` : "새 배너 추가"}
+                                </span>
+                                {editingBannerId && (
+                                    <button onClick={cancelEdit} className="text-xs text-slate-500 hover:text-slate-800 flex items-center bg-white px-2 py-1 rounded border">
+                                        <X className="h-3 w-3 mr-1" /> 취소
+                                    </button>
+                                )}
+                            </h4>
                             <div>
                                 <Label className="text-xs">이미지 업로드</Label>
                                 <div className="flex gap-2 items-center mb-2">
@@ -290,15 +366,21 @@ export function BannerColumn({ location, title }: BannerColumnProps) {
                                 <Label htmlFor={`new-window-${location}`} className="text-xs font-normal">새 창에서 열기</Label>
                             </div>
                             <div
-                                className="w-full h-8 text-sm flex items-center justify-center bg-black text-white rounded cursor-pointer hover:bg-gray-800"
+                                className={`w-full h-9 text-sm flex items-center justify-center font-medium rounded cursor-pointer transition-colors ${editingBannerId ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-black text-white hover:bg-gray-800'}`}
                                 onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    handleAdd();
+                                    handleAddOrUpdate();
                                 }}
                             >
-                                {createMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3 mr-1" />}
-                                추가
+                                {createMutation.isPending || updateMutation.isPending ? (
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                ) : editingBannerId ? (
+                                    <Check className="h-4 w-4 mr-2" />
+                                ) : (
+                                    <Plus className="h-4 w-4 mr-2" />
+                                )}
+                                {editingBannerId ? "변경사항 저장" : "새 배너 추가"}
                             </div>
                             <div className="text-[10px] text-gray-400 mt-1 dark:text-gray-500">
                                 상태: {newImageUrl ? "준비됨" : "비어있음"} | 저장소: {localStorage.getItem("draftBannerImage_" + location) ? "있음" : "없음"}

@@ -126,7 +126,7 @@ export const NotificationTab: React.FC<NotificationTabProps> = ({
                                     </TableCell>
                                     <TableCell className="px-6 py-5">
                                         <span className={`font-bold text-sm ${!notif.isRead ? "text-slate-700" : "text-slate-400"}`}>
-                                            {notif.content}
+                                            {notif.message}
                                         </span>
                                     </TableCell>
                                     <TableCell className="px-6 py-5">

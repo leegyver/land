@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { MapPin, Eye } from 'lucide-react';
+import { MapPin, Eye, Loader2, ExternalLink } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface CrawledProperty {
     id: number;
@@ -17,6 +21,8 @@ interface CrawledProperty {
     imgUrl: string;
     crawledAt: string;
     direction?: string;
+    landType?: string;
+    zoneType?: string;
     rltrNm?: string;
 }
 
@@ -30,6 +36,7 @@ const CrawlerMap = ({ properties, highlightedId }: CrawlerMapProps) => {
     const mapInstance = useRef<any>(null);
     const markers = useRef<Map<number, any>>(new Map());
     const [selectedProperty, setSelectedProperty] = useState<CrawledProperty | null>(null);
+    const [detailModalOpen, setDetailModalOpen] = useState(false);
     const [isMapLoaded, setIsMapLoaded] = useState(false);
     const [useDistrict, setUseDistrict] = useState(false);
     const [useSkyview, setUseSkyview] = useState(false);
@@ -431,16 +438,105 @@ const CrawlerMap = ({ properties, highlightedId }: CrawlerMapProps) => {
                                 {selectedProperty.tradTpNm === "월세" && selectedProperty.rentPrc ? `${selectedProperty.prc}/${selectedProperty.rentPrc}` : selectedProperty.prc}
                             </span>
                             <a
-                                href={`https://m.land.naver.com/article/info/${selectedProperty.atclNo}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-2 rounded font-bold transition-colors"
+                                onClick={() => setDetailModalOpen(true)}
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-4 py-2 rounded-md font-bold transition-colors shadow-sm cursor-pointer ml-auto"
                             >
-                                네이버 확인 &gt;
+                                요약 정보 보기
                             </a>
                         </div>
                     </div>
                 )}
+
+                {/* 내부 컨텐츠 전용 팝업 */}
+                <Dialog open={detailModalOpen} onOpenChange={setDetailModalOpen}>
+                    <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl">
+                        {selectedProperty && (
+                            <div className="flex flex-col">
+                                {/* 헤더 / 썸네일 */}
+                                <div className="relative h-48 bg-slate-100 flex items-center justify-center overflow-hidden">
+                                    {selectedProperty.imgUrl ? (
+                                        <>
+                                            <div className="absolute inset-0 bg-black/20 z-10"></div>
+                                            <img src={selectedProperty.imgUrl} alt={selectedProperty.atclNm} className="w-full h-full object-cover" />
+                                        </>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center text-slate-400">
+                                            <MapPin className="w-10 h-10 mb-2 opacity-30" />
+                                            <span className="text-sm font-medium">이미지 없음</span>
+                                        </div>
+                                    )}
+                                    <Badge className="absolute top-4 left-4 z-20 bg-black/60 hover:bg-black/60 text-white backdrop-blur-md border-0">
+                                        {selectedProperty.rletTpNm} {selectedProperty.landType ? `· ${selectedProperty.landType}` : ''}
+                                    </Badge>
+                                    <DialogClose className="absolute top-4 right-4 z-20 rounded-full bg-black/40 p-1.5 text-white hover:bg-black/60 transition" />
+                                </div>
+
+                                {/* 메인 텍스트 컨텐츠 */}
+                                <div className="p-6 space-y-6">
+                                    <div>
+                                        <h2 className="text-2xl font-bold tracking-tight text-slate-900 leading-tight">
+                                            {selectedProperty.atclNm}
+                                        </h2>
+                                        <p className="text-sm text-slate-500 mt-1 flex items-center gap-1.5 font-medium">
+                                            매물번호 <span className="font-mono text-slate-400">{selectedProperty.atclNo}</span>
+                                        </p>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                                            <span className="text-sm font-semibold text-slate-500">거래 조건</span>
+                                            <span className="text-xl font-bold text-blue-600 tracking-tight">
+                                                {selectedProperty.tradTpNm} {selectedProperty.tradTpNm === "월세" && selectedProperty.rentPrc ? `${selectedProperty.prc} / ${selectedProperty.rentPrc}` : selectedProperty.prc}
+                                            </span>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-y-4 gap-x-6">
+                                            <div>
+                                                <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase mb-1">면적 (공급/전용)</p>
+                                                <p className="text-sm font-medium text-slate-800">
+                                                    {selectedProperty.spc1 ? `${selectedProperty.spc1}㎡` : '-'} / {selectedProperty.spc2 ? `${selectedProperty.spc2}㎡` : '-'}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase mb-1">층수 (해당/총)</p>
+                                                <p className="text-sm font-medium text-slate-800">{selectedProperty.flrInfo || '-'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase mb-1">방향</p>
+                                                <p className="text-sm font-medium text-slate-800">{selectedProperty.direction || '-'}</p>
+                                            </div>
+                                            {selectedProperty.zoneType && (
+                                                <div>
+                                                    <p className="text-xs font-semibold tracking-wider text-slate-400 uppercase mb-1">용도지역</p>
+                                                    <p className="text-sm font-medium text-blue-600">{selectedProperty.zoneType}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        <div className="pt-4 border-t border-slate-100 space-y-4">
+                                            <div className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border">
+                                                <p className="text-xs font-semibold tracking-wider text-slate-500 uppercase">제공 중개사</p>
+                                                <div className="text-right">
+                                                    <p className="text-sm font-bold text-slate-800">{selectedProperty.rltrNm || '<정보 없음>'}</p>
+                                                    <p className="text-xs text-slate-500 mt-0.5">상세 연락처는 원본 매물 참조</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <Button 
+                                                className="w-full h-14 text-base font-bold bg-[#03c75a] hover:bg-[#02b350] text-white shadow-lg shadow-green-500/20 rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-95"
+                                                onClick={() => window.open(`https://fin.land.naver.com/articles/${selectedProperty.atclNo}`, '_blank')}
+                                            >
+                                                <span className="text-xl leading-none font-black mb-0.5">N</span>
+                                                네이버 원본 매물 보기
+                                                <ExternalLink className="w-4 h-4 ml-1 opacity-70" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </DialogContent>
+                </Dialog>
 
                 {/* Clicked Address Overlay */}
                 {clickedInfo && (

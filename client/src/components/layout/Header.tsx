@@ -81,13 +81,13 @@ const Header = () => {
                       <span>내 프로필</span>
                     </Link>
                   </DropdownMenuItem>
-                  {(user.role === "admin" || user.role === "realtor") && (
+                  {(["admin", "master"].includes(user.role) || (user.role === "realtor" && ["monthly", "yearly", "approved", "lifetime"].includes(user.subscriptionTier as string))) && (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
                         <Link href="/admin" className="flex items-center w-full cursor-pointer">
                           <Settings className="mr-2 h-4 w-4" />
-                          <span>{user.role === "admin" ? "관리자 패널" : "매물 관리"}</span>
+                          <span>{["admin", "master"].includes(user.role) ? "관리자 패널" : "매물 관리"}</span>
                         </Link>
                       </DropdownMenuItem>
                     </>
@@ -144,7 +144,12 @@ const Header = () => {
                             </span>
                           )}
                         </span>
-                        {user.role === "admin" && (
+                        {user.role === "master" && (
+                          <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-800 text-xs rounded-full">
+                            마스터
+                          </span>
+                        )}
+                        {(user.role === "admin" || user.role === "master") && (
                           <span className="ml-2 px-2 py-0.5 bg-purple-100 text-purple-800 text-xs rounded-full">
                             관리자
                           </span>
@@ -160,14 +165,14 @@ const Header = () => {
                         내 프로필
                       </Link>
 
-                      {(user.role === "admin" || user.role === "realtor") && (
+                      {(["admin", "master"].includes(user.role) || (user.role === "realtor" && ["monthly", "yearly", "approved", "lifetime"].includes(user.subscriptionTier as string))) && (
                         <Link
                           href="/admin"
                           onClick={() => setMobileMenuOpen(false)}
                           className="flex items-center py-2 text-lg font-medium text-neutral-800 hover:text-primary"
                         >
                           <Settings className="mr-2 h-5 w-5" />
-                          {user.role === "admin" ? "관리자 패널" : "매물 관리"}
+                          {["admin", "master"].includes(user.role) ? "관리자 패널" : "매물 관리"}
                         </Link>
                       )}
 

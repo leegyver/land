@@ -645,7 +645,7 @@ const PropertyMap = ({ properties: passedProperties, showCrawled = false }: Prop
 
         {/* Property Info Panel */}
         {selectedProperty && (
-          <div className="absolute top-4 right-4 md:w-72 bg-white rounded-xl shadow-2xl p-4 z-30 animate-in fade-in slide-in-from-top-2 border border-slate-200"
+          <div className="absolute top-4 left-4 right-4 md:left-auto md:right-4 md:w-72 bg-white rounded-xl shadow-2xl p-4 z-30 animate-in fade-in slide-in-from-top-2 border border-slate-200"
             onClick={(e) => e.stopPropagation()}
           >
             <button

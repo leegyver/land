@@ -22,7 +22,7 @@ export default defineConfig(async ({ mode }) => {
         transformIndexHtml(html: string) {
           // 사용자가 VITE_KAKAO_MAP_KEY를 지우고 KAKAO_API_KEY를 같이 쓰기로 함
           // 둘 중 하나라도 있으면 사용
-          const kakaoKey = env.VITE_KAKAO_MAP_KEY || env.KAKAO_API_KEY;
+          const kakaoKey = env.VITE_KAKAO_MAP_KEY || env.KAKAO_API_KEY || '2f6ff1b2e516329499e3e785899159e9';
 
           if (!kakaoKey) {
             console.warn("⚠️ Kakao API Key is missing! Maps will not work.");

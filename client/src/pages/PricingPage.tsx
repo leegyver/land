@@ -274,10 +274,18 @@ export default function PricingPage() {
                                 <CardFooter className="pt-10 pb-12 px-8 flex flex-col gap-4">
                                     <Button
                                         className={`w-full h-16 text-xl font-black rounded-2xl shadow-xl hover:-translate-y-1 active:translate-y-0 transition-all active:shadow-md ${plan.buttonColor} text-white`}
-                                        onClick={() => plan.id === 'free' ? setLocation('/') : subscribeMutation.mutate(plan.id)}
-                                        disabled={plan.id !== 'free' && subscribeMutation.isPending}
+                                        onClick={() => {
+                                            if (plan.id === 'annual') {
+                                                window.open("http://pf.kakao.com/_xaxbxlxfs/chat", "_blank");
+                                            } else if (plan.id === 'free') {
+                                                setLocation('/');
+                                            } else {
+                                                subscribeMutation.mutate(plan.id);
+                                            }
+                                        }}
+                                        disabled={plan.id !== 'annual' && plan.id !== 'free' && subscribeMutation.isPending}
                                     >
-                                        {subscribeMutation.isPending ? "결제 처리 중..." : `${plan.name} 지금 시작하기`}
+                                        {plan.id === 'annual' ? "연회원 상담하기" : (subscribeMutation.isPending ? "결제 처리 중..." : `${plan.name} 지금 시작하기`)}
                                     </Button>
                                     {plan.info && (
                                         <p className="text-center text-[11.5px] font-bold text-slate-400 mt-2 bg-slate-50 py-2 px-2 rounded-xl border border-slate-100 italic break-keep tracking-tighter">

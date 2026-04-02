@@ -1,4 +1,4 @@
-import { Switch, Route, Redirect } from "wouter";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -35,6 +35,7 @@ const PostDetailPage = lazy(() => import("@/pages/PostDetailPage"));
 const PostFormPage = lazy(() => import("@/pages/PostFormPage"));
 const PricingPage = lazy(() => import("@/pages/PricingPage"));
 const NotFound = lazy(() => import("@/pages/not-found"));
+const RoadviewPopupPage = lazy(() => import("@/pages/RoadviewPopupPage"));
 
 // 페이지 로딩 중 표시할 최소한의 스켈레톤
 const PageLoader = () => (
@@ -79,6 +80,7 @@ function Router({ user }: { user: any }) {
         <Route path="/community/new" component={PostFormPage} />
         <Route path="/community/edit/:id" component={PostFormPage} />
         <Route path="/community/:id" component={PostDetailPage} />
+        <Route path="/popup/roadview" component={RoadviewPopupPage} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
@@ -87,6 +89,16 @@ function Router({ user }: { user: any }) {
 
 function AppContent() {
   const { user } = useAuth();
+  const [location] = useLocation();
+  const isPopup = location.startsWith("/popup");
+
+  if (isPopup) {
+    return (
+      <main className="h-screen w-screen overflow-hidden">
+        <Router user={user} />
+      </main>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col font-sans theme-transition bg-slate-50">

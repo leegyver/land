@@ -645,7 +645,7 @@ const PropertyMap = ({ properties: passedProperties, showCrawled = false }: Prop
 
         {/* Property Info Panel */}
         {selectedProperty && (
-          <div className="absolute top-4 left-4 right-4 md:left-auto md:right-4 md:w-72 bg-white rounded-xl shadow-2xl p-4 z-30 animate-in fade-in slide-in-from-top-2 border border-slate-200"
+          <div className="absolute top-4 left-4 right-4 md:left-auto md:right-4 md:w-80 bg-white rounded-xl shadow-2xl p-4 md:p-5 z-30 animate-in fade-in slide-in-from-top-2 border border-slate-200 flex flex-col max-h-[80vh] md:max-h-[min(90vh,600px)] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -658,7 +658,8 @@ const PropertyMap = ({ properties: passedProperties, showCrawled = false }: Prop
               <span className="text-xs font-bold font-mono">✕</span>
             </button>
 
-            <h4 className="font-bold text-lg mb-2 truncate text-slate-900 pr-6 mt-2">{selectedProperty.title}</h4>
+            <h4 className="font-bold text-base md:text-lg mb-1 md:mb-2 truncate text-slate-900 pr-6 mt-1">{selectedProperty.title}</h4>
+            <div className="overflow-y-auto pr-1 -mr-1 scrollbar-thin scrollbar-thumb-slate-200">
 
             <div className="flex flex-col gap-1 mb-3 bg-slate-50 p-2 rounded border border-slate-100">
               {selectedProperty.dealType?.includes('매매') && (
@@ -724,8 +725,9 @@ const PropertyMap = ({ properties: passedProperties, showCrawled = false }: Prop
                   <span className="text-[10px] text-purple-600 font-black bg-white px-1.5 py-0.5 rounded border border-purple-100 shadow-sm">분석</span>
                 </div>
             )}
+            </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 p-1">
               <Button
                 size="sm"
                 className="flex-1 bg-slate-900 hover:bg-blue-600 text-white font-black py-2 h-9 rounded-lg shadow-sm transition-all text-xs"

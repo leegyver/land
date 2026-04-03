@@ -1421,9 +1421,15 @@ export class SQLiteStorage implements IStorage {
       )
       ON CONFLICT(atclNo) DO UPDATE SET
         atclNm=excluded.atclNm,
+        rletTpNm=excluded.rletTpNm,
+        tradTpNm=excluded.tradTpNm,
         prc=excluded.prc,
         rentPrc=excluded.rentPrc,
         depositPrc=excluded.depositPrc,
+        spc1=excluded.spc1,
+        spc2=excluded.spc2,
+        direction=excluded.direction,
+        imgUrl=excluded.imgUrl,
         rltrNm=excluded.rltrNm,
         landType=excluded.landType,
         zoneType=excluded.zoneType,

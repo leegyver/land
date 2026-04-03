@@ -46,15 +46,24 @@ const HomePage = () => {
   const [, setLocation] = useLocation();
   const [searchKeyword, setSearchKeyword] = useState("");
 
-  // 최신 유튜브 영상 데이터 가져오기 (이가이버 유튜브)
+  // 최신 유튜브 영상 데이터 가져오기 (이가이버 유튜브 - 채널ID: UCCG3_JlKhgalqhict7tKkbA)
   const { data: latestVideos, isLoading: isVideosLoading } = useQuery<YouTubeVideo[]>({
-    queryKey: ["/api/youtube/latest", { limit: 24 }],
+    queryKey: ["/api/youtube/channel", "UCCG3_JlKhgalqhict7tKkbA", "24"],
+    queryFn: async () => {
+      const response = await fetch(`/api/youtube/channel/UCCG3_JlKhgalqhict7tKkbA?limit=24`);
+      if (!response.ok) throw new Error("Failed to fetch videos");
+      return response.json();
+    },
   });
 
-  // 두 번째 유튜브 채널 데이터 가져오기
-  const secondChannelUrl = "https://www.youtube.com/channel/UChvA8_nrczWDBYdHUum7Amw";
+  // 두 번째 유튜브 채널 데이터 가져오기 (강화도부동산이야기 - 채널ID: UChvA8_nrczWDBYdHUum7Amw)
   const { data: secondChannelVideos, isLoading: isSecondVideosLoading } = useQuery<YouTubeVideo[]>({
-    queryKey: ["/api/youtube/latest", { limit: 24, channelUrl: secondChannelUrl }],
+    queryKey: ["/api/youtube/channel", "UChvA8_nrczWDBYdHUum7Amw", "24"],
+    queryFn: async () => {
+      const response = await fetch(`/api/youtube/channel/UChvA8_nrczWDBYdHUum7Amw?limit=24`);
+      if (!response.ok) throw new Error("Failed to fetch videos");
+      return response.json();
+    },
   });
 
   // 최신 뉴스 데이터 가져오기
@@ -321,12 +330,12 @@ const HomePage = () => {
         channelUrl="https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA"
       />
 
-      {/* YouTube Section 2: 부동산 애니메이션 */}
+      {/* YouTube Section 2: 강화도 부동산이야기 */}
       <YouTubeSliderSection
-        title="부동산 애니메이션"
+        title="강화도 부동산이야기"
         videos={secondChannelVideos}
         isLoading={isSecondVideosLoading}
-        channelUrl={secondChannelUrl}
+        channelUrl="https://youtube.com/channel/UChvA8_nrczWDBYdHUum7Amw?si=K45xaU3foR1mSPFE"
       />
 
       {/* News & Community & Blog Section (Combined) */}
@@ -493,9 +502,14 @@ const YouTubeSliderSection = ({ title, videos, isLoading, channelUrl }: {
                     <div className="bg-slate-800 rounded-xl overflow-hidden hover:transform hover:-translate-y-2 transition-all duration-300 shadow-lg border border-slate-700 h-full flex flex-col">
                       <div className="relative aspect-video overflow-hidden shrink-0">
                         <img
-                          src={video.thumbnail}
+                          src={video.thumbnail || `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`}
                           alt={video.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.onerror = null;
+                            target.src = `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`;
+                          }}
                         />
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                           <div className="bg-red-600 p-3 rounded-full text-white">

@@ -2381,37 +2381,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // 최신 유튜브 영상 가져오기
-  app.get("/api/youtube/latest", async (req, res) => {
-    try {
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
-      const channelUrlParam = req.query.channelUrl as string;
-
-      // 캐시에서 확인
-      const cacheKey = `youtube_latest_${channelUrlParam || 'default'}_${limit}`;
-      const cachedVideos = memoryCache.get(cacheKey);
-
-      if (cachedVideos) {
-        return res.json(cachedVideos);
-      }
-
-      // 유튜브 채널에서 최신 영상 가져오기 (전달된 URL이 있으면 사용, 없으면 기본 이가이버 채널)
-      const channelUrl = channelUrlParam || "https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA?view_as=subscriber";
-      const videos = await getLatestYouTubeVideos(channelUrl, limit);
-
-      // 캐시에 저장 (6시간)
-      memoryCache.set(cacheKey, videos, 6 * 60 * 60 * 1000);
-
-      res.json(videos);
-    } catch (error) {
-      console.error("유튜브 영상 가져오기 오류:", error);
-      res.status(500).json({
-        message: "최신 유튜브 영상을 불러오는데 실패했습니다",
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
-
   // 특정 유튜브 채널 영상 가져오기 (일반 영상만, 쇼츠 제외)
   app.get("/api/youtube/channel/:channelId", async (req, res) => {
     try {
@@ -2433,7 +2402,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // 채널 ID로 직접 영상 가져오기 (일반 영상만 - medium/long duration)
-      // fetchLatestYouTubeVideos를 호출하여 API 실패 시 대체 데이터(Mock) 반환 로직을 타도록 수정
       const channelUrl = `https://www.youtube.com/channel/${channelId}`;
       const videos = await fetchLatestYouTubeVideos(channelUrl, limit);
 
@@ -2450,39 +2418,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // 유튜브 핸들로 채널 ID 조회
-  app.get("/api/youtube/handle/:handle", async (req, res) => {
-    try {
-      const { handle } = req.params;
-
-      // 캐시에서 확인
-      const cacheKey = `youtube_handle_${handle}`;
-      const cachedChannelId = memoryCache.get(cacheKey);
-
-      if (cachedChannelId) {
-        return res.json({ channelId: cachedChannelId });
-      }
-
-      const channelId = await getChannelIdByHandle(handle);
-
-      if (!channelId) {
-        return res.status(404).json({ message: "채널을 찾을 수 없습니다" });
-      }
-
-      // 캐시에 저장 (24시간)
-      memoryCache.set(cacheKey, channelId, 24 * 60 * 60 * 1000);
-
-      res.json({ channelId });
-    } catch (error) {
-      console.error("유튜브 핸들 조회 오류:", error);
-      res.status(500).json({
-        message: "채널 ID 조회에 실패했습니다",
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
-
-  // 유튜브 쇼츠 가져오기
+  // 유튜브 쇼츠 가져오기 (기존 유지)
   app.get("/api/youtube/shorts/:channelId", async (req, res) => {
     try {
       const { channelId } = req.params;

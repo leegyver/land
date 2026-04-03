@@ -12,7 +12,7 @@ const Footer = () => {
           <div>
 
             <div className="flex space-x-3 mt-1">
-              <a href="https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity bg-white/10 p-1.5 rounded-full">
+              <a href="https://www.youtube.com/@강화도부동산이야기" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity bg-white/10 p-1.5 rounded-full">
                 <img src="/youtube.png" alt="YouTube" width="20" height="20" className="w-5 h-5" />
               </a>
               <a href="https://www.instagram.com/leegyverceo/" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity bg-white/10 p-1.5 rounded-full">

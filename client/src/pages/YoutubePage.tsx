@@ -11,46 +11,29 @@ interface YouTubeVideo {
   publishedAt?: string;
 }
 
-const NEW_CHANNEL_HANDLE = "강화도부동산이야기";
-const NEW_CHANNEL_URL = `https://www.youtube.com/@${NEW_CHANNEL_HANDLE}`;
-const OLD_CHANNEL_ID = "UCCG3_JlKhgalqhict7tKkbA";
-const OLD_CHANNEL_URL = "https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA";
+const CHANNEL_1_ID = "UCCG3_JlKhgalqhict7tKkbA";
+const CHANNEL_1_URL = "https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA";
+
+const CHANNEL_2_ID = "UChvA8_nrczWDBYdHUum7Amw";
+const CHANNEL_2_URL = "https://youtube.com/channel/UChvA8_nrczWDBYdHUum7Amw?si=K45xaU3foR1mSPFE";
 
 const YoutubePage = () => {
-  const { data: newChannelData } = useQuery<{ channelId: string }>({
-    queryKey: ["/api/youtube/handle", NEW_CHANNEL_HANDLE],
+  // 이가이버 유튜브 채널
+  const { data: channel1Videos, isLoading: loading1 } = useQuery<YouTubeVideo[]>({
+    queryKey: ["/api/youtube/channel", CHANNEL_1_ID, "12"],
     queryFn: async () => {
-      const response = await fetch(`/api/youtube/handle/${encodeURIComponent(NEW_CHANNEL_HANDLE)}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch channel ID");
-      }
+      const response = await fetch(`/api/youtube/channel/${CHANNEL_1_ID}?limit=12`);
+      if (!response.ok) throw new Error("Failed to fetch videos");
       return response.json();
     },
-    staleTime: 24 * 60 * 60 * 1000,
   });
 
-  const newChannelId = newChannelData?.channelId;
-
-  const { data: newChannelVideos, isLoading: newLoading } = useQuery<YouTubeVideo[]>({
-    queryKey: ["/api/youtube/channel", newChannelId, "12"],
+  // 강화도 부동산이야기 채널
+  const { data: channel2Videos, isLoading: loading2 } = useQuery<YouTubeVideo[]>({
+    queryKey: ["/api/youtube/channel", CHANNEL_2_ID, "12"],
     queryFn: async () => {
-      if (!newChannelId) return [];
-      const response = await fetch(`/api/youtube/channel/${newChannelId}?limit=12`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch videos");
-      }
-      return response.json();
-    },
-    enabled: !!newChannelId,
-  });
-
-  const { data: oldChannelVideos, isLoading: oldLoading } = useQuery<YouTubeVideo[]>({
-    queryKey: ["/api/youtube/channel", OLD_CHANNEL_ID, "12"],
-    queryFn: async () => {
-      const response = await fetch(`/api/youtube/channel/${OLD_CHANNEL_ID}?limit=12`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch videos");
-      }
+      const response = await fetch(`/api/youtube/channel/${CHANNEL_2_ID}?limit=12`);
+      if (!response.ok) throw new Error("Failed to fetch videos");
       return response.json();
     },
   });
@@ -75,9 +58,14 @@ const YoutubePage = () => {
       <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300 h-full">
         <div className="relative aspect-video">
           <img
-            src={video.thumbnail}
+            src={video.thumbnail || `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`}
             alt={video.title}
             className="w-full h-full object-cover"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.onerror = null;
+              target.src = `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`;
+            }}
           />
           <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
             <div className="w-14 h-14 bg-red-600 rounded-full flex items-center justify-center">
@@ -137,7 +125,7 @@ const YoutubePage = () => {
               강화도부동산이야기
             </h2>
             <a
-              href={NEW_CHANNEL_URL}
+              href={CHANNEL_2_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center text-red-600 hover:text-red-700 text-sm"
@@ -147,11 +135,11 @@ const YoutubePage = () => {
             </a>
           </div>
 
-          {newLoading ? (
+          {loading2 ? (
             <LoadingSkeleton />
-          ) : newChannelVideos && newChannelVideos.length > 0 ? (
+          ) : channel2Videos && channel2Videos.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {newChannelVideos.slice(0, 12).map((video) => (
+              {channel2Videos.slice(0, 12).map((video: YouTubeVideo) => (
                 <VideoCard key={video.id} video={video} />
               ))}
             </div>
@@ -170,7 +158,7 @@ const YoutubePage = () => {
               이가이버 유튜브
             </h2>
             <a
-              href={OLD_CHANNEL_URL}
+              href={CHANNEL_1_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center text-red-600 hover:text-red-700 text-sm"
@@ -180,11 +168,11 @@ const YoutubePage = () => {
             </a>
           </div>
 
-          {oldLoading ? (
+          {loading1 ? (
             <LoadingSkeleton />
-          ) : oldChannelVideos && oldChannelVideos.length > 0 ? (
+          ) : channel1Videos && channel1Videos.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {oldChannelVideos.slice(0, 12).map((video) => (
+              {channel1Videos.slice(0, 12).map((video: YouTubeVideo) => (
                 <VideoCard key={video.id} video={video} />
               ))}
             </div>

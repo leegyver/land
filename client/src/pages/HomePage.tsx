@@ -48,9 +48,9 @@ const HomePage = () => {
 
   // 최신 유튜브 영상 데이터 가져오기 (이가이버 유튜브 - 채널ID: UCCG3_JlKhgalqhict7tKkbA)
   const { data: latestVideos, isLoading: isVideosLoading } = useQuery<YouTubeVideo[]>({
-    queryKey: ["/api/youtube/channel", "UCCG3_JlKhgalqhict7tKkbA", "24"],
+    queryKey: ["/api/youtube/channel", "UCCG3_JlKhgalqhict7tKkbA", "5"],
     queryFn: async () => {
-      const response = await fetch(`/api/youtube/channel/UCCG3_JlKhgalqhict7tKkbA?limit=24`);
+      const response = await fetch(`/api/youtube/channel/UCCG3_JlKhgalqhict7tKkbA?limit=5`);
       if (!response.ok) throw new Error("Failed to fetch videos");
       return response.json();
     },
@@ -58,9 +58,9 @@ const HomePage = () => {
 
   // 두 번째 유튜브 채널 데이터 가져오기 (강화도부동산이야기 - 채널ID: UChvA8_nrczWDBYdHUum7Amw)
   const { data: secondChannelVideos, isLoading: isSecondVideosLoading } = useQuery<YouTubeVideo[]>({
-    queryKey: ["/api/youtube/channel", "UChvA8_nrczWDBYdHUum7Amw", "24"],
+    queryKey: ["/api/youtube/channel", "UChvA8_nrczWDBYdHUum7Amw", "5"],
     queryFn: async () => {
-      const response = await fetch(`/api/youtube/channel/UChvA8_nrczWDBYdHUum7Amw?limit=24`);
+      const response = await fetch(`/api/youtube/channel/UChvA8_nrczWDBYdHUum7Amw?limit=5`);
       if (!response.ok) throw new Error("Failed to fetch videos");
       return response.json();
     },

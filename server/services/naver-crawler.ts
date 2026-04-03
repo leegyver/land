@@ -241,6 +241,17 @@ export class NaverCrawler {
                     }
                 }
 
+                if (!data || typeof data !== 'object') {
+                    log(`[Crawler] ${categoryCode} page ${page}: 응답 데이터가 null/비정상입니다. 네이버 차단 가능성 높음.`, 'error');
+                    consecutiveFailures++;
+                    if (consecutiveFailures >= 3) break;
+                    
+                    await this.sleep(15000 + Math.random() * 10000);
+                    await this.initSession();
+                    await this.sleep(5000);
+                    continue;
+                }
+
                 consecutiveFailures = 0;
                 const articles = data.body || [];
 

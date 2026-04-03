@@ -304,10 +304,12 @@ export class NaverCrawler {
         return savedInCategory;
     }
 
-    // 매일 오전 8시 자동 수집 스케줄러
+    // 매일 오전 8시 자동 수집 스케줄러 (현재 비활성화 - 네이버 IP 차단으로 인한 임시 정지)
     setupCrawlerScheduler() {
-        log(`[info] 네이버 매물 수집 스케줄러가 활성화되었습니다. (매일 08:00)`, 'info');
+        log(`[info] 네이버 매물 수집 스케줄러가 비활성화되어 있습니다. (IP 차단 해제 후 재활성화 필요)`, 'info');
+        return; // ← IP 차단 해제 시 이 줄을 제거하면 스케줄러 재활성화됨
 
+        // eslint-disable-next-line no-unreachable
         setInterval(async () => {
             const now = new Date();
             const kstTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));

@@ -117,16 +117,34 @@ function getFallbackVideos(channelId: string, limit: number): YouTubeVideo[] {
   // 강화도 부동산이야기 또는 기타
   return [
     {
-      id: 'Vjqm9G9VN7s',
-      title: '강화버스투어 강화한옥마을-우리집한옥스테이',
-      thumbnail: 'https://i.ytimg.com/vi/Vjqm9G9VN7s/hqdefault.jpg',
-      url: 'https://www.youtube.com/watch?v=Vjqm9G9VN7s'
+      id: 'phcN7-Yw134',
+      title: '이지도어 주택 - 강화도부동산이야기',
+      thumbnail: 'https://i.ytimg.com/vi/phcN7-Yw134/hqdefault.jpg',
+      url: 'https://www.youtube.com/watch?v=phcN7-Yw134'
     },
     {
-      id: 'nJvPvjZ6hcE',
-      title: '현대아이파크 인근 단독주택 바로 보시죠',
-      thumbnail: 'https://i.ytimg.com/vi/nJvPvjZ6hcE/hqdefault.jpg',
-      url: 'https://www.youtube.com/watch?v=nJvPvjZ6hcE'
+      id: 'nDHVk4jd87E',
+      title: '강화도 신축 전원주택',
+      thumbnail: 'https://i.ytimg.com/vi/nDHVk4jd87E/hqdefault.jpg',
+      url: 'https://www.youtube.com/watch?v=nDHVk4jd87E'
+    },
+    {
+      id: '5Nxko8-JQx4',
+      title: '소형 전원주택 급매물',
+      thumbnail: 'https://i.ytimg.com/vi/5Nxko8-JQx4/hqdefault.jpg',
+      url: 'https://www.youtube.com/watch?v=5Nxko8-JQx4'
+    },
+    {
+      id: 'ixpOMQleMtM',
+      title: '바다조망 강화도 펜션 매매',
+      thumbnail: 'https://i.ytimg.com/vi/ixpOMQleMtM/hqdefault.jpg',
+      url: 'https://www.youtube.com/watch?v=ixpOMQleMtM'
+    },
+    {
+      id: '_zftsee11t0',
+      title: '주말농장용 토지 급매',
+      thumbnail: 'https://i.ytimg.com/vi/_zftsee11t0/hqdefault.jpg',
+      url: 'https://www.youtube.com/watch?v=_zftsee11t0'
     }
   ].slice(0, limit);
 }

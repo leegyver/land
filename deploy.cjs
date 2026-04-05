@@ -67,20 +67,66 @@ req.end();
   console.log('✅ 서버 접속 성공 (1.234.53.82)');
   console.log('🚀 원격 서버 상태를 정리하고 깃허브에서 동기화합니다...');
   
-  // 명령어 실행 (DB 파일 보호: git pull 전에 백업, 후에 복원)
+  // =============================================
+  // 배포 명령어 (3중 DB 보호 체계)
+  // =============================================
   const deployCmd = [
     'cd /root/land',
-    // DB 백업 (존재할 경우만)
-    'if [ -f database.sqlite ]; then cp database.sqlite /tmp/database_backup.sqlite; echo "DB 백업 완료"; fi',
-    // git 정리 후 pull
+
+    // ── 단계 1: DB 백업 (타임스탬프 + 고정 위치) ──
+    'echo "━━━ [1/6] DB 백업 ━━━"',
+    'TIMESTAMP=$(date +%Y%m%d_%H%M%S)',
+    'if [ -f database.sqlite ]; then ' +
+      'cp database.sqlite /tmp/database_backup.sqlite && ' +
+      'cp database.sqlite /root/db_backups/database_${TIMESTAMP}.sqlite 2>/dev/null; ' +
+      'mkdir -p /root/db_backups; ' +
+      'cp database.sqlite /root/db_backups/database_${TIMESTAMP}.sqlite; ' +
+      'echo "✅ DB 백업 완료: /tmp/database_backup.sqlite + /root/db_backups/database_${TIMESTAMP}.sqlite"; ' +
+    'else echo "⚠️ database.sqlite 없음 (첫 배포)"; fi',
+
+    // ── 단계 2: Git pull (코드만 가져오기) ──
+    'echo "━━━ [2/6] Git Pull ━━━"',
     'git stash',
     'git pull origin main',
-    // DB 복원 (백업이 있을 경우만)
-    'if [ -f /tmp/database_backup.sqlite ]; then cp /tmp/database_backup.sqlite database.sqlite; echo "DB 복원 완료"; fi',
-    // 빌드 및 재시작
+
+    // ── 단계 3: Git에서 유입된 DB 파일 제거 ──
+    'echo "━━━ [3/6] DB 보호 확인 ━━━"',
+    // git pull로 database.sqlite가 유입됐는지 확인하고 즉시 제거
+    'if git ls-files --cached | grep -q "database.sqlite"; then ' +
+      'echo "🚨 경고: git에서 database.sqlite 유입 감지! 즉시 제거합니다."; ' +
+      'git rm --cached database.sqlite database.sqlite-shm database.sqlite-wal 2>/dev/null; ' +
+      'git commit -m "emergency: remove database.sqlite from tracking" --no-verify 2>/dev/null; ' +
+    'fi',
+
+    // ── 단계 4: DB 복원 ──
+    'echo "━━━ [4/6] DB 복원 ━━━"',
+    'if [ -f /tmp/database_backup.sqlite ]; then ' +
+      'cp /tmp/database_backup.sqlite database.sqlite && ' +
+      'rm -f database.sqlite-shm database.sqlite-wal && ' +
+      'echo "✅ DB 복원 완료 (WAL 파일 정리됨)"; ' +
+    'else echo "⚠️ 백업 파일 없음 - 새 DB로 진행"; fi',
+
+    // ── 단계 5: 빌드 및 재시작 ──
+    'echo "━━━ [5/6] 빌드 및 재시작 ━━━"',
     'npm install',
     'npm run build',
-    'pm2 restart ecosystem.config.cjs'
+    'pm2 restart ecosystem.config.cjs',
+
+    // ── 단계 6: DB 무결성 검증 ──
+    'echo "━━━ [6/6] DB 무결성 검증 ━━━"',
+    'node -e "' +
+      'const db = require(\\\"better-sqlite3\\\")(\\\"database.sqlite\\\"); ' +
+      'const p = db.prepare(\\\"SELECT COUNT(*) as c FROM properties\\\").get(); ' +
+      'const u = db.prepare(\\\"SELECT COUNT(*) as c FROM users\\\").get(); ' +
+      'const b = db.prepare(\\\"SELECT COUNT(*) as c FROM banners\\\").get(); ' +
+      'const n = db.prepare(\\\"SELECT COUNT(*) as c FROM notices\\\").get(); ' +
+      'console.log(\\\"📊 DB 상태: 매물=\\\" + p.c + \\\" 회원=\\\" + u.c + \\\" 배너=\\\" + b.c + \\\" 공지=\\\" + n.c); ' +
+      'db.close(); ' +
+    '"',
+
+    // 오래된 백업 정리 (30일 이상)
+    'find /root/db_backups -name "database_*.sqlite" -mtime +30 -delete 2>/dev/null',
+    'echo "🎉 배포 완료!"'
   ].join(' && ');
 
   conn.exec(deployCmd, (err, stream) => {
@@ -91,12 +137,15 @@ req.end();
     }
 
     stream.on('close', (code, signal) => {
-      console.log('\n🎉 [배포 완료] 최신 버전으로 갱신 후 서버를 리스타트했습니다.');
+      if (code === 0) {
+        console.log('\n🎉 [배포 완료] 최신 버전으로 갱신 후 서버를 리스타트했습니다.');
+      } else {
+        console.error(`\n❌ [배포 실패] 종료 코드: ${code}`);
+      }
       conn.end();
     }).on('data', (data) => {
       process.stdout.write(data.toString());
     }).stderr.on('data', (data) => {
-      // 일부 오류 메시지가 아닐 수도 있으므로 그냥 출력
       process.stderr.write(data.toString());
     });
   });

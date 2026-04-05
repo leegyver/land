@@ -1,0 +1,21 @@
+# =============================================
+# [이가이버 부동산] Git Attributes
+# SQLite DB 파일 보호 설정
+# =============================================
+
+# SQLite 파일을 binary로 처리하여 merge 시도 방지
+*.sqlite binary
+*.sqlite-shm binary
+*.sqlite-wal binary
+*.sqlite-journal binary
+
+# 배포 키 파일도 binary 처리
+deploy_key binary
+
+# 이미지 파일
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Property } from "@shared/schema";
 import { SpeechRecognition, SpeechRecognitionEvent } from "@/types/speech-recognition";
 import PropertyCard from "@/components/property/PropertyCard";
-import CompactPropertyItem from "@/components/property/CompactPropertyItem";
+
 import PropertyMap from "@/components/map/PropertyMap";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,9 +70,6 @@ const PropertiesPage = () => {
 
   // 전문가 매물 상태
   const [expertPage, setExpertPage] = useState(1);
-
-  // 공동 중개 매물 상태
-  const [coBrokerPage, setCoBrokerPage] = useState(1);
 
   // 음성검색 관련 상태
   const [searchKeyword, setSearchKeyword] = useState(initialKeyword);
@@ -192,7 +189,6 @@ const PropertiesPage = () => {
     setFilterParams({ district, type, dealType, minPrice, maxPrice, keyword, tag, sortBy });
     // 페이지 초기화
     setExpertPage(1);
-    setCoBrokerPage(1);
   }, [search]);
 
   // 1. 전문가 매물 쿼리
@@ -229,41 +225,7 @@ const PropertiesPage = () => {
     placeholderData: (prev) => prev,
   });
 
-  // 2. 공동 중개 매물 쿼리
-  const { data: coBrokerResponse, isLoading: isCoBrokerLoading, isError: isCoBrokerError } = useQuery<{ properties: Property[], total: number, totalPages: number }>({
-    queryKey: ["/api/search/co-broker", filterParams.district, filterParams.type, filterParams.dealType, filterParams.minPrice, filterParams.maxPrice, filterParams.keyword, filterParams.tag, filterParams.sortBy, coBrokerPage],
-    queryFn: async () => {
-      const searchParams = new URLSearchParams();
-      if (filterParams.keyword?.trim()) searchParams.append("keyword", filterParams.keyword.trim());
-      if (filterParams.district !== "all") searchParams.append("district", filterParams.district);
-      if (filterParams.type !== "all") searchParams.append("type", filterParams.type);
-      if (filterParams.dealType !== "all") searchParams.append("dealType", filterParams.dealType);
-      if (filterParams.minPrice && filterParams.maxPrice) {
-        searchParams.append("minPrice", filterParams.minPrice);
-        searchParams.append("maxPrice", filterParams.maxPrice);
-      }
-      searchParams.append("sortBy", filterParams.sortBy || "latest");
-      if (!isRecommend) {
-        searchParams.append("page", coBrokerPage.toString());
-        searchParams.append("limit", "20");
-      } else {
-        searchParams.append("limit", "1000"); // 운세 추천일 때는 전체를 가져와서 프론트에서 정렬&페이징
-      }
-      searchParams.append("onlyCrawled", "true");
-      const res = await fetch(`/api/search?${searchParams.toString()}`);
-      if (!res.ok) throw new Error("공동 중개 매물을 불러오는데 실패했습니다.");
-      const data = await res.json();
-      return {
-        properties: Array.isArray(data.properties) ? data.properties : [],
-        total: data.total || 0,
-        totalPages: data.totalPages || 0
-      };
-    },
-    placeholderData: (prev) => prev,
-  });
-
   const expertProperties = expertResponse && Array.isArray(expertResponse.properties) ? expertResponse.properties : [];
-  const coBrokerProperties = coBrokerResponse && Array.isArray(coBrokerResponse.properties) ? coBrokerResponse.properties : [];
 
   const onSubmit = (data: FormValues) => {
     const searchParams = new URLSearchParams();
@@ -292,18 +254,6 @@ const PropertiesPage = () => {
     return expertProperties;
   }, [expertProperties, isRecommend, sajuData]);
 
-  const sortedCoBrokerProperties = useMemo(() => {
-    if (!coBrokerProperties) return [];
-    if (isRecommend && sajuData) {
-      return [...coBrokerProperties].sort((a, b) => {
-        const scoreA = getCompatibilityScore(sajuData, { id: a.id, direction: a.direction, floor: a.floor }).score;
-        const scoreB = getCompatibilityScore(sajuData, { id: b.id, direction: b.direction, floor: b.floor }).score;
-        return scoreB - scoreA;
-      });
-    }
-    return coBrokerProperties;
-  }, [coBrokerProperties, isRecommend, sajuData]);
-
   // 프론트엔드 페이징 슬라이싱 (운세 추천 모드일 경우)
   const paginatedExpertProperties = useMemo(() => {
     if (isRecommend) {
@@ -319,21 +269,6 @@ const PropertiesPage = () => {
     }
     return expertResponse?.totalPages || 0;
   }, [sortedExpertProperties.length, expertResponse?.totalPages, isRecommend]);
-
-  const paginatedCoBrokerProperties = useMemo(() => {
-    if (isRecommend) {
-      const start = (coBrokerPage - 1) * 20;
-      return sortedCoBrokerProperties.slice(start, start + 20);
-    }
-    return sortedCoBrokerProperties;
-  }, [sortedCoBrokerProperties, coBrokerPage, isRecommend]);
-
-  const coBrokerTotalPages = useMemo(() => {
-    if (isRecommend) {
-      return Math.ceil(sortedCoBrokerProperties.length / 20) || 1;
-    }
-    return coBrokerResponse?.totalPages || 0;
-  }, [sortedCoBrokerProperties.length, coBrokerResponse?.totalPages, isRecommend]);
 
   // 지도용 데이터
   const { data: mapProperties } = useQuery<Property[]>({
@@ -690,94 +625,6 @@ const PropertiesPage = () => {
             )}
           </section>
 
-          {/* Section 2: 공동 중개 매물 */}
-          <section id="cobroker-properties">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
-              <div className="space-y-2">
-                <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 font-black px-4 py-1.5 rounded-full mb-2">실시간 수집</Badge>
-                <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">강화도 <span className="text-emerald-600">공동 중개</span> 매물</h2>
-                <p className="text-slate-500 font-bold text-lg">공동중개 매물! 한번더 확인해 드리겠습니다</p>
-              </div>
-            </div>
-
-            {isCoBrokerLoading ? (
-              <div className="space-y-4">
-                {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-24 rounded-2xl" />)}
-              </div>
-            ) : isCoBrokerError ? (
-              <div className="bg-red-50 p-8 rounded-[2.5rem] text-red-600 text-center font-bold">
-                공동 중개 매물을 불러오는 중 오류가 발생했습니다.
-              </div>
-            ) : paginatedCoBrokerProperties.length > 0 ? (
-              <div className="space-y-12">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {paginatedCoBrokerProperties.map((property) => (
-                    <CompactPropertyItem key={property.id} property={property} />
-                  ))}
-                </div>
-
-                {coBrokerTotalPages > 1 && (
-                  <div className="flex justify-center pt-8">
-                    <Pagination>
-                      <PaginationContent className="gap-2">
-                        <PaginationItem>
-                          <PaginationPrevious
-                            onClick={() => {
-                              if (coBrokerPage > 1) {
-                                setCoBrokerPage(p => p - 1);
-                                document.getElementById('cobroker-properties')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                              }
-                            }}
-                            className={coBrokerPage === 1 ? "pointer-events-none opacity-30 h-12 rounded-xl" : "cursor-pointer h-12 rounded-xl hover:bg-slate-100"}
-                          />
-                        </PaginationItem>
-                        {(() => {
-                          const maxVisible = 5;
-                          let start = Math.max(1, coBrokerPage - 2);
-                          let end = Math.min(coBrokerTotalPages, start + maxVisible - 1);
-                          if (end - start < maxVisible - 1) start = Math.max(1, end - maxVisible + 1);
-
-                          const items = [];
-                          for (let i = start; i <= end; i++) {
-                            items.push(
-                              <PaginationItem key={i}>
-                                <PaginationLink
-                                  isActive={coBrokerPage === i}
-                                  onClick={() => {
-                                    setCoBrokerPage(i);
-                                    document.getElementById('cobroker-properties')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                  }}
-                                  className={`h-10 w-10 md:h-12 md:w-12 rounded-xl text-base md:text-lg font-black transition-all ${coBrokerPage === i ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-200' : 'hover:bg-slate-100'}`}
-                                >
-                                  {i}
-                                </PaginationLink>
-                              </PaginationItem>
-                            );
-                          }
-                          return items;
-                        })()}
-                        <PaginationItem>
-                          <PaginationNext
-                            onClick={() => {
-                              if (coBrokerPage < coBrokerTotalPages) {
-                                setCoBrokerPage(p => p + 1);
-                                document.getElementById('cobroker-properties')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                              }
-                            }}
-                            className={coBrokerPage === coBrokerTotalPages ? "pointer-events-none opacity-30 h-12 rounded-xl" : "cursor-pointer h-12 rounded-xl hover:bg-slate-100"}
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="bg-slate-50 border border-slate-100 rounded-[3rem] p-24 text-center text-slate-400 font-bold text-xl">
-                실시간 수집된 공동 중개 매물이 없습니다.
-              </div>
-            )}
-          </section>
         </div>
       </div>
     </>

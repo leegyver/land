@@ -4,7 +4,7 @@ import path from "path";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { setupNewsScheduler } from "./news-fetcher";
-import { naverCrawler } from "./services/naver-crawler";
+
 
 const app = express();
 console.log("SERVER_STARTUP_ENV:", app.get("env"), "PROCESS_ENV:", process.env.NODE_ENV);
@@ -78,7 +78,6 @@ app.use((req, res, next) => {
     // 뉴스 스케줄러 초기화
     setupNewsScheduler();
 
-    // 네이버 매물 수집 스케줄러 초기화
-    naverCrawler.setupCrawlerScheduler();
+
   });
 })();

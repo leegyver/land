@@ -33,7 +33,7 @@ import { getRecentTransactions } from "./real-estate-api";
 import { getLatestBlogPosts } from "./blog-fetcher";
 import { getLatestYouTubeVideos, getChannelIdByHandle, fetchYouTubeShorts, fetchLatestYouTubeVideosWithAPI, fetchLatestYouTubeVideos } from "./youtube-fetcher";
 import { importPropertiesFromSheet, checkDuplicatesFromSheet } from "./sheet-importer";
-import { naverCrawler } from "./services/naver-crawler";
+
 import { log } from "./vite";
 
 // 사이트 설정 (필요시 환경변수나 설정 파일로 이동 가능)
@@ -3842,72 +3842,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Crawler API
-  app.get("/api/admin/crawler/status", async (req, res) => {
-    try {
-      if (!req.isAuthenticated()) return res.status(401).json({ message: "인증이 필요합니다." });
-      res.json({ isCrawling: naverCrawler.isCrawling });
-    } catch (error) {
-      res.status(500).json({ isCrawling: false });
-    }
-  });
 
-  app.post("/api/admin/crawler/run", async (req, res) => {
-    try {
-      if (!req.isAuthenticated()) return res.status(401).json({ message: "인증이 필요합니다." });
-      const user = req.user as Express.User;
-      if ((!["admin", "master"].includes(user.role as string))) return res.status(403).json({ message: "관리자 권한이 필요합니다." });
 
-      if (naverCrawler.isCrawling) {
-        return res.status(429).json({ message: "현재 다른 수집 작업이 진행 중입니다." });
-      }
 
-      const bounds = req.body.bounds;
-      const mode = req.body.mode;
 
-      // 비동기로 실행하고 결과를 기다리지 않음
-      naverCrawler.fetchAndSave(bounds, mode).then(result => {
-        // console.log("[Crawler] Background sync completed:", result);
-      }).catch(err => {
-        console.error("[Crawler] Background sync failed:", err);
-      });
-
-      res.json({
-        success: true,
-        message: "수집이 백그라운드에서 시작되었습니다. 잠시 후 목록이 자동으로 업데이트됩니다."
-      });
-    } catch (error) {
-      res.status(500).json({ message: "Crawler start failed", error: String(error) });
-    }
-  });
-
-  app.get("/api/admin/crawled-properties", async (req, res) => {
-    try {
-      if (!req.isAuthenticated()) return res.status(401).json({ message: "인증이 필요합니다." });
-      const user = req.user as Express.User;
-      if ((!["admin", "master"].includes(user.role as string))) return res.status(403).json({ message: "관리자 권한이 필요합니다." });
-
-      const properties = await storage.getCrawledProperties();
-      res.json(properties);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch crawled properties" });
-    }
-  });
-
-  app.delete("/api/admin/crawled-properties", async (req, res) => {
-    try {
-      if (!req.isAuthenticated()) return res.status(401).json({ message: "인증이 필요합니다." });
-      const user = req.user as Express.User;
-      if ((!["admin", "master"].includes(user.role as string))) return res.status(403).json({ message: "관리자 권한이 필요합니다." });
-
-      await storage.clearCrawledProperties();
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to clear crawled properties" });
-    }
-  });
-
-  // --- Post (Community) API ---
   app.get("/api/posts", async (req, res) => {
     try {
       const category = req.query.category as string | undefined;

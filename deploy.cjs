@@ -67,8 +67,23 @@ req.end();
   console.log('✅ 서버 접속 성공 (1.234.53.82)');
   console.log('🚀 원격 서버 상태를 정리하고 깃허브에서 동기화합니다...');
   
-  // 명령어 실행 (stash로 기존 임시수정/충돌 덮기)
-  conn.exec('cd /root/land && git stash && git pull origin main && npm install && npm run build && pm2 restart ecosystem.config.cjs', (err, stream) => {
+  // 명령어 실행 (DB 파일 보호: git pull 전에 백업, 후에 복원)
+  const deployCmd = [
+    'cd /root/land',
+    // DB 백업 (존재할 경우만)
+    'if [ -f database.sqlite ]; then cp database.sqlite /tmp/database_backup.sqlite; echo "DB 백업 완료"; fi',
+    // git 정리 후 pull
+    'git stash',
+    'git pull origin main',
+    // DB 복원 (백업이 있을 경우만)
+    'if [ -f /tmp/database_backup.sqlite ]; then cp /tmp/database_backup.sqlite database.sqlite; echo "DB 복원 완료"; fi',
+    // 빌드 및 재시작
+    'npm install',
+    'npm run build',
+    'pm2 restart ecosystem.config.cjs'
+  ].join(' && ');
+
+  conn.exec(deployCmd, (err, stream) => {
     if (err) {
       console.error('명령어 실행 중 오류 발생:', err);
       conn.end();

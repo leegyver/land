@@ -40,8 +40,10 @@ export function setupAuth(app: Express) {
     resave: false,
     saveUninitialized: false,
     cookie: {
-      maxAge: 24 * 60 * 60 * 1000, // 24시간
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7일
       httpOnly: true,
+      secure: false,      // HTTP 접속 지원을 위해 false (HTTPS 전용 도메인이라면 true로)
+      sameSite: "lax",    // CSRF 방어 + 같은 사이트 요청 허용
     },
     store: storage.sessionStore // 세션 스토어 설정
   };

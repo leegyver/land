@@ -719,8 +719,9 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
             const hasDirection = property.direction && property.direction.trim().length > 0;
             const hasElevator = property.elevator === true; // 체크된 경우만 표시
             const hasParking = property.parking && property.parking.trim().length > 0;
+            const hasFloorLevel = !!(property as any).floorLevel && (property as any).floorLevel.trim().length > 0;
 
-            if (!hasTotalFloors && !hasRooms && !hasDirection && !hasElevator && !hasParking) return null;
+            if (!hasTotalFloors && !hasRooms && !hasDirection && !hasElevator && !hasParking && !hasFloorLevel) return null;
 
             return (
               <div>
@@ -730,6 +731,22 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                     {hasTotalFloors && (
                       <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-32">총 층수</td><td className="py-3 font-medium">{property.totalFloors}층</td></tr>
                     )}
+                    {hasFloorLevel && (() => {
+                      const level = (property as any).floorLevel;
+                      const colorMap: Record<string, string> = {
+                        '고': 'bg-blue-100 text-blue-700 border border-blue-200',
+                        '중': 'bg-green-100 text-green-700 border border-green-200',
+                        '저': 'bg-amber-100 text-amber-700 border border-amber-200',
+                      };
+                      return (
+                        <tr className="border-b border-gray-200">
+                          <td className="py-3 text-gray-500 w-32">층수표시</td>
+                          <td className="py-3 font-medium">
+                            <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold ${colorMap[level] || 'bg-gray-100 text-gray-700'}`}>{level}층</span>
+                          </td>
+                        </tr>
+                      );
+                    })()}
                     {hasRooms && (
                       <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-32">방 / 욕실</td><td className="py-3 font-medium">방 {property.bedrooms || 0}개 / 욕실 {property.bathrooms || 0}개</td></tr>
                     )}

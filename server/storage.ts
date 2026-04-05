@@ -347,7 +347,8 @@ export class SQLiteStorage implements IStorage {
         { name: 'longTermOrder', type: 'INTEGER DEFAULT 0' },
         { name: 'ownerId', type: 'INTEGER' },
         { name: 'viewCount', type: 'INTEGER DEFAULT 0' },
-        { name: 'isSold', type: 'INTEGER DEFAULT 0' }
+        { name: 'isSold', type: 'INTEGER DEFAULT 0' },
+        { name: 'floorLevel', type: 'TEXT' }
       ];
       for (const col of propMissing) {
         if (!propCols.some(c => c.name === col.name)) {
@@ -745,7 +746,7 @@ export class SQLiteStorage implements IStorage {
         title, description, type, price, address, district, size, bedrooms, bathrooms,
         imageUrl, imageUrls, agentId, featured, displayOrder, isUrgent, urgentOrder,
         isNegotiable, negotiableOrder, isLongTerm, longTermOrder, isVisible, createdAt, updatedAt,
-        buildingName, unitNumber, supplyArea, privateArea, areaSize, floor, totalFloors,
+        buildingName, unitNumber, supplyArea, privateArea, areaSize, floor, totalFloors, floorLevel,
         direction, elevator, parking, heatingSystem, approvalDate, landType, zoneType,
         dealType, deposit, depositAmount, monthlyRent, maintenanceFee, ownerName,
         ownerPhone, tenantName, tenantPhone, clientName, clientPhone, specialNote,
@@ -755,7 +756,7 @@ export class SQLiteStorage implements IStorage {
         @title, @description, @type, @price, @address, @district, @size, @bedrooms, @bathrooms,
         @imageUrl, @imageUrls, @agentId, @featured, @displayOrder, @isUrgent, @urgentOrder,
         @isNegotiable, @negotiableOrder, @isLongTerm, @longTermOrder, @isVisible, @createdAt, @updatedAt,
-        @buildingName, @unitNumber, @supplyArea, @privateArea, @areaSize, @floor, @totalFloors,
+        @buildingName, @unitNumber, @supplyArea, @privateArea, @areaSize, @floor, @totalFloors, @floorLevel,
         @direction, @elevator, @parking, @heatingSystem, @approvalDate, @landType, @zoneType,
         @dealType, @deposit, @depositAmount, @monthlyRent, @maintenanceFee, @ownerName,
         @ownerPhone, @tenantName, @tenantPhone, @clientName, @clientPhone, @specialNote,
@@ -789,6 +790,7 @@ export class SQLiteStorage implements IStorage {
       areaSize: property.areaSize || null,
       floor: property.floor || null,
       totalFloors: property.totalFloors || null,
+      floorLevel: property.floorLevel || null,
       direction: property.direction || null,
       parking: property.parking || null,
       heatingSystem: property.heatingSystem || null,

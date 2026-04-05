@@ -28,6 +28,7 @@ export interface PropertyFormData {
     // 건물 정보
     floor: string | number;
     totalFloors: number;
+    floorLevel: string; // 층수표시: 고/중/저 (미선택시 빈 문자열)
     direction: string;
     elevator: boolean;
     parking: string;

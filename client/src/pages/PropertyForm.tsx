@@ -75,6 +75,7 @@ function PropertyFormContent() {
         // 건물 정보
         floor: "",
         totalFloors: 0, // 숫자로 초기화
+        floorLevel: "", // 층수표시 (고/중/저)
         direction: "",
         elevator: false,
         parking: "",
@@ -188,6 +189,7 @@ function PropertyFormContent() {
 
                         floor: safeString(data.floor),
                         totalFloors: safeNumber(data.totalFloors),
+                        floorLevel: safeString(data.floorLevel),
                         direction: safeString(data.direction),
                         parking: safeString(data.parking),
                         heatingSystem: safeString(data.heatingSystem),

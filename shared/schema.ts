@@ -36,6 +36,7 @@ export const properties = sqliteTable("properties", {
   areaSize: text("areaSize"),
   floor: integer("floor"),
   totalFloors: integer("totalFloors"),
+  floorLevel: text("floorLevel"), // 층수표시: 고/중/저
   direction: text("direction"),
   elevator: integer("elevator", { mode: 'boolean' }),
   parking: text("parking"),
@@ -97,6 +98,7 @@ export const insertPropertySchema = z.object({
   areaSize: z.string().nullable().optional(),
   floor: z.number().nullable().optional(),
   totalFloors: z.number().nullable().optional(),
+  floorLevel: z.string().nullable().optional(),
   direction: z.string().nullable().optional(),
   elevator: z.boolean().nullable().optional(),
   parking: z.string().nullable().optional(),

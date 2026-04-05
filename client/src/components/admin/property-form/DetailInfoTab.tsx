@@ -2,6 +2,7 @@ import React from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import {
     Card,
     CardContent,
@@ -15,6 +16,7 @@ export const DetailInfoTab: React.FC<PropertyFormProps> = ({
     formData,
     handleChange,
     handleCheckboxChange,
+    handleSelectChange,
 }) => {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -113,6 +115,39 @@ export const DetailInfoTab: React.FC<PropertyFormProps> = ({
                                 onChange={handleChange}
                             />
                         </div>
+                    </div>
+
+                    {/* 층수표시 */}
+                    <div className="space-y-2">
+                        <Label>층수표시</Label>
+                        <div className="flex gap-2">
+                            {(["고", "중", "저"] as const).map((level) => (
+                                <Button
+                                    key={level}
+                                    type="button"
+                                    variant={formData.floorLevel === level ? "default" : "outline"}
+                                    size="sm"
+                                    className={`flex-1 font-semibold transition-all ${
+                                        formData.floorLevel === level
+                                            ? level === "고"
+                                                ? "bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+                                                : level === "중"
+                                                ? "bg-green-600 hover:bg-green-700 text-white border-green-600"
+                                                : "bg-amber-500 hover:bg-amber-600 text-white border-amber-500"
+                                            : "hover:bg-slate-50"
+                                    }`}
+                                    onClick={() =>
+                                        handleSelectChange(
+                                            "floorLevel",
+                                            formData.floorLevel === level ? "" : level
+                                        )
+                                    }
+                                >
+                                    {level}층
+                                </Button>
+                            ))}
+                        </div>
+                        <p className="text-xs text-slate-400">선택 시 매물 상세페이지에 노출됩니다. 다시 누르면 해제됩니다.</p>
                     </div>
 
                     <div className="space-y-2">

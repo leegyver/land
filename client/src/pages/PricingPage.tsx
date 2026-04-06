@@ -131,7 +131,7 @@ export default function PricingPage() {
             icon: <Zap className="w-8 h-8 text-blue-500" />,
             color: "border-blue-200 hover:shadow-blue-100",
             buttonColor: "bg-blue-600 hover:bg-blue-700 shadow-blue-200",
-            info: "결제일로부터 30일간 이용 / 기간 만료 시 수동연장",
+            info: "결제일로부터 30일간 이용 / 기간 만료 시 수동연장 / 멤버십 개시후 환불이 불가합니다",
             delay: 0.1,
         },
         {
@@ -154,7 +154,7 @@ export default function PricingPage() {
             icon: <Crown className="w-8 h-8 text-amber-500" />,
             color: "border-amber-200 shadow-amber-50",
             buttonColor: "bg-amber-600 hover:bg-amber-700 shadow-amber-200",
-            info: "결제일로부터 1년간 이용 / 기간 만료 시 수동연장",
+            info: "결제일로부터 1년간 이용 / 기간 만료 시 수동연장 / 멤버십 개시후 환불이 불가합니다",
             isPopular: true,
             delay: 0.2,
         }

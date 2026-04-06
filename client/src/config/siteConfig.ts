@@ -1,4 +1,4 @@
-import defaultPropertyImage from "@assets/강화도부동산sample_1766916360262.png";
+import defaultPropertyImage from "@assets/sample.jpg";
 
 import { KAKAO_CHANNEL_URL } from "@/lib/constants";
 

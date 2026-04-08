@@ -113,24 +113,33 @@ async function fetchFromYouTubeHTML(channelId: string, limit: number = 5): Promi
   const videos: YouTubeVideo[] = [];
   const seenIds = new Set<string>();
 
-  // ytInitialData에서 videoRenderer 항목 추출
-  if (jsonData) {
-    const jsonStr = JSON.stringify(jsonData);
-    // videoRenderer 패턴으로 videoId와 title 추출
-    const videoRendererRegex = /"videoRenderer":\{"videoId":"([a-zA-Z0-9_-]{11})","thumbnail".+?"title":\{"runs":\[\{"text":"(.+?)"\}/g;
-    let match;
-    while ((match = videoRendererRegex.exec(jsonStr)) !== null && videos.length < limit) {
-      const videoId = match[1];
-      if (!seenIds.has(videoId)) {
+  // ytInitialData에서 videoRenderer 항목 추출 (재귀적 탐색)
+  function extractVideosFromJson(obj: any) {
+    if (!obj || typeof obj !== 'object' || videos.length >= limit) return;
+    
+    if (obj.videoId && obj.title && obj.title.runs && obj.title.runs.length > 0) {
+      const videoId = obj.videoId;
+      const title = obj.title.runs[0].text;
+      if (videoId && title && !seenIds.has(videoId)) {
         seenIds.add(videoId);
         videos.push({
           id: videoId,
-          title: match[2],
+          title: title,
           thumbnail: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
           url: `https://www.youtube.com/watch?v=${videoId}`
         });
       }
     }
+    
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        extractVideosFromJson(obj[key]);
+      }
+    }
+  }
+
+  if (jsonData) {
+    extractVideosFromJson(jsonData);
   }
 
   // ytInitialData 파싱 실패 시, HTML 전체에서 videoId만이라도 추출
@@ -142,7 +151,7 @@ async function fetchFromYouTubeHTML(channelId: string, limit: number = 5): Promi
       if (!seenIds.has(videoId)) {
         seenIds.add(videoId);
         // title도 함께 추출 시도
-        const titleRegex = new RegExp(`"videoId":"${videoId}"[^}]*?"title":\\{"runs":\\[\\{"text":"(.+?)"`, 's');
+        const titleRegex = new RegExp(`"videoId":"${videoId}"[^}]*?"title":\\{"runs":\\[\\{"text":"([^"]+)"`, 's');
         const titleMatch = html.match(titleRegex);
         videos.push({
           id: videoId,

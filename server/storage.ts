@@ -1790,8 +1790,11 @@ export class SQLiteStorage implements IStorage {
   }
 
   async getPinnedNotice(): Promise<Notice | undefined> {
-    const row = db.prepare('SELECT * FROM notices WHERE isPinned = 1 ORDER BY createdAt DESC LIMIT 1').get();
-    return row ? this.mapNotice(row) : undefined;
+    // 고정 공지 우선, 없으면 최신 공지 fallback
+    const pinned = db.prepare('SELECT * FROM notices WHERE isPinned = 1 ORDER BY createdAt DESC LIMIT 1').get();
+    if (pinned) return this.mapNotice(pinned);
+    const latest = db.prepare('SELECT * FROM notices ORDER BY createdAt DESC LIMIT 1').get();
+    return latest ? this.mapNotice(latest) : undefined;
   }
 
   async createNotice(notice: InsertNotice): Promise<Notice> {

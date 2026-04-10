@@ -66,6 +66,16 @@ const HomePage = () => {
     },
   });
 
+  // 세 번째 유튜브 채널 데이터 가져오기 (강화114부동산TV - 채널ID: UCRicoETqTmWVJ8_o34OxwFg)
+  const { data: thirdChannelVideos, isLoading: isThirdVideosLoading } = useQuery<YouTubeVideo[]>({
+    queryKey: ["/api/youtube/channel", "UCRicoETqTmWVJ8_o34OxwFg", "5"],
+    queryFn: async () => {
+      const response = await fetch(`/api/youtube/channel/UCRicoETqTmWVJ8_o34OxwFg?limit=5`);
+      if (!response.ok) throw new Error("Failed to fetch videos");
+      return response.json();
+    },
+  });
+
   // 최신 뉴스 데이터 가져오기
   const { data: latestNews } = useQuery<News[]>({
     queryKey: ["/api/news/latest"],
@@ -338,7 +348,14 @@ const HomePage = () => {
         channelUrl="https://youtube.com/channel/UChvA8_nrczWDBYdHUum7Amw?si=K45xaU3foR1mSPFE"
       />
 
-      {/* News & Community & Blog Section (Combined) */}
+      {/* YouTube Section 3: 강화114부동산TV */}
+      <YouTubeSliderSection
+        title="강화114부동산TV"
+        videos={thirdChannelVideos}
+        isLoading={isThirdVideosLoading}
+        channelUrl="https://youtube.com/channel/UCRicoETqTmWVJ8_o34OxwFg"
+      />
+
       <section className="pt-4 pb-12 bg-white">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

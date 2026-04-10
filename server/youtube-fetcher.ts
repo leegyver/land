@@ -36,13 +36,24 @@ export function extractChannelId(channelUrl: string): string {
  * 1순위: YouTube RSS 피드 파싱 (API 키 불필요)
  */
 async function fetchFromYouTubeRSS(channelId: string, limit: number = 5): Promise<YouTubeVideo[]> {
-  const res = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`);
+  const res = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; RSS reader)',
+      'Accept': 'application/rss+xml, application/xml, text/xml'
+    }
+  });
   if (!res.ok) {
     throw new Error(`RSS Error: ${res.status}`);
   }
   
   const xmlData = await res.text();
-  const parser = new XMLParser();
+  // removeNSPrefix: true → yt:videoId가 videoId로 파싱됨
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+    removeNSPrefix: true,
+    parseAttributeValue: false,
+    trimValues: true,
+  });
   const xmlObj = parser.parse(xmlData);
   
   let entries = xmlObj?.feed?.entry || [];
@@ -50,14 +61,23 @@ async function fetchFromYouTubeRSS(channelId: string, limit: number = 5): Promis
     entries = [entries];
   }
   
-  return entries.slice(0, limit).map((item: any) => ({
-    id: item['yt:videoId'],
-    title: item.title,
-    thumbnail: `https://i.ytimg.com/vi/${item['yt:videoId']}/hqdefault.jpg`,
-    url: `https://www.youtube.com/watch?v=${item['yt:videoId']}`,
-    publishedAt: item.published
-  }));
+  return entries.slice(0, limit).map((item: any) => {
+    // removeNSPrefix:true 경우 "videoId", 아닌 경우 "yt:videoId"
+    const videoId = item['videoId'] || item['yt:videoId'] || '';
+    // title이 string 또는 CDATA object일 수 있음
+    const title = typeof item.title === 'string'
+      ? item.title
+      : (item.title?.['#text'] || item.title?.text || item.title?.cdata || String(item.title || ''));
+    return {
+      id: videoId,
+      title: title || `영상`,
+      thumbnail: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+      url: `https://www.youtube.com/watch?v=${videoId}`,
+      publishedAt: item.published
+    };
+  }).filter(v => v.id && v.id.length > 5); // 유효한 videoId만
 }
+
 
 /**
  * 2순위: YouTube Data API v3 (API 키 필요)
@@ -142,7 +162,7 @@ async function fetchFromYouTubeHTML(channelId: string, limit: number = 5): Promi
     extractVideosFromJson(jsonData);
   }
 
-  // ytInitialData 파싱 실패 시, HTML 전체에서 videoId만이라도 추출
+  // ytInitialData 파싱 실패 시, HTML 전체에서 videoId + title 추출
   if (videos.length === 0) {
     const videoIdRegex = /"videoId":"([a-zA-Z0-9_-]{11})"/g;
     let match;
@@ -150,15 +170,25 @@ async function fetchFromYouTubeHTML(channelId: string, limit: number = 5): Promi
       const videoId = match[1];
       if (!seenIds.has(videoId)) {
         seenIds.add(videoId);
-        // title도 함께 추출 시도
-        const titleRegex = new RegExp(`"videoId":"${videoId}"[^}]*?"title":\\{"runs":\\[\\{"text":"([^"]+)"`, 's');
-        const titleMatch = html.match(titleRegex);
-        videos.push({
-          id: videoId,
-          title: titleMatch ? titleMatch[1] : `영상 ${videos.length + 1}`,
-          thumbnail: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
-          url: `https://www.youtube.com/watch?v=${videoId}`
-        });
+        // ① videoId 앞 최대 500자에서 title 검색 (JSON에서 title이 videoId보다 먼저 올 수 있음)
+        const startPos = Math.max(0, match.index - 500);
+        const endPos = Math.min(html.length, match.index + 500);
+        const surroundingStr = html.slice(startPos, endPos);
+        // title.runs[0].text 패턴
+        const titleRegex1 = /"title"\s*:\s*\{\s*"runs"\s*:\s*\[\s*\{\s*"text"\s*:\s*"([^"]+)"/s;
+        // simpleText 패턴
+        const titleRegex2 = /"title"\s*:\s*\{\s*"simpleText"\s*:\s*"([^"]+)"/s;
+        const t1 = surroundingStr.match(titleRegex1);
+        const t2 = surroundingStr.match(titleRegex2);
+        const title = t1?.[1] || t2?.[1] || '';
+        if (title) {
+          videos.push({
+            id: videoId,
+            title,
+            thumbnail: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+            url: `https://www.youtube.com/watch?v=${videoId}`
+          });
+        }
       }
     }
   }
@@ -208,6 +238,11 @@ export async function fetchLatestYouTubeVideos(channelUrl: string, limit: number
 }
 
 export async function getLatestYouTubeVideos(channelUrl: string, limit: number = 5): Promise<YouTubeVideo[]> {
+  return fetchLatestYouTubeVideos(channelUrl, limit);
+}
+
+// routes.ts 호환: API 우선 시도 후 fallback (동일 로직)
+export async function fetchLatestYouTubeVideosWithAPI(channelUrl: string, limit: number = 5): Promise<YouTubeVideo[]> {
   return fetchLatestYouTubeVideos(channelUrl, limit);
 }
 

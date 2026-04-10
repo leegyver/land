@@ -4365,6 +4365,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // --- Notices API ---
+
+  // GET /api/notices/pinned - 고정된 공지사항 1건 (메인 배너용)
+  app.get("/api/notices/pinned", async (req, res) => {
+    try {
+      const notice = await storage.getPinnedNotice();
+      res.json(notice || null);
+    } catch (error) {
+      console.error("Failed to fetch pinned notice:", error);
+      res.status(500).json({ message: "공지사항을 불러오는 중 오류가 발생했습니다." });
+    }
+  });
+
+  // GET /api/notices - 공지사항 목록
+  app.get("/api/notices", async (req, res) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const notices = await storage.getNotices();
+      const total = notices.length;
+      const items = notices.slice((page - 1) * limit, page * limit);
+      res.json({ items, total, page, limit });
+    } catch (error) {
+      console.error("Failed to fetch notices:", error);
+      res.status(500).json({ message: "공지사항을 불러오는 중 오류가 발생했습니다." });
+    }
+  });
+
+  // GET /api/notices/:id - 공지사항 단건 조회 + 조회수 증가
+  app.get("/api/notices/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const notice = await storage.getNotice(id);
+      if (!notice) return res.status(404).json({ message: "공지사항을 찾을 수 없습니다." });
+      await storage.incrementNoticeViewCount(id);
+      res.json(notice);
+    } catch (error) {
+      console.error("Failed to fetch notice:", error);
+      res.status(500).json({ message: "공지사항을 불러오는 중 오류가 발생했습니다." });
+    }
+  });
+
+  // POST /api/notices - 공지사항 등록 (관리자 전용)
+  app.post("/api/notices", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !(["admin", "master"].includes((req.user as any).role))) {
+        return res.status(401).json({ message: "관리자 권한이 필요합니다." });
+      }
+      const data = insertNoticeSchema.parse(req.body);
+      const authorId = (req.user as any).id;
+      const notice = await storage.createNotice({ ...data, authorId });
+      res.status(201).json(notice);
+    } catch (error) {
+      console.error("Failed to create notice:", error);
+      res.status(500).json({ message: "공지사항 등록 중 오류가 발생했습니다." });
+    }
+  });
+
+  // PUT /api/notices/:id - 공지사항 수정 (관리자 전용)
+  app.put("/api/notices/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !(["admin", "master"].includes((req.user as any).role))) {
+        return res.status(401).json({ message: "관리자 권한이 필요합니다." });
+      }
+      const id = parseInt(req.params.id);
+      const notice = await storage.updateNotice(id, req.body);
+      if (!notice) return res.status(404).json({ message: "공지사항을 찾을 수 없습니다." });
+      res.json(notice);
+    } catch (error) {
+      console.error("Failed to update notice:", error);
+      res.status(500).json({ message: "공지사항 수정 중 오류가 발생했습니다." });
+    }
+  });
+
+  // DELETE /api/notices/:id - 공지사항 삭제 (관리자 전용)
+  app.delete("/api/notices/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !(["admin", "master"].includes((req.user as any).role))) {
+        return res.status(401).json({ message: "관리자 권한이 필요합니다." });
+      }
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteNotice(id);
+      if (!success) return res.status(404).json({ message: "공지사항을 찾을 수 없습니다." });
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to delete notice:", error);
+      res.status(500).json({ message: "공지사항 삭제 중 오류가 발생했습니다." });
+    }
+  });
+
   // --- Upload API ---
   app.post("/api/upload", upload.single("file"), (req, res) => {
     try {

@@ -1767,6 +1767,81 @@ export class SQLiteStorage implements IStorage {
     const result = db.prepare('DELETE FROM admin_notifications WHERE id = ?').run(id);
     return result.changes > 0;
   }
+
+  // --- Notices ---
+
+  private mapNotice(row: any): Notice {
+    if (!row) return row;
+    return {
+      ...row,
+      isPinned: this.toBoolean(row.isPinned),
+      imageUrls: row.imageUrls ? this.parseJSON(row.imageUrls) : [],
+    };
+  }
+
+  async getNotices(): Promise<Notice[]> {
+    const rows = db.prepare('SELECT * FROM notices ORDER BY isPinned DESC, createdAt DESC').all();
+    return rows.map(row => this.mapNotice(row));
+  }
+
+  async getNotice(id: number): Promise<Notice | undefined> {
+    const row = db.prepare('SELECT * FROM notices WHERE id = ?').get(id);
+    return row ? this.mapNotice(row) : undefined;
+  }
+
+  async getPinnedNotice(): Promise<Notice | undefined> {
+    const row = db.prepare('SELECT * FROM notices WHERE isPinned = 1 ORDER BY createdAt DESC LIMIT 1').get();
+    return row ? this.mapNotice(row) : undefined;
+  }
+
+  async createNotice(notice: InsertNotice): Promise<Notice> {
+    const now = new Date().toISOString();
+    const result = db.prepare(`
+      INSERT INTO notices (title, content, imageUrls, isPinned, authorId, viewCount, createdAt, updatedAt)
+      VALUES (@title, @content, @imageUrls, @isPinned, @authorId, @viewCount, @createdAt, @updatedAt)
+    `).run({
+      title: notice.title,
+      content: notice.content,
+      imageUrls: JSON.stringify(notice.imageUrls || []),
+      isPinned: this.toInt(notice.isPinned ?? false),
+      authorId: notice.authorId || null,
+      viewCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    });
+    const id = result.lastInsertRowid as number;
+    return this.mapNotice(db.prepare('SELECT * FROM notices WHERE id = ?').get(id));
+  }
+
+  async updateNotice(id: number, notice: Partial<InsertNotice>): Promise<Notice | undefined> {
+    const now = new Date().toISOString();
+    const existing = db.prepare('SELECT * FROM notices WHERE id = ?').get(id);
+    if (!existing) return undefined;
+
+    const fields: string[] = [];
+    const params: Record<string, any> = { id };
+
+    if (notice.title !== undefined) { fields.push('title = @title'); params.title = notice.title; }
+    if (notice.content !== undefined) { fields.push('content = @content'); params.content = notice.content; }
+    if (notice.imageUrls !== undefined) { fields.push('imageUrls = @imageUrls'); params.imageUrls = JSON.stringify(notice.imageUrls); }
+    if (notice.isPinned !== undefined) { fields.push('isPinned = @isPinned'); params.isPinned = this.toInt(notice.isPinned); }
+    if (notice.authorId !== undefined) { fields.push('authorId = @authorId'); params.authorId = notice.authorId; }
+
+    fields.push('updatedAt = @updatedAt');
+    params.updatedAt = now;
+
+    db.prepare(`UPDATE notices SET ${fields.join(', ')} WHERE id = @id`).run(params);
+    return this.mapNotice(db.prepare('SELECT * FROM notices WHERE id = ?').get(id));
+  }
+
+  async deleteNotice(id: number): Promise<boolean> {
+    const result = db.prepare('DELETE FROM notices WHERE id = ?').run(id);
+    return result.changes > 0;
+  }
+
+  async incrementNoticeViewCount(id: number): Promise<void> {
+    db.prepare('UPDATE notices SET viewCount = viewCount + 1 WHERE id = ?').run(id);
+  }
 }
 
 export const storage = new SQLiteStorage();

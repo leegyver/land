@@ -64,6 +64,7 @@ RECOVERY_FINAL.db
 *.txt
 !README.md
 !robots.txt
+!ads.txt
 
 # Database protection
 database.sqlite

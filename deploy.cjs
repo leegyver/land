@@ -1,8 +1,29 @@
 const { Client } = require('ssh2');
+const { execSync } = require('child_process');
 
 // node deploy.cjs test  => 네이버 크롤링 차단 여부 테스트
 // node deploy.cjs       => 일반 배포
 const isTest = process.argv[2] === 'test';
+
+if (!isTest) {
+  try {
+    console.log('\n📦 [1/2] 로컬 변경사항을 깃허브에 안전하게 동기화합니다...');
+    execSync('git add .', { stdio: 'inherit' });
+    try {
+      execSync('git commit -m "Auto-deploy: sync local to github"', { stdio: 'ignore' });
+      console.log('📝 새로운 변경사항 커밋 완료.');
+    } catch (e) {
+      console.log('ℹ️ 커밋할 새로운 변경사항이 없습니다 (이미 최신상태).');
+    }
+    console.log('🚀 깃허브(origin main) 연동 중...');
+    execSync('git push origin main', { stdio: 'inherit' });
+    console.log('✅ 깃허브 안전 동기화 완료.\n');
+  } catch (error) {
+    console.error('❌ 깃허브 푸시 중 치명적 오류 발생. 무결성을 위해 배포를 즉각 중단합니다.');
+    console.error(error.message);
+    process.exit(1);
+  }
+}
 
 const conn = new Client();
 conn.on('ready', () => {
@@ -84,10 +105,10 @@ req.end();
       'echo "✅ DB 백업 완료: /tmp/database_backup.sqlite + /root/db_backups/database_${TIMESTAMP}.sqlite"; ' +
     'else echo "⚠️ database.sqlite 없음 (첫 배포)"; fi',
 
-    // ── 단계 2: Git pull (코드만 가져오기) ──
-    'echo "━━━ [2/6] Git Pull ━━━"',
-    'git stash',
-    'git pull origin main',
+    // ── 단계 2: Git 강제 동기화 (깃허브 기준 덮어쓰기) ──
+    'echo "━━━ [2/6] Git 완벽 동기화 ━━━"',
+    'git fetch origin main',
+    'git reset --hard origin/main',
 
     // ── 단계 3: Git에서 유입된 DB 파일 제거 ──
     'echo "━━━ [3/6] DB 보호 확인 ━━━"',

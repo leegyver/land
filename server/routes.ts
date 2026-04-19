@@ -4058,6 +4058,167 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ─────────────────────────────────────────────────────────────
+  // 포트원 V2 웹훅 수신 엔드포인트
+  // 포트원 콘솔 > 결제 연동 > 웹훅 탭에서 아래 URL 등록
+  //   URL: https://leegyver.com/api/portone-webhook
+  //   버전: 2024-04-25 (최신)
+  // ─────────────────────────────────────────────────────────────
+  app.post("/api/portone-webhook", express.raw({ type: "application/json" }), async (req: any, res: any) => {
+    try {
+      // 1. 웹훅 시그니처 검증 (보안)
+      const webhookSecret = process.env.PORTONE_WEBHOOK_SECRET;
+      if (webhookSecret) {
+        const webhookId        = req.headers["webhook-id"];
+        const webhookTimestamp = req.headers["webhook-timestamp"];
+        const webhookSignature = req.headers["webhook-signature"];
+
+        if (!webhookId || !webhookTimestamp || !webhookSignature) {
+          console.warn("[Webhook] 시그니처 헤더 누락 - 요청 거부");
+          return res.status(400).json({ message: "웹훅 헤더 누락" });
+        }
+
+        // Standard Webhooks 검증 (HMAC-SHA256)
+        const crypto = await import("crypto");
+        const rawBody = Buffer.isBuffer(req.body) ? req.body.toString("utf-8") : JSON.stringify(req.body);
+        const signedContent = `${webhookId}.${webhookTimestamp}.${rawBody}`;
+        const secretBytes = Buffer.from(webhookSecret.replace(/^whsec_/, ""), "base64");
+        const expectedSig = crypto
+          .default
+          .createHmac("sha256", secretBytes)
+          .update(signedContent)
+          .digest("base64");
+
+        const signatures = String(webhookSignature).split(" ").map(s => s.split(",")[1]);
+        const isValid = signatures.some(sig => sig === expectedSig);
+        if (!isValid) {
+          console.warn("[Webhook] 시그니처 불일치 - 위변조 의심");
+          return res.status(401).json({ message: "웹훅 시그니처 불일치" });
+        }
+      }
+
+      // 2. 웹훅 본문 파싱
+      const rawBody = Buffer.isBuffer(req.body) ? req.body.toString("utf-8") : JSON.stringify(req.body);
+      const payload = JSON.parse(rawBody);
+      const { type, data } = payload;
+
+      console.log(`[Webhook] 수신: type=${type}, paymentId=${data?.paymentId || "N/A"}`);
+
+      // 3. 알 수 없는 이벤트는 조용히 무시 (포트원 스펙)
+      if (type !== "Transaction.Paid") {
+        return res.status(200).json({ received: true, message: `[${type}] 이벤트 무시` });
+      }
+
+      // 4. Transaction.Paid: 결제 검증 및 구독 처리
+      const paymentId = data?.paymentId as string;
+      if (!paymentId) {
+        return res.status(400).json({ message: "paymentId 누락" });
+      }
+
+      // 4-1. 멱등성: 이미 처리된 결제인지 확인
+      const existing = db.prepare("SELECT * FROM realtor_subscriptions WHERE impUid = ? LIMIT 1").get(paymentId);
+      if (existing) {
+        console.log(`[Webhook] 중복 처리 방지: ${paymentId} 이미 처리됨`);
+        return res.status(200).json({ received: true, message: "이미 처리된 결제" });
+      }
+
+      // 4-2. 포트원 V2 API로 결제 상세 조회
+      const v2Secret = process.env.PORTONE_V2_API_SECRET;
+      if (!v2Secret) {
+        console.error("[Webhook] PORTONE_V2_API_SECRET 환경변수 누락");
+        return res.status(500).json({ message: "서버 환경설정 오류" });
+      }
+
+      const paymentRes = await fetch(`https://api.portone.io/payments/${paymentId}`, {
+        method: "GET",
+        headers: { "Authorization": `PortOne ${v2Secret}` },
+      });
+
+      if (!paymentRes.ok) {
+        const err = await paymentRes.json().catch(() => ({})) as any;
+        throw new Error(`포트원 결제 조회 실패: ${err.message || paymentRes.statusText}`);
+      }
+
+      const paymentData = await paymentRes.json() as any;
+      
+      // 4-3. 결제 상태 확인
+      if (paymentData.status !== "PAID") {
+        console.warn(`[Webhook] 결제 상태 이상: ${paymentData.status}`);
+        return res.status(200).json({ received: true, message: `결제 상태 비정상: ${paymentData.status}` });
+      }
+
+      // 4-4. 금액으로 planType 자동 판별
+      const paidAmount = paymentData.amount?.total;
+      let planType: string | null = null;
+      if (paidAmount === 5500)       planType = "monthly";
+      else if (paidAmount === 55000) planType = "annual";
+      
+      if (!planType) {
+        console.warn(`[Webhook] 알 수 없는 결제 금액: ${paidAmount}원 - 구독 처리 생략`);
+        return res.status(200).json({ received: true, message: `알 수 없는 금액: ${paidAmount}` });
+      }
+
+      // 4-5. merchant_uid(=customerId 또는 paymentId)로 사용자 찾기
+      //  포트원은 customer.id 또는 paymentId 내에 사용자 정보가 없을 수 있어
+      //  customData 또는 orderId 패턴(ORD_timestamp)으로는 userId를 특정하기 어려움.
+      //  → webhook 은 "결제 금액 및 상태 검증 후 구독 갱신 실패 방어용"이며,
+      //    userId는 고객 이메일 또는 customerId 필드를 통해 매핑합니다.
+      const customerEmail = paymentData.customer?.email;
+      let targetUser: any = null;
+      if (customerEmail) {
+        targetUser = db.prepare("SELECT * FROM users WHERE email = ? LIMIT 1").get(customerEmail);
+      }
+
+      if (!targetUser) {
+        // 클라이언트 측에서 이미 /api/subscription/subscribe 를 통해 처리되었을 가능성이 높음
+        console.log(`[Webhook] 사용자 매핑 불가 (email: ${customerEmail}) - 클라이언트 처리로 간주`);
+        return res.status(200).json({ received: true, message: "사용자 매핑 불가 - 클라이언트 처리 간주" });
+      }
+
+      // 4-6. 구독 DB 반영
+      const now = new Date();
+      const endDate = new Date(now);
+      if (planType === "monthly") endDate.setMonth(endDate.getMonth() + 1);
+      else endDate.setFullYear(endDate.getFullYear() + 1);
+
+      await storage.createRealtorSubscription({
+        userId: targetUser.id,
+        planType,
+        amount: paidAmount,
+        impUid: paymentId,
+        merchantUid: paymentId,
+        status: "active",
+        startDate: now.toISOString(),
+        endDate: endDate.toISOString()
+      });
+
+      await storage.updateUser(targetUser.id, {
+        subscriptionTier: planType,
+        subscriptionExpiresAt: endDate.toISOString()
+      } as any);
+
+      // ✅ 관리자 알림 생성
+      const planLabel = planType === "monthly" ? "월간" : "연간";
+      const amountLabel = paidAmount.toLocaleString("ko-KR");
+      const userName = targetUser.realtorName || targetUser.nickname || targetUser.username || "알 수 없음";
+      await storage.createAdminNotification({
+        type: "payment",
+        relatedId: targetUser.id,
+        title: `💳 결제 완료 - ${userName} (${planLabel})`,
+        content: `${userName}님이 ${planLabel} 멤버십을 결제했습니다. 금액: ${amountLabel}원 / 만료일: ${endDate.toLocaleDateString("ko-KR")}`,
+        isRead: false
+      });
+
+      console.log(`[Webhook] ✅ 구독 처리 완료: userId=${targetUser.id}, plan=${planType}, until=${endDate.toISOString()}`);
+      return res.status(200).json({ received: true, message: "구독 처리 완료" });
+
+    } catch (e: any) {
+      console.error("[Webhook] 처리 오류:", e);
+      // 포트원은 200이 아니면 재전송하므로 오류도 500으로 응답하여 재시도 유발
+      return res.status(500).json({ message: e.message || "웹훅 처리 실패" });
+    }
+  });
+
   app.post("/api/subscription/subscribe", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
     const user = req.user as any;
@@ -4129,7 +4290,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: `결제 상태가 정상이 아닙니다. (현재 상태: ${payment.status})` });
       }
 
-      const expectedAmount = planType === "monthly" ? 5000 : 50000;
+      const expectedAmount = planType === "monthly" ? 5500 : 55000;
       if (payment.amount !== expectedAmount) {
         return res.status(400).json({ message: `결제 금액 위변조가 감지되었습니다. (요청: ${expectedAmount}원, 실제 결제: ${payment.amount}원)` });
       }
@@ -4143,7 +4304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.createRealtorSubscription({
         userId: user.id,
         planType,
-        amount: expectedAmount,
+        amount: payment.amount,
         impUid: imp_uid,
         merchantUid: payment.merchant_uid || merchant_uid || "",
         status: "active",
@@ -4156,6 +4317,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subscriptionExpiresAt: endDate.toISOString()
       } as any);
 
+      // ✅ 관리자 알림 생성
+      const planLabel = planType === "monthly" ? "월간" : "연간";
+      const amountLabel = payment.amount.toLocaleString("ko-KR");
+      const userName = (user as any).realtorName || (user as any).nickname || user.username || "알 수 없음";
+      await storage.createAdminNotification({
+        type: "payment",
+        relatedId: user.id,
+        title: `💳 결제 완료 - ${userName} (${planLabel})`,
+        content: `${userName}님이 ${planLabel} 멤버십을 결제했습니다. 금액: ${amountLabel}원 / 만료일: ${endDate.toLocaleDateString("ko-KR")}`,
+        isRead: false
+      });
+
       res.json({ message: "결제 검증 및 구독 처리가 성공적으로 완료되었습니다.", tier: planType, expiresAt: endDate.toISOString() });
     } catch (e: any) {
       console.error("구독 결제 오류:", e);
@@ -4167,12 +4340,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
     const user = req.user as any;
     try {
+      // 취소 전 기존 구독 정보 조회 (알림에 플랜 정보 포함하기 위해)
+      const activeSub = db.prepare("SELECT * FROM realtor_subscriptions WHERE userId = ? AND status = 'active' LIMIT 1").get(user.id) as any;
+
       await storage.updateUser(user.id, {
         subscriptionTier: "free",
         subscriptionExpiresAt: null
       } as any);
       
       db.prepare("UPDATE realtor_subscriptions SET status = 'cancelled' WHERE userId = ? AND status = 'active'").run(user.id);
+
+      // ✅ 관리자 알림 생성
+      const userName = user.realtorName || user.nickname || user.username || "알 수 없음";
+      const planLabel = activeSub?.planType === "monthly" ? "월간" : activeSub?.planType === "annual" ? "연간" : "구독";
+      await storage.createAdminNotification({
+        type: "payment",
+        relatedId: user.id,
+        title: `🚫 구독 취소 - ${userName} (${planLabel})`,
+        content: `${userName}님이 ${planLabel} 멤버십을 취소했습니다.`,
+        isRead: false
+      });
 
       res.json({ message: "구독이 취소되었습니다." });
     } catch (e) {

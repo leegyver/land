@@ -668,7 +668,11 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
           <div className="border border-blue-100 bg-blue-50/30 rounded-lg p-6 flex flex-col items-center justify-center text-center hover:shadow-md transition-shadow">
             <Calendar className="w-8 h-8 text-primary mb-2" />
             <div className="font-bold text-lg text-gray-900">{property.direction}</div>
-            <div className="text-sm text-gray-500">방향(출입구기준)</div>
+            <div className="text-sm text-gray-500">
+              {property.type && ["단독", "아파트", "다세대", "다가구", "연립", "원투룸"].some(t => property.type.includes(t))
+                ? "방향(거실기준)"
+                : "방향(출입구기준)"}
+            </div>
           </div>
         ) : null}
       </div>

@@ -165,13 +165,13 @@ function standardizePrice(val: any, fieldName?: string): string {
   const n = toNum(val);
   if (n === 0) return "0";
 
+  // 월세나 관리비는 1,000(1천원) 미만인 경우(예: 50 -> 50만원)에만 곱함
   if (fieldName === 'monthlyRent' || fieldName === 'maintenanceFee') {
-    // 월세나 관리비는 10,000(1만원) 미만인 경우(예: 50 -> 50만원)에만 곱함
-    return n < 10000 ? String(n * 10000) : String(n);
+    return n < 1000 ? String(Math.round(n * 10000)) : String(Math.round(n));
   }
 
-  // 매매가, 보증금 등은 100,000(10만) 미만이면 '만원' 단위로 간주 (예: 5000 -> 5000만원)
-  return n < 100000 ? String(n * 10000) : String(n);
+  // 매매가, 보증금 등은 30,000(3만) 미만이면 '만원' 단위로 간주 (예: 5000 -> 5000만원)
+  return n < 30000 ? String(Math.round(n * 10000)) : String(Math.round(n));
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {

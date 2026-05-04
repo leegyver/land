@@ -1319,9 +1319,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // 관리자인 경우 원본 데이터 반환, 일반 사용자는 마스킹 (등록 중개사 혹은 소유자면 마스킹 해제)
-      let isAdmin = false;
-      const user = req.user as any;
-      if (req.isAuthenticated()) isAdmin = (["admin", "master"].includes(user.role as string));
       const isAuthorized = isAdmin || (user?.id && (Number(property.ownerId) === Number(user.id) || Number(property.agentId) === Number(user.id)));
       res.json(getSafeProperty(property, isAuthorized));
     } catch (error) {

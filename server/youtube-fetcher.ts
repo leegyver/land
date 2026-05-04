@@ -124,7 +124,7 @@ async function fetchFromYouTubeHTML(channelId: string, limit: number = 5): Promi
   const html = await res.text();
 
   // ytInitialData JSON 블록 추출
-  const dataMatch = html.match(/var\s+ytInitialData\s*=\s*({.+?});\s*<\/script>/s);
+  const dataMatch = html.match(/var\s+ytInitialData\s*=\s*({[\s\S]+?});\s*<\/script>/);
   let jsonData: any = null;
   if (dataMatch) {
     try { jsonData = JSON.parse(dataMatch[1]); } catch {}
@@ -175,9 +175,9 @@ async function fetchFromYouTubeHTML(channelId: string, limit: number = 5): Promi
         const endPos = Math.min(html.length, match.index + 500);
         const surroundingStr = html.slice(startPos, endPos);
         // title.runs[0].text 패턴
-        const titleRegex1 = /"title"\s*:\s*\{\s*"runs"\s*:\s*\[\s*\{\s*"text"\s*:\s*"([^"]+)"/s;
+        const titleRegex1 = /"title"\s*:\s*\{\s*"runs"\s*:\s*\[\s*\{\s*"text"\s*:\s*"([^"]+)"/;
         // simpleText 패턴
-        const titleRegex2 = /"title"\s*:\s*\{\s*"simpleText"\s*:\s*"([^"]+)"/s;
+        const titleRegex2 = /"title"\s*:\s*\{\s*"simpleText"\s*:\s*"([^"]+)"/;
         const t1 = surroundingStr.match(titleRegex1);
         const t2 = surroundingStr.match(titleRegex2);
         const title = t1?.[1] || t2?.[1] || '';
@@ -259,5 +259,46 @@ export async function fetchYouTubeShorts(channelId: string, limit: number = 10):
     return videos.map(v => ({ ...v, url: v.url.replace('watch?v=', 'shorts/') }));
   } catch (error) {
     return [];
+  }
+}
+/**
+ * YouTube ä���� ���� ���̺� ������ Ȯ��
+ */
+export async function checkYouTubeLive(channelId: string): Promise<{ isLive: boolean; videoId?: string; title?: string; thumbnail?: string; url?: string }> {
+  try {
+    const url = `https://www.youtube.com/channel/${channelId}/live`;
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7'
+      },
+      redirect: 'follow'
+    });
+
+    if (!res.ok) return { isLive: false };
+    const html = await res.text();
+
+    const isLive = html.includes('"isLive":true') || html.includes('"isLiveNow":true');
+    
+    if (isLive) {
+      const videoIdMatch = html.match(/"videoId":"([a-zA-Z0-9_-]{11})"/);
+      const videoId = videoIdMatch ? videoIdMatch[1] : undefined;
+      
+      const titleMatch = html.match(/"title":\s*\{\s*"runs":\s*\[\s*\{\s*"text":\s*"([^"]+)"/);
+      const title = titleMatch ? titleMatch[1] : undefined;
+      
+      return { 
+        isLive: true, 
+        videoId, 
+        title, 
+        thumbnail: videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : undefined,
+        url: videoId ? `https://www.youtube.com/watch?v=${videoId}` : url
+      };
+    }
+    
+    return { isLive: false };
+  } catch (error) {
+    console.error(`[YouTube Live] Error checking ${channelId}:`, error);
+    return { isLive: false };
   }
 }

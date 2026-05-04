@@ -31,7 +31,14 @@ import { sendEmail, createInquiryEmailTemplate, createInquiryReceiptTemplate, cr
 import { getRecentTransactions } from "./real-estate-api";
 // import { testRealEstateAPI } from "./test-api";
 import { getLatestBlogPosts } from "./blog-fetcher";
-import { getLatestYouTubeVideos, getChannelIdByHandle, fetchYouTubeShorts, fetchLatestYouTubeVideosWithAPI, fetchLatestYouTubeVideos } from "./youtube-fetcher";
+import { 
+  getLatestYouTubeVideos, 
+  getChannelIdByHandle, 
+  fetchYouTubeShorts, 
+  fetchLatestYouTubeVideosWithAPI, 
+  fetchLatestYouTubeVideos,
+  checkYouTubeLive
+} from "./youtube-fetcher";
 import { importPropertiesFromSheet, checkDuplicatesFromSheet } from "./sheet-importer";
 
 import { log } from "./vite";
@@ -111,36 +118,26 @@ function getSafeProperty(property: any, isAuthorized: boolean) {
   if (isAuthorized) return property;
 
   const {
-    unitNumber, // 동호수 (노출금지)
-    ownerName, ownerPhone, // 소유자 정보 (노출금지)
-    tenantName, tenantPhone, // 임차인 정보 (노출금지)
-    clientName, clientPhone, // 의뢰인 정보 (노출금지)
-    privateNote, // 비공개 메모 (노출금지)
-    realtorInfo, // 중개사 정보 (보존)
-    // latitude, longitude는 지도 표시를 위해 통과시킴
+    unitNumber, // 동호수 (미노출금지)
+    ownerName, ownerPhone, // 소유자 정보 (미노출금지)
+    tenantName, tenantPhone, // 임차인 정보 (미노출금지)
+    realtorInfo,
     ...safeProperty
   } = property;
 
-  // 토지/단독 유형만 주소 마스킹 (토지와 단독주택은 주소가 곧 개인 위치정보)
-  const propertyType = (safeProperty.type || "").trim();
-  const shouldMaskAddress = propertyType === "토지" || propertyType === "단독";
-
-  if (safeProperty.address) {
-    // 지도 핀 위치용으로 원본 주소를 별도 필드에 보존 (지오코딩용)
-    safeProperty.mapAddress = safeProperty.address;
-
-    if (shouldMaskAddress) {
-      safeProperty.address = maskAddress(safeProperty.address);
-    }
-    // 토지/단독이 아닌 경우 주소를 그대로 노출
-  }
+  // 건물이름 마스킹 처리 (원룸/투룸, 단독/전원주택만)
+  const shouldMaskAddress = !isAuthorized && (
+    property.type === '원룸/투룸' || 
+    property.type === '단독/전원' ||
+    property.category === '원룸/투룸' ||
+    property.category === '단독/전원'
+  );
 
   // 중개사 정보가 있으면 다시 붙여줌
   if (realtorInfo) {
     (safeProperty as any).realtorInfo = realtorInfo;
   }
 
-  // 건물명도 토지/단독만 마스킹
   if (shouldMaskAddress && safeProperty.buildingName) {
     safeProperty.buildingName = "***";
   }
@@ -148,7 +145,37 @@ function getSafeProperty(property: any, isAuthorized: boolean) {
   return safeProperty;
 }
 
+/**
+ * 숫자로 변환하는 헬퍼 함수 (콤마 등 제거)
+ */
+function toNum(val: any): number {
+  if (val === null || val === undefined || val === '') return 0;
+  if (typeof val === 'number') return val;
+  const cleaned = String(val).replace(/[^0-9.]/g, '');
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? 0 : num;
+}
+
+/**
+ * 가격 단위를 KRW(원)으로 표준화하는 헬퍼 함수
+ * - fieldName이 'monthlyRent' 또는 'maintenanceFee'이면 10,000(1만원) 미만일 때만 10,000을 곱함.
+ * - 그 외 필드(price, deposit 등)은 100,000(10만) 미만인 경우 10,000을 곱함.
+ */
+function standardizePrice(val: any, fieldName?: string): string {
+  const n = toNum(val);
+  if (n === 0) return "0";
+
+  if (fieldName === 'monthlyRent' || fieldName === 'maintenanceFee') {
+    // 월세나 관리비는 10,000(1만원) 미만인 경우(예: 50 -> 50만원)에만 곱함
+    return n < 10000 ? String(n * 10000) : String(n);
+  }
+
+  // 매매가, 보증금 등은 100,000(10만) 미만이면 '만원' 단위로 간주 (예: 5000 -> 5000만원)
+  return n < 100000 ? String(n * 10000) : String(n);
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
+
   // Global request logger for debugging
   app.use((req, res, next) => {
     console.log(`[REQ] ${new Date().toLocaleTimeString()} - ${req.method} ${req.url}`);
@@ -404,15 +431,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Robust numeric conversion helper (handles commas, nulls, non-numeric strings)
-      const toNum = (val: any) => {
-        if (val === null || val === undefined || val === '') return 0;
-        if (typeof val === 'number') return val;
-        // Strip everything except digits and decimal points (handles commas like 135,000)
-        const cleaned = String(val).replace(/[^0-9.]/g, '');
-        const num = parseFloat(cleaned);
-        return isNaN(num) ? 0 : num;
-      };
+      // Robust numeric conversion moved to global scope
 
       // Filter and Map internal properties
       const mappedInternal = internalProps
@@ -456,11 +475,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .map(p => ({
           ...p,
-          // Standardize internal units to absolute KRW (multiply 만원 by 10,000)
-          price: (toNum(p.price) > 0 && toNum(p.price) < 1000000) ? String(toNum(p.price) * 10000) : String(p.price),
-          deposit: (toNum(p.deposit) > 0 && toNum(p.deposit) < 1000000) ? String(toNum(p.deposit) * 10000) : String(p.deposit),
-          depositAmount: (toNum(p.depositAmount) > 0 && toNum(p.depositAmount) < 1000000) ? String(toNum(p.depositAmount) * 10000) : String(p.depositAmount),
-          monthlyRent: (toNum(p.monthlyRent) > 0 && toNum(p.monthlyRent) < 1000000) ? String(toNum(p.monthlyRent) * 10000) : String(p.monthlyRent),
+          // Standardize internal units to absolute KRW
+          price: standardizePrice(p.price, 'price'),
+          deposit: standardizePrice(p.deposit, 'deposit'),
+          depositAmount: standardizePrice(p.depositAmount, 'depositAmount'),
+          monthlyRent: standardizePrice(p.monthlyRent, 'monthlyRent'),
           source: 'internal'
         }));
 
@@ -524,10 +543,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           title: p.atclNm,
           description: `[네이버 매물] ${p.rletTpNm} - ${p.tradTpNm}`,
           type: p.rletTpNm,
-          price: String(toNum(p.prc) * 10000),
-          deposit: p.tradTpNm === '전세' ? String(toNum(p.prc) * 10000) : "0",
-          depositAmount: p.tradTpNm === '월세' ? String(toNum(p.prc) * 10000) : "0",
-          monthlyRent: p.rentPrc ? String(toNum(p.rentPrc) * 10000) : "0",
+          price: standardizePrice(p.prc, 'price'),
+          deposit: p.tradTpNm === '전세' ? standardizePrice(p.prc, 'deposit') : "0",
+          depositAmount: p.tradTpNm === '월세' ? standardizePrice(p.prc, 'depositAmount') : "0",
+          monthlyRent: standardizePrice(p.rentPrc, 'monthlyRent'),
           size: p.spc1,
           latitude: p.lat,
           longitude: p.lng,
@@ -932,16 +951,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ]);
 
       const integrated = [
-        ...internalProps.map(p => ({ ...p, source: 'internal' })),
+        ...internalProps.map(p => ({ 
+          ...p, 
+          source: 'internal',
+          price: standardizePrice(p.price, 'price'),
+          deposit: standardizePrice(p.deposit, 'deposit'),
+          depositAmount: standardizePrice(p.depositAmount, 'depositAmount'),
+          monthlyRent: standardizePrice(p.monthlyRent, 'monthlyRent')
+        })),
         ...crawledProps.map(p => ({
           id: `naver-${p.atclNo}`, // Unique ID for frontend key
           atclNo: p.atclNo, // Keep original ID for reference
           title: p.atclNm,
           type: p.rletTpNm,
-          price: p.tradTpNm === '매매' ? Number(p.prc) * 10000 : 0,
-          deposit: p.tradTpNm === '전세' ? Number(p.prc) * 10000 : 0,
-          depositAmount: p.tradTpNm === '월세' ? Number(p.prc) * 10000 : 0,
-          monthlyRent: p.rentPrc ? Number(p.rentPrc) * 10000 : 0,
+          price: p.tradTpNm === '매매' ? standardizePrice(p.prc, 'price') : "0",
+          deposit: p.tradTpNm === '전세' ? standardizePrice(p.prc, 'deposit') : "0",
+          depositAmount: p.tradTpNm === '월세' ? standardizePrice(p.prc, 'depositAmount') : "0",
+          monthlyRent: standardizePrice(p.rentPrc, 'monthlyRent'),
           // Essential map fields only
           latitude: p.lat,
           longitude: p.lng,
@@ -1210,10 +1236,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           atclNo: crawledProp.atclNo,
           title: crawledProp.atclNm,
           type: crawledProp.rletTpNm,
-          price: crawledProp.tradTpNm === '매매' ? String(Number(crawledProp.prc) * 10000) : "0",
-          deposit: crawledProp.tradTpNm === '전세' ? String(Number(crawledProp.prc) * 10000) : "0",
-          depositAmount: crawledProp.tradTpNm === '월세' ? String(Number(crawledProp.prc) * 10000) : "0",
-          monthlyRent: crawledProp.rentPrc ? String(Number(crawledProp.rentPrc) * 10000) : "0",
+          price: standardizePrice(crawledProp.prc, 'price'),
+          deposit: crawledProp.tradTpNm === '전세' ? standardizePrice(crawledProp.prc, 'deposit') : "0",
+          depositAmount: crawledProp.tradTpNm === '월세' ? standardizePrice(crawledProp.prc, 'depositAmount') : "0",
+          monthlyRent: standardizePrice(crawledProp.rentPrc, 'monthlyRent'),
           // address는 flrInfo(지번 등)를 포함하므로 마스킹 처리
           address: maskAddress(`인천광역시 강화군 ${crawledProp.flrInfo || ''}`),
           district: '수집매물',
@@ -2444,6 +2470,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "유튜브 쇼츠를 불러오는데 실패했습니다",
         error: error instanceof Error ? error.message : String(error)
       });
+  // 유튜브 라이브 상태 확인
+  app.get("/api/youtube/live/:channelId", async (req, res) => {
+    try {
+      const { channelId } = req.params;
+      const cacheKey = `youtube_live_${channelId}`;
+      const cachedLive = memoryCache.get(cacheKey);
+
+      if (cachedLive) {
+        return res.json(cachedLive);
+      }
+
+      const liveStatus = await checkYouTubeLive(channelId);
+
+      // 라이브 상태는 짧게 캐싱 (2분)
+      memoryCache.set(cacheKey, liveStatus, 2 * 60 * 1000);
+
+      res.json(liveStatus);
+    } catch (error) {
+      console.error("유튜브 라이브 상태 확인 오류:", error);
+      res.status(500).json({
+        message: "유튜브 라이브 상태를 확인하는 데 실패했습니다",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
     }
   });
 
@@ -2455,7 +2507,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 네이버 블로그 카테고리:
       // - 35: 나의 취미생활
       // - 36: 부동산정보
-      // - 37: 세상이야기
+      // - 37: 일상이야기
       const categories = req.query.categories
         ? (req.query.categories as string).split(',')
         : ['35', '36', '37'];

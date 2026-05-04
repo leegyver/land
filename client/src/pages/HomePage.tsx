@@ -47,6 +47,37 @@ const HomePage = () => {
   const [searchKeyword, setSearchKeyword] = useState("");
 
   // 최신 유튜브 영상 데이터 가져오기 (이가이버 유튜브 - 채널ID: UCCG3_JlKhgalqhict7tKkbA)
+    // 유튜브 라이브 상태 확인
+  const { data: channel1Live } = useQuery<{ isLive: boolean; videoId?: string }>({
+    queryKey: ["/api/youtube/live", "UCCG3_JlKhgalqhict7tKkbA"],
+    queryFn: async () => {
+      const res = await fetch(`/api/youtube/live/UCCG3_JlKhgalqhict7tKkbA`);
+      if (!res.ok) return { isLive: false };
+      return res.json();
+    },
+    refetchInterval: 2 * 60 * 1000,
+  });
+
+  const { data: channel2Live } = useQuery<{ isLive: boolean; videoId?: string }>({
+    queryKey: ["/api/youtube/live", "UChvA8_nrczWDBYdHUum7Amw"],
+    queryFn: async () => {
+      const res = await fetch(`/api/youtube/live/UChvA8_nrczWDBYdHUum7Amw`);
+      if (!res.ok) return { isLive: false };
+      return res.json();
+    },
+    refetchInterval: 2 * 60 * 1000,
+  });
+
+  const { data: channel3Live } = useQuery<{ isLive: boolean; videoId?: string }>({
+    queryKey: ["/api/youtube/live", "UCRicoETqTmWVJ8_o34OxwFg"],
+    queryFn: async () => {
+      const res = await fetch(`/api/youtube/live/UCRicoETqTmWVJ8_o34OxwFg`);
+      if (!res.ok) return { isLive: false };
+      return res.json();
+    },
+    refetchInterval: 2 * 60 * 1000,
+  });
+
   const { data: latestVideos, isLoading: isVideosLoading } = useQuery<YouTubeVideo[]>({
     queryKey: ["/api/youtube/channel", "UCCG3_JlKhgalqhict7tKkbA", "5"],
     queryFn: async () => {
@@ -335,25 +366,19 @@ const HomePage = () => {
       {/* YouTube Section 1: 이가이버 유튜브 */}
       <YouTubeSliderSection
         title="이가이버 유튜브"
-        videos={latestVideos}
-        isLoading={isVideosLoading}
-        channelUrl="https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA"
+        videos={latestVideos} isLoading={isVideosLoading} channelUrl="https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA" isLive={channel1Live?.isLive} liveVideoId={channel1Live?.videoId}
       />
 
       {/* YouTube Section 2: 강화도 부동산이야기 */}
       <YouTubeSliderSection
         title="강화도 부동산이야기"
-        videos={secondChannelVideos}
-        isLoading={isSecondVideosLoading}
-        channelUrl="https://youtube.com/channel/UChvA8_nrczWDBYdHUum7Amw?si=K45xaU3foR1mSPFE"
+        videos={secondChannelVideos} isLoading={isSecondVideosLoading} channelUrl="https://youtube.com/channel/UChvA8_nrczWDBYdHUum7Amw?si=K45xaU3foR1mSPFE" isLive={channel2Live?.isLive} liveVideoId={channel2Live?.videoId}
       />
 
       {/* YouTube Section 3: 강화114부동산TV */}
       <YouTubeSliderSection
         title="강화114부동산TV"
-        videos={thirdChannelVideos}
-        isLoading={isThirdVideosLoading}
-        channelUrl="https://youtube.com/channel/UCRicoETqTmWVJ8_o34OxwFg"
+        videos={thirdChannelVideos} isLoading={isThirdVideosLoading} channelUrl="https://youtube.com/channel/UCRicoETqTmWVJ8_o34OxwFg" isLive={channel3Live?.isLive} liveVideoId={channel3Live?.videoId}
       />
 
       <section className="pt-4 pb-12 bg-white">
@@ -467,11 +492,13 @@ const HomePage = () => {
 };
 
 // 유튜브 슬라이더 섹션 컴포넌트
-const YouTubeSliderSection = ({ title, videos, isLoading, channelUrl }: {
+const YouTubeSliderSection = ({ title, videos, isLoading, channelUrl, isLive, liveVideoId }: {
   title: string,
   videos: YouTubeVideo[] | undefined,
   isLoading: boolean,
-  channelUrl: string
+  channelUrl: string,
+  isLive?: boolean,
+  liveVideoId?: string
 }) => {
   return (
     <section className="py-2 bg-slate-900 text-white">

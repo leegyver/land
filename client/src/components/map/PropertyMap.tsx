@@ -678,7 +678,7 @@ const PropertyMap = ({ properties: passedProperties, showCrawled = false }: Prop
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-slate-500 font-bold">월세</span>
                   <span className="text-purple-600 font-black">
-                    {formatKoreanPrice(selectedProperty.deposit || selectedProperty.depositAmount || 0)} / {formatKoreanPrice(selectedProperty.monthlyRent || 0)}
+                    {formatKoreanPrice(Number(selectedProperty.deposit) > 0 ? selectedProperty.deposit : (selectedProperty.depositAmount || 0))} / {formatKoreanPrice(selectedProperty.monthlyRent || 0)}
                   </span>
                 </div>
               )}

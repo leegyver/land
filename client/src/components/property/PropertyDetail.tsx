@@ -568,10 +568,10 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                   <div>
                     <h4 className="font-bold text-sm text-red-900 border-b border-red-200 pb-1 mb-2">상세 주소 정보</h4>
                     <div className="text-sm text-gray-700 space-y-1">
-                      {property.mapAddress && (
+                      {property.address && (
                         <div className="flex justify-between border-b border-red-100 pb-1">
                           <span className="text-gray-500">실제 지번주소</span>
-                          <span className="font-medium text-gray-900">{property.mapAddress}</span>
+                          <span className="font-medium text-gray-900">{property.address}</span>
                         </div>
                       )}
                       {property.buildingName && (

@@ -1220,6 +1220,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/properties/:id", async (req, res) => {
     try {
       const idParam = req.params.id;
+      let isAdmin = false;
+      const user = req.user as any;
+      if (req.isAuthenticated()) {
+        isAdmin = ["admin", "master"].includes(user.role as string);
+      }
 
       // Check for Naver Property ID
       if (idParam.startsWith('naver-')) {
@@ -1231,6 +1236,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // Map to Property interface locally for frontend compatibility
+        const fullAddress = `인천광역시 강화군 ${crawledProp.flrInfo || ''}`;
         const mapped: any = {
           id: `naver-${crawledProp.atclNo}`,
           atclNo: crawledProp.atclNo,
@@ -1240,8 +1246,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           deposit: crawledProp.tradTpNm === '전세' ? standardizePrice(crawledProp.prc, 'deposit') : "0",
           depositAmount: crawledProp.tradTpNm === '월세' ? standardizePrice(crawledProp.prc, 'depositAmount') : "0",
           monthlyRent: standardizePrice(crawledProp.rentPrc, 'monthlyRent'),
-          // address는 flrInfo(지번 등)를 포함하므로 마스킹 처리
-          address: maskAddress(`인천광역시 강화군 ${crawledProp.flrInfo || ''}`),
+          // 관리자인 경우 마스킹 해제, 일반 사용자만 마스킹
+          address: isAdmin ? fullAddress : maskAddress(fullAddress),
           district: '수집매물',
           size: crawledProp.spc1,
           imageUrls: crawledProp.imgUrl ? [crawledProp.imgUrl] : [],

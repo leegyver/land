@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Clock, Eye, User as UserIcon, Edit, Trash2, MessageSquare, Sparkles, Smile, Image as ImageIcon, X, Loader2 } from "lucide-react";
 import DOMPurify from "dompurify";
+import { parseYouTubeLinks } from "@/lib/youtube";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useAuth } from "@/hooks/use-auth";
@@ -178,7 +179,12 @@ const PostDetailPage = () => {
                     <Card className="rounded-[2.5rem] border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden bg-white">
                         <CardContent className="p-8 md:p-12">
                             <div className="prose prose-slate prose-lg max-w-none prose-headings:font-black prose-headings:tracking-tight prose-strong:text-blue-600 prose-a:text-blue-600 no-underline"
-                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content) }}
+                                dangerouslySetInnerHTML={{ 
+                                    __html: DOMPurify.sanitize(parseYouTubeLinks(post.content), {
+                                        ADD_TAGS: ["iframe"],
+                                        ADD_ATTR: ["allow", "allowfullscreen", "frameborder", "scrolling", "style"]
+                                    }) 
+                                }}
                             />
 
                             {isAuthor && (

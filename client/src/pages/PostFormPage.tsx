@@ -20,6 +20,7 @@ import { Separator } from "@/components/ui/separator";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import DOMPurify from "dompurify";
+import { parseYouTubeLinks } from "@/lib/youtube";
 
 const categories = [
     { id: "qa", name: "궁금해요 부동산" },
@@ -259,7 +260,12 @@ const PostFormPage = () => {
                                 </div>
                                 <Separator className="mb-12 border-slate-50" />
                                 <div className="prose prose-slate prose-lg max-w-none prose-headings:font-black prose-strong:text-blue-600"
-                                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(form.getValues("content") || "*내용이 없습니다*") }}
+                                    dangerouslySetInnerHTML={{ 
+                                        __html: DOMPurify.sanitize(parseYouTubeLinks(form.getValues("content") || "*내용이 없습니다*"), {
+                                            ADD_TAGS: ["iframe"],
+                                            ADD_ATTR: ["allow", "allowfullscreen", "frameborder", "scrolling", "style"]
+                                        }) 
+                                    }}
                                 />
                                 {images.length > 0 && (
                                     <div className="mt-12 space-y-6">

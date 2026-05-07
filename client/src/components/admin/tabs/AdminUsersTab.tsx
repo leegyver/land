@@ -188,11 +188,11 @@ export default function AdminUsersTab({ users, currentUser, isLoading, isError, 
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <div className="h-9 w-9 bg-slate-900 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm ring-2 ring-white">
-                      {u.username.substring(0,1).toUpperCase()}
+                      {(u.nickname || u.username).substring(0,1).toUpperCase()}
                     </div>
                     <div>
-                      <div className="font-bold text-slate-900">{u.username}</div>
-                      <div className="text-[10px] text-slate-400">{u.nickname || ''}</div>
+                      <div className="font-bold text-slate-900">{u.nickname || u.username}</div>
+                      <div className="text-[10px] text-slate-400">{u.nickname ? u.username : ''}</div>
                     </div>
                   </div>
                 </TableCell>

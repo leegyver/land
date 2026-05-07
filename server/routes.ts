@@ -286,9 +286,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const defaultUrl = process.env.NODE_ENV === "production"
-        ? "http://1.234.53.82"
+        ? "https://leegyver.com"
         : "http://localhost:5000";
-      const appUrl = (process.env.APP_URL || defaultUrl).replace(/\/$/, "");
+      let rawAppUrl = (process.env.APP_URL || defaultUrl).replace(/\/$/, "");
+      
+      if (process.env.NODE_ENV === "production") {
+        if (rawAppUrl.includes("land.leegyver.com") || rawAppUrl.startsWith("http://")) {
+          rawAppUrl = "https://leegyver.com";
+        }
+      }
+      const appUrl = rawAppUrl;
 
       const authDebug = {
         naverCallback: `${appUrl}/api/auth/naver/callback`,

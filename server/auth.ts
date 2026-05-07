@@ -66,21 +66,26 @@ export function setupAuth(app: Express) {
   );
 
   // APP_URL 정제 (말단 슬래시 제거, 프로토콜 강제)
-  // 사용자가 환경변수를 설정하지 않아도 작동하도록 프로덕션 도메인을 기본값으로 설정
   const defaultUrl = process.env.NODE_ENV === "production"
-    ? "https://leegyver.com" // Production 도메인으로 변경 (IP 접속 시 Nginx 404 방지)
+    ? "https://leegyver.com" 
     : "http://localhost:5000";
 
   let rawAppUrl = (process.env.APP_URL || defaultUrl).replace(/\/$/, "");
 
-  // HTTPS 강제 로직 제거 (IP 접속 지원을 위해)
-  // 도메인 연결 후 SSL 적용 시에는 APP_URL에 https://... 를 설정하면 됨
+  // 프로덕션 환경에서 잘못된 도메인(land.leegyver.com 등)이나 http 프로토콜이 들어온 경우 강제 교정
+  if (process.env.NODE_ENV === "production") {
+    if (rawAppUrl.includes("land.leegyver.com") || rawAppUrl.startsWith("http://")) {
+      console.warn(`[AUTH] Invalid APP_URL detected: ${rawAppUrl}. Correcting to https://leegyver.com`);
+      rawAppUrl = "https://leegyver.com";
+    }
+  }
+
   if (!rawAppUrl.startsWith("http")) {
     rawAppUrl = `http://${rawAppUrl}`;
   }
   const appUrl = rawAppUrl;
 
-  console.log("Auth Callback Base URL:", appUrl);
+  console.log("[AUTH] Callback Base URL:", appUrl);
 
   // 네이버 로그인
   const profiles = {
@@ -93,7 +98,7 @@ export function setupAuth(app: Express) {
     },
     kakao: {
       clientID: process.env.KAKAO_API_KEY,
-      clientSecret: process.env.KAKAO_CLIENT_SECRET, // Kakao does not typically use clientSecret for web login
+      clientSecret: process.env.KAKAO_CLIENT_SECRET || undefined, 
       callbackURL: `${appUrl}/api/auth/kakao/callback`,
     }
   };

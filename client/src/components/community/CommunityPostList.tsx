@@ -65,7 +65,7 @@ export function CommunityPostList({ posts, isLoading, activeCategory }: Communit
                             )}
                             <div className="flex-1 space-y-4">
                                 <div className="flex items-center gap-2">
-                                    {post.isPinned && (
+                                    {!!post.isPinned && (
                                         <Badge className="font-black bg-indigo-600 text-white border-none px-3 py-1 rounded-full">
                                             📌 공지
                                         </Badge>

@@ -95,7 +95,7 @@ export default function NewsPage() {
                       alt={news.title}
                       className="w-full h-full object-cover"
                     />
-                    {news.isPinned && (
+                    {!!news.isPinned && (
                       <div className="absolute top-2 right-2">
                         <Badge variant="secondary" className="bg-primary text-white">주요뉴스</Badge>
                       </div>

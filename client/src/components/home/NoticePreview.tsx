@@ -41,7 +41,7 @@ const NoticePreview = () => {
                                     <div className="group cursor-pointer p-4 rounded-2xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100 relative overflow-hidden">
                                         <div className="flex flex-col gap-2 relative z-10">
                                             <div className="flex items-center gap-2 mb-1">
-                                                {notice.isPinned && (
+                                                {!!notice.isPinned && (
                                                     <Badge variant="destructive" className="px-1.5 py-0 text-[10px] font-bold">중요</Badge>
                                                 )}
                                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">

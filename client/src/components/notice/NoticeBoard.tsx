@@ -120,7 +120,7 @@ export default function NoticeBoard() {
                 <div className="border-b pb-4">
                     <div className="flex justify-between items-start mb-4">
                         <h2 className="text-2xl font-bold flex items-center gap-2">
-                            {selectedNotice.isPinned && <Pin className="h-5 w-5 text-primary fill-primary" />}
+                            {!!selectedNotice.isPinned && <Pin className="h-5 w-5 text-primary fill-primary" />}
                             {selectedNotice.title}
                         </h2>
                         <Button variant="ghost" onClick={() => setSelectedNotice(null)}>
@@ -209,7 +209,7 @@ export default function NoticeBoard() {
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-2">
-                                            {notice.isPinned && <Badge variant="secondary" className="text-xs">공지</Badge>}
+                                            {!!notice.isPinned && <Badge variant="secondary" className="text-xs">공지</Badge>}
                                             <span className="font-medium">{notice.title}</span>
                                         </div>
                                     </TableCell>

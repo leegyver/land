@@ -860,7 +860,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // --- Admin Statistics APIs ---
   app.get("/api/admin/stats/overview", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any)?.role !== 'admin') {
+    if (!req.isAuthenticated() || !['admin', 'master'].includes((req.user as any)?.role)) {
       return res.status(403).json({ error: '관리자만 이용 가능합니다.' });
     }
     const stats = await storage.getOverviewStats();
@@ -868,7 +868,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/admin/stats/daily", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any)?.role !== 'admin') {
+    if (!req.isAuthenticated() || !['admin', 'master'].includes((req.user as any)?.role)) {
       return res.status(403).json({ error: '관리자만 이용 가능합니다.' });
     }
     const days = parseInt(req.query.days as string) || 7;
@@ -877,7 +877,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/admin/stats/popular", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any)?.role !== 'admin') {
+    if (!req.isAuthenticated() || !['admin', 'master'].includes((req.user as any)?.role)) {
       return res.status(403).json({ error: '관리자만 이용 가능합니다.' });
     }
     const stats = await storage.getPopularStats();
@@ -886,7 +886,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // --- Site Config APIs ---
   app.get("/api/admin/config", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any)?.role !== 'admin') {
+    if (!req.isAuthenticated() || !['admin', 'master'].includes((req.user as any)?.role)) {
       return res.status(403).json({ error: '관리자만 이용 가능합니다.' });
     }
     const configs = await storage.getAllSiteConfigs();
@@ -894,7 +894,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/admin/config", async (req, res) => {
-    if (!req.isAuthenticated() || (req.user as any)?.role !== 'admin') {
+    if (!req.isAuthenticated() || !['admin', 'master'].includes((req.user as any)?.role)) {
       return res.status(403).json({ error: '관리자만 이용 가능합니다.' });
     }
     const { key, value } = req.body;

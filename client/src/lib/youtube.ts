@@ -29,43 +29,45 @@ export function extractYouTubeId(url: string): string | null {
 export function parseYouTubeLinks(html: string): string {
     if (!html) return html;
 
+    // 유튜브 임베드 HTML 생성을 위한 헬퍼 함수
+    const createEmbed = (videoId: string) => `
+        <div class="youtube-embed-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 20px 0; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
+            <iframe 
+                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
+                src="https://www.youtube.com/embed/${videoId}" 
+                title="YouTube video player" 
+                frameborder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                allowfullscreen>
+            </iframe>
+        </div>`;
+
     // 1. 이미 a 태그로 감싸진 YouTube 링크 처리
-    // 예: <a href="https://www.youtube.com/watch?v=XXX">...</a>
     const linkedRegex = /<a\s+(?:[^>]*?\s+)?href=["']((?:https?:\/\/)?(?:www\.|m\.|music\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)[a-zA-Z0-9_-]{11}[^"']*)["'][^>]*>.*?<\/a>/gi;
     
     let processedHtml = html.replace(linkedRegex, (match, url) => {
         const videoId = extractYouTubeId(url);
         if (videoId) {
-            return `<div class="youtube-embed-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 20px 0; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
-                <iframe 
-                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
-                    src="https://www.youtube.com/embed/${videoId}" 
-                    title="YouTube video player" 
-                    frameborder="0" 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                    allowfullscreen>
-                </iframe>
-            </div>`;
+            return createEmbed(videoId);
         }
         return match;
     });
 
     // 2. 태그 밖의 텍스트로 존재하는 YouTube 링크 처리
-    const plainRegex = /(?<!href=["']|src=["'])((?:https?:\/\/)?(?:www\.|m\.|music\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)[a-zA-Z0-9_-]{11}(?:\S*))/gi;
+    // 태그 자체(<...>) 또는 유튜브 URL을 찾습니다. 
+    // 유튜브 URL 매칭 시 태그 내부를 침범하지 않도록 [^<>\s"']* 를 사용하여 태그 시작 기호(<) 앞에서 멈추게 합니다.
+    const tagOrUrlRegex = /(<[^>]+>)|((?:https?:\/\/)?(?:www\.|m\.|music\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)[a-zA-Z0-9_-]{11}[^<>\s"']*)/gi;
     
-    processedHtml = processedHtml.replace(plainRegex, (match, url) => {
-        const videoId = extractYouTubeId(url);
-        if (videoId) {
-            return `<div class="youtube-embed-container" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 20px 0; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);">
-                <iframe 
-                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
-                    src="https://www.youtube.com/embed/${videoId}" 
-                    title="YouTube video player" 
-                    frameborder="0" 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                    allowfullscreen>
-                </iframe>
-            </div>`;
+    processedHtml = processedHtml.replace(tagOrUrlRegex, (match, tag, url) => {
+        // HTML 태그라면 변환 없이 그대로 반환 (태그 내부의 URL 보호)
+        if (tag) return tag;
+        
+        // 태그 외부의 URL인 경우에만 처리
+        if (url) {
+            const videoId = extractYouTubeId(url);
+            if (videoId) {
+                return createEmbed(videoId);
+            }
         }
         return match;
     });

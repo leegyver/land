@@ -182,6 +182,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
+  // Visit Logging Middleware
+  app.use(async (req, res, next) => {
+    // Only log GET requests for HTML or specific content APIs
+    // Exclude common static file extensions and system paths
+    const isStatic = req.url.match(/\.(png|jpg|jpeg|gif|svg|ico|css|js|woff|woff2|ttf|map)$/i);
+    const isExcluded = req.url.startsWith('/uploads') || 
+                       req.url.startsWith('/api/admin') || 
+                       req.url.startsWith('/api/status') ||
+                       req.url.startsWith('/@');
+
+    if (req.method === 'GET' && !isStatic && !isExcluded) {
+      const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+      const userAgent = req.headers['user-agent'];
+      const path = req.url;
+      const referer = req.headers['referer'];
+      const userId = (req.user as any)?.id;
+
+      try {
+        await storage.createVisitLog({
+          ip: Array.isArray(ip) ? ip[0] : ip,
+          userAgent,
+          path,
+          referer,
+          userId
+        });
+      } catch (err) {
+        // Silently fail logging to not disrupt the main request
+        console.error('[VisitLog Error]', err);
+      }
+    }
+    next();
+  });
+
   // Ensure uploads directory exists
   const uploadDir = path.join(process.cwd(), "public/uploads");
   if (!fs.existsSync(uploadDir)) {
@@ -229,8 +262,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // 사이트 설정 API
-  app.get('/api/site/config', (req, res) => {
-    res.json(siteConfig);
+  app.get('/api/site/config', async (req, res) => {
+    const gaId = await storage.getSiteConfig('ga_id');
+    res.json({
+      ...siteConfig,
+      gaId
+    });
   });
 
   // 시스템 상태 진단 API (배포 디버깅용)
@@ -798,6 +835,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // 캐시에 없거나 캐시 스킵 요청이면 DB에서 조회
+    } catch (e) {
+      console.error("Properties Fetch Error:", e);
+      res.status(500).json({ error: "Failed to fetch properties" });
+    }
+  });
+
+  // --- Admin Statistics APIs ---
+  app.get("/api/admin/stats/overview", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any)?.role !== 'admin') {
+      return res.status(403).json({ error: '관리자만 이용 가능합니다.' });
+    }
+    const stats = await storage.getOverviewStats();
+    res.json(stats);
+  });
+
+  app.get("/api/admin/stats/daily", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any)?.role !== 'admin') {
+      return res.status(403).json({ error: '관리자만 이용 가능합니다.' });
+    }
+    const days = parseInt(req.query.days as string) || 7;
+    const stats = await storage.getVisitStats(days);
+    res.json(stats);
+  });
+
+  app.get("/api/admin/stats/popular", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any)?.role !== 'admin') {
+      return res.status(403).json({ error: '관리자만 이용 가능합니다.' });
+    }
+    const stats = await storage.getPopularStats();
+    res.json(stats);
+  });
+
+  // --- Site Config APIs ---
+  app.get("/api/admin/config", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any)?.role !== 'admin') {
+      return res.status(403).json({ error: '관리자만 이용 가능합니다.' });
+    }
+    const configs = await storage.getAllSiteConfigs();
+    res.json(configs);
+  });
+
+  app.post("/api/admin/config", async (req, res) => {
+    if (!req.isAuthenticated() || (req.user as any)?.role !== 'admin') {
+      return res.status(403).json({ error: '관리자만 이용 가능합니다.' });
+    }
+    const { key, value } = req.body;
+    await storage.setSiteConfig(key, value);
+    res.json({ success: true });
+  });
       const properties = await storage.getProperties();
 
       // 보안 필터링 적용

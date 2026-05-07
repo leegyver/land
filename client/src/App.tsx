@@ -12,7 +12,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import { SwipeHandler } from "@/components/layout/SwipeHandler";
 import { ErrorBoundary } from "@/components/layout/ErrorBoundary";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 // 코드 분할: 각 페이지를 필요할 때만 로드 (초기 번들 크기 대폭 감소)
 const HomePage = lazy(() => import("@/pages/HomePage"));
@@ -39,10 +40,36 @@ const RoadviewPopupPage = lazy(() => import("@/pages/RoadviewPopupPage"));
 
 // 페이지 로딩 중 표시할 최소한의 스켈레톤
 const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-[60vh]">
-    <div className="animate-spin rounded-full h-10 w-10 border-4 border-slate-200 border-t-primary"></div>
   </div>
 );
+
+// Google Analytics script injection
+function GoogleAnalytics() {
+  const { data: config } = useQuery<any>({
+    queryKey: ["/api/site/config"],
+    staleTime: Infinity,
+  });
+
+  useEffect(() => {
+    if (config?.gaId) {
+      const script1 = document.createElement("script");
+      script1.async = true;
+      script1.src = `https://www.googletagmanager.com/gtag/js?id=${config.gaId}`;
+      document.head.appendChild(script1);
+
+      const script2 = document.createElement("script");
+      script2.innerHTML = `
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '${config.gaId}');
+      `;
+      document.head.appendChild(script2);
+    }
+  }, [config?.gaId]);
+
+  return null;
+}
 
 function Router({ user }: { user: any }) {
   return (
@@ -102,6 +129,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen flex flex-col font-sans theme-transition bg-slate-50">
+      <GoogleAnalytics />
       <ScrollToTop />
       <SwipeHandler />
       <Header />

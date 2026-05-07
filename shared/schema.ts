@@ -544,3 +544,41 @@ export const insertAdminNotificationSchema = z.object({
 export type AdminNotification = typeof adminNotifications.$inferSelect;
 export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSchema>;
 
+// Visit Logs schema
+export const visitLogs = sqliteTable("visit_logs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  ip: text("ip"),
+  userAgent: text("userAgent"),
+  path: text("path").notNull(),
+  referer: text("referer"),
+  userId: integer("userId"),
+  createdAt: text("createdAt"),
+});
+
+export const insertVisitLogSchema = z.object({
+  ip: z.string().nullable().optional(),
+  userAgent: z.string().nullable().optional(),
+  path: z.string(),
+  referer: z.string().nullable().optional(),
+  userId: z.number().nullable().optional(),
+});
+
+export type VisitLog = typeof visitLogs.$inferSelect;
+export type InsertVisitLog = z.infer<typeof insertVisitLogSchema>;
+
+// Site Configs schema
+export const siteConfigs = sqliteTable("site_configs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  key: text("key").notNull().unique(),
+  value: text("value").notNull(),
+  updatedAt: text("updatedAt"),
+});
+
+export const insertSiteConfigSchema = z.object({
+  key: z.string(),
+  value: z.string(),
+});
+
+export type SiteConfig = typeof siteConfigs.$inferSelect;
+export type InsertSiteConfig = z.infer<typeof insertSiteConfigSchema>;
+

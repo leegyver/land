@@ -14,7 +14,9 @@ import {
   type Comment as PostComment, type InsertComment as InsertPostComment,
   type Notification, type InsertNotification,
   type RealtorSubscription, type InsertRealtorSubscription,
-  type AdminNotification, type InsertAdminNotification
+  type AdminNotification, type InsertAdminNotification,
+  type VisitLog, type InsertVisitLog,
+  type SiteConfig, type InsertSiteConfig
 } from "@shared/schema";
 import { db } from "./db";
 import session from "express-session";
@@ -181,6 +183,25 @@ export interface IStorage {
   markAdminNotificationAsRead(id: number): Promise<boolean>;
   markAllAdminNotificationsAsRead(): Promise<boolean>;
   deleteAdminNotification(id: number): Promise<boolean>;
+
+  // Visit Logs methods
+  createVisitLog(log: InsertVisitLog): Promise<void>;
+  getVisitStats(days: number): Promise<{ date: string; visitors: number; views: number }[]>;
+  getPopularStats(): Promise<{
+    properties: { id: number; title: string; views: number }[];
+    posts: { id: number; title: string; views: number }[];
+  }>;
+  getOverviewStats(): Promise<{
+    todayVisitors: number;
+    totalVisitors: number;
+    totalProperties: number;
+    totalInquiries: number;
+  }>;
+
+  // Site Config methods
+  getSiteConfig(key: string): Promise<string | undefined>;
+  setSiteConfig(key: string, value: string): Promise<void>;
+  getAllSiteConfigs(): Promise<SiteConfig[]>;
 }
 
 export class SQLiteStorage implements IStorage {
@@ -569,6 +590,29 @@ export class SQLiteStorage implements IStorage {
         content TEXT,
         isRead INTEGER DEFAULT 0,
         createdAt TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run();
+
+    // Visit Logs
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS visit_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ip TEXT,
+        userAgent TEXT,
+        path TEXT NOT NULL,
+        referer TEXT,
+        userId INTEGER,
+        createdAt TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run();
+
+    // Site Configs
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS site_configs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        key TEXT UNIQUE NOT NULL,
+        value TEXT NOT NULL,
+        updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
       )
     `).run();
   }
@@ -1844,6 +1888,121 @@ export class SQLiteStorage implements IStorage {
 
   async incrementNoticeViewCount(id: number): Promise<void> {
     db.prepare('UPDATE notices SET viewCount = viewCount + 1 WHERE id = ?').run(id);
+  }
+
+  // --- Visit Logs ---
+
+  async createVisitLog(log: InsertVisitLog): Promise<void> {
+    db.prepare(`
+      INSERT INTO visit_logs (ip, userAgent, path, referer, userId)
+      VALUES (@ip, @userAgent, @path, @referer, @userId)
+    `).run({
+      ip: log.ip || null,
+      userAgent: log.userAgent || null,
+      path: log.path,
+      referer: log.referer || null,
+      userId: log.userId || null,
+    });
+  }
+
+  async getVisitStats(days: number): Promise<{ date: string; visitors: number; views: number }[]> {
+    const rows = db.prepare(`
+      WITH RECURSIVE dates(date) AS (
+        SELECT date('now', '-' || (? - 1) || ' days')
+        UNION ALL
+        SELECT date(date, '+1 day') FROM dates WHERE date < date('now')
+      )
+      SELECT 
+        d.date,
+        COUNT(DISTINCT v.ip) as visitors,
+        COUNT(v.id) as views
+      FROM dates d
+      LEFT JOIN visit_logs v ON date(v.createdAt) = d.date
+      GROUP BY d.date
+      ORDER BY d.date ASC
+    `).all(days) as any[];
+
+    return rows.map(r => ({
+      date: r.date,
+      visitors: r.visitors,
+      views: r.views
+    }));
+  }
+
+  async getPopularStats(): Promise<{
+    properties: { id: number; title: string; views: number }[];
+    posts: { id: number; title: string; views: number }[];
+  }> {
+    const properties = db.prepare(`
+      SELECT id, title, viewCount as views 
+      FROM properties 
+      ORDER BY viewCount DESC 
+      LIMIT 5
+    `).all() as any[];
+
+    const posts = db.prepare(`
+      SELECT id, title, viewCount as views 
+      FROM posts 
+      ORDER BY viewCount DESC 
+      LIMIT 5
+    `).all() as any[];
+
+    return { properties, posts };
+  }
+
+  async getOverviewStats(): Promise<{
+    todayVisitors: number;
+    totalVisitors: number;
+    totalProperties: number;
+    totalInquiries: number;
+  }> {
+    const todayVisitors = db.prepare(`
+      SELECT COUNT(DISTINCT ip) as count 
+      FROM visit_logs 
+      WHERE date(createdAt) = date('now')
+    `).get() as any;
+
+    const totalVisitors = db.prepare(`
+      SELECT COUNT(DISTINCT ip) as count 
+      FROM visit_logs
+    `).get() as any;
+
+    const totalProperties = db.prepare(`
+      SELECT COUNT(*) as count FROM properties
+    `).get() as any;
+
+    const totalInquiries = db.prepare(`
+      SELECT COUNT(*) as count FROM inquiries
+    `).get() as any;
+
+    return {
+      todayVisitors: todayVisitors.count,
+      totalVisitors: totalVisitors.count,
+      totalProperties: totalProperties.count,
+      totalInquiries: totalInquiries.count
+    };
+  }
+
+  // --- Site Configs ---
+
+  async getSiteConfig(key: string): Promise<string | undefined> {
+    const row = db.prepare('SELECT value FROM site_configs WHERE key = ?').get(key) as any;
+    return row ? row.value : undefined;
+  }
+
+  async setSiteConfig(key: string, value: string): Promise<void> {
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO site_configs (key, value, updatedAt)
+      VALUES (?, ?, ?)
+      ON CONFLICT(key) DO UPDATE SET
+        value = excluded.value,
+        updatedAt = excluded.updatedAt
+    `).run(key, value, now);
+  }
+
+  async getAllSiteConfigs(): Promise<SiteConfig[]> {
+    return db.prepare('SELECT * FROM site_configs').all() as SiteConfig[];
   }
 }
 

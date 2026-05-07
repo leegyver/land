@@ -835,6 +835,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // 캐시에 없거나 캐시 스킵 요청이면 DB에서 조회
+      const properties = await storage.getProperties();
+
+      // 보안 필터링 적용
+      const user = req.user as any;
+      const safeProperties = properties.map(p => {
+        const isAuthorized = isAdmin || (user?.id && p.ownerId === user.id);
+        return getSafeProperty(p, isAuthorized);
+      });
+
+      // 캐시 스킵이 아닐 경우에만 캐시 저장
+      if (!skipCache) {
+        // 관리자용과 일반 사용자용 캐시 분리
+        const cacheKey = isAdmin ? "properties_all_admin" : "properties_all_user";
+        memoryCache.set(cacheKey, safeProperties, 1 * 60 * 1000);
+      }
+
+      res.json(safeProperties);
     } catch (e) {
       console.error("Properties Fetch Error:", e);
       res.status(500).json({ error: "Failed to fetch properties" });
@@ -883,28 +900,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { key, value } = req.body;
     await storage.setSiteConfig(key, value);
     res.json({ success: true });
-  });
-      const properties = await storage.getProperties();
-
-      // 보안 필터링 적용
-      const user = req.user as any;
-      const safeProperties = properties.map(p => {
-        const isAuthorized = isAdmin || (user?.id && p.ownerId === user.id);
-        return getSafeProperty(p, isAuthorized);
-      });
-
-      // 캐시 스킵이 아닐 경우에만 캐시 저장
-      if (!skipCache) {
-        // 관리자용과 일반 사용자용 캐시 분리
-        const cacheKey = isAdmin ? "properties_all_admin" : "properties_all_user";
-        memoryCache.set(cacheKey, safeProperties, 1 * 60 * 1000);
-      }
-
-      res.json(safeProperties);
-    } catch (error) {
-      console.error("Properties fetch error:", error);
-      res.status(500).json({ message: "Failed to fetch properties" });
-    }
   });
 
   // Import Crawled Property to Internal Properties (One-click Import)

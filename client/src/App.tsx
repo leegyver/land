@@ -40,6 +40,8 @@ const RoadviewPopupPage = lazy(() => import("@/pages/RoadviewPopupPage"));
 
 // 페이지 로딩 중 표시할 최소한의 스켈레톤
 const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[60vh]">
+    <div className="animate-spin rounded-full h-10 w-10 border-4 border-slate-200 border-t-primary"></div>
   </div>
 );
 

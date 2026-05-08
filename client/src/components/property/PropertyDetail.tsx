@@ -22,7 +22,8 @@ import {
   ChevronRight,
   Sparkles,
   HelpCircle,
-  FileBadge
+  FileBadge,
+  Edit
 } from "lucide-react";
 import { SiKakaotalk } from "react-icons/si";
 import { siteConfig } from "@/config/siteConfig";
@@ -318,7 +319,17 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
     <div className="container mx-auto px-4 py-8">
       {/* 헤더 섹션 */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">{displayTitle}</h1>
+        <div className="flex justify-between items-start gap-4 mb-1">
+          <h1 className="text-2xl font-bold text-gray-900">{displayTitle}</h1>
+          {isAdminOrMaster && (
+            <Link href={`/admin/properties/edit/${property.id}`}>
+              <Button size="sm" className="hidden md:flex bg-slate-800 hover:bg-slate-900 text-white items-center gap-2">
+                <Edit className="w-4 h-4" />
+                매물 수정하기
+              </Button>
+            </Link>
+          )}
+        </div>
         <div className="flex flex-wrap items-center gap-1 mb-1">
           {property.type && (
             <Badge className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-1">
@@ -542,6 +553,14 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
 
           {/* 버튼 그룹 */}
           <div className="grid grid-cols-1 gap-2">
+            {isAdminOrMaster && (
+              <Link href={`/admin/properties/edit/${property.id}`} className="w-full">
+                <Button className="w-full flex items-center justify-center gap-2 h-12 bg-slate-800 hover:bg-slate-900 text-white">
+                  <Edit className="w-5 h-5" />
+                  매물 수정하기
+                </Button>
+              </Link>
+            )}
             <Button variant="outline" className="w-full flex items-center justify-center gap-2 h-12" onClick={toggleFavorite}>
               <Heart className={`w-5 h-5 ${favoriteData?.isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
               {favoriteData?.isFavorite ? '관심매물 등록됨' : '관심매물'}

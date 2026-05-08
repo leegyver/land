@@ -196,6 +196,19 @@ export interface IStorage {
     totalVisitors: number;
     totalProperties: number;
     totalInquiries: number;
+    todaySignups: number;
+    totalUsers: number;
+    realtorCount: number;
+    normalUserCount: number;
+    unreadInquiries: number;
+    totalNewsletters: number;
+  }>;
+
+  getDetailedStats(): Promise<{
+    propertyDistribution: { type: string; count: number }[];
+    userRoleDistribution: { role: string; count: number }[];
+    topReferrers: { referer: string; count: number }[];
+    deviceDistribution: { device: string; count: number }[];
   }>;
 
   // Site Config methods
@@ -1877,6 +1890,12 @@ export class SQLiteStorage implements IStorage {
     totalVisitors: number;
     totalProperties: number;
     totalInquiries: number;
+    todaySignups: number;
+    totalUsers: number;
+    realtorCount: number;
+    normalUserCount: number;
+    unreadInquiries: number;
+    totalNewsletters: number;
   }> {
     const todayVisitors = db.prepare(`
       SELECT COUNT(DISTINCT ip) as count 
@@ -1897,11 +1916,91 @@ export class SQLiteStorage implements IStorage {
       SELECT COUNT(*) as count FROM inquiries
     `).get() as any;
 
+    const todaySignups = db.prepare(`
+      SELECT COUNT(*) as count FROM users 
+      WHERE date(createdAt) = date('now')
+    `).get() as any;
+
+    const totalUsers = db.prepare(`
+      SELECT COUNT(*) as count FROM users
+    `).get() as any;
+
+    const realtorCount = db.prepare(`
+      SELECT COUNT(*) as count FROM users WHERE role = 'realtor'
+    `).get() as any;
+
+    const normalUserCount = db.prepare(`
+      SELECT COUNT(*) as count FROM users WHERE role = 'user'
+    `).get() as any;
+
+    const unreadInquiries = db.prepare(`
+      SELECT COUNT(*) as count FROM property_inquiries WHERE isReadByAdmin = 0
+    `).get() as any;
+
+    const totalNewsletters = db.prepare(`
+      SELECT COUNT(*) as count FROM newsletter_subscriptions
+    `).get() as any;
+
     return {
       todayVisitors: todayVisitors.count,
       totalVisitors: totalVisitors.count,
       totalProperties: totalProperties.count,
-      totalInquiries: totalInquiries.count
+      totalInquiries: totalInquiries.count,
+      todaySignups: todaySignups.count,
+      totalUsers: totalUsers.count,
+      realtorCount: realtorCount.count,
+      normalUserCount: normalUserCount.count,
+      unreadInquiries: unreadInquiries.count,
+      totalNewsletters: totalNewsletters.count
+    };
+  }
+
+  async getDetailedStats(): Promise<{
+    propertyDistribution: { type: string; count: number }[];
+    userRoleDistribution: { role: string; count: number }[];
+    topReferrers: { referer: string; count: number }[];
+    deviceDistribution: { device: string; count: number }[];
+  }> {
+    const propertyDistribution = db.prepare(`
+      SELECT type, COUNT(*) as count FROM properties GROUP BY type
+    `).all() as any[];
+
+    const userRoleDistribution = db.prepare(`
+      SELECT role, COUNT(*) as count FROM users GROUP BY role
+    `).all() as any[];
+
+    const topReferrers = db.prepare(`
+      SELECT 
+        CASE 
+          WHEN referer IS NULL OR referer = '' THEN 'Direct'
+          WHEN referer LIKE '%google%' THEN 'Google'
+          WHEN referer LIKE '%naver%' THEN 'Naver'
+          WHEN referer LIKE '%daum%' OR referer LIKE '%kakao%' THEN 'Daum/Kakao'
+          ELSE 'Other'
+        END as source,
+        COUNT(*) as count 
+      FROM visit_logs 
+      GROUP BY source 
+      ORDER BY count DESC 
+      LIMIT 5
+    `).all() as any[];
+
+    const deviceDistribution = db.prepare(`
+      SELECT 
+        CASE 
+          WHEN userAgent LIKE '%Mobi%' THEN 'Mobile'
+          ELSE 'Desktop'
+        END as device,
+        COUNT(*) as count 
+      FROM visit_logs 
+      GROUP BY device
+    `).all() as any[];
+
+    return {
+      propertyDistribution: propertyDistribution.map(r => ({ type: r.type, count: r.count })),
+      userRoleDistribution: userRoleDistribution.map(r => ({ role: r.role, count: r.count })),
+      topReferrers: topReferrers.map(r => ({ referer: r.source, count: r.count })),
+      deviceDistribution: deviceDistribution.map(r => ({ device: r.device, count: r.count }))
     };
   }
 

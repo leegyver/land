@@ -891,6 +891,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(stats);
   });
 
+  app.get("/api/admin/stats/detailed", async (req, res) => {
+    if (!req.isAuthenticated() || !['admin', 'master'].includes((req.user as any)?.role)) {
+      return res.status(403).json({ error: '관리자만 이용 가능합니다.' });
+    }
+    const stats = await storage.getDetailedStats();
+    res.json(stats);
+  });
+
   // --- Site Config APIs ---
   app.get("/api/admin/config", async (req, res) => {
     if (!req.isAuthenticated() || !['admin', 'master'].includes((req.user as any)?.role)) {

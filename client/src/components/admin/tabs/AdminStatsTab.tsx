@@ -1,8 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { 
-  LineChart, 
-  Line, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -10,13 +8,19 @@ import {
   ResponsiveContainer, 
   AreaChart, 
   Area,
+  PieChart,
+  Pie,
+  Cell,
   BarChart,
-  Bar
+  Bar,
+  Legend
 } from "recharts";
-import { Users, Eye, Home, MessageSquare, TrendingUp, Award } from "lucide-react";
+import { Users, Eye, Home, MessageSquare, TrendingUp, Award, UserPlus, Mail, ShieldAlert, Smartphone, Globe } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";
+
+const PIE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
 export default function AdminStatsTab() {
   const { data: overview, isLoading: isLoadingOverview } = useQuery<any>({
@@ -31,7 +35,11 @@ export default function AdminStatsTab() {
     queryKey: ["/api/admin/stats/popular"],
   });
 
-  if (isLoadingOverview || isLoadingDaily || isLoadingPopular) {
+  const { data: detailed, isLoading: isLoadingDetailed } = useQuery<any>({
+    queryKey: ["/api/admin/stats/detailed"],
+  });
+
+  if (isLoadingOverview || isLoadingDaily || isLoadingPopular || isLoadingDetailed) {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -39,48 +47,55 @@ export default function AdminStatsTab() {
             <Skeleton key={i} className="h-32 rounded-3xl" />
           ))}
         </div>
-        <Skeleton className="h-[400px] rounded-3xl" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <Skeleton className="lg:col-span-2 h-[400px] rounded-3xl" />
+          <Skeleton className="h-[400px] rounded-3xl" />
+        </div>
       </div>
     );
   }
 
   const statCards = [
     { 
-      title: "오늘 방문자", 
+      title: "방문자 (오늘/누적)", 
       value: overview?.todayVisitors || 0, 
+      subValue: overview?.totalVisitors || 0,
       icon: Users, 
       color: "text-blue-600", 
       bgColor: "bg-blue-50",
-      description: "오늘 접속한 고유 방문자 수"
+      description: "오늘 고유 방문자 및 전체 누적"
     },
     { 
-      title: "누적 방문자", 
-      value: overview?.totalVisitors || 0, 
-      icon: TrendingUp, 
+      title: "신규 가입 (오늘/전체)", 
+      value: overview?.todaySignups || 0, 
+      subValue: overview?.totalUsers || 0,
+      icon: UserPlus, 
       color: "text-emerald-600", 
       bgColor: "bg-emerald-50",
-      description: "전체 기간 고유 방문자 수"
+      description: "오늘 가입자와 전체 회원 수"
     },
     { 
-      title: "전체 매물", 
+      title: "매물 및 문의", 
       value: overview?.totalProperties || 0, 
+      subValue: overview?.unreadInquiries || 0,
       icon: Home, 
       color: "text-orange-600", 
       bgColor: "bg-orange-50",
-      description: "현재 등록된 총 매물 수"
+      description: "전체 매물 수 및 미확인 문의"
     },
     { 
-      title: "고객 문의", 
-      value: overview?.totalInquiries || 0, 
-      icon: MessageSquare, 
+      title: "구독 및 서비스", 
+      value: overview?.realtorCount || 0, 
+      subValue: overview?.totalNewsletters || 0,
+      icon: Award, 
       color: "text-purple-600", 
       bgColor: "bg-purple-50",
-      description: "전체 고객 상담 문의 건수"
+      description: "공인중개사 회원 및 뉴스레터 구독"
     },
   ];
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 pb-10">
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((card, idx) => (
@@ -92,7 +107,10 @@ export default function AdminStatsTab() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-medium text-slate-500">{card.title}</p>
-                  <h3 className="text-2xl font-bold text-slate-900">{card.value.toLocaleString()}</h3>
+                  <div className="flex items-baseline justify-end gap-2">
+                    <h3 className="text-2xl font-bold text-slate-900">{card.value.toLocaleString()}</h3>
+                    <span className="text-sm font-bold text-slate-400">/ {card.subValue.toLocaleString()}</span>
+                  </div>
                 </div>
               </div>
               <p className="text-xs text-slate-400 font-medium">{card.description}</p>
@@ -101,15 +119,15 @@ export default function AdminStatsTab() {
         ))}
       </div>
 
-      {/* Charts Section */}
+      {/* Main Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Visitor Trend Chart */}
         <Card className="lg:col-span-2 border-none shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden">
           <CardHeader className="p-8 pb-2">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-xl font-bold text-slate-900">방문자 추이</CardTitle>
-                <CardDescription>최근 14일간의 일별 방문자 및 조회수 현황</CardDescription>
+                <CardTitle className="text-xl font-bold text-slate-900">방문자 및 트래픽 추이</CardTitle>
+                <CardDescription>최근 14일간의 일별 방문자 및 페이지 조회수</CardDescription>
               </div>
               <div className="flex gap-4 text-xs font-bold uppercase tracking-wider">
                 <div className="flex items-center gap-1.5 text-blue-500">
@@ -121,7 +139,7 @@ export default function AdminStatsTab() {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="p-8 h-[400px]">
+          <CardContent className="p-8 h-[350px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={dailyStats}>
                 <defs>
@@ -225,6 +243,95 @@ export default function AdminStatsTab() {
                   </div>
                 ))}
               </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Secondary Detailed Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        {/* Property Type Distribution */}
+        <Card className="lg:col-span-2 border-none shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden">
+          <CardHeader className="p-8 pb-0">
+            <CardTitle className="text-lg font-bold text-slate-900">매물 유형별 분포</CardTitle>
+            <CardDescription>전체 매물의 카테고리별 비중</CardDescription>
+          </CardHeader>
+          <CardContent className="p-8 flex flex-col md:flex-row items-center gap-8">
+            <div className="h-[200px] w-full md:w-1/2">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={detailed?.propertyDistribution}
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="count"
+                    nameKey="type"
+                  >
+                    {detailed?.propertyDistribution?.map((_: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex-1 grid grid-cols-2 gap-4">
+              {detailed?.propertyDistribution?.map((item: any, i: number) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
+                  <span className="text-xs font-bold text-slate-600">{item.type}</span>
+                  <span className="text-xs font-medium text-slate-400">{item.count}건</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Device Distribution */}
+        <Card className="border-none shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden">
+          <CardHeader className="p-8 pb-2">
+            <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Smartphone className="w-5 h-5 text-slate-400" />
+              기기별 접속
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-8 pt-4">
+            <div className="space-y-6">
+              {detailed?.deviceDistribution?.map((item: any, i: number) => (
+                <div key={i} className="space-y-2">
+                  <div className="flex justify-between text-xs font-bold">
+                    <span className="text-slate-600">{item.device}</span>
+                    <span className="text-primary">{Math.round((item.count / (detailed.deviceDistribution.reduce((acc: any, curr: any) => acc + curr.count, 0) || 1)) * 100)}%</span>
+                  </div>
+                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full ${item.device === 'Mobile' ? 'bg-blue-500' : 'bg-slate-800'} transition-all`} 
+                      style={{ width: `${(item.count / (detailed.deviceDistribution.reduce((acc: any, curr: any) => acc + curr.count, 0) || 1)) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Top Referrers */}
+        <Card className="border-none shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden">
+          <CardHeader className="p-8 pb-2">
+            <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Globe className="w-5 h-5 text-slate-400" />
+              유입 경로 (Top 5)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-8 pt-4">
+            <div className="space-y-4">
+              {detailed?.topReferrers?.map((item: any, i: number) => (
+                <div key={i} className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-600">{item.referer}</span>
+                  <span className="text-xs font-medium text-slate-400">{item.count.toLocaleString()}회</span>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>

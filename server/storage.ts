@@ -1934,7 +1934,7 @@ export class SQLiteStorage implements IStorage {
     `).get() as any;
 
     const unreadInquiries = db.prepare(`
-      SELECT COUNT(*) as count FROM property_inquiries WHERE isReadByAdmin = 0
+      SELECT COUNT(*) as count FROM propertyInquiries WHERE isReadByAdmin = 0
     `).get() as any;
 
     const totalNewsletters = db.prepare(`

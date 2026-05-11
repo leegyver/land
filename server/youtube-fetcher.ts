@@ -75,7 +75,7 @@ async function fetchFromYouTubeRSS(channelId: string, limit: number = 5): Promis
       url: `https://www.youtube.com/watch?v=${videoId}`,
       publishedAt: item.published
     };
-  }).filter(v => v.id && v.id.length > 5); // 유효한 videoId만
+  }).filter((v: YouTubeVideo) => v.id && v.id.length > 5); // 유효한 videoId만
 }
 
 

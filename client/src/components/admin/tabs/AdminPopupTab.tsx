@@ -15,6 +15,8 @@ export default function AdminPopupTab() {
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPopup, setEditingPopup] = useState<Popup | null>(null);
+  const [imageUrl, setImageUrl] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
 
   const { data: popups = [], isLoading } = useQuery<Popup[]>({
     queryKey: ["/api/admin/popups"],
@@ -71,16 +73,41 @@ export default function AdminPopupTab() {
     }
   });
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    setIsUploading(true);
+    try {
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (res.ok) {
+        setImageUrl(data.url);
+        toast({ title: "성공", description: "이미지가 업로드되었습니다." });
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error: any) {
+      toast({ title: "오류", description: error.message || "이미지 업로드에 실패했습니다.", variant: "destructive" });
+      e.target.value = "";
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const data = {
       title: formData.get("title"),
       content: formData.get("content"),
-      imageUrl: formData.get("imageUrl"),
+      imageUrl: imageUrl,
       linkUrl: formData.get("linkUrl"),
-      startDate: formData.get("startDate"),
-      endDate: formData.get("endDate"),
+      startDate: formData.get("startDate") ? `${formData.get("startDate")}T00:00:00` : null,
+      endDate: formData.get("endDate") ? `${formData.get("endDate")}T23:59:59` : null,
       isActive: formData.get("isActive") === "on",
       displayOrder: parseInt(formData.get("displayOrder") as string || "0", 10),
     };
@@ -94,11 +121,13 @@ export default function AdminPopupTab() {
 
   const openEdit = (popup: Popup) => {
     setEditingPopup(popup);
+    setImageUrl(popup.imageUrl || "");
     setIsDialogOpen(true);
   };
 
   const openNew = () => {
     setEditingPopup(null);
+    setImageUrl("");
     setIsDialogOpen(true);
   };
 
@@ -172,8 +201,23 @@ export default function AdminPopupTab() {
               <Textarea id="content" name="content" defaultValue={editingPopup?.content || ""} rows={3} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="imageUrl">이미지 URL</Label>
-              <Input id="imageUrl" name="imageUrl" defaultValue={editingPopup?.imageUrl || ""} placeholder="/uploads/..." />
+              <Label>이미지 첨부</Label>
+              <Input type="file" accept="image/*" onChange={handleFileUpload} disabled={isUploading} />
+              {isUploading && <p className="text-xs text-blue-500">업로드 중...</p>}
+              {imageUrl && (
+                <div className="mt-2 relative">
+                  <img src={imageUrl} alt="Preview" className="w-full max-h-40 object-cover rounded-md border" />
+                  <Button 
+                    type="button" 
+                    variant="destructive" 
+                    size="sm" 
+                    className="absolute top-2 right-2 h-6 w-6 p-0 rounded-full"
+                    onClick={() => setImageUrl("")}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="linkUrl">연결 링크</Label>
@@ -182,11 +226,11 @@ export default function AdminPopupTab() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="startDate">시작일</Label>
-                <Input type="datetime-local" id="startDate" name="startDate" defaultValue={editingPopup?.startDate || ""} />
+                <Input type="date" id="startDate" name="startDate" defaultValue={editingPopup?.startDate ? editingPopup.startDate.split('T')[0] : ""} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="endDate">종료일</Label>
-                <Input type="datetime-local" id="endDate" name="endDate" defaultValue={editingPopup?.endDate || ""} />
+                <Input type="date" id="endDate" name="endDate" defaultValue={editingPopup?.endDate ? editingPopup.endDate.split('T')[0] : ""} />
               </div>
             </div>
             <div className="flex items-center gap-2">

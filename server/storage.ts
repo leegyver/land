@@ -16,7 +16,8 @@ import {
   type RealtorSubscription, type InsertRealtorSubscription,
   type AdminNotification, type InsertAdminNotification,
   type VisitLog, type InsertVisitLog,
-  type SiteConfig, type InsertSiteConfig
+  type SiteConfig, type InsertSiteConfig,
+  type Popup, type InsertPopup
 } from "@shared/schema";
 import { db } from "./db";
 import session from "express-session";
@@ -140,6 +141,16 @@ export interface IStorage {
   updateBanner(id: number, banner: Partial<InsertBanner>): Promise<Banner>;
   deleteBanner(id: number): Promise<boolean>;
   updateBannerOrder(id: number, newOrder: number): Promise<boolean>;
+
+  // Popup methods
+  getPopups(): Promise<Popup[]>;
+  getActivePopups(): Promise<Popup[]>;
+  getPopup(id: number): Promise<Popup | undefined>;
+  createPopup(popup: InsertPopup): Promise<Popup>;
+  updatePopup(id: number, popup: Partial<InsertPopup>): Promise<Popup | undefined>;
+  deletePopup(id: number): Promise<boolean>;
+  updatePopupOrder(id: number, newOrder: number): Promise<boolean>;
+
 
   // Notice methods
   getNotices(): Promise<Notice[]>;
@@ -626,6 +637,22 @@ export class SQLiteStorage implements IStorage {
         key TEXT UNIQUE NOT NULL,
         value TEXT NOT NULL,
         updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run();
+
+    // Popups
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS popups (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        content TEXT,
+        imageUrl TEXT,
+        linkUrl TEXT,
+        isActive INTEGER DEFAULT 1,
+        displayOrder INTEGER DEFAULT 0,
+        startDate TEXT,
+        endDate TEXT,
+        createdAt TEXT DEFAULT CURRENT_TIMESTAMP
       )
     `).run();
   }
@@ -2024,6 +2051,101 @@ export class SQLiteStorage implements IStorage {
 
   async getAllSiteConfigs(): Promise<SiteConfig[]> {
     return db.prepare('SELECT * FROM site_configs').all() as SiteConfig[];
+  }
+
+  // --- Popups ---
+
+  private mapPopup(row: any): Popup {
+    if (!row) return row;
+    return {
+      ...row,
+      isActive: this.toBoolean(row.isActive)
+    };
+  }
+
+  async getPopups(): Promise<Popup[]> {
+    const rows = db.prepare('SELECT * FROM popups ORDER BY displayOrder ASC, createdAt DESC').all() as any[];
+    return rows.map(r => this.mapPopup(r));
+  }
+
+  async getActivePopups(): Promise<Popup[]> {
+    const now = new Date().toISOString();
+    // Only return popups where isActive = 1 and (startDate/endDate are null or within range)
+    const query = `
+      SELECT * FROM popups 
+      WHERE isActive = 1 
+      AND (startDate IS NULL OR startDate = '' OR startDate <= ?)
+      AND (endDate IS NULL OR endDate = '' OR endDate >= ?)
+      ORDER BY displayOrder ASC, createdAt DESC
+    `;
+    const rows = db.prepare(query).all(now, now) as any[];
+    return rows.map(r => this.mapPopup(r));
+  }
+
+  async getPopup(id: number): Promise<Popup | undefined> {
+    const row = db.prepare('SELECT * FROM popups WHERE id = ?').get(id);
+    return row ? this.mapPopup(row) : undefined;
+  }
+
+  async createPopup(popup: InsertPopup): Promise<Popup> {
+    const now = new Date().toISOString();
+    const result = db.prepare(`
+      INSERT INTO popups (title, content, imageUrl, linkUrl, isActive, displayOrder, startDate, endDate, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      popup.title,
+      popup.content || null,
+      popup.imageUrl || null,
+      popup.linkUrl || null,
+      popup.isActive !== false ? 1 : 0,
+      popup.displayOrder || 0,
+      popup.startDate || null,
+      popup.endDate || null,
+      now
+    );
+    return this.getPopup(result.lastInsertRowid as number) as Promise<Popup>;
+  }
+
+  async updatePopup(id: number, popup: Partial<InsertPopup>): Promise<Popup | undefined> {
+    const current = await this.getPopup(id);
+    if (!current) return undefined;
+
+    const isActiveVal = popup.isActive !== undefined ? (popup.isActive ? 1 : 0) : current.isActive ? 1 : 0;
+
+    db.prepare(`
+      UPDATE popups
+      SET title = COALESCE(?, title),
+          content = COALESCE(?, content),
+          imageUrl = COALESCE(?, imageUrl),
+          linkUrl = COALESCE(?, linkUrl),
+          isActive = ?,
+          displayOrder = COALESCE(?, displayOrder),
+          startDate = COALESCE(?, startDate),
+          endDate = COALESCE(?, endDate)
+      WHERE id = ?
+    `).run(
+      popup.title !== undefined ? popup.title : null,
+      popup.content !== undefined ? popup.content : null,
+      popup.imageUrl !== undefined ? popup.imageUrl : null,
+      popup.linkUrl !== undefined ? popup.linkUrl : null,
+      isActiveVal,
+      popup.displayOrder !== undefined ? popup.displayOrder : null,
+      popup.startDate !== undefined ? popup.startDate : null,
+      popup.endDate !== undefined ? popup.endDate : null,
+      id
+    );
+
+    return this.getPopup(id);
+  }
+
+  async deletePopup(id: number): Promise<boolean> {
+    const result = db.prepare('DELETE FROM popups WHERE id = ?').run(id);
+    return result.changes > 0;
+  }
+
+  async updatePopupOrder(id: number, newOrder: number): Promise<boolean> {
+    const result = db.prepare('UPDATE popups SET displayOrder = ? WHERE id = ?').run(newOrder, id);
+    return result.changes > 0;
   }
 }
 

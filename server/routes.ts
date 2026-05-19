@@ -3588,6 +3588,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // --- 팝업 관리 API ---
+  app.get("/api/popups/active", async (req, res) => {
+    try {
+      const popups = await storage.getActivePopups();
+      res.json(popups);
+    } catch (error) {
+      console.error("활성 팝업 조회 오류:", error);
+      res.status(500).json({ message: "팝업을 불러오는 중 오류가 발생했습니다." });
+    }
+  });
+
+  app.get("/api/admin/popups", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
+        return res.status(403).json({ message: "관리자 권한이 필요합니다." });
+      }
+      const popups = await storage.getPopups();
+      res.json(popups);
+    } catch (error) {
+      console.error("전체 팝업 조회 오류:", error);
+      res.status(500).json({ message: "팝업 목록을 불러오는 중 오류가 발생했습니다." });
+    }
+  });
+
+  app.post("/api/admin/popups", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
+        return res.status(403).json({ message: "관리자 권한이 필요합니다." });
+      }
+      const popup = await storage.createPopup(req.body);
+      res.status(201).json(popup);
+    } catch (error) {
+      console.error("팝업 생성 오류:", error);
+      res.status(500).json({ message: "팝업 생성 중 오류가 발생했습니다." });
+    }
+  });
+
+  app.patch("/api/admin/popups/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
+        return res.status(403).json({ message: "관리자 권한이 필요합니다." });
+      }
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "유효하지 않은 팝업 ID입니다." });
+      const updated = await storage.updatePopup(id, req.body);
+      res.json(updated);
+    } catch (error) {
+      console.error("팝업 수정 오류:", error);
+      res.status(500).json({ message: "팝업 수정 중 오류가 발생했습니다." });
+    }
+  });
+
+  app.delete("/api/admin/popups/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
+        return res.status(403).json({ message: "관리자 권한이 필요합니다." });
+      }
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "유효하지 않은 팝업 ID입니다." });
+      await storage.deletePopup(id);
+      res.json({ message: "팝업이 삭제되었습니다." });
+    } catch (error) {
+      console.error("팝업 삭제 오류:", error);
+      res.status(500).json({ message: "팝업 삭제 중 오류가 발생했습니다." });
+    }
+  });
+
+  app.put("/api/admin/popups/order", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
+        return res.status(403).json({ message: "관리자 권한이 필요합니다." });
+      }
+      const { items } = req.body;
+      if (!Array.isArray(items)) return res.status(400).json({ message: "잘못된 데이터 형식입니다." });
+      for (const item of items) {
+        if (item.id && typeof item.displayOrder === 'number') {
+          await storage.updatePopupOrder(item.id, item.displayOrder);
+        }
+      }
+      res.json({ message: "팝업 순서가 업데이트되었습니다." });
+    } catch (error) {
+      console.error("팝업 순서 변경 오류:", error);
+      res.status(500).json({ message: "팝업 순서 변경 중 오류가 발생했습니다." });
+    }
+  });
+
+
   // 파일 업로드 API (이미지 리사이징 적용)
   app.post("/api/upload", upload.single("file"), async (req, res) => {
     try {

@@ -582,3 +582,31 @@ export const insertSiteConfigSchema = z.object({
 export type SiteConfig = typeof siteConfigs.$inferSelect;
 export type InsertSiteConfig = z.infer<typeof insertSiteConfigSchema>;
 
+// Popups schema
+export const popups = sqliteTable("popups", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  content: text("content"),
+  imageUrl: text("imageUrl"),
+  linkUrl: text("linkUrl"),
+  isActive: integer("isActive", { mode: 'boolean' }).default(true),
+  displayOrder: integer("displayOrder").default(0),
+  startDate: text("startDate"),
+  endDate: text("endDate"),
+  createdAt: text("createdAt"),
+});
+
+export const insertPopupSchema = z.object({
+  title: z.string(),
+  content: z.string().nullable().optional(),
+  imageUrl: z.string().nullable().optional(),
+  linkUrl: z.string().nullable().optional(),
+  isActive: z.boolean().optional(),
+  displayOrder: z.number().optional(),
+  startDate: z.string().nullable().optional(),
+  endDate: z.string().nullable().optional(),
+});
+
+export type Popup = typeof popups.$inferSelect;
+export type InsertPopup = z.infer<typeof insertPopupSchema>;
+

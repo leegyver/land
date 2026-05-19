@@ -18,6 +18,7 @@ import AdminStatsTab from "@/components/admin/tabs/AdminStatsTab";
 import AdminConfigTab from "@/components/admin/tabs/AdminConfigTab";
 
 import AdminBannerTab from "@/components/admin/tabs/AdminBannerTab";
+import AdminPopupTab from "@/components/admin/tabs/AdminPopupTab";
 
 // Types
 import { Property, News, User, NewsletterSubscription } from "@shared/schema";
@@ -116,6 +117,7 @@ export default function AdminPage() {
               <TabsTrigger value="news" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">뉴스 소식</TabsTrigger>
               <TabsTrigger value="newsletter" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">구독자 관리</TabsTrigger>
               <TabsTrigger value="banners" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">배너 관리</TabsTrigger>
+              <TabsTrigger value="popups" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">팝업 관리</TabsTrigger>
               <TabsTrigger value="users" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">사용자 권한</TabsTrigger>
               <TabsTrigger value="config" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">사이트 설정</TabsTrigger>
             </>
@@ -159,6 +161,10 @@ export default function AdminPage() {
 
             <TabsContent value="banners" className="mt-0">
               <AdminBannerTab />
+            </TabsContent>
+
+            <TabsContent value="popups" className="mt-0">
+              <AdminPopupTab />
             </TabsContent>
 
             <TabsContent value="users" className="mt-0">

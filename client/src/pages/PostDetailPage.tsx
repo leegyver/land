@@ -187,6 +187,16 @@ const PostDetailPage = () => {
                                 }}
                             />
 
+                            {post.imageUrls && post.imageUrls.length > 0 && (
+                                <div className="mt-12 space-y-6">
+                                    {post.imageUrls.map((url, i) => (
+                                        <div key={i} className="rounded-3xl overflow-hidden shadow-lg border border-slate-100">
+                                            <img src={url} alt={`첨부 이미지 ${i + 1}`} className="w-full h-auto" />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
                             {isAuthor && (
                                 <div className="flex justify-end gap-3 mt-16 pt-8 border-t border-slate-50">
                                     <Button

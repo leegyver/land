@@ -12,6 +12,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import ScrollToTop from "@/components/layout/ScrollToTop";
 import { SwipeHandler } from "@/components/layout/SwipeHandler";
 import { ErrorBoundary } from "@/components/layout/ErrorBoundary";
+import GlobalPopups from "@/components/common/GlobalPopups";
 import { lazy, Suspense, useEffect } from "react";
 
 // 코드 분할: 각 페이지를 필요할 때만 로드 (초기 번들 크기 대폭 감소)
@@ -102,6 +103,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen flex flex-col font-sans theme-transition bg-slate-50">
+      <GlobalPopups />
       <ScrollToTop />
       <SwipeHandler />
       <Header />

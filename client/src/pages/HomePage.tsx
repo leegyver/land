@@ -437,8 +437,8 @@ const HomePage = () => {
                         </Badge>
                         <h3 className="font-bold text-gray-900 line-clamp-1 text-sm group-hover:text-orange-500 transition-colors">{post.title}</h3>
                         <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-400 font-medium">
-                          <span className="flex items-center gap-1">
-                            {post.author?.username || '익명'}
+                          <span className="flex items-center gap-1 truncate max-w-[80px]">
+                            {post.author?.nickname || post.author?.username || '알 수 없음'}
                           </span>
                           <span>•</span>
                           <span>{post.createdAt ? format(new Date(post.createdAt), "MM.dd") : ""}</span>

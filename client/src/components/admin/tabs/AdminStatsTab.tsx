@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { 
@@ -23,6 +24,8 @@ import { ko } from "date-fns/locale";
 const PIE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
 export default function AdminStatsTab() {
+  const [metric, setMetric] = useState<"both" | "visitors" | "views">("both");
+
   const { data: overview, isLoading: isLoadingOverview } = useQuery<any>({
     queryKey: ["/api/admin/stats/overview"],
   });
@@ -124,18 +127,44 @@ export default function AdminStatsTab() {
         {/* Visitor Trend Chart */}
         <Card className="lg:col-span-2 border-none shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden">
           <CardHeader className="p-8 pb-2">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <CardTitle className="text-xl font-bold text-slate-900">방문자 및 트래픽 추이</CardTitle>
                 <CardDescription>최근 14일간의 일별 방문자 및 페이지 조회수</CardDescription>
               </div>
-              <div className="flex gap-4 text-xs font-bold uppercase tracking-wider">
-                <div className="flex items-center gap-1.5 text-blue-500">
-                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500" /> 방문자
-                </div>
-                <div className="flex items-center gap-1.5 text-slate-300">
-                  <div className="w-2.5 h-2.5 rounded-full bg-slate-300" /> 조회수
-                </div>
+              <div className="flex items-center bg-slate-100 p-1 rounded-2xl gap-0.5 text-xs font-semibold self-start md:self-auto shadow-inner">
+                <button
+                  onClick={() => setMetric("both")}
+                  className={`px-3 py-1.5 rounded-xl transition-all ${
+                    metric === "both" 
+                      ? "bg-white text-slate-900 shadow-sm" 
+                      : "text-slate-500 hover:text-slate-900"
+                  }`}
+                >
+                  전체 보기
+                </button>
+                <button
+                  onClick={() => setMetric("visitors")}
+                  className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
+                    metric === "visitors" 
+                      ? "bg-white text-blue-600 shadow-sm font-bold" 
+                      : "text-slate-500 hover:text-slate-900"
+                  }`}
+                >
+                  <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  방문자
+                </button>
+                <button
+                  onClick={() => setMetric("views")}
+                  className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${
+                    metric === "views" 
+                      ? "bg-white text-slate-900 shadow-sm font-bold" 
+                      : "text-slate-500 hover:text-slate-900"
+                  }`}
+                >
+                  <div className="w-2 h-2 rounded-full bg-slate-400" />
+                  조회수
+                </button>
               </div>
             </div>
           </CardHeader>
@@ -172,24 +201,28 @@ export default function AdminStatsTab() {
                   }}
                   labelFormatter={(date) => format(parseISO(date as string), "yyyy년 MM월 dd일", { locale: ko })}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="visitors" 
-                  stroke="#3b82f6" 
-                  strokeWidth={3}
-                  fillOpacity={1} 
-                  fill="url(#colorVisitors)" 
-                  name="방문자"
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="views" 
-                  stroke="#cbd5e1" 
-                  strokeWidth={2}
-                  fill="transparent" 
-                  name="조회수"
-                  strokeDasharray="5 5"
-                />
+                {(metric === "both" || metric === "visitors") && (
+                  <Area 
+                    type="monotone" 
+                    dataKey="visitors" 
+                    stroke="#3b82f6" 
+                    strokeWidth={3}
+                    fillOpacity={1} 
+                    fill="url(#colorVisitors)" 
+                    name="방문자"
+                  />
+                )}
+                {(metric === "both" || metric === "views") && (
+                  <Area 
+                    type="monotone" 
+                    dataKey="views" 
+                    stroke="#cbd5e1" 
+                    strokeWidth={2}
+                    fill="transparent" 
+                    name="조회수"
+                    strokeDasharray="5 5"
+                  />
+                )}
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>

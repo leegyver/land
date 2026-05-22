@@ -1416,6 +1416,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 관리자인 경우 원본 데이터 반환, 일반 사용자는 마스킹 (등록 중개사 혹은 소유자면 마스킹 해제)
       const isAuthorized = isAdmin || (user?.id && (Number(property.ownerId) === Number(user.id) || Number(property.agentId) === Number(user.id)));
+
+      // 일반 방문자(관리자나 소유주가 아닌 경우)의 조회인 경우에만 실시간 조회수 증가
+      if (!isAuthorized) {
+        try {
+          await storage.incrementPropertyViewCount(id);
+          property.viewCount = (property.viewCount || 0) + 1;
+        } catch (e) {
+          console.error("조회수 증가 실패:", e);
+        }
+      }
+
       res.json(getSafeProperty(property, isAuthorized));
     } catch (error) {
       console.error("Property ID fetch error:", error);

@@ -57,6 +57,7 @@ export interface IStorage {
   getPropertiesByOwner(ownerId: number): Promise<Property[]>;
   getPropertyByAtclNo(atclNo: string): Promise<Property | undefined>;
   searchInternalProperties(options: { isVisible?: boolean, district?: string | null, type?: string[] | null }): Promise<Property[]>;
+  incrementPropertyViewCount(id: number): Promise<boolean>;
 
   // New methods for Urgent/Negotiable
   getUrgentProperties(limit?: number): Promise<Property[]>;
@@ -722,6 +723,11 @@ export class SQLiteStorage implements IStorage {
   async getProperty(id: number): Promise<Property | undefined> {
     const row = db.prepare('SELECT * FROM properties WHERE id = ?').get(id);
     return row ? this.mapProperty(row) : undefined;
+  }
+
+  async incrementPropertyViewCount(id: number): Promise<boolean> {
+    const res = db.prepare('UPDATE properties SET viewCount = viewCount + 1 WHERE id = ?').run(id);
+    return res.changes > 0;
   }
 
   async getFeaturedProperties(limit?: number): Promise<Property[]> {

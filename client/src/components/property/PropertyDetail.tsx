@@ -710,6 +710,12 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                   <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-32">사용승인</td><td className="py-3 font-medium">{property.approvalDate}</td></tr>
                 )}
                 <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-32">유형</td><td className="py-3 font-medium">{property.type}</td></tr>
+                {property.landType && typeof property.landType === 'string' && property.landType.trim().length > 0 && (
+                  <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-32">지목</td><td className="py-3 font-medium">{property.landType}</td></tr>
+                )}
+                {property.zoneType && typeof property.zoneType === 'string' && property.zoneType.trim().length > 0 && (
+                  <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-32">용도지역</td><td className="py-3 font-medium">{property.zoneType}</td></tr>
+                )}
               </tbody>
             </table>
           </div>

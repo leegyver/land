@@ -120,7 +120,6 @@ function PropertyFormContent() {
             const fetchProperty = async () => {
                 try {
                     setLoading(true);
-                    console.log("부동산 ID:", params.id);
                     const response = await fetch(`/api/properties/${params.id}`);
 
                     if (!response.ok) {
@@ -128,7 +127,6 @@ function PropertyFormContent() {
                     }
 
                     const data = await response.json();
-                    console.log("불러온 부동산 데이터:", data);
 
                     // 단일 이미지 필드 제거 및 연결할 필드들 정리
                     const { imageUrl, ...restData } = data;
@@ -358,7 +356,6 @@ function PropertyFormContent() {
                 submissionData.featuredImageIndex = 0; // 프론트엔드/백엔드 모두 최우선 인덱스는 이제 항상 0입니다.
             }
 
-            console.log("부동산 저장 요청 데이터:", submissionData);
 
             const url = isEditMode ? `/api/properties/${params.id}` : "/api/properties";
             const method = isEditMode ? "PATCH" : "POST";

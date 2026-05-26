@@ -38,8 +38,6 @@ export default function PricingPage() {
                 const merchant_uid = `ORD_${Date.now()}`;
                 const orderName = `이가이버 부동산 ${planType === 'monthly' ? '월간' : '연간'} 멤버십`;
 
-                console.log("[이가이버 디버깅] 요청 채널키:", CHANNEL_KEY);
-                console.log("[이가이버 디버깅] 스토어ID:", STORE_ID);
 
                 PortOne.requestPayment({
                     storeId: STORE_ID,

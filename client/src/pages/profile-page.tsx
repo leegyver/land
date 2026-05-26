@@ -141,7 +141,6 @@ export default function ProfilePage() {
 
   // 비밀번호 폼 제출 처리
   const onPasswordSubmit = (data: PasswordFormValues) => {
-    console.log("비밀번호 변경 요청:", data);
     changePasswordMutation.mutate(data);
   };
 

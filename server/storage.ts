@@ -1121,6 +1121,15 @@ export class SQLiteStorage implements IStorage {
   async updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined> {
     const dbUser: any = { ...user };
     
+    // 보안: 허용된 컬럼명만 사용 (SQL 인젝션 방지)
+    const ALLOWED_COLUMNS = [
+      'username', 'nickname', 'password', 'email', 'phone', 'role',
+      'provider', 'providerId', 'birthDate', 'birthTime', 'isLunar',
+      'businessName', 'realtorName', 'realtorPhone', 'realtorAddress',
+      'realtorPhoto', 'realtorLicenseNo', 'businessLicenseNo',
+      'isVerified', 'isActive', 'subscriptionTier', 'subscriptionExpiresAt'
+    ];
+    
     // Map TypeScript keys to Database columns
     if ('businessLicenseNo' in dbUser) {
       dbUser.realtorLicenseNo = dbUser.businessLicenseNo;
@@ -1130,6 +1139,13 @@ export class SQLiteStorage implements IStorage {
     if (dbUser.isVerified !== undefined) dbUser.isVerified = this.toInt(dbUser.isVerified);
     if (dbUser.isLunar !== undefined) dbUser.isLunar = this.toInt(dbUser.isLunar);
     if (dbUser.isActive !== undefined) dbUser.isActive = this.toInt(dbUser.isActive);
+
+    // 보안: 허용되지 않은 키 제거
+    for (const key of Object.keys(dbUser)) {
+      if (!ALLOWED_COLUMNS.includes(key)) {
+        delete dbUser[key];
+      }
+    }
 
     const fields = Object.keys(dbUser).map(k => `${k} = @${k}`).join(', ');
     if (!fields) return this.getUser(id);

@@ -36,13 +36,13 @@ storage.initializeData().catch(console.error);
 
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
-    secret: process.env.SESSION_SECRET || "한국부동산비밀키",
+    secret: process.env.SESSION_SECRET || randomBytes(32).toString('hex'),
     resave: false,
     saveUninitialized: false,
     cookie: {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7일
       httpOnly: true,
-      secure: false,      // HTTP 접속 지원을 위해 false (HTTPS 전용 도메인이라면 true로)
+      secure: process.env.NODE_ENV === 'production',  // 프로덕션에서는 HTTPS 전용
       sameSite: "lax",    // CSRF 방어 + 같은 사이트 요청 허용
     },
     store: storage.sessionStore // 세션 스토어 설정
@@ -365,7 +365,6 @@ export function setupAuth(app: Express) {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
     // 비밀번호 정보는 클라이언트에 반환하지 않음
     const { password, ...userWithoutPassword } = req.user;
-    console.log(`[AUTH DEBUG] User API - ID: ${userWithoutPassword.id}, Role: ${userWithoutPassword.role}`);
     res.json(userWithoutPassword);
   });
 

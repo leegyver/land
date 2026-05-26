@@ -1,9 +1,9 @@
 import fetch from 'node-fetch';
 import { log } from '../vite';
 
-const KAKAO_API_KEY = process.env.KAKAO_API_KEY || '2f6ff1b2e516329499e3e785899159e9';
-const NAVER_CLIENT_ID = process.env.NAVER_CLIENT_ID || 'oQaPNTLGNHOR9h7wT6rX';
-const NAVER_CLIENT_SECRET = process.env.NAVER_CLIENT_SECRET || 'uXZY4wDjku';
+const KAKAO_API_KEY = process.env.KAKAO_API_KEY || '';
+const NAVER_CLIENT_ID = process.env.NAVER_CLIENT_ID || '';
+const NAVER_CLIENT_SECRET = process.env.NAVER_CLIENT_SECRET || '';
 
 interface GeocodeResult {
   lat: number;

@@ -50,6 +50,23 @@ const siteConfig = {
   siteContactEmail: "contact@ganghwaestate.com"
 };
 
+// 허용된 파일 확장자 및 MIME 타입 (보안: 이미지/문서만 허용)
+const ALLOWED_MIME_TYPES = [
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+  'application/pdf', 'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+];
+
+const fileFilter = (req: any, file: any, cb: any) => {
+  if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error(`허용되지 않는 파일 형식입니다: ${file.mimetype}`), false);
+  }
+};
+
 // Multer 설정
 const upload = multer({
   storage: multer.diskStorage({
@@ -65,6 +82,8 @@ const upload = multer({
       cb(null, uniqueSuffix + path.extname(file.originalname));
     },
   }),
+  fileFilter,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB 제한
 });
 
 /**
@@ -272,9 +291,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // 시스템 상태 진단 API (배포 디버깅용)
+  // 시스템 상태 진단 API (관리자 전용)
   app.get('/api/status', async (req, res) => {
     try {
+      // 보안: 관리자만 서버 상태 확인 가능
+      if (!req.isAuthenticated() || !["admin", "master"].includes((req.user as any)?.role)) {
+        return res.status(403).json({ message: "관리자 권한이 필요합니다." });
+      }
       // 1. 환경 변수 존재 여부 확인 (값은 숨김)
       const envCheck = {
         FIREBASE_JSON: !!process.env.FIREBASE_SERVICE_ACCOUNT_JSON,
@@ -349,9 +372,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   */
 
-  // Replit 데이터 가져오기 API (마이그레이션)
+  // Replit 데이터 가져오기 API (마이그레이션 - 관리자 전용)
   app.get('/api/admin/import-from-replit', async (req, res) => {
     try {
+      // 보안: 관리자 인증 필수
+      if (!req.isAuthenticated() || !["admin", "master"].includes((req.user as any)?.role)) {
+        return res.status(403).json({ message: "관리자 권한이 필요합니다." });
+      }
       const REMOTE_URL = 'https://real-estate-hub-mino312044.replit.app';
 
       // 동적 import로 fetch 사용
@@ -2198,49 +2225,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // --- Admin User Management API ---
-  app.get("/api/admin/users", async (req, res) => {
-    try {
-      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
-        return res.status(403).json({ message: "접근 권한이 없습니다." });
-      }
-      const users = await storage.getAllUsers();
-      res.json(users);
-    } catch (error) {
-      res.status(500).json({ message: "사용자 목록을 불러오는 데 실패했습니다." });
-    }
-  });
-
-  app.patch("/api/admin/users/:id/role", async (req, res) => {
-    try {
-      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
-        return res.status(403).json({ message: "접근 권한이 없습니다." });
-      }
-      const id = parseInt(req.params.id);
-      const { role, realtorInfo } = req.body;
-      const updatedUser = await storage.updateUserRole(id, role, realtorInfo);
-      if (!updatedUser) return res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
-      res.json(updatedUser);
-    } catch (error) {
-      res.status(500).json({ message: "사용자 역할 변경에 실패했습니다." });
-    }
-  });
-
-  app.delete("/api/admin/users/:id", async (req, res) => {
-    try {
-      if (!req.isAuthenticated() || (!["admin", "master"].includes((req.user as any).role))) {
-        return res.status(403).json({ message: "접근 권한이 없습니다." });
-      }
-      const id = parseInt(req.params.id);
-      const success = await storage.deleteUser(id);
-      if (success) {
-        res.json({ success: true });
-      } else {
-        res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
-      }
-    } catch (error) {
-      res.status(500).json({ message: "사용자 삭제에 실패했습니다." });
-    }
-  });
+  // 주의: GET /api/admin/users, DELETE /api/admin/users/:id 는 auth.ts에서 
+  // 비밀번호 필터링이 적용된 안전한 버전으로 이미 등록되어 있습니다.
+  // 중복 등록 제거됨 (보안: 비밀번호 해시 유출 방지)
 
   app.get("/api/admin/newsletter", async (req, res) => {
     try {
@@ -4627,7 +4614,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const pendingUsers = db.prepare("SELECT * FROM users WHERE role = 'realtor' AND (isVerified = 0 OR isVerified IS NULL)").all();
-      res.json(pendingUsers);
+      // 보안: 비밀번호 해시 제거 후 응답
+      const safeUsers = (pendingUsers as any[]).map(({ password, ...user }) => user);
+      res.json(safeUsers);
     } catch (e) {
       console.error("Pending realtors fetch error:", e);
       res.status(500).json({ message: "목록 조회 실패" });
@@ -4661,19 +4650,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/users", async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
-    const user = req.user as any;
-    if (!["admin", "master"].includes(user.role as string)) return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
-    
-    try {
-      const allUsers = await storage.getAllUsers();
-      res.json(allUsers);
-    } catch (e) {
-      console.error("Fetch all users error:", e);
-      res.status(500).json({ message: "목록 조회 실패" });
-    }
-  });
+  // GET /api/admin/users 는 auth.ts에서 비밀번호 필터링이 적용된 안전한 버전으로 등록됨
+  // 중복 핸들러 제거됨 (보안: 비밀번호 해시 유출 방지)
 
   app.patch("/api/admin/users/:id/role", async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
@@ -4681,7 +4659,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!["admin", "master"].includes(user.role as string)) return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
     
     const targetId = parseInt(req.params.id);
+    if (isNaN(targetId)) return res.status(400).json({ message: "유효하지 않은 사용자 ID입니다." });
+    
     const { role } = req.body;
+    // 보안: 허용된 역할 값만 허용
+    const ALLOWED_ROLES = ["user", "realtor", "admin", "master"];
+    if (!role || !ALLOWED_ROLES.includes(role)) {
+      return res.status(400).json({ message: `유효하지 않은 역할입니다. 허용: ${ALLOWED_ROLES.join(', ')}` });
+    }
+    
     try {
       await storage.updateUserRole(targetId, role);
       res.json({ success: true });
@@ -4893,8 +4879,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // --- Upload API ---
-  app.post("/api/upload", upload.single("file"), (req, res) => {
+  // --- Upload API (인증 필수) ---
+  app.post("/api/upload", (req, res, next) => {
+    // 보안: 인증된 사용자만 파일 업로드 가능
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ message: "로그인이 필요합니다." });
+    }
+    next();
+  }, upload.single("file"), (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "파일이 업로드되지 않았습니다." });

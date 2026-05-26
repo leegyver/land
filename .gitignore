@@ -70,3 +70,10 @@ RECOVERY_FINAL.db
 database.sqlite
 database.sqlite-shm
 database.sqlite-wal
+
+# Security: deployment scripts with credentials
+deploy.cjs
+update-env.cjs
+deploy_key.pub
+scratch/sync_env.cjs
+_old_backup_files/

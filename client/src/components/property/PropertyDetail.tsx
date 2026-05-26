@@ -574,7 +574,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
       </div>
 
       {/* 관리자/소유자 전용 정보 (권한이 있을 때만 노출) */}
-      {(property.ownerName || property.ownerPhone || property.tenantName || property.tenantPhone || property.clientName || property.clientPhone || property.privateNote || property.unitNumber) && (
+      {(isAdminOrMaster || isOwner) && (property.ownerName || property.ownerPhone || property.tenantName || property.tenantPhone || property.clientName || property.clientPhone || property.privateNote || property.unitNumber) && (
         <div className="mb-12">
           <Card className="border-red-200 bg-red-50/30 overflow-hidden">
             <div className="bg-red-500 px-4 py-2 flex items-center gap-2">

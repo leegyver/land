@@ -121,6 +121,8 @@ function getSafeProperty(property: any, isAuthorized: boolean) {
     unitNumber, // 동호수 (미노출금지)
     ownerName, ownerPhone, // 소유자 정보 (미노출금지)
     tenantName, tenantPhone, // 임차인 정보 (미노출금지)
+    clientName, clientPhone, // 의뢰인 정보 (미노출금지)
+    privateNote, // 비공개 메모 (미노출금지)
     realtorInfo,
     ...safeProperty
   } = property;

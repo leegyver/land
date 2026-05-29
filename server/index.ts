@@ -11,6 +11,11 @@ console.log("SERVER_STARTUP_ENV:", app.get("env"), "PROCESS_ENV:", process.env.N
 
 // ... existing code ...
 app.use('/uploads', express.static(path.join(process.cwd(), 'public/uploads')));
+
+// TikTok 도메인 인증 파일
+app.get('/tiktokV6JLOhGfd1OpG9gAXRslQZun6X3tncNc.txt', (_req, res) => {
+  res.sendFile(path.join(process.cwd(), 'tiktokV6JLOhGfd1OpG9gAXRslQZun6X3tncNc.txt'));
+});
 // 파일 업로드 크기 제한 증가 (기본값 100kb → 10MB)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));

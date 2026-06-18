@@ -1403,6 +1403,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Property not found" });
       }
 
+      // 미노출 매물은 관리자만 접근 가능 (일반 사용자/검색엔진 접근 차단)
+      if (property.isVisible === false && !isAdmin) {
+        return res.status(404).json({ message: "Property not found" });
+      }
+
       // 중개사 정보 결정 (master 또는 admin 조회 후 하드코딩된 이가이버 원장 데이터 fallback 적용)
       let defaultRealtor = null;
       try {

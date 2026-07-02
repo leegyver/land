@@ -36,8 +36,10 @@ export default function AdminPage() {
     const tabParam = searchParams.get("tab");
     if (tabParam) {
       setActiveTab(tabParam);
+    } else if (user && user.role !== "admin" && user.role !== "master") {
+      setActiveTab("properties");
     }
-  }, [location]);
+  }, [location, user]);
 
   const { 
     data: properties = [], 
@@ -107,13 +109,14 @@ export default function AdminPage() {
       </div>
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="stats" value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="bg-slate-100/80 p-1 rounded-2xl border border-slate-200 shadow-inner h-14 w-full md:w-auto flex overflow-x-auto whitespace-nowrap">
-          <TabsTrigger value="stats" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">통계 요약</TabsTrigger>
+          {(user?.role === "admin" || user?.role === "master") && (
+            <TabsTrigger value="stats" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">통계 요약</TabsTrigger>
+          )}
           <TabsTrigger value="properties" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">부동산 매물 관리</TabsTrigger>
           {(user?.role === "admin" || user?.role === "master") && (
             <>
-
               <TabsTrigger value="news" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">뉴스 소식</TabsTrigger>
               <TabsTrigger value="newsletter" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">구독자 관리</TabsTrigger>
               <TabsTrigger value="banners" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">배너 관리</TabsTrigger>
@@ -124,9 +127,11 @@ export default function AdminPage() {
           )}
         </TabsList>
 
-        <TabsContent value="stats" className="mt-0">
-          <AdminStatsTab />
-        </TabsContent>
+        {(user?.role === "admin" || user?.role === "master") && (
+          <TabsContent value="stats" className="mt-0">
+            <AdminStatsTab />
+          </TabsContent>
+        )}
 
         <TabsContent value="properties" className="mt-0 focus-visible:outline-none">
           <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden">

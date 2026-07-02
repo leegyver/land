@@ -1426,8 +1426,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         realtorLicenseNo: d?.businessLicenseNo || d?.realtorLicenseNo || "28710-2021-00012"
       };
 
-      if (property.agentId) {
-        const agent = await storage.getUser(property.agentId);
+      const displayAgentId = property.ownerId || property.agentId;
+      if (displayAgentId) {
+        const agent = await storage.getUser(displayAgentId);
         const a = agent as any;
         if (a && a.role === 'realtor') {
           (property as any).realtorInfo = {

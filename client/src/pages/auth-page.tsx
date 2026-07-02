@@ -59,14 +59,14 @@ export default function AuthPage() {
   const { toast } = useToast();
 
   const handleFindUsername = async () => {
-    if (!findEmail && !findPhone) {
-      toast({ variant: "destructive", description: "이메일 또는 전화번호를 입력하세요." });
+    if (!findEmail) {
+      toast({ variant: "destructive", description: "이메일을 입력하세요." });
       return;
     }
     setIsFinding(true);
     setFindResult(null);
     try {
-      const res = await apiRequest("POST", "/api/auth/find-username", { email: findEmail, phone: findPhone });
+      const res = await apiRequest("POST", "/api/auth/find-username", { email: findEmail });
       const data = await res.json();
       setFindResult(data.username);
     } catch (e: any) {
@@ -77,14 +77,14 @@ export default function AuthPage() {
   };
 
   const handleFindPassword = async () => {
-    if (!findUsernameInput || (!findEmail && !findPhone)) {
-      toast({ variant: "destructive", description: "아이디와 이메일(또는 전화번호)을 모두 입력하세요." });
+    if (!findUsernameInput || !findEmail) {
+      toast({ variant: "destructive", description: "아이디와 이메일을 모두 입력하세요." });
       return;
     }
     setIsFinding(true);
     setFindResult(null);
     try {
-      const res = await apiRequest("POST", "/api/auth/find-password", { username: findUsernameInput, email: findEmail, phone: findPhone });
+      const res = await apiRequest("POST", "/api/auth/find-password", { username: findUsernameInput, email: findEmail });
       const data = await res.json();
       setFindResult(data.message);
     } catch (e: any) {
@@ -185,8 +185,8 @@ export default function AuthPage() {
             </DialogTitle>
             <DialogDescription>
               {findMode === "username" 
-                ? "가입 시 등록한 이메일 또는 전화번호를 입력해주세요."
-                : "가입 시 등록한 아이디와 이메일(또는 전화번호)을 입력해주세요."}
+                ? "가입 시 등록한 이메일을 입력해주세요."
+                : "가입 시 등록한 아이디와 이메일을 입력해주세요."}
             </DialogDescription>
           </DialogHeader>
 
@@ -200,14 +200,6 @@ export default function AuthPage() {
             <div className="space-y-2">
               <Label className="text-sm font-medium">이메일</Label>
               <Input value={findEmail} onChange={e => setFindEmail(e.target.value)} placeholder="ex) example@naver.com" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase my-2">
-              <span className="bg-white px-2 text-muted-foreground z-10">또는</span>
-              <Separator className="absolute top-1/2 w-full" />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">전화번호</Label>
-              <Input value={findPhone} onChange={e => setFindPhone(e.target.value)} placeholder="ex) 010-1234-5678" />
             </div>
 
             {findResult && (

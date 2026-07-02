@@ -253,17 +253,15 @@ export function setupAuth(app: Express) {
   // 아이디 찾기 API
   app.post("/api/auth/find-username", async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { email, phone } = req.body;
-      if (!email && !phone) {
-        return res.status(400).json({ message: "이메일 또는 전화번호를 입력해주세요." });
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ message: "이메일을 입력해주세요." });
       }
 
       // storage에 getAllUsers가 없다면 다른 방법 사용, 혹은 추가해야 함
       // 현재 존재하는 storage.getAllUsers() 사용
       const users = await storage.getAllUsers();
-      const matchedUser = users.find(u => 
-        (email && u.email === email) || (phone && u.phone === phone)
-      );
+      const matchedUser = users.find(u => u.email === email);
 
       if (!matchedUser) {
         return res.status(404).json({ message: "가입된 사용자 정보를 찾을 수 없습니다." });
@@ -288,9 +286,9 @@ export function setupAuth(app: Express) {
   // 비밀번호 찾기 API (임시 비밀번호 발급)
   app.post("/api/auth/find-password", async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { username, email, phone } = req.body;
-      if (!username || (!email && !phone)) {
-        return res.status(400).json({ message: "아이디와 이메일(또는 전화번호)을 정확히 입력해주세요." });
+      const { username, email } = req.body;
+      if (!username || !email) {
+        return res.status(400).json({ message: "아이디와 이메일을 정확히 입력해주세요." });
       }
 
       const user = await storage.getUserByUsername(username);
@@ -302,8 +300,7 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ message: `해당 계정은 소셜 로그인(${user.provider}) 전용입니다. 제공자를 통해 로그인해주세요.` });
       }
 
-      const isMatch = (email && user.email === email) || (phone && user.phone === phone);
-      if (!isMatch) {
+      if (user.email !== email) {
          return res.status(404).json({ message: "일치하는 회원 정보가 없습니다." });
       }
 
@@ -313,28 +310,23 @@ export function setupAuth(app: Express) {
       
       await storage.updateUser(user.id, { password: hashedPassword });
 
-      // 이메일이 있으면 이메일로 전송
-      if (user.email) {
-        const htmlContent = `
-          <div style="font-family: 'Malgun Gothic', Dotum, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #eaeaea; border-radius: 8px; border-top: 5px solid #3b82f6;">
-            <h2 style="color: #1e293b; margin-bottom: 20px; font-size: 24px; text-align: center;">이가이버 부동산 임시 비밀번호 안내</h2>
-            <p style="color: #475569; font-size: 16px; line-height: 1.6; text-align: center;">
-              요청하신 임시 비밀번호가 발급되었습니다.
-            </p>
-            <div style="margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 6px; text-align: center;">
-              <span style="font-size: 24px; font-weight: bold; letter-spacing: 4px; color: #3b82f6;">${tempPassword}</span>
-            </div>
-            <p style="color: #64748b; font-size: 14px; margin-top: 20px; text-align: center;">
-              로그인 후 반드시 내 프로필에서 비밀번호를 변경해 주시기 바랍니다.
-            </p>
+      // 이메일로 전송
+      const htmlContent = `
+        <div style="font-family: 'Malgun Gothic', Dotum, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #eaeaea; border-radius: 8px; border-top: 5px solid #3b82f6;">
+          <h2 style="color: #1e293b; margin-bottom: 20px; font-size: 24px; text-align: center;">이가이버 부동산 임시 비밀번호 안내</h2>
+          <p style="color: #475569; font-size: 16px; line-height: 1.6; text-align: center;">
+            요청하신 임시 비밀번호가 발급되었습니다.
+          </p>
+          <div style="margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 6px; text-align: center;">
+            <span style="font-size: 24px; font-weight: bold; letter-spacing: 4px; color: #3b82f6;">${tempPassword}</span>
           </div>
-        `;
-        await sendEmail(user.email, "[이가이버 부동산] 임시 비밀번호 안내", htmlContent);
-        return res.json({ message: "등록된 이메일로 임시 비밀번호를 발송했습니다." });
-      } else {
-        // 이메일이 없는 경우
-        return res.json({ message: `임시 비밀번호가 발급되었습니다: [ ${tempPassword} ]\n로그인 후 즉시 비밀번호를 변경해 주세요.` });
-      }
+          <p style="color: #64748b; font-size: 14px; margin-top: 20px; text-align: center;">
+            로그인 후 반드시 내 프로필에서 비밀번호를 변경해 주시기 바랍니다.
+          </p>
+        </div>
+      `;
+      await sendEmail(user.email, "[이가이버 부동산] 임시 비밀번호 안내", htmlContent);
+      return res.json({ message: "등록된 이메일로 임시 비밀번호를 발송했습니다." });
     } catch (error) {
       next(error);
     }

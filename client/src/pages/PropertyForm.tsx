@@ -59,7 +59,7 @@ function PropertyFormContent() {
         bedrooms: 0,
         bathrooms: 0,
         imageUrls: [], // 다중 이미지 저장용 배열
-        agentId: 4, // 기본 에이전트 ID 설정 (정현우 중개사)
+        agentId: 0, // 나중에 useEffect에서 설정됨
         featured: false,
         isLongTerm: false,
 
@@ -114,6 +114,18 @@ function PropertyFormContent() {
         isVisible: true, // 노출 여부 추가
     });
 
+    // 로그인된 사용자의 ID를 기본값으로 설정
+    useEffect(() => {
+        if (!isEditMode && user) {
+            setFormData(prev => ({
+                ...prev,
+                agentId: user.id,
+                ownerId: user.role === 'realtor' ? user.id : null,
+                agentName: user.role === 'realtor' && user.businessName ? user.businessName : "이가이버 공인중개사"
+            }));
+        }
+    }, [user, isEditMode]);
+
     // 편집 모드일 경우 기존 데이터 로드
     useEffect(() => {
         if (isEditMode && params.id) {
@@ -161,7 +173,7 @@ function PropertyFormContent() {
                         bathrooms: safeNumber(data.bathrooms),
 
                         // 필수 필드 데이터 보완
-                        agentId: safeNumber(data.agentId, 4), // 기본값 4 (정현우 중개사)
+                        agentId: safeNumber(data.agentId, user?.id || 4), // 기본값 현재 사용자 또는 4
                         dealType: normalizedDealType,
                         deposit: safeString(data.deposit),
                         depositAmount: safeString(data.depositAmount),
@@ -322,8 +334,8 @@ function PropertyFormContent() {
             // 서버에 맞게 데이터 타입 변환하기
             const submissionData: any = {
                 ...formData,
-                agentId: Number(formData.agentId) || 4, // 기본값 4 설정
-                agent_id: Number(formData.agentId) || 4, // DB 호환
+                agentId: Number(formData.agentId) || user?.id || 4, // 기본값 설정
+                agent_id: Number(formData.agentId) || user?.id || 4, // DB 호환
                 totalFloors: Number(formData.totalFloors || 0),
                 size: formData.size !== null && formData.size !== undefined && formData.size !== "" ? String(formData.size) : "0",
                 bedrooms: Number(formData.bedrooms || 0),

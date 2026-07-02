@@ -52,6 +52,20 @@ export function SubscriptionTab({ user }: SubscriptionTabProps) {
         },
     });
 
+    const deleteAccountMutation = useMutation({
+        mutationFn: async () => {
+            const res = await apiRequest("POST", "/api/user/delete");
+            return res.json();
+        },
+        onSuccess: () => {
+            toast({ title: "회원 탈퇴 완료", description: "성공적으로 회원 탈퇴 처리되었습니다." });
+            window.location.href = "/";
+        },
+        onError: (error: Error) => {
+            toast({ title: "탈퇴 오류", description: error.message, variant: "destructive" });
+        },
+    });
+
     if (isLoading) {
         return (
             <div className="flex justify-center p-8">
@@ -314,6 +328,35 @@ export function SubscriptionTab({ user }: SubscriptionTabProps) {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Account Deletion */}
+            <div className="flex justify-end pt-4">
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="ghost" className="text-xs text-slate-400 hover:text-red-500 hover:bg-transparent">
+                            회원 탈퇴
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>정말 탈퇴하시겠습니까?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                탈퇴 시 모든 정보가 삭제되며 복구할 수 없습니다. 계속하시겠습니까?
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>취소</AlertDialogCancel>
+                            <AlertDialogAction 
+                                onClick={() => deleteAccountMutation.mutate()}
+                                className="bg-red-500 hover:bg-red-600 focus:ring-red-500"
+                                disabled={deleteAccountMutation.isPending}
+                            >
+                                {deleteAccountMutation.isPending ? "처리 중..." : "탈퇴하기"}
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
         </div>
     );
 }

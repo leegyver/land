@@ -199,6 +199,10 @@ export function setupAuth(app: Express) {
     try {
       const { username, password, email, phone, nickname, birthDate, birthTime, isLunar } = req.body;
       
+      if (!email || email.trim() === "") {
+        return res.status(400).json({ message: "이메일을 반드시 입력해주세요." });
+      }
+
       if (!phone || phone.trim() === "") {
         return res.status(400).json({ message: "전화번호를 반드시 입력해주세요." });
       }
@@ -354,10 +358,23 @@ export function setupAuth(app: Express) {
   });
 
   app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ message: "인증되지 않은 사용자입니다." });
-    // 비밀번호 정보는 클라이언트에 반환하지 않음
-    const { password, ...userWithoutPassword } = req.user;
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    const { password, ...userWithoutPassword } = req.user as User;
     res.json(userWithoutPassword);
+  });
+
+  app.post("/api/user/delete", async (req, res, next) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    try {
+      const user = req.user as User;
+      await storage.deleteUser(user.id);
+      req.logout((err) => {
+        if (err) return next(err);
+        res.json({ message: "회원 탈퇴가 완료되었습니다." });
+      });
+    } catch (error) {
+      next(error);
+    }
   });
 
   // 관리자 권한 검사 미들웨어

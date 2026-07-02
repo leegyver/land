@@ -19,7 +19,7 @@ type LoginData = {
 
 // 회원가입 데이터 스키마 (비밀번호 확인, 이메일, 전화번호 추가)
 export const registerSchema = insertUserSchema.extend({
-  email: z.union([z.string().email("유효한 이메일 주소를 입력해주세요"), z.literal("")]).optional(),
+  email: z.string().email("유효한 이메일 주소를 입력해주세요").min(1, "이메일을 입력해주세요."),
   phone: z.string().optional(),
   nickname: z.string().optional(),
   birthDate: z.string().optional(),

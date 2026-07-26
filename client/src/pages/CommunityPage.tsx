@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet";
 import { Post } from "@shared/schema";
@@ -10,7 +11,11 @@ import { CommunityPostList } from "@/components/community/CommunityPostList";
 import { getCategoryInfo, CATEGORY_ALL } from "@/components/community/constants";
 
 export default function CommunityPage() {
-    const [activeCategory, setActiveCategory] = useState(CATEGORY_ALL);
+    const [location] = useLocation();
+    const searchParams = new URLSearchParams(window.location.search);
+    const initialCategory = searchParams.get("category") || CATEGORY_ALL;
+    
+    const [activeCategory, setActiveCategory] = useState(initialCategory);
     const { sajuData } = useSaju();
     const { user } = useAuth();
 

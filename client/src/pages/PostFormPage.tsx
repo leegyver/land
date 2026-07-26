@@ -183,6 +183,15 @@ const PostFormPage = () => {
             });
             if (!res.ok) throw new Error("업로드 실패");
             const data = await res.json();
+            
+            // 에디터 커서 위치에 이미지 태그 삽입
+            const quill = quillRef.current?.getEditor();
+            if (quill) {
+                const range = quill.getSelection(true);
+                quill.insertEmbed(range.index, 'image', data.url);
+                quill.setSelection(range.index + 1, 0);
+            }
+            
             setImages(prev => [...prev, data.url]);
             toast({ title: "업로드 성공", description: "이미지가 추가되었습니다." });
         } catch (error) {

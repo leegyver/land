@@ -16,7 +16,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState, useRef } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { Textarea } from "@/components/ui/textarea";
-import { CommunityPostList } from "@/components/community/CommunityPostList";
 
 const categories = {
     qa: { name: "궁금해요 부동산", color: "bg-blue-600" },
@@ -38,16 +37,6 @@ const PostDetailPage = () => {
             if (!res.ok) throw new Error("게시글을 찾을 수 없습니다.");
             return res.json();
         }
-    });
-
-    const { data: relatedPosts, isLoading: isLoadingRelated } = useQuery<Post[]>({
-        queryKey: ["/api/posts", post?.category],
-        queryFn: async () => {
-            const res = await fetch(`/api/posts?category=${post?.category}`);
-            if (!res.ok) throw new Error("관련 게시글을 찾을 수 없습니다.");
-            return res.json();
-        },
-        enabled: !!post?.category
     });
 
     // Increment view count on mount
@@ -198,15 +187,7 @@ const PostDetailPage = () => {
                                 }}
                             />
 
-                            {post.imageUrls && post.imageUrls.length > 0 && (
-                                <div className="mt-12 space-y-6">
-                                    {post.imageUrls.map((url, i) => (
-                                        <div key={i} className="rounded-3xl overflow-hidden shadow-lg border border-slate-100">
-                                            <img src={url} alt={`첨부 이미지 ${i + 1}`} className="w-full h-auto" />
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+
 
                             {isAuthor && (
                                 <div className="flex justify-end gap-3 mt-16 pt-8 border-t border-slate-50">
@@ -422,53 +403,6 @@ const PostDetailPage = () => {
                             </Button>
                         </div>
                         <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
-                    </div>
-
-                    {/* 하단 카테고리 이동 버튼 및 글 목록 */}
-                    <div className="mt-16 space-y-12">
-                        {/* 카테고리 버튼들 */}
-                        <div className="flex flex-wrap gap-3 justify-center">
-                            <Button 
-                                variant="outline" 
-                                className="rounded-full border-slate-200 hover:bg-slate-50 font-bold px-6 shadow-sm"
-                                onClick={() => setLocation('/community')}
-                            >
-                                전체보기
-                            </Button>
-                            <Button 
-                                variant="outline" 
-                                className="rounded-full border-blue-200 hover:bg-blue-50 text-blue-600 hover:text-blue-700 font-bold px-6 shadow-sm"
-                                onClick={() => setLocation('/community?category=qa')}
-                            >
-                                궁금해요 부동산
-                            </Button>
-                            <Button 
-                                variant="outline" 
-                                className="rounded-full border-emerald-200 hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700 font-bold px-6 shadow-sm"
-                                onClick={() => setLocation('/community?category=architecture')}
-                            >
-                                건축과 리모델링
-                            </Button>
-                            <Button 
-                                variant="outline" 
-                                className="rounded-full border-amber-200 hover:bg-amber-50 text-amber-600 hover:text-amber-700 font-bold px-6 shadow-sm"
-                                onClick={() => setLocation('/community?category=stories')}
-                            >
-                                강화도 이야기
-                            </Button>
-                        </div>
-
-                        {/* 다른 글 목록 */}
-                        <div>
-                            <h3 className="text-2xl font-black mb-6 text-slate-800 border-b border-slate-100 pb-4">
-                                {post ? categories[post.category as keyof typeof categories]?.name : ''}의 다른 글
-                            </h3>
-                            <CommunityPostList 
-                                posts={relatedPosts?.filter(p => p.id !== post?.id).slice(0, 5)} 
-                                isLoading={isLoadingRelated} 
-                                activeCategory={post?.category || "all"} 
-                            />
-                        </div>
                     </div>
                 </div>
             </div>

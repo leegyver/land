@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Helmet } from "react-helmet";
 import { Post } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
@@ -13,6 +14,13 @@ export default function CommunityPage() {
     const [activeCategory, setActiveCategory] = useState(CATEGORY_ALL);
     const { sajuData } = useSaju();
     const { user } = useAuth();
+    const [location] = useLocation();
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const cat = params.get('category') || CATEGORY_ALL;
+        setActiveCategory(cat);
+    }, [location]);
 
     const { data: posts, isLoading } = useQuery<Post[]>({
         queryKey: ["/api/posts", activeCategory],

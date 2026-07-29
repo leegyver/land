@@ -39,6 +39,16 @@ const PostDetailPage = () => {
         }
     });
 
+    const { data: categoryPosts } = useQuery<Post[]>({
+        queryKey: ["/api/posts", post?.category],
+        queryFn: async () => {
+            const res = await fetch(`/api/posts?category=${post?.category}`);
+            if (!res.ok) throw new Error("게시글을 불러올 수 없습니다.");
+            return res.json();
+        },
+        enabled: !!post?.category
+    });
+
     // Increment view count on mount
     useEffect(() => {
         if (id) {
@@ -383,6 +393,72 @@ const PostDetailPage = () => {
                             </div>
                         </CardContent>
                     </Card>
+
+                    {/* Navigation & Other Posts */}
+                    <div className="mt-8 space-y-6">
+                        <div className="flex flex-wrap gap-3 justify-center md:justify-start">
+                            <Button 
+                                variant="outline" 
+                                className="rounded-full border-slate-200 hover:bg-slate-50 font-bold"
+                                onClick={() => setLocation("/community")}
+                            >
+                                전체보기
+                            </Button>
+                            <Button 
+                                variant="outline" 
+                                className="rounded-full border-slate-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 font-bold"
+                                onClick={() => setLocation("/community?category=qa")}
+                            >
+                                궁금해요 부동산
+                            </Button>
+                            <Button 
+                                variant="outline" 
+                                className="rounded-full border-slate-200 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 font-bold"
+                                onClick={() => setLocation("/community?category=architecture")}
+                            >
+                                건축과 리모델링
+                            </Button>
+                            <Button 
+                                variant="outline" 
+                                className="rounded-full border-slate-200 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 font-bold"
+                                onClick={() => setLocation("/community?category=stories")}
+                            >
+                                강화도 이야기
+                            </Button>
+                        </div>
+
+                        {categoryPosts && categoryPosts.length > 0 && (
+                            <Card className="rounded-[2.5rem] border-slate-100 shadow-xl shadow-slate-200/50 bg-white overflow-hidden">
+                                <CardContent className="p-6 md:p-8">
+                                    <h3 className="text-lg font-black mb-4 flex items-center gap-2">
+                                        이 카테고리의 다른 글
+                                    </h3>
+                                    <div className="space-y-0">
+                                        {categoryPosts.filter(p => p.id !== Number(id)).slice(0, 5).map(p => (
+                                            <div key={p.id} className="group border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                                                <Link href={`/community/${p.id}`} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4">
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="text-slate-900 font-bold truncate group-hover:text-blue-600 transition-colors">
+                                                            {p.title}
+                                                        </h4>
+                                                    </div>
+                                                    <div className="flex items-center gap-4 text-sm text-slate-400 font-medium shrink-0">
+                                                        <span>{(p as any).author?.nickname || (p as any).author?.username || '익명'}</span>
+                                                        <span>{format(new Date(p.createdAt), "MM.dd", { locale: ko })}</span>
+                                                    </div>
+                                                </Link>
+                                            </div>
+                                        ))}
+                                        {categoryPosts.filter(p => p.id !== Number(id)).length === 0 && (
+                                            <div className="p-4 text-center text-slate-500 font-medium">
+                                                다른 글이 없습니다.
+                                            </div>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </div>
 
                     <div className="mt-12 p-8 rounded-[2.5rem] bg-gradient-to-br from-slate-900 to-indigo-950 text-white relative overflow-hidden group">
                         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">

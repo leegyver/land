@@ -197,6 +197,11 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/config"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/properties/latest"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/properties/featured"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/properties/urgent"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/properties/negotiable"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/properties/long-term"] });
       toast({ title: "설정 완료", description: "메인페이지 노출 개수가 변경되었습니다." });
     }
   });

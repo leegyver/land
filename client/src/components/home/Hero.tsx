@@ -58,7 +58,9 @@ const Hero = () => {
   };
 
   return (
-    <section className="relative w-full py-2 lg:py-2 flex items-center justify-center overflow-hidden">
+    <section className="relative w-full overflow-hidden">
+      {/* Desktop/Tablet Hero (Hidden on Mobile) */}
+      <div className="hidden md:flex relative w-full py-12 lg:py-24 items-center justify-center min-h-[500px]">
       {/* Background Image with Parallax */}
       <motion.div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat z-0"
@@ -199,6 +201,44 @@ const Hero = () => {
             <div className="absolute -inset-4 bg-orange-500/20 blur-3xl rounded-full z-0 opacity-50" />
           </motion.div>
 
+        </div>
+      </div>
+
+      {/* Mobile Compact Hero (Visible only on Mobile) */}
+      <div className="flex md:hidden flex-col px-4 py-6 bg-slate-900 relative z-20">
+        <div className="relative mb-4 w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Input
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="검색어 입력 (예: 길상면)"
+            className="pl-10 pr-10 h-11 bg-white/10 backdrop-blur-md border-white/20 text-white placeholder:text-gray-400 rounded-xl focus-visible:ring-orange-500/50 text-sm"
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={toggleListening}
+            className={`absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full hover:bg-white/10 ${isListening ? "text-red-500 animate-pulse" : "text-gray-400 hover:text-white"}`}
+          >
+            {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          </Button>
+        </div>
+        <div className="flex gap-3">
+          <Button
+            onClick={() => window.open(KAKAO_CHANNEL_URL, '_blank')}
+            className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold h-11 rounded-xl text-sm"
+          >
+            상담 신청하기
+          </Button>
+          <Button
+            onClick={() => setLocation("/properties")}
+            variant="outline"
+            className="flex-1 bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 hover:text-white font-bold h-11 rounded-xl text-sm transition-all"
+          >
+            지도 매물보기
+          </Button>
         </div>
       </div>
     </section>

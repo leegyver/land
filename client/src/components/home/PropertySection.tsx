@@ -73,7 +73,7 @@ const PropertySection = ({ title, queryKey, bgColor = "bg-white", limit = 12 }: 
             <div className="container mx-auto px-4">
                 {title && (
                     <div className="text-left mb-6">
-                        <h2 className="text-xl md:text-2xl font-bold text-slate-900">{title}</h2>
+                        <h2 className="text-lg md:text-2xl font-bold text-slate-900">{title}</h2>
                     </div>
                 )}
 

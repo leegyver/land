@@ -220,8 +220,8 @@ const HomePage = () => {
         <div className="container mx-auto px-4">
 
 
-          <div className="flex justify-between items-center mb-1 mt-0">
-            <h2 className="text-2xl font-bold">✨ 최신매물</h2>
+          <div className="flex justify-between items-center mb-2 mt-4 md:mt-0 md:mb-1">
+            <h2 className="text-xl md:text-2xl font-bold">✨ 최신매물</h2>
             <Link href="/properties">
               <Button variant="ghost" size="sm" className="text-gray-500 hover:text-primary">
                 더보기 <ArrowRight className="ml-1 h-3 w-3" />
@@ -234,8 +234,8 @@ const HomePage = () => {
             bgColor="bg-white"
           />
 
-          <div className="flex justify-between items-center mb-1 mt-6">
-            <h2 className="text-2xl font-bold">🔥 급매물</h2>
+          <div className="flex justify-between items-center mb-2 mt-8 md:mt-6 md:mb-1">
+            <h2 className="text-xl md:text-2xl font-bold">🔥 급매물</h2>
             <Link href="/properties?tag=urgent">
               <Button variant="ghost" size="sm" className="text-gray-500 hover:text-primary">
                 더보기 <ArrowRight className="ml-1 h-3 w-3" />
@@ -249,8 +249,8 @@ const HomePage = () => {
           />
 
           {/* 흥정 매물 섹션 */}
-          <div className="flex justify-between items-center mb-1 mt-6">
-            <h2 className="text-2xl font-bold">🤝 가격 협의 가능</h2>
+          <div className="flex justify-between items-center mb-2 mt-8 md:mt-6 md:mb-1">
+            <h2 className="text-xl md:text-2xl font-bold">🤝 가격 협의 가능</h2>
             <Link href="/properties?tag=negotiable">
               <Button variant="ghost" size="sm" className="text-gray-500 hover:text-primary">
                 더보기 <ArrowRight className="ml-1 h-3 w-3" />
@@ -264,8 +264,8 @@ const HomePage = () => {
           />
 
           {/* 장기투자 매물 섹션 */}
-          <div className="flex justify-between items-center mb-1 mt-6">
-            <h2 className="text-2xl font-bold text-red-600">📈 장기투자 추천</h2>
+          <div className="flex justify-between items-center mb-2 mt-8 md:mt-6 md:mb-1">
+            <h2 className="text-xl md:text-2xl font-bold text-red-600">📈 장기투자 추천</h2>
             <Link href="/properties?tag=long-term">
               <Button variant="ghost" size="sm" className="text-gray-500 hover:text-primary">
                 더보기 <ArrowRight className="ml-1 h-3 w-3" />
@@ -279,8 +279,8 @@ const HomePage = () => {
           />
 
           {/* 추천 매물 섹션 */}
-          <div className="flex justify-between items-center mb-1 mt-6">
-            <h2 className="text-2xl font-bold flex items-center"><ThumbsUp className="w-6 h-6 mr-2 text-primary" />추천 매물</h2>
+          <div className="flex justify-between items-center mb-2 mt-8 md:mt-6 md:mb-1">
+            <h2 className="text-xl md:text-2xl font-bold flex items-center"><ThumbsUp className="w-5 h-5 md:w-6 md:h-6 mr-2 text-primary" />추천 매물</h2>
             <Link href="/properties?tag=featured">
               <Button variant="ghost" size="sm" className="text-gray-500 hover:text-primary">
                 더보기 <ArrowRight className="ml-1 h-3 w-3" />
@@ -317,7 +317,7 @@ const HomePage = () => {
               </div>
 
               <div>
-                <h2 className="text-3xl font-bold text-slate-900 mb-1">지도로 한눈에 보기</h2>
+                <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-1">지도로 한눈에 보기</h2>
 
                 <ul className="space-y-1 mb-2">
                   <li className="flex items-start">
@@ -387,23 +387,23 @@ const HomePage = () => {
             {/* News */}
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                <h2 className="text-lg md:text-xl font-bold text-gray-900 flex items-center">
                   <Newspaper className="h-5 w-5 mr-2 text-primary" />
                   부동산 뉴스
                 </h2>
                 <Link href="/news" className="text-primary hover:underline text-xs font-medium">전체보기</Link>
               </div>
-              <div className="space-y-[2px]">
+              <div className="space-y-[4px]">
                 {latestNews?.slice(0, 3).map((news) => (
                   <Link key={news.id} href={`/news/${news.id}`} className="block">
-                    <div className="group flex gap-3 cursor-pointer">
+                    <div className="group flex gap-4 cursor-pointer">
                       <div className="w-20 h-20 flex-shrink-0 bg-gray-100 rounded-xl overflow-hidden shadow-sm">
                         <img src={news.imageUrl ?? "https://via.placeholder.com/150"} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <Badge variant="secondary" className="mb-1 text-[10px] h-5 bg-blue-50 text-blue-600 border-none">{news.category}</Badge>
-                        <h3 className="font-bold text-gray-900 line-clamp-1 text-sm group-hover:text-primary transition-colors">{news.title}</h3>
-                        <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{news.summary}</p>
+                        <Badge variant="secondary" className="mb-1 text-xs px-1.5 py-0 h-5 bg-blue-50 text-blue-600 border-none">{news.category}</Badge>
+                        <h3 className="font-bold text-gray-900 line-clamp-1 text-sm md:text-base group-hover:text-primary transition-colors">{news.title}</h3>
+                        <p className="text-xs md:text-sm text-gray-500 line-clamp-2 mt-0.5">{news.summary}</p>
                       </div>
                     </div>
                   </Link>
@@ -411,19 +411,18 @@ const HomePage = () => {
               </div>
             </div>
 
-            {/* Community Section (New) */}
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                <h2 className="text-lg md:text-xl font-bold text-gray-900 flex items-center">
                   <MessageSquare className="h-5 w-5 mr-2 text-orange-500" />
                   실시간 커뮤니티
                 </h2>
                 <Link href="/community" className="text-primary hover:underline text-xs font-medium">전체보기</Link>
               </div>
-              <div className="space-y-[2px]">
+              <div className="space-y-[4px]">
                 {latestPosts?.slice(0, 3).map((post) => (
                   <Link key={post.id} href={`/community/${post.id}`} className="block">
-                    <div className="group flex gap-3 cursor-pointer">
+                    <div className="group flex gap-4 cursor-pointer">
                       <div className="w-20 h-20 flex-shrink-0 bg-orange-50 rounded-xl overflow-hidden flex items-center justify-center shadow-sm">
                         {post.imageUrls && post.imageUrls.length > 0 ? (
                           <img src={post.imageUrls[0]} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
@@ -432,11 +431,11 @@ const HomePage = () => {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <Badge className="mb-1 text-[10px] h-5 bg-orange-100 text-orange-600 border-none font-bold">
+                        <Badge className="mb-1 text-xs px-1.5 py-0 h-5 bg-orange-100 text-orange-600 border-none font-bold">
                           {post.category === 'qa' ? '궁금해요' : post.category === 'stories' ? '강화도이야기' : '건축/리모델링'}
                         </Badge>
-                        <h3 className="font-bold text-gray-900 line-clamp-1 text-sm group-hover:text-orange-500 transition-colors">{post.title}</h3>
-                        <div className="flex items-center gap-2 mt-1 text-[10px] text-gray-400 font-medium">
+                        <h3 className="font-bold text-gray-900 line-clamp-1 text-sm md:text-base group-hover:text-orange-500 transition-colors">{post.title}</h3>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-gray-400 font-medium">
                           <span className="flex items-center gap-1">
                             {post.author?.nickname || post.author?.username || '익명'}
                           </span>
@@ -450,19 +449,18 @@ const HomePage = () => {
               </div>
             </div>
 
-            {/* Blog Posts */}
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-gray-900 flex items-center">
+                <h2 className="text-lg md:text-xl font-bold text-gray-900 flex items-center">
                   <BookOpen className="h-5 w-5 mr-2 text-green-600" />
                   이가이버 포럼
                 </h2>
                 <a href="https://blog.naver.com/9551304" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-xs font-medium">전체보기</a>
               </div>
-              <div className="space-y-[2px]">
+              <div className="space-y-[4px]">
                 {latestBlogPosts?.slice(0, 3).map((post) => (
                   <a key={post.id} href={post.link} target="_blank" rel="noopener noreferrer" className="block">
-                    <div className="group flex gap-3 cursor-pointer">
+                    <div className="group flex gap-4 cursor-pointer">
                       <div className="w-20 h-20 flex-shrink-0 bg-gray-100 rounded-xl overflow-hidden shadow-sm">
                         <img
                           src={post.thumbnail || "/assets/default-forum.png"}
@@ -472,9 +470,9 @@ const HomePage = () => {
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <Badge variant="outline" className="mb-1 text-[10px] h-5 border-green-600 text-green-600 font-bold">{post.category}</Badge>
-                        <h3 className="font-bold text-gray-900 line-clamp-1 text-sm group-hover:text-green-600 transition-colors">{post.title}</h3>
-                        <div className="text-[10px] text-gray-400 flex items-center gap-2 mt-1 font-medium">
+                        <Badge variant="outline" className="mb-1 text-xs px-1.5 py-0 h-5 border-green-600 text-green-600 font-bold">{post.category}</Badge>
+                        <h3 className="font-bold text-gray-900 line-clamp-1 text-sm md:text-base group-hover:text-green-600 transition-colors">{post.title}</h3>
+                        <div className="text-xs text-gray-400 flex items-center gap-2 mt-1 font-medium">
                           <Calendar className="h-3 w-3" />
                           {post.publishedAt}
                         </div>
@@ -505,8 +503,8 @@ const YouTubeSliderSection = ({ title, videos, isLoading, channelUrl, isLive, li
       <div className="container mx-auto px-4">
         <div className="flex flex-row justify-between items-center mb-2">
           <div>
-            <h2 className="text-2xl font-bold mb-0 flex items-center">
-              <Youtube className="h-6 w-6 text-red-600 mr-2" />
+            <h2 className="text-lg md:text-2xl font-bold mb-0 flex items-center">
+              <Youtube className="h-5 w-5 md:h-6 md:w-6 text-red-600 mr-2" />
               {title}
             </h2>
           </div>

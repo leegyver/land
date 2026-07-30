@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Building, LogIn, LogOut, User, Settings } from "lucide-react";
+import { Building, LogIn, LogOut, User, Settings, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
@@ -116,8 +116,8 @@ const Header = () => {
           {/* Mobile Navigation */}
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="default" className="md:hidden px-3 py-2 text-sm font-bold bg-red-600 hover:bg-red-700 text-white shadow-md">
-                모든메뉴보기
+              <Button variant="ghost" size="icon" className="md:hidden">
+                <Menu className="w-6 h-6 text-slate-900" />
               </Button>
             </SheetTrigger>
             <SheetContent>

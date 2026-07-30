@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Home, Map, Phone, User, Search, List } from "lucide-react";
+import { Home, Phone, User, Search, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const MobileBottomNav = () => {
@@ -8,11 +8,7 @@ const MobileBottomNav = () => {
     const navItems = [
         { icon: Home, label: "홈", path: "/" },
         { icon: Search, label: "매물찾기", path: "/properties" },
-        { icon: Map, label: "지도", path: "/contact" }, // Using Contact for map as per user request to use Naver Place/Kakao Map integration or map view
-        // Note: If /map is a separate route, update this. For now, /contact has the office map, but /properties has the map view. 
-        // Let's us /properties for Search and maybe create a direct map link if needed.
-        // Actually, "지도에서 매물 찾기" is better served by /properties?view=map notion, but let's stick to /contact for "Contact/Location" or introduce a dedicated map route if needed. 
-        // Given requirements, let's keep it simple.
+        { icon: MessageSquare, label: "커뮤니티", path: "/community" },
         { icon: Phone, label: "문의", path: "tel:010-4787-3120", isExternal: true },
         { icon: User, label: "MY", path: "/profile" },
     ];

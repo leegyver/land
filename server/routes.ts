@@ -1202,13 +1202,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  const getParsedLimit = async (reqLimit: any, configKey: string, defaultLimit = 4) => {
+    if (reqLimit !== undefined) {
+      const l = parseInt(reqLimit as string);
+      if (!isNaN(l) && l > 0) return l;
+    }
+    const configVal = await storage.getSiteConfig(configKey);
+    if (configVal) {
+      const l = parseInt(configVal);
+      if (!isNaN(l) && l > 0) return l;
+    }
+    return defaultLimit;
+  };
+
   app.get("/api/properties/featured", async (req, res) => {
     try {
-      let limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
-      if (!limit) {
-        const configLimit = await storage.getSiteConfig('home_featured_limit');
-        limit = configLimit ? parseInt(configLimit) : 4;
-      }
+      const limit = await getParsedLimit(req.query.limit, 'home_featured_limit');
       const properties = await storage.getFeaturedProperties(limit);
 
       const user = req.user as any;
@@ -1228,11 +1237,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/properties/urgent", async (req, res) => {
     try {
-      let limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
-      if (!limit) {
-        const configLimit = await storage.getSiteConfig('home_urgent_limit');
-        limit = configLimit ? parseInt(configLimit) : 4;
-      }
+      const limit = await getParsedLimit(req.query.limit, 'home_urgent_limit');
       const properties = await storage.getUrgentProperties(limit);
 
       let isAdmin = false;
@@ -1250,11 +1255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/properties/latest", async (req, res) => {
     try {
-      let limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
-      if (!limit) {
-        const configLimit = await storage.getSiteConfig('home_latest_limit');
-        limit = configLimit ? parseInt(configLimit) : 4;
-      }
+      const limit = await getParsedLimit(req.query.limit, 'home_latest_limit');
       const properties = await storage.getLatestProperties(limit);
 
       let isAdmin = false;
@@ -1272,11 +1273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/properties/negotiable", async (req, res) => {
     try {
-      let limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
-      if (!limit) {
-        const configLimit = await storage.getSiteConfig('home_negotiable_limit');
-        limit = configLimit ? parseInt(configLimit) : 4;
-      }
+      const limit = await getParsedLimit(req.query.limit, 'home_negotiable_limit');
       const properties = await storage.getNegotiableProperties(limit);
 
       let isAdmin = false;
@@ -1294,11 +1291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/properties/long-term", async (req, res) => {
     try {
-      let limit = req.query.limit ? parseInt(req.query.limit as string) : undefined;
-      if (!limit) {
-        const configLimit = await storage.getSiteConfig('home_long_term_limit');
-        limit = configLimit ? parseInt(configLimit) : 4;
-      }
+      const limit = await getParsedLimit(req.query.limit, 'home_long_term_limit');
       const properties = await storage.getLongTermProperties(limit);
 
       let isAdmin = false;

@@ -123,7 +123,7 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
   const dragDisabled = sortCategory === "all";
 
   // Fetch configs
-  const { data: configs } = useAdminQuery<any[]>(["/api/admin/config"], { enabled: isAdmin });
+  const { data: configs } = useAdminQuery<any>(["/api/admin/config"], { enabled: isAdmin });
 
   // Update limit input when sortCategory changes
   useEffect(() => {

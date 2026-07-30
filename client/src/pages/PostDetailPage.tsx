@@ -475,7 +475,7 @@ const PostDetailPage = () => {
                                                     </div>
                                                     <div className="flex items-center gap-4 text-sm text-slate-400 font-medium shrink-0">
                                                         <span>{(p as any).author?.nickname || (p as any).author?.username || '익명'}</span>
-                                                        <span>{format(new Date(p.createdAt), "MM.dd", { locale: ko })}</span>
+                                                        <span>{p.createdAt ? format(new Date(p.createdAt), "MM.dd", { locale: ko }) : ''}</span>
                                                     </div>
                                                 </Link>
                                             </div>

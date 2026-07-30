@@ -329,6 +329,9 @@ export function setupAuth(app: Express) {
           </p>
         </div>
       `;
+      if (!user.email) {
+        return res.status(400).json({ message: "이메일이 등록되지 않은 사용자입니다." });
+      }
       await sendEmail(user.email, "[이가이버 부동산] 임시 비밀번호 안내", htmlContent);
       return res.json({ message: "등록된 이메일로 임시 비밀번호를 발송했습니다." });
     } catch (error) {

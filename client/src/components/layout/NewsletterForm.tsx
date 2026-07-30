@@ -132,7 +132,7 @@ const NewsletterForm = () => {
                                     "무료 구독 신청하기"
                                 )}
                             </Button>
-                            <p className="text-xs text-blue-100/70 text-center mt-4">
+                            <p className="text-[10px] sm:text-xs text-blue-100/70 text-center mt-4 whitespace-nowrap tracking-tighter">
                                 언제든지 구독을 해지하실 수 있습니다. 개인정보는 소중히 보호됩니다.
                             </p>
                         </form>

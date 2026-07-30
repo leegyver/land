@@ -276,15 +276,7 @@ const PostFormPage = () => {
                                         }) 
                                     }}
                                 />
-                                {images.length > 0 && (
-                                    <div className="mt-12 space-y-6">
-                                        {images.map((url, i) => (
-                                            <div key={i} className="rounded-3xl overflow-hidden shadow-lg border border-slate-100">
-                                                <img src={url} alt={`첨부 이미지 ${i + 1}`} className="w-full h-auto" />
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+
                             </CardContent>
                         </Card>
                     ) : (

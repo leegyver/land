@@ -232,7 +232,7 @@ const HomePage = () => {
           </div>
           <PropertySection
             title=""
-            queryKey="/api/properties/latest?limit=4"
+            queryKey="/api/properties/latest"
             bgColor="bg-white"
           />
 
@@ -246,7 +246,7 @@ const HomePage = () => {
           </div>
           <PropertySection
             title=""
-            queryKey="/api/properties/urgent?limit=4"
+            queryKey="/api/properties/urgent"
             bgColor="bg-red-50"
           />
 
@@ -261,7 +261,7 @@ const HomePage = () => {
           </div>
           <PropertySection
             title=""
-            queryKey="/api/properties/negotiable?limit=4"
+            queryKey="/api/properties/negotiable"
             bgColor="bg-blue-50"
           />
 
@@ -276,7 +276,7 @@ const HomePage = () => {
           </div>
           <PropertySection
             title=""
-            queryKey="/api/properties/long-term?limit=4"
+            queryKey="/api/properties/long-term"
             bgColor="bg-green-50"
           />
 

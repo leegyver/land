@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Trash2, Edit, Eye, Plus, FileSpreadsheet, AlertCircle, GripVertical, CheckCircle, ExternalLink } from "lucide-react";
@@ -35,6 +36,9 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
   
   // Sorting Mode
   const [sortCategory, setSortCategory] = useState<SortCategory>("all");
+  
+  // Limit Config State
+  const [limitInput, setLimitInput] = useState<string>("");
 
   // Filters (Only active when sortCategory is "all")
   const [filterType, setFilterType] = useState("all");
@@ -118,6 +122,24 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
   const isFiltered = filterType !== "all" || filterDistrict !== "all" || filterDealType !== "all" || filterAgent !== "all";
   const dragDisabled = sortCategory === "all";
 
+  // Fetch configs
+  const { data: configs } = useAdminQuery<any[]>(["/api/admin/config"], { enabled: isAdmin });
+
+  // Update limit input when sortCategory changes
+  useEffect(() => {
+    if (sortCategory !== "all" && configs) {
+      const keyMap: Record<string, string> = {
+        featured: "home_featured_limit",
+        urgent: "home_urgent_limit",
+        negotiable: "home_negotiable_limit",
+        longTerm: "home_long_term_limit",
+      };
+      const key = keyMap[sortCategory];
+      const conf = configs.find((c: any) => c.key === key);
+      setLimitInput(conf ? conf.value : "4");
+    }
+  }, [sortCategory, configs]);
+
   // Mutations
   const toggleMutation = useMutation({
     mutationFn: async ({ id, field, value }: { id: number; field: string; value: any }) => {
@@ -164,6 +186,16 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
         predicate: (query) => typeof query.queryKey[0] === 'string' && query.queryKey[0].startsWith('/api/properties'),
         type: 'all'
       });
+    }
+  });
+
+  const configMutation = useMutation({
+    mutationFn: async ({ key, value }: { key: string; value: string }) => {
+      await apiRequest("POST", "/api/admin/config", { key, value });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/config"] });
+      toast({ title: "설정 완료", description: "메인페이지 노출 개수가 변경되었습니다." });
     }
   });
 
@@ -248,6 +280,35 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
                <Button variant={sortCategory === "negotiable" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("negotiable")} className={sortCategory === "negotiable" ? "bg-blue-500 hover:bg-blue-600 text-white border-none" : "border-blue-200 text-blue-600"}>협의</Button>
                <Button variant={sortCategory === "longTerm" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("longTerm")} className={sortCategory === "longTerm" ? "bg-purple-500 hover:bg-purple-600 text-white border-none" : "border-purple-200 text-purple-600"}>장기</Button>
              </div>
+             {sortCategory !== "all" && (
+                <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-500">메인페이지 노출 개수:</span>
+                  <Input 
+                    type="number" 
+                    min="1" max="20" 
+                    value={limitInput}
+                    onChange={(e) => setLimitInput(e.target.value)}
+                    className="w-16 h-8 text-sm px-2 text-center" 
+                  />
+                  <Button 
+                    size="sm" 
+                    className="h-8"
+                    disabled={configMutation.isPending}
+                    onClick={() => {
+                      const keyMap: Record<string, string> = {
+                        featured: "home_featured_limit",
+                        urgent: "home_urgent_limit",
+                        negotiable: "home_negotiable_limit",
+                        longTerm: "home_long_term_limit",
+                      };
+                      const key = keyMap[sortCategory];
+                      if (key) {
+                        configMutation.mutate({ key, value: limitInput });
+                      }
+                    }}
+                  >저장</Button>
+                </div>
+             )}
           </div>
         )}
 

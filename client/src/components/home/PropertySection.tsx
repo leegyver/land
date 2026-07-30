@@ -9,6 +9,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
 
 interface PropertySectionProps {
     title: React.ReactNode;
@@ -81,8 +82,14 @@ const PropertySection = ({ title, queryKey, bgColor = "bg-white", limit = 12 }: 
                     <Carousel
                         opts={{
                             align: "start",
-                            loop: false,
+                            loop: true,
                         }}
+                        plugins={[
+                            Autoplay({
+                                delay: 3500,
+                                stopOnInteraction: false,
+                            }),
+                        ]}
                         className="w-full"
                     >
                         <CarouselContent className="">

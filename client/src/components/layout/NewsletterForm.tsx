@@ -87,12 +87,11 @@ const NewsletterForm = () => {
 
             <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 md:gap-12">
                 <div className="flex-1 text-center md:text-left">
-                    <h2 className="text-2xl md:text-3xl font-bold mb-4">
+                    <h2 className="text-[17px] sm:text-xl md:text-3xl font-bold mb-2 md:mb-4 whitespace-nowrap tracking-tighter">
                         매주 강화도 부동산 동향 메일 받기
                     </h2>
-                    <p className="text-blue-100 text-sm md:text-lg mb-0 opacity-90 leading-relaxed">
-                        이가이버가 직접 발로 뛰며 분석한 강화도 실거래 정보와 <br className="hidden md:block" />
-                        단독 공개 매물 정보를 가장 먼저 받아보세요.
+                    <p className="text-blue-100 text-[11px] sm:text-sm md:text-lg mb-0 opacity-90 leading-relaxed whitespace-nowrap tracking-tighter">
+                        이가이버가 직접 분석한 실거래 및 단독 매물 정보를 받아보세요.
                     </p>
                 </div>
 

@@ -10,7 +10,6 @@ import { SajuProvider } from "@/contexts/SajuContext";
 import FloatingCTA from "@/components/layout/FloatingCTA";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ScrollToTop from "@/components/layout/ScrollToTop";
-import { SwipeHandler } from "@/components/layout/SwipeHandler";
 import { ErrorBoundary } from "@/components/layout/ErrorBoundary";
 import GlobalPopups from "@/components/common/GlobalPopups";
 import { lazy, Suspense, useEffect } from "react";
@@ -105,7 +104,6 @@ function AppContent() {
     <div className="min-h-screen flex flex-col font-sans theme-transition bg-slate-50">
       <GlobalPopups />
       <ScrollToTop />
-      <SwipeHandler />
       <Header />
       <main className="flex-grow">
         <Router user={user} />

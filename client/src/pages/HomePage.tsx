@@ -13,7 +13,6 @@ import { Calendar, ArrowRight, Newspaper, Youtube, Play, BookOpen, Search, Map, 
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import Autoplay from "embla-carousel-autoplay";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -530,14 +529,8 @@ const YouTubeSliderSection = ({ title, videos, isLoading, channelUrl, isLive, li
           <Carousel
             opts={{
               align: "start",
-              loop: true,
+              loop: false,
             }}
-            plugins={[
-              Autoplay({
-                delay: 4000,
-                stopOnInteraction: false,
-              }),
-            ]}
             className="w-full relative px-2"
           >
             <CarouselContent className="-ml-2 md:-ml-4">

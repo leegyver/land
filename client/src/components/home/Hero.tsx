@@ -203,6 +203,7 @@ const Hero = () => {
 
         </div>
       </div>
+      </div>
 
       {/* Mobile Compact Hero (Visible only on Mobile) */}
       <div className="flex md:hidden flex-col px-4 py-6 bg-slate-900 relative z-20">

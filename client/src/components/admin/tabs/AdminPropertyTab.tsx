@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Property } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { AdminTabWrapper } from "../AdminShared";
+import { AdminTabWrapper, useAdminQuery } from "../AdminShared";
 import { PROPERTY_TYPES, DEAL_TYPES, DISTRICTS } from "@/lib/admin-constants";
 import { 
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 

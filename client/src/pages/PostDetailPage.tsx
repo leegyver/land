@@ -185,7 +185,38 @@ const PostDetailPage = () => {
             </div>
 
             <div className="container mx-auto px-4 py-12">
-                <div className="max-w-4xl mx-auto">
+                <div className="max-w-4xl mx-auto space-y-8">
+                    {/* Navigation - Top */}
+                    <div className="flex flex-wrap gap-3 justify-center md:justify-start">
+                        <Button 
+                            variant="outline" 
+                            className="rounded-full border-slate-200 hover:bg-slate-50 font-bold"
+                            onClick={() => setLocation("/community")}
+                        >
+                            전체보기
+                        </Button>
+                        <Button 
+                            variant="outline" 
+                            className="rounded-full border-slate-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 font-bold"
+                            onClick={() => setLocation("/community?category=qa")}
+                        >
+                            궁금해요 부동산
+                        </Button>
+                        <Button 
+                            variant="outline" 
+                            className="rounded-full border-slate-200 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 font-bold"
+                            onClick={() => setLocation("/community?category=architecture")}
+                        >
+                            건축과 리모델링
+                        </Button>
+                        <Button 
+                            variant="outline" 
+                            className="rounded-full border-slate-200 hover:bg-amber-50 hover:text-amber-600 hover:border-amber-200 font-bold"
+                            onClick={() => setLocation("/community?category=stories")}
+                        >
+                            강화도 이야기
+                        </Button>
+                    </div>
                     <Card className="rounded-[2.5rem] border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden bg-white">
                         <CardContent className="p-8 md:p-12">
                             <div className="prose prose-slate prose-lg max-w-none prose-headings:font-black prose-headings:tracking-tight prose-strong:text-blue-600 prose-a:text-blue-600 no-underline"

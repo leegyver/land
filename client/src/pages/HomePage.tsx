@@ -395,7 +395,7 @@ const HomePage = () => {
                 </h2>
                 <Link href="/news" className="text-primary hover:underline text-xs font-medium">전체보기</Link>
               </div>
-              <div className="space-y-[4px]">
+              <div className="space-y-[4px] md:space-y-4">
                 {latestNews?.slice(0, 3).map((news) => (
                   <Link key={news.id} href={`/news/${news.id}`} className="block">
                     <div className="group flex gap-4 cursor-pointer">
@@ -421,10 +421,10 @@ const HomePage = () => {
                 </h2>
                 <Link href="/community" className="text-primary hover:underline text-xs font-medium">전체보기</Link>
               </div>
-              <div className="space-y-[4px]">
+              <div className="space-y-[4px] md:space-y-4">
                 {latestPosts?.slice(0, 3).map((post) => (
                   <Link key={post.id} href={`/community/${post.id}`} className="block">
-                    <div className="group flex gap-4 cursor-pointer">
+                    <div className="group flex items-center gap-4 cursor-pointer">
                       <div className="w-20 h-20 flex-shrink-0 bg-orange-50 rounded-xl overflow-hidden flex items-center justify-center shadow-sm">
                         {post.imageUrls && post.imageUrls.length > 0 ? (
                           <img src={post.imageUrls[0]} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
@@ -459,10 +459,10 @@ const HomePage = () => {
                 </h2>
                 <a href="https://blog.naver.com/9551304" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-xs font-medium">전체보기</a>
               </div>
-              <div className="space-y-[4px]">
+              <div className="space-y-[4px] md:space-y-4">
                 {latestBlogPosts?.slice(0, 3).map((post) => (
                   <a key={post.id} href={post.link} target="_blank" rel="noopener noreferrer" className="block">
-                    <div className="group flex gap-4 cursor-pointer">
+                    <div className="group flex items-center gap-4 cursor-pointer">
                       <div className="w-20 h-20 flex-shrink-0 bg-gray-100 rounded-xl overflow-hidden shadow-sm">
                         <img
                           src={post.thumbnail || "/assets/default-forum.png"}

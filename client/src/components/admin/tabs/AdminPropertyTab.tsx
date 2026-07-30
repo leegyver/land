@@ -127,15 +127,17 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
 
   // Update limit input when sortCategory changes
   useEffect(() => {
-    if (sortCategory !== "all" && configs) {
+    if (configs) {
       const keyMap: Record<string, string> = {
+        all: "home_latest_limit",
         featured: "home_featured_limit",
         urgent: "home_urgent_limit",
         negotiable: "home_negotiable_limit",
         longTerm: "home_long_term_limit",
       };
-      const key = keyMap[sortCategory];
+      const key = keyMap[sortCategory] || "home_latest_limit";
       const conf = configs.find((c: any) => c.key === key);
+      setLimitInput(conf ? conf.value : "4");
       setLimitInput(conf ? conf.value : "4");
     }
   }, [sortCategory, configs]);
@@ -280,7 +282,7 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
                <Button variant={sortCategory === "negotiable" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("negotiable")} className={sortCategory === "negotiable" ? "bg-blue-500 hover:bg-blue-600 text-white border-none" : "border-blue-200 text-blue-600"}>협의</Button>
                <Button variant={sortCategory === "longTerm" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("longTerm")} className={sortCategory === "longTerm" ? "bg-purple-500 hover:bg-purple-600 text-white border-none" : "border-purple-200 text-purple-600"}>장기</Button>
              </div>
-             {sortCategory !== "all" && (
+             {true && (
                 <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2">
                   <span className="text-xs font-bold text-slate-500">메인페이지 노출 개수:</span>
                   <Input 
@@ -296,12 +298,13 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
                     disabled={configMutation.isPending}
                     onClick={() => {
                       const keyMap: Record<string, string> = {
+                        all: "home_latest_limit",
                         featured: "home_featured_limit",
                         urgent: "home_urgent_limit",
                         negotiable: "home_negotiable_limit",
                         longTerm: "home_long_term_limit",
                       };
-                      const key = keyMap[sortCategory];
+                      const key = keyMap[sortCategory] || "home_latest_limit";
                       if (key) {
                         configMutation.mutate({ key, value: limitInput });
                       }

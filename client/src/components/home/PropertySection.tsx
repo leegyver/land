@@ -67,7 +67,7 @@ const PropertySection = ({ title, queryKey, bgColor = "bg-white", limit = 12 }: 
         );
     }
 
-    const displayProperties = properties.slice(0, 12);
+    const displayProperties = properties;
 
     return (
         <section className={`py-1 ${bgColor}`}>

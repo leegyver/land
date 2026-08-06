@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { NewsletterSubscription } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -34,6 +34,59 @@ export default function AdminNewsletterTab({ subscriptions, isLoading, isError, 
   const [isTestPassed, setIsTestPassed] = useState(false);
   const [isSending, setIsSending] = useState(false);
   
+  const quillRef = useRef<ReactQuill>(null);
+
+  const quillImageHandler = useCallback(() => {
+    const input = document.createElement('input');
+    input.setAttribute('type', 'file');
+    input.setAttribute('accept', 'image/*');
+    input.click();
+
+    input.onchange = async () => {
+      const file = input.files ? input.files[0] : null;
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        if (!res.ok) throw new Error("업로드 실패");
+        const data = await res.json();
+
+        const quill = quillRef.current?.getEditor();
+        if (quill) {
+          const range = quill.getSelection(true);
+          quill.insertEmbed(range.index, 'image', data.url);
+          quill.setSelection(range.index + 1, 0);
+        }
+        toast({ title: "사진 첨부 완료", description: "본문에 사진이 삽입되었습니다." });
+      } catch (error) {
+        toast({ title: "업로드 실패", description: "사진 첨부 중 오류가 발생했습니다.", variant: "destructive" });
+      }
+    };
+  }, [toast]);
+
+  const quillModules = useMemo(() => ({
+    toolbar: {
+      container: [
+        [{ 'header': [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'color': [] }, { 'background': [] }],
+        [{ 'align': [] }],
+        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+        ['link', 'image'],
+        ['clean']
+      ],
+      handlers: {
+        image: quillImageHandler
+      }
+    }
+  }), [quillImageHandler]);
+
   // Basic pagination
   const [page, setPage] = useState(1);
   const itemsPerPage = 20;
@@ -277,14 +330,16 @@ export default function AdminNewsletterTab({ subscriptions, isLoading, isError, 
             </div>
             <div className="grid gap-2">
               <Label>메일 내용</Label>
-              <div className="h-[300px] mb-12">
+              <div className="h-[400px] mb-12">
                 <ReactQuill
+                  ref={quillRef}
                   theme="snow"
                   value={customContent}
                   onChange={(val) => {
                     setCustomContent(val);
                     setIsTestPassed(false);
                   }}
+                  modules={quillModules}
                   style={{ height: '100%' }}
                   placeholder="구독자에게 보낼 메일 내용을 작성하세요."
                 />

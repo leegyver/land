@@ -7,7 +7,7 @@ import { AdminTabWrapper } from "../AdminShared";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, FileSpreadsheet } from "lucide-react";
+import { Trash2, FileSpreadsheet, Mail, Send } from "lucide-react";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 
 interface AdminNewsletterTabProps {
@@ -83,9 +83,53 @@ export default function AdminNewsletterTab({ subscriptions, isLoading, isError, 
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-      <div className="p-6 border-b border-slate-50 flex items-center justify-between">
+      <div className="p-6 border-b border-slate-50 flex items-center justify-between flex-wrap gap-4">
         <h2 className="text-xl font-bold text-slate-900">구독자 관리</h2>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              if (!window.confirm("관리자(마스터) 메일로 주간 뉴스레터 샘플을 발송하시겠습니까?")) return;
+              try {
+                const res = await fetch("/api/admin/newsletter/test", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ type: "weekly", target: "master" }),
+                });
+                if (res.ok) toast({ title: "발송 성공", description: "마스터 메일로 샘플이 발송되었습니다." });
+                else throw new Error("발송 실패");
+              } catch (e) {
+                toast({ title: "발송 실패", description: "메일 발송 중 오류가 발생했습니다.", variant: "destructive" });
+              }
+            }}
+          >
+            <Mail className="h-4 w-4 mr-2 text-blue-500" />
+            마스터 샘플 발송
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              if (!window.confirm("전체 구독자에게 주간 뉴스레터를 즉시 발송하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) return;
+              try {
+                const res = await fetch("/api/admin/newsletter/test", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ type: "weekly", target: "all" }),
+                });
+                if (res.ok) toast({ title: "발송 성공", description: "전체 구독자에게 뉴스레터가 발송되었습니다." });
+                else throw new Error("발송 실패");
+              } catch (e) {
+                toast({ title: "발송 실패", description: "메일 발송 중 오류가 발생했습니다.", variant: "destructive" });
+              }
+            }}
+          >
+            <Send className="h-4 w-4 mr-2 text-green-500" />
+            구독자 전체 발송
+          </Button>
+
           {selectedIds.length > 0 && (
             <Button 
               variant="destructive" 

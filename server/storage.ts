@@ -180,8 +180,8 @@ export interface IStorage {
   createNewsletterSubscription(sub: InsertNewsletterSubscription): Promise<NewsletterSubscription>;
   deleteNewsletterSubscription(id: number): Promise<boolean>;
   getActiveNewsletterSubscribers(): Promise<NewsletterSubscription[]>;
-  getWeeklyNewsletterData(): Promise<{ properties: Property[]; posts: Post[] }>;
-  getMonthlyNewsletterData(): Promise<{ properties: Property[]; posts: Post[] }>;
+  getWeeklyNewsletterData(): Promise<{ properties: Property[]; posts: Post[]; news: News[] }>;
+  getMonthlyNewsletterData(): Promise<{ properties: Property[]; posts: Post[]; news: News[] }>;
 
   // Notification methods
   getNotifications(limit?: number): Promise<Notification[]>;
@@ -1691,40 +1691,72 @@ export class SQLiteStorage implements IStorage {
     })) as NewsletterSubscription[];
   }
 
-  async getWeeklyNewsletterData(): Promise<{ properties: Property[]; posts: Post[] }> {
-    const properties = db.prepare(`
+  async getWeeklyNewsletterData(): Promise<{ properties: Property[]; posts: Post[]; news: News[] }> {
+    let properties = db.prepare(`
       SELECT * FROM properties
       WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-7 days')
       ORDER BY createdAt DESC
       LIMIT 5
     `).all() as any[];
+    if (properties.length === 0) {
+      properties = db.prepare(`SELECT * FROM properties ORDER BY createdAt DESC LIMIT 5`).all();
+    }
 
-    const posts = db.prepare(`
+    let posts = db.prepare(`
       SELECT * FROM posts
       WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-7 days')
       ORDER BY createdAt DESC
       LIMIT 5
     `).all() as any[];
+    if (posts.length === 0) {
+      posts = db.prepare(`SELECT * FROM posts ORDER BY createdAt DESC LIMIT 5`).all();
+    }
 
-    return { properties: properties as Property[], posts: posts as Post[] };
+    let news = db.prepare(`
+      SELECT * FROM news
+      WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-7 days')
+      ORDER BY viewCount DESC
+      LIMIT 5
+    `).all() as any[];
+    if (news.length === 0) {
+      news = db.prepare(`SELECT * FROM news ORDER BY viewCount DESC LIMIT 5`).all();
+    }
+
+    return { properties: properties as Property[], posts: posts as Post[], news: news as News[] };
   }
 
-  async getMonthlyNewsletterData(): Promise<{ properties: Property[]; posts: Post[] }> {
-    const properties = db.prepare(`
+  async getMonthlyNewsletterData(): Promise<{ properties: Property[]; posts: Post[]; news: News[] }> {
+    let properties = db.prepare(`
       SELECT * FROM properties
       WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-1 month')
       ORDER BY viewCount DESC
       LIMIT 5
     `).all() as any[];
+    if (properties.length === 0) {
+      properties = db.prepare(`SELECT * FROM properties ORDER BY viewCount DESC LIMIT 5`).all();
+    }
 
-    const posts = db.prepare(`
+    let posts = db.prepare(`
       SELECT * FROM posts
       WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-1 month')
       ORDER BY viewCount DESC
       LIMIT 5
     `).all() as any[];
+    if (posts.length === 0) {
+      posts = db.prepare(`SELECT * FROM posts ORDER BY viewCount DESC LIMIT 5`).all();
+    }
 
-    return { properties: properties as Property[], posts: posts as Post[] };
+    let news = db.prepare(`
+      SELECT * FROM news
+      WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-1 month')
+      ORDER BY viewCount DESC
+      LIMIT 5
+    `).all() as any[];
+    if (news.length === 0) {
+      news = db.prepare(`SELECT * FROM news ORDER BY viewCount DESC LIMIT 5`).all();
+    }
+
+    return { properties: properties as Property[], posts: posts as Post[], news: news as News[] };
   }
 
   // --- Posts (Community) ---

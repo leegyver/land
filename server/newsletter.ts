@@ -5,7 +5,7 @@ import { log } from './vite';
 
 const APP_URL = process.env.APP_URL || 'https://leegyver.com';
 
-function buildHtmlTemplate(title: string, properties: any[], posts: any[]) {
+function buildHtmlTemplate(title: string, properties: any[], posts: any[], news: any[]) {
   const propertyRows = properties.map(p => `
     <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
       <h3 style="margin: 0; font-size: 16px; color: #3b82f6;">
@@ -24,6 +24,15 @@ function buildHtmlTemplate(title: string, properties: any[], posts: any[]) {
     </div>
   `).join('');
 
+  const newsRows = news.map(n => `
+    <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+      <h3 style="margin: 0; font-size: 16px; color: #ef4444;">
+        <a href="${APP_URL}/news/${n.id}" style="text-decoration: none; color: #ef4444;">${n.title}</a>
+      </h3>
+      <p style="margin: 5px 0; font-size: 14px; color: #666;">출처: ${n.source} | 조회수: ${n.viewCount}</p>
+    </div>
+  `).join('');
+
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px;">
       <h2 style="text-align: center; color: #333; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">
@@ -38,6 +47,11 @@ function buildHtmlTemplate(title: string, properties: any[], posts: any[]) {
       <div style="margin-top: 20px;">
         <h3 style="background-color: #f3f4f6; padding: 10px; border-radius: 4px;">💬 커뮤니티 소식</h3>
         ${postRows || '<p>새로운 소식이 없습니다.</p>'}
+      </div>
+
+      <div style="margin-top: 20px;">
+        <h3 style="background-color: #f3f4f6; padding: 10px; border-radius: 4px;">📰 강화도 부동산 주요 뉴스</h3>
+        ${newsRows || '<p>새로운 뉴스가 없습니다.</p>'}
       </div>
 
       <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; font-size: 12px; color: #999;">
@@ -61,8 +75,8 @@ export async function sendWeeklyNewsletter(testEmail?: string) {
       emails = subs.map(s => s.email).join(',');
     }
 
-    const { properties, posts } = await storage.getWeeklyNewsletterData();
-    const html = buildHtmlTemplate('이가이버부동산 주간 부동산 소식', properties, posts);
+    const { properties, posts, news } = await storage.getWeeklyNewsletterData();
+    const html = buildHtmlTemplate('이가이버부동산 주간 부동산 소식', properties, posts, news);
     
     await sendEmail(emails, '[이가이버부동산] 주간 부동산 매물 및 소식 안내', html);
     log(`[Newsletter] Weekly newsletter sent to ${emails.includes(',') ? 'subscribers' : emails}.`);
@@ -84,8 +98,8 @@ export async function sendMonthlyNewsletter(testEmail?: string) {
       emails = subs.map(s => s.email).join(',');
     }
 
-    const { properties, posts } = await storage.getMonthlyNewsletterData();
-    const html = buildHtmlTemplate('이가이버부동산 월간 인기 부동산 리포트', properties, posts);
+    const { properties, posts, news } = await storage.getMonthlyNewsletterData();
+    const html = buildHtmlTemplate('이가이버부동산 월간 인기 부동산 리포트', properties, posts, news);
     
     await sendEmail(emails, '[이가이버부동산] 이번 달 가장 뜨거웠던 인기 매물 및 소식', html);
     log(`[Newsletter] Monthly newsletter sent to ${emails.includes(',') ? 'subscribers' : emails}.`);

@@ -16,7 +16,7 @@ import {
   Bar,
   Legend
 } from "recharts";
-import { BarChart3, TrendingUp, Users, Eye, ArrowUpRight, ArrowDownRight, Home, UserPlus, Award, Mail, Send } from "lucide-react";
+import { BarChart3, TrendingUp, Users, Eye, ArrowUpRight, ArrowDownRight, Home, UserPlus, Award, Mail, Send, Smartphone } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";

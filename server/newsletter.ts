@@ -68,7 +68,7 @@ function buildHtmlTemplate(title: string, properties: any[], posts: any[], news:
         <h3 style="margin: 0; font-size: 16px; color: #ef4444;">
           <a href="${APP_URL}/news/${n.id}" style="text-decoration: none; color: #ef4444;">${n.title}</a>
         </h3>
-        <p style="margin: 5px 0; font-size: 14px; color: #666;">출처: ${n.source} | 조회수: ${n.viewCount}</p>
+        <p style="margin: 5px 0; font-size: 14px; color: #666;">출처: ${n.source}</p>
       </div>
     </div>
     `;

@@ -2285,13 +2285,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { sendEmail } = await import("./mailer");
       const APP_URL = process.env.APP_URL || 'https://leegyver.com';
+      
+      // Convert relative image URLs to absolute URLs for email clients
+      const processedContent = content.replace(/src="\/uploads\//g, `src="${APP_URL}/uploads/`);
+      
       const htmlWrapper = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px;">
           <h2 style="text-align: center; color: #333; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">
             ${subject}
           </h2>
           <div style="margin-top: 20px; font-size: 14px; line-height: 1.6; color: #333;">
-            ${content}
+            ${processedContent}
           </div>
           <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; font-size: 12px; color: #999;">
             <p>본 메일은 이가이버부동산에서 발송되었습니다.</p>

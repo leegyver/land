@@ -179,6 +179,9 @@ export interface IStorage {
   // Newsletter methods
   createNewsletterSubscription(sub: InsertNewsletterSubscription): Promise<NewsletterSubscription>;
   deleteNewsletterSubscription(id: number): Promise<boolean>;
+  getActiveNewsletterSubscribers(): Promise<NewsletterSubscription[]>;
+  getWeeklyNewsletterData(): Promise<{ properties: Property[]; posts: Post[] }>;
+  getMonthlyNewsletterData(): Promise<{ properties: Property[]; posts: Post[] }>;
 
   // Notification methods
   getNotifications(limit?: number): Promise<Notification[]>;
@@ -1678,6 +1681,50 @@ export class SQLiteStorage implements IStorage {
   async deleteNewsletterSubscription(id: number): Promise<boolean> {
     const res = db.prepare('DELETE FROM newsletter_subscriptions WHERE id = ?').run(id);
     return res.changes > 0;
+  }
+
+  async getActiveNewsletterSubscribers(): Promise<NewsletterSubscription[]> {
+    const rows = db.prepare('SELECT * FROM newsletter_subscriptions WHERE isActive = 1').all() as any[];
+    return rows.map(r => ({
+      ...r,
+      isActive: Boolean(r.isActive)
+    })) as NewsletterSubscription[];
+  }
+
+  async getWeeklyNewsletterData(): Promise<{ properties: Property[]; posts: Post[] }> {
+    const properties = db.prepare(`
+      SELECT * FROM properties
+      WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-7 days')
+      ORDER BY createdAt DESC
+      LIMIT 5
+    `).all() as any[];
+
+    const posts = db.prepare(`
+      SELECT * FROM posts
+      WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-7 days')
+      ORDER BY createdAt DESC
+      LIMIT 5
+    `).all() as any[];
+
+    return { properties: properties as Property[], posts: posts as Post[] };
+  }
+
+  async getMonthlyNewsletterData(): Promise<{ properties: Property[]; posts: Post[] }> {
+    const properties = db.prepare(`
+      SELECT * FROM properties
+      WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-1 month')
+      ORDER BY viewCount DESC
+      LIMIT 5
+    `).all() as any[];
+
+    const posts = db.prepare(`
+      SELECT * FROM posts
+      WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-1 month')
+      ORDER BY viewCount DESC
+      LIMIT 5
+    `).all() as any[];
+
+    return { properties: properties as Property[], posts: posts as Post[] };
   }
 
   // --- Posts (Community) ---

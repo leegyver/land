@@ -4,6 +4,7 @@ import path from "path";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { setupNewsScheduler } from "./news-fetcher";
+import { setupNewsletterScheduler } from "./newsletter";
 
 
 const app = express();
@@ -82,6 +83,7 @@ app.use((req, res, next) => {
 
     // 뉴스 스케줄러 초기화
     setupNewsScheduler();
+    setupNewsletterScheduler();
 
 
   });

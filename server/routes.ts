@@ -2248,6 +2248,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // 비밀번호 필터링이 적용된 안전한 버전으로 이미 등록되어 있습니다.
   // 중복 등록 제거됨 (보안: 비밀번호 해시 유출 방지)
 
+  app.post("/api/admin/newsletter/test", async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (!user || !["admin", "master"].includes(user.role)) {
+        return res.status(403).json({ message: "권한이 없습니다." });
+      }
+
+      // We dynamically import here to avoid circular dependency or early loading issues
+      const { sendWeeklyNewsletter, sendMonthlyNewsletter } = await import("./newsletter");
+      const { type } = req.body;
+
+      if (type === "monthly") {
+        await sendMonthlyNewsletter(user.email || '9551304@naver.com');
+      } else {
+        await sendWeeklyNewsletter(user.email || '9551304@naver.com');
+      }
+
+      res.json({ message: "테스트 메일 발송이 예약되었습니다." });
+    } catch (error) {
+      console.error("[API Error] Failed to send test newsletter:", error);
+      res.status(500).json({ message: "Failed to send test newsletter" });
+    }
+  });
+
   app.get("/api/admin/newsletter", async (req, res) => {
     try {
       const user = req.user as any;

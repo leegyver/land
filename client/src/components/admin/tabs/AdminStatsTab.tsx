@@ -16,15 +16,41 @@ import {
   Bar,
   Legend
 } from "recharts";
-import { Users, Eye, Home, MessageSquare, TrendingUp, Award, UserPlus, Mail, ShieldAlert, Smartphone, Globe } from "lucide-react";
+import { BarChart3, TrendingUp, Users, Eye, ArrowUpRight, ArrowDownRight, Home, UserPlus, Award, Mail, Send } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
 
 const PIE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
 export default function AdminStatsTab() {
   const [metric, setMetric] = useState<"both" | "visitors" | "views">("both");
+  const { toast } = useToast();
+
+  const handleTestNewsletter = async (type: 'weekly' | 'monthly') => {
+    try {
+      const res = await fetch('/api/admin/newsletter/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type })
+      });
+      if (res.ok) {
+        toast({
+          title: "테스트 메일 발송",
+          description: `${type === 'weekly' ? '주간' : '월간'} 뉴스레터 테스트 발송이 완료되었습니다.`,
+        });
+      } else {
+        throw new Error("발송 실패");
+      }
+    } catch (e) {
+      toast({
+        title: "오류",
+        description: "테스트 메일 발송 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const { data: overview, isLoading: isLoadingOverview } = useQuery<any>({
     queryKey: ["/api/admin/stats/overview"],
@@ -121,6 +147,31 @@ export default function AdminStatsTab() {
           </Card>
         ))}
       </div>
+
+      {/* Newsletter Control Section */}
+      <Card className="border-none shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden bg-gradient-to-r from-blue-50 to-indigo-50">
+        <CardHeader className="p-6 pb-2">
+          <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <Mail className="w-5 h-5 text-blue-600" />
+            뉴스레터 수동/테스트 발송
+          </CardTitle>
+          <CardDescription>관리자 계정으로 테스트 메일을 즉시 발송하여 템플릿과 데이터를 확인합니다.</CardDescription>
+        </CardHeader>
+        <CardContent className="p-6 pt-4 flex gap-4">
+          <button
+            onClick={() => handleTestNewsletter('weekly')}
+            className="flex items-center gap-2 px-4 py-2 bg-white text-blue-600 font-bold rounded-xl shadow-sm hover:shadow hover:-translate-y-0.5 transition-all"
+          >
+            <Send className="w-4 h-4" /> 주간 뉴스레터 테스트
+          </button>
+          <button
+            onClick={() => handleTestNewsletter('monthly')}
+            className="flex items-center gap-2 px-4 py-2 bg-white text-indigo-600 font-bold rounded-xl shadow-sm hover:shadow hover:-translate-y-0.5 transition-all"
+          >
+            <Send className="w-4 h-4" /> 월간 리포트 테스트
+          </button>
+        </CardContent>
+      </Card>
 
       {/* Main Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

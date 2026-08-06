@@ -7,12 +7,14 @@ import { AdminTabWrapper } from "../AdminShared";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, ShieldCheck, User as UserIcon, MoreVertical, Loader2, Upload, ImageIcon } from "lucide-react";
+import { Trash2, ShieldCheck, User as UserIcon, MoreVertical, Loader2, Upload, ImageIcon, Mail } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 
 interface AdminUsersTabProps {
   users: User[];
@@ -35,6 +37,13 @@ export default function AdminUsersTab({ users, currentUser, isLoading, isError, 
     const start = (page - 1) * itemsPerPage;
     return users.slice(start, start + itemsPerPage);
   }, [users, page]);
+
+  // Custom Email Dialog State
+  const [isCustomDialogOpen, setIsCustomDialogOpen] = useState(false);
+  const [customSubject, setCustomSubject] = useState("");
+  const [customContent, setCustomContent] = useState("");
+  const [isTestPassed, setIsTestPassed] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   // Upgrade Dialog State
   const [upgradeDialogState, setUpgradeDialogState] = useState<{
@@ -166,9 +175,24 @@ export default function AdminUsersTab({ users, currentUser, isLoading, isError, 
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-      <div className="p-6 border-b border-slate-50">
-        <h2 className="text-xl font-bold text-slate-900">사용자 등급 및 권한 관리</h2>
-        <p className="text-sm text-slate-500 mt-1">7단계 권한 레벨 및 등록 상태 관리</p>
+      <div className="p-6 border-b border-slate-50 flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-slate-900">사용자 등급 및 권한 관리</h2>
+          <p className="text-sm text-slate-500 mt-1">7단계 권한 레벨 및 등록 상태 관리</p>
+        </div>
+        <Button
+          size="sm"
+          className="rounded-xl shadow-sm bg-blue-600 hover:bg-blue-700 text-white"
+          onClick={() => {
+            setCustomSubject("");
+            setCustomContent("");
+            setIsTestPassed(false);
+            setIsCustomDialogOpen(true);
+          }}
+        >
+          <Mail className="h-4 w-4 mr-2" />
+          전체 회원 메일 작성
+        </Button>
       </div>
 
       <AdminTabWrapper isLoading={isLoading} isError={isError} error={error} isEmpty={users.length === 0} emptyMessage="사용자가 없습니다." onRetry={refetch}>
@@ -427,6 +451,106 @@ export default function AdminUsersTab({ users, currentUser, isLoading, isError, 
             >
               {(updateTierMutation.isPending || updateRoleMutation.isPending) ? "적용 중..." : "인증 및 승급 완료!"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isCustomDialogOpen} onOpenChange={setIsCustomDialogOpen}>
+        <DialogContent className="sm:max-w-[700px]">
+          <DialogHeader>
+            <DialogTitle>전체 회원 메일 작성</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="subject">메일 제목</Label>
+              <Input
+                id="subject"
+                value={customSubject}
+                onChange={(e) => {
+                  setCustomSubject(e.target.value);
+                  setIsTestPassed(false);
+                }}
+                placeholder="예: 공지사항을 안내해 드립니다."
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>메일 내용</Label>
+              <div className="h-[300px] mb-12">
+                <ReactQuill
+                  theme="snow"
+                  value={customContent}
+                  onChange={(val) => {
+                    setCustomContent(val);
+                    setIsTestPassed(false);
+                  }}
+                  style={{ height: '100%' }}
+                  placeholder="모든 회원에게 보낼 메일 내용을 작성하세요."
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="flex justify-between items-center sm:justify-between">
+            <p className="text-xs text-slate-500 hidden sm:block">
+              {isTestPassed ? "테스트 완료! 전체 발송이 가능합니다." : "안전을 위해 마스터 테스트 발송을 먼저 해야 합니다."}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                disabled={isSending || !customSubject || !customContent}
+                onClick={async () => {
+                  setIsSending(true);
+                  try {
+                    const res = await fetch("/api/admin/custom-email", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ type: "users", target: "master", subject: customSubject, content: customContent }),
+                    });
+                    if (res.ok) {
+                      toast({ title: "테스트 발송 성공", description: "마스터 메일로 테스트 메일이 발송되었습니다. 내용을 확인하세요." });
+                      setIsTestPassed(true);
+                    } else {
+                      const data = await res.json();
+                      throw new Error(data.message || "발송 실패");
+                    }
+                  } catch (e: any) {
+                    toast({ title: "테스트 발송 실패", description: e.message, variant: "destructive" });
+                  } finally {
+                    setIsSending(false);
+                  }
+                }}
+              >
+                마스터 메일로 테스트 발송
+              </Button>
+              <Button
+                disabled={!isTestPassed || isSending}
+                className="bg-green-600 hover:bg-green-700 text-white"
+                onClick={async () => {
+                  if (!window.confirm("정말 모든 회원에게 메일을 발송하시겠습니까? 이 작업은 취소할 수 없습니다.")) return;
+                  setIsSending(true);
+                  try {
+                    const res = await fetch("/api/admin/custom-email", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ type: "users", target: "all", subject: customSubject, content: customContent }),
+                    });
+                    if (res.ok) {
+                      const data = await res.json();
+                      toast({ title: "전체 발송 성공", description: data.message });
+                      setIsCustomDialogOpen(false);
+                    } else {
+                      const data = await res.json();
+                      throw new Error(data.message || "발송 실패");
+                    }
+                  } catch (e: any) {
+                    toast({ title: "전체 발송 실패", description: e.message, variant: "destructive" });
+                  } finally {
+                    setIsSending(false);
+                  }
+                }}
+              >
+                전체 발송
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

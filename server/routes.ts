@@ -2271,6 +2271,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/admin/custom-email", async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (!user || !["admin", "master"].includes(user.role)) {
+        return res.status(403).json({ message: "권한이 없습니다." });
+      }
+
+      const { type, subject, content, target } = req.body;
+      if (!subject || !content) {
+        return res.status(400).json({ message: "제목과 내용을 모두 입력해주세요." });
+      }
+
+      const { sendEmail } = await import("./mailer");
+      const APP_URL = process.env.APP_URL || 'https://leegyver.com';
+      const htmlWrapper = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px;">
+          <h2 style="text-align: center; color: #333; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">
+            ${subject}
+          </h2>
+          <div style="margin-top: 20px; font-size: 14px; line-height: 1.6; color: #333;">
+            ${content}
+          </div>
+          <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; font-size: 12px; color: #999;">
+            <p>본 메일은 이가이버부동산에서 발송되었습니다.</p>
+            <p><a href="${APP_URL}">홈페이지 바로가기</a></p>
+          </div>
+        </div>
+      `;
+
+      if (target === 'master') {
+        const masterEmail = user.email || '9551304@naver.com';
+        await sendEmail(masterEmail, subject, htmlWrapper);
+        return res.json({ message: "마스터 메일로 테스트 발송이 완료되었습니다." });
+      }
+
+      if (target === 'all') {
+        let emails: string[] = [];
+        if (type === 'subscribers') {
+          const subs = await storage.getActiveNewsletterSubscribers();
+          emails = subs.map(s => s.email);
+        } else if (type === 'users') {
+          const usersList = await storage.getAllUsers();
+          emails = usersList.filter(u => u.email).map(u => u.email!);
+        }
+
+        if (emails.length === 0) {
+          return res.status(400).json({ message: "발송할 대상(이메일)이 없습니다." });
+        }
+
+        // Bcc 발송 (쉼표로 구분)
+        await sendEmail(emails.join(','), subject, htmlWrapper);
+        return res.json({ message: \`총 \${emails.length}명에게 전체 발송이 완료되었습니다.\` });
+      }
+
+      res.status(400).json({ message: "잘못된 요청입니다." });
+    } catch (error) {
+      console.error("[API Error] Failed to send custom email:", error);
+      res.status(500).json({ message: "메일 발송에 실패했습니다." });
+    }
+  });
+
   app.get("/api/admin/newsletter", async (req, res) => {
     try {
       const user = req.user as any;

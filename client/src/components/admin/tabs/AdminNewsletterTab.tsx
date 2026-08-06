@@ -9,6 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Trash2, FileSpreadsheet, Mail, Send } from "lucide-react";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 
 interface AdminNewsletterTabProps {
   subscriptions: NewsletterSubscription[];
@@ -22,6 +27,12 @@ export default function AdminNewsletterTab({ subscriptions, isLoading, isError, 
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  
+  const [isCustomDialogOpen, setIsCustomDialogOpen] = useState(false);
+  const [customSubject, setCustomSubject] = useState("");
+  const [customContent, setCustomContent] = useState("");
+  const [isTestPassed, setIsTestPassed] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   
   // Basic pagination
   const [page, setPage] = useState(1);
@@ -146,6 +157,20 @@ export default function AdminNewsletterTab({ subscriptions, isLoading, isError, 
             <FileSpreadsheet className="h-4 w-4 mr-2" />
             Excel 내보내기
           </Button>
+
+          <Button
+            size="sm"
+            className="rounded-xl shadow-sm bg-blue-600 hover:bg-blue-700 text-white ml-2"
+            onClick={() => {
+              setCustomSubject("");
+              setCustomContent("");
+              setIsTestPassed(false);
+              setIsCustomDialogOpen(true);
+            }}
+          >
+            <Mail className="h-4 w-4 mr-2" />
+            구독자 메일 작성
+          </Button>
         </div>
       </div>
 
@@ -231,6 +256,106 @@ export default function AdminNewsletterTab({ subscriptions, isLoading, isError, 
           </div>
         )}
       </AdminTabWrapper>
+
+      <Dialog open={isCustomDialogOpen} onOpenChange={setIsCustomDialogOpen}>
+        <DialogContent className="sm:max-w-[700px]">
+          <DialogHeader>
+            <DialogTitle>구독자 메일 작성</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="subject">메일 제목</Label>
+              <Input
+                id="subject"
+                value={customSubject}
+                onChange={(e) => {
+                  setCustomSubject(e.target.value);
+                  setIsTestPassed(false);
+                }}
+                placeholder="예: 이번 주 새로운 매물 소식입니다!"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>메일 내용</Label>
+              <div className="h-[300px] mb-12">
+                <ReactQuill
+                  theme="snow"
+                  value={customContent}
+                  onChange={(val) => {
+                    setCustomContent(val);
+                    setIsTestPassed(false);
+                  }}
+                  style={{ height: '100%' }}
+                  placeholder="구독자에게 보낼 메일 내용을 작성하세요."
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="flex justify-between items-center sm:justify-between">
+            <p className="text-xs text-slate-500 hidden sm:block">
+              {isTestPassed ? "테스트 완료! 전체 발송이 가능합니다." : "안전을 위해 마스터 테스트 발송을 먼저 해야 합니다."}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                disabled={isSending || !customSubject || !customContent}
+                onClick={async () => {
+                  setIsSending(true);
+                  try {
+                    const res = await fetch("/api/admin/custom-email", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ type: "subscribers", target: "master", subject: customSubject, content: customContent }),
+                    });
+                    if (res.ok) {
+                      toast({ title: "테스트 발송 성공", description: "마스터 메일로 테스트 메일이 발송되었습니다. 내용을 확인하세요." });
+                      setIsTestPassed(true);
+                    } else {
+                      const data = await res.json();
+                      throw new Error(data.message || "발송 실패");
+                    }
+                  } catch (e: any) {
+                    toast({ title: "테스트 발송 실패", description: e.message, variant: "destructive" });
+                  } finally {
+                    setIsSending(false);
+                  }
+                }}
+              >
+                마스터 메일로 테스트 발송
+              </Button>
+              <Button
+                disabled={!isTestPassed || isSending}
+                className="bg-green-600 hover:bg-green-700 text-white"
+                onClick={async () => {
+                  if (!window.confirm("정말 전체 구독자에게 메일을 발송하시겠습니까? 이 작업은 취소할 수 없습니다.")) return;
+                  setIsSending(true);
+                  try {
+                    const res = await fetch("/api/admin/custom-email", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ type: "subscribers", target: "all", subject: customSubject, content: customContent }),
+                    });
+                    if (res.ok) {
+                      const data = await res.json();
+                      toast({ title: "전체 발송 성공", description: data.message });
+                      setIsCustomDialogOpen(false);
+                    } else {
+                      const data = await res.json();
+                      throw new Error(data.message || "발송 실패");
+                    }
+                  } catch (e: any) {
+                    toast({ title: "전체 발송 실패", description: e.message, variant: "destructive" });
+                  } finally {
+                    setIsSending(false);
+                  }
+                }}
+              >
+                전체 발송
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -239,15 +239,20 @@ export default function AdminStatsTab() {
           </CardHeader>
           <CardContent className="p-8 pt-0 space-y-6">
             <div>
-              <h4 className="text-sm font-bold text-slate-400 mb-4 uppercase tracking-widest">실시간 인기 매물</h4>
+              <h4 className="text-sm font-bold text-slate-400 mb-4 uppercase tracking-widest">최근 주간 인기 매물</h4>
               <div className="space-y-4">
                 {popular?.properties?.map((item: any, i: number) => (
                   <div key={item.id} className="flex items-center justify-between group">
                     <div className="flex items-center gap-3">
                       <span className="text-xs font-black text-slate-300 w-4">{i + 1}</span>
-                      <p className="text-sm font-bold text-slate-700 line-clamp-1 group-hover:text-primary transition-colors cursor-default">
+                      <a 
+                        href={`/properties/${item.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-bold text-slate-700 line-clamp-1 group-hover:text-primary transition-colors cursor-pointer"
+                      >
                         {item.title}
-                      </p>
+                      </a>
                     </div>
                     <div className="flex items-center gap-1 text-slate-400 text-xs font-medium">
                       <Eye className="w-3 h-3" />
@@ -259,15 +264,20 @@ export default function AdminStatsTab() {
             </div>
             
             <div className="pt-6 border-t border-slate-100">
-              <h4 className="text-sm font-bold text-slate-400 mb-4 uppercase tracking-widest">실시간 인기 게시글</h4>
+              <h4 className="text-sm font-bold text-slate-400 mb-4 uppercase tracking-widest">최근 주간 인기 게시글</h4>
               <div className="space-y-4">
                 {popular?.posts?.map((item: any, i: number) => (
                   <div key={item.id} className="flex items-center justify-between group">
                     <div className="flex items-center gap-3">
                       <span className="text-xs font-black text-slate-300 w-4">{i + 1}</span>
-                      <p className="text-sm font-bold text-slate-700 line-clamp-1 group-hover:text-primary transition-colors cursor-default">
+                      <a 
+                        href={`/community/${item.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-bold text-slate-700 line-clamp-1 group-hover:text-primary transition-colors cursor-pointer"
+                      >
                         {item.title}
-                      </p>
+                      </a>
                     </div>
                     <div className="flex items-center gap-1 text-slate-400 text-xs font-medium">
                       <Eye className="w-3 h-3" />

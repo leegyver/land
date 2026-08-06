@@ -1892,16 +1892,16 @@ export class SQLiteStorage implements IStorage {
   async getVisitStats(days: number): Promise<{ date: string; visitors: number; views: number }[]> {
     const rows = db.prepare(`
       WITH RECURSIVE dates(date) AS (
-        SELECT date('now', '-' || (? - 1) || ' days')
+        SELECT date('now', '+9 hours', '-' || (? - 1) || ' days')
         UNION ALL
-        SELECT date(date, '+1 day') FROM dates WHERE date < date('now')
+        SELECT date(date, '+1 day') FROM dates WHERE date < date('now', '+9 hours')
       )
       SELECT 
         d.date,
         COUNT(DISTINCT v.ip) as visitors,
         COUNT(v.id) as views
       FROM dates d
-      LEFT JOIN visit_logs v ON date(v.createdAt) = d.date
+      LEFT JOIN visit_logs v ON date(v.createdAt, '+9 hours') = d.date
       GROUP BY d.date
       ORDER BY d.date ASC
     `).all(days) as any[];
@@ -1917,19 +1917,43 @@ export class SQLiteStorage implements IStorage {
     properties: { id: number; title: string; views: number }[];
     posts: { id: number; title: string; views: number }[];
   }> {
-    const properties = db.prepare(`
-      SELECT id, title, viewCount as views 
-      FROM properties 
-      ORDER BY viewCount DESC 
+    let properties = db.prepare(`
+      SELECT p.id, p.title, COUNT(v.id) as views 
+      FROM properties p
+      JOIN visit_logs v ON v.path IN ('/properties/' || p.id, '/api/properties/' || p.id)
+      WHERE v.createdAt >= datetime('now', '-7 days')
+      GROUP BY p.id
+      ORDER BY views DESC 
       LIMIT 5
     `).all() as any[];
 
-    const posts = db.prepare(`
-      SELECT id, title, viewCount as views 
-      FROM posts 
-      ORDER BY viewCount DESC 
+    if (properties.length === 0) {
+      properties = db.prepare(`
+        SELECT id, title, viewCount as views 
+        FROM properties 
+        ORDER BY viewCount DESC 
+        LIMIT 5
+      `).all() as any[];
+    }
+
+    let posts = db.prepare(`
+      SELECT p.id, p.title, COUNT(v.id) as views 
+      FROM posts p
+      JOIN visit_logs v ON v.path IN ('/community/' || p.id, '/api/posts/' || p.id, '/posts/' || p.id)
+      WHERE v.createdAt >= datetime('now', '-7 days')
+      GROUP BY p.id
+      ORDER BY views DESC 
       LIMIT 5
     `).all() as any[];
+
+    if (posts.length === 0) {
+      posts = db.prepare(`
+        SELECT id, title, viewCount as views 
+        FROM posts 
+        ORDER BY viewCount DESC 
+        LIMIT 5
+      `).all() as any[];
+    }
 
     return { properties, posts };
   }
@@ -1949,7 +1973,7 @@ export class SQLiteStorage implements IStorage {
     const todayVisitors = db.prepare(`
       SELECT COUNT(DISTINCT ip) as count 
       FROM visit_logs 
-      WHERE date(createdAt) = date('now')
+      WHERE date(createdAt, '+9 hours') = date('now', '+9 hours')
     `).get() as any;
 
     const totalVisitors = db.prepare(`
@@ -1967,7 +1991,7 @@ export class SQLiteStorage implements IStorage {
 
     const todaySignups = db.prepare(`
       SELECT COUNT(*) as count FROM users 
-      WHERE date(createdAt) = date('now')
+      WHERE date(createdAt, '+9 hours') = date('now', '+9 hours')
     `).get() as any;
 
     const totalUsers = db.prepare(`

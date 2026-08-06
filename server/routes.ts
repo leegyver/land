@@ -2287,7 +2287,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const APP_URL = process.env.APP_URL || 'https://leegyver.com';
       
       // Convert relative image URLs to absolute URLs for email clients
-      const processedContent = content.replace(/src="\/uploads\//g, `src="${APP_URL}/uploads/`);
+      let processedContent = content.replace(/src="\/uploads\//g, `src="${APP_URL}/uploads/`);
+      
+      // Ensure all images are responsive and do not exceed the email container width
+      processedContent = processedContent.replace(/<img /g, '<img style="max-width: 100%; height: auto; display: block; margin: 0 auto;" ');
       
       const htmlWrapper = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px;">

@@ -2322,7 +2322,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Bcc 발송 (쉼표로 구분)
         await sendEmail(emails.join(','), subject, htmlWrapper);
-        return res.json({ message: \`총 \${emails.length}명에게 전체 발송이 완료되었습니다.\` });
+        return res.json({ message: `총 ${emails.length}명에게 전체 발송이 완료되었습니다.` });
       }
 
       res.status(400).json({ message: "잘못된 요청입니다." });

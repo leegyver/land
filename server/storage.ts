@@ -1703,17 +1703,21 @@ export class SQLiteStorage implements IStorage {
     }
 
     let posts = db.prepare(`
-      SELECT * FROM posts
-      WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-7 days')
-        AND category IN ('qa', 'architecture', 'stories')
-      ORDER BY viewCount DESC
+      SELECT p.*, COALESCE(p.authorName, u.nickname, u.username, '관리자') as authorName
+      FROM posts p
+      LEFT JOIN users u ON p.authorId = u.id
+      WHERE date(p.createdAt, '+9 hours') >= date('now', '+9 hours', '-7 days')
+        AND p.category IN ('qa', 'architecture', 'stories')
+      ORDER BY p.viewCount DESC
       LIMIT 5
     `).all() as any[];
     if (posts.length === 0) {
       posts = db.prepare(`
-        SELECT * FROM posts 
-        WHERE category IN ('qa', 'architecture', 'stories')
-        ORDER BY viewCount DESC 
+        SELECT p.*, COALESCE(p.authorName, u.nickname, u.username, '관리자') as authorName
+        FROM posts p
+        LEFT JOIN users u ON p.authorId = u.id
+        WHERE p.category IN ('qa', 'architecture', 'stories')
+        ORDER BY p.viewCount DESC 
         LIMIT 5
       `).all();
     }
@@ -1721,11 +1725,17 @@ export class SQLiteStorage implements IStorage {
     let news = db.prepare(`
       SELECT * FROM news
       WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-7 days')
+        AND (title LIKE '%강화군%' OR title LIKE '%강화도%' OR content LIKE '%강화군%' OR content LIKE '%강화도%')
       ORDER BY viewCount DESC
       LIMIT 5
     `).all() as any[];
     if (news.length === 0) {
-      news = db.prepare(`SELECT * FROM news ORDER BY viewCount DESC LIMIT 5`).all();
+      news = db.prepare(`
+        SELECT * FROM news 
+        WHERE (title LIKE '%강화군%' OR title LIKE '%강화도%' OR content LIKE '%강화군%' OR content LIKE '%강화도%')
+        ORDER BY viewCount DESC 
+        LIMIT 5
+      `).all();
     }
 
     return { properties: properties as Property[], posts: posts as Post[], news: news as News[] };
@@ -1743,17 +1753,21 @@ export class SQLiteStorage implements IStorage {
     }
 
     let posts = db.prepare(`
-      SELECT * FROM posts
-      WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-1 month')
-        AND category IN ('qa', 'architecture', 'stories')
-      ORDER BY viewCount DESC
+      SELECT p.*, COALESCE(p.authorName, u.nickname, u.username, '관리자') as authorName
+      FROM posts p
+      LEFT JOIN users u ON p.authorId = u.id
+      WHERE date(p.createdAt, '+9 hours') >= date('now', '+9 hours', '-1 month')
+        AND p.category IN ('qa', 'architecture', 'stories')
+      ORDER BY p.viewCount DESC
       LIMIT 5
     `).all() as any[];
     if (posts.length === 0) {
       posts = db.prepare(`
-        SELECT * FROM posts 
-        WHERE category IN ('qa', 'architecture', 'stories')
-        ORDER BY viewCount DESC 
+        SELECT p.*, COALESCE(p.authorName, u.nickname, u.username, '관리자') as authorName
+        FROM posts p
+        LEFT JOIN users u ON p.authorId = u.id
+        WHERE p.category IN ('qa', 'architecture', 'stories')
+        ORDER BY p.viewCount DESC 
         LIMIT 5
       `).all();
     }
@@ -1761,11 +1775,17 @@ export class SQLiteStorage implements IStorage {
     let news = db.prepare(`
       SELECT * FROM news
       WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-1 month')
+        AND (title LIKE '%강화군%' OR title LIKE '%강화도%' OR content LIKE '%강화군%' OR content LIKE '%강화도%')
       ORDER BY viewCount DESC
       LIMIT 5
     `).all() as any[];
     if (news.length === 0) {
-      news = db.prepare(`SELECT * FROM news ORDER BY viewCount DESC LIMIT 5`).all();
+      news = db.prepare(`
+        SELECT * FROM news 
+        WHERE (title LIKE '%강화군%' OR title LIKE '%강화도%' OR content LIKE '%강화군%' OR content LIKE '%강화도%')
+        ORDER BY viewCount DESC 
+        LIMIT 5
+      `).all();
     }
 
     return { properties: properties as Property[], posts: posts as Post[], news: news as News[] };

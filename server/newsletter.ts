@@ -5,33 +5,74 @@ import { log } from './vite';
 
 const APP_URL = process.env.APP_URL || 'https://leegyver.com';
 
+const formatKoreanPrice = (price: string | number | null | undefined): string => {
+    if (price === null || price === undefined || price === '') return '';
+    const numPrice = Number(price);
+    if (isNaN(numPrice) || numPrice === 0) return '';
+    const billion = 100000000;
+    const tenThousand = 10000;
+    if (numPrice >= billion) {
+        const uk = Math.floor(numPrice / billion);
+        const rest = numPrice % billion;
+        if (rest === 0) return `${uk}억원`;
+        const man = Math.floor(rest / tenThousand);
+        if (man > 0) return `${uk}억 ${man.toLocaleString()}만원`;
+        return `${uk}억원`;
+    } else if (numPrice >= tenThousand) {
+        const man = Math.floor(numPrice / tenThousand);
+        return `${man.toLocaleString()}만원`;
+    }
+    return numPrice.toLocaleString() + '원';
+};
+
 function buildHtmlTemplate(title: string, properties: any[], posts: any[], news: any[]) {
-  const propertyRows = properties.map(p => `
-    <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
-      <h3 style="margin: 0; font-size: 16px; color: #3b82f6;">
-        <a href="${APP_URL}/properties/${p.id}" style="text-decoration: none; color: #3b82f6;">${p.title}</a>
-      </h3>
-      <p style="margin: 5px 0; font-size: 14px; color: #666;">가격: ${p.price || '상담'} | 위치: ${p.location}</p>
+  const propertyRows = properties.map(p => {
+    const imgUrl = p.imageUrl?.startsWith('/') ? `${APP_URL}${p.imageUrl}` : p.imageUrl;
+    return `
+    <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; display: flex; gap: 15px; align-items: center;">
+      ${imgUrl ? `<img src="${imgUrl}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;" alt="매물 이미지" />` : ''}
+      <div>
+        <h3 style="margin: 0; font-size: 16px; color: #3b82f6;">
+          <a href="${APP_URL}/properties/${p.id}" style="text-decoration: none; color: #3b82f6;">${p.title}</a>
+        </h3>
+        <p style="margin: 5px 0; font-size: 14px; color: #666;">가격: <strong style="color: #ef4444;">${formatKoreanPrice(p.price) || '상담'}</strong></p>
+      </div>
     </div>
-  `).join('');
+    `;
+  }).join('');
 
-  const postRows = posts.map(p => `
-    <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
-      <h3 style="margin: 0; font-size: 16px; color: #10b981;">
-        <a href="${APP_URL}/community/${p.id}" style="text-decoration: none; color: #10b981;">${p.title}</a>
-      </h3>
-      <p style="margin: 5px 0; font-size: 14px; color: #666;">작성자: ${p.authorName} | 조회수: ${p.viewCount}</p>
+  const postRows = posts.map(p => {
+    const images = typeof p.imageUrls === 'string' ? JSON.parse(p.imageUrls) : p.imageUrls;
+    let firstImage = images && images.length > 0 ? images[0] : null;
+    if (firstImage && firstImage.startsWith('/')) firstImage = `${APP_URL}${firstImage}`;
+    
+    return `
+    <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; display: flex; gap: 15px; align-items: center;">
+      ${firstImage ? `<img src="${firstImage}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;" alt="소식 이미지" />` : ''}
+      <div>
+        <h3 style="margin: 0; font-size: 16px; color: #10b981;">
+          <a href="${APP_URL}/community/${p.id}" style="text-decoration: none; color: #10b981;">${p.title}</a>
+        </h3>
+        <p style="margin: 5px 0; font-size: 14px; color: #666;">작성자: ${p.authorName}</p>
+      </div>
     </div>
-  `).join('');
+    `;
+  }).join('');
 
-  const newsRows = news.map(n => `
-    <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
-      <h3 style="margin: 0; font-size: 16px; color: #ef4444;">
-        <a href="${APP_URL}/news/${n.id}" style="text-decoration: none; color: #ef4444;">${n.title}</a>
-      </h3>
-      <p style="margin: 5px 0; font-size: 14px; color: #666;">출처: ${n.source} | 조회수: ${n.viewCount}</p>
+  const newsRows = news.map(n => {
+    const imgUrl = n.imageUrl?.startsWith('/') ? `${APP_URL}${n.imageUrl}` : n.imageUrl;
+    return `
+    <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; display: flex; gap: 15px; align-items: center;">
+      ${imgUrl ? `<img src="${imgUrl}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;" alt="뉴스 이미지" />` : ''}
+      <div>
+        <h3 style="margin: 0; font-size: 16px; color: #ef4444;">
+          <a href="${APP_URL}/news/${n.id}" style="text-decoration: none; color: #ef4444;">${n.title}</a>
+        </h3>
+        <p style="margin: 5px 0; font-size: 14px; color: #666;">출처: ${n.source} | 조회수: ${n.viewCount}</p>
+      </div>
     </div>
-  `).join('');
+    `;
+  }).join('');
 
   return `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px;">

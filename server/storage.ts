@@ -1705,11 +1705,17 @@ export class SQLiteStorage implements IStorage {
     let posts = db.prepare(`
       SELECT * FROM posts
       WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-7 days')
-      ORDER BY createdAt DESC
+        AND category IN ('qa', 'architecture', 'stories')
+      ORDER BY viewCount DESC
       LIMIT 5
     `).all() as any[];
     if (posts.length === 0) {
-      posts = db.prepare(`SELECT * FROM posts ORDER BY createdAt DESC LIMIT 5`).all();
+      posts = db.prepare(`
+        SELECT * FROM posts 
+        WHERE category IN ('qa', 'architecture', 'stories')
+        ORDER BY viewCount DESC 
+        LIMIT 5
+      `).all();
     }
 
     let news = db.prepare(`
@@ -1739,11 +1745,17 @@ export class SQLiteStorage implements IStorage {
     let posts = db.prepare(`
       SELECT * FROM posts
       WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-1 month')
+        AND category IN ('qa', 'architecture', 'stories')
       ORDER BY viewCount DESC
       LIMIT 5
     `).all() as any[];
     if (posts.length === 0) {
-      posts = db.prepare(`SELECT * FROM posts ORDER BY viewCount DESC LIMIT 5`).all();
+      posts = db.prepare(`
+        SELECT * FROM posts 
+        WHERE category IN ('qa', 'architecture', 'stories')
+        ORDER BY viewCount DESC 
+        LIMIT 5
+      `).all();
     }
 
     let news = db.prepare(`

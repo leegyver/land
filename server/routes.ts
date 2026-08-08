@@ -23,6 +23,7 @@ import {
   realtorSubscriptions,
   users
 } from "@shared/schema";
+import rateLimit from "express-rate-limit";
 import { eq, desc } from "drizzle-orm";
 import { memoryCache } from "./cache";
 import { setupAuth } from "./auth";
@@ -3570,13 +3571,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // 블로그 포스트 관련 API 제거됨
 
+  // 뉴스레터 Rate Limiter 설정
+  const newsletterLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1분
+    max: 3, // IP당 최대 3번 요청
+    message: { message: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  // 스팸/일회용 이메일 도메인 목록
+  const spamDomains = [
+    'tempmail.com', '10minutemail.com', 'guerrillamail.com', 'mailinator.com', 
+    'yopmail.com', 'temp-mail.org', 'throwawaymail.com', 'ethereal.email',
+    'mohmal.com', 'getnada.com', 'trashmail.com'
+  ];
+
   // 뉴스레터 구독 API
-  app.post("/api/newsletter/subscribe", async (req, res) => {
+  app.post("/api/newsletter/subscribe", newsletterLimiter, async (req, res) => {
     try {
-      const { email } = req.body;
+      const { email, website } = req.body;
+
+      // 1. 허니팟 검증 (봇 차단)
+      if (website) {
+        console.warn(`[Newsletter Spam] 봇 차단됨 (허니팟): ${email} / IP: ${req.ip}`);
+        // 봇에게는 성공한 것처럼 속여서 응답
+        return res.status(201).json({ id: -1, email, subscribedAt: new Date(), isTest: false });
+      }
 
       if (!email || typeof email !== 'string' || !email.includes('@')) {
         return res.status(400).json({ message: "유효한 이메일 주소를 입력해주세요." });
+      }
+
+      // 2. 일회용 이메일 및 의심스러운 국가 도메인 차단
+      const domain = email.split('@')[1]?.toLowerCase();
+      if (domain) {
+        if (spamDomains.includes(domain) || domain.endsWith('.ru') || domain.endsWith('.cn')) {
+          console.warn(`[Newsletter Spam] 스팸 도메인 차단됨: ${email} / IP: ${req.ip}`);
+          return res.status(400).json({ message: "사용할 수 없는 이메일 도메인입니다." });
+        }
       }
 
       // 중복 구독 확인

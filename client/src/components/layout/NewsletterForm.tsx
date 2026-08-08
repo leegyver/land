@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Loader2, Mail, CheckCircle2 } from "lucide-react";
 
 const subscribeSchema = z.object({
-    email: z.string().email("유효한 이메일 주소를 입력해주세요.")
+    email: z.string().email("유효한 이메일 주소를 입력해주세요."),
+    website: z.string().optional() // Honeypot field
 });
 
 type SubscribeFormValues = z.infer<typeof subscribeSchema>;
@@ -25,7 +26,8 @@ const NewsletterForm = () => {
     const form = useForm<SubscribeFormValues>({
         resolver: zodResolver(subscribeSchema),
         defaultValues: {
-            email: ""
+            email: "",
+            website: ""
         }
     });
 
@@ -115,6 +117,23 @@ const NewsletterForm = () => {
                                             </div>
                                         </FormControl>
                                         <FormMessage className="text-red-200 mt-1" />
+                                    </FormItem>
+                                )}
+                            />
+                            {/* Honeypot Field - 봇 차단용 (화면에 숨김) */}
+                            <FormField
+                                control={form.control}
+                                name="website"
+                                render={({ field }) => (
+                                    <FormItem className="hidden" aria-hidden="true" style={{ display: 'none' }}>
+                                        <FormControl>
+                                            <Input
+                                                type="text"
+                                                autoComplete="off"
+                                                tabIndex={-1}
+                                                {...field}
+                                            />
+                                        </FormControl>
                                     </FormItem>
                                 )}
                             />

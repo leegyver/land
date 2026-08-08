@@ -63,15 +63,20 @@ const NewsletterForm = () => {
 
     if (isSubscribed) {
         return (
-            <div className="flex flex-col items-center justify-center p-8 bg-primary/5 rounded-2xl border border-primary/20 animate-in fade-in zoom-in duration-300">
-                <CheckCircle2 className="h-12 w-12 text-primary mb-4" />
-                <h3 className="text-xl font-bold text-gray-900 mb-2">구독해주셔서 감사합니다!</h3>
-                <p className="text-gray-600 text-center text-sm md:text-base">
+            <div className="relative overflow-hidden flex flex-col items-center justify-center p-8 md:p-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl shadow-xl text-white animate-in fade-in zoom-in duration-300">
+                {/* 배경 꾸밈 요소 */}
+                <div className="absolute top-0 right-0 -mt-8 -mr-8 h-32 w-32 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+                <div className="absolute bottom-0 left-0 -mb-8 -ml-8 h-32 w-32 rounded-full bg-blue-400/20 blur-2xl pointer-events-none" />
+
+                <CheckCircle2 className="relative z-10 h-16 w-16 text-yellow-400 mb-6 drop-shadow-md animate-bounce" />
+                <h3 className="relative z-10 text-2xl md:text-3xl font-black mb-3 tracking-tight drop-shadow-sm">
+                    구독해주셔서 감사합니다!
+                </h3>
+                <p className="relative z-10 text-blue-100 text-base md:text-lg text-center mb-8 font-medium">
                     매주 전해드리는 강화도 부동산 소식으로 찾아뵙겠습니다.
                 </p>
                 <Button
-                    variant="outline"
-                    className="mt-6 font-semibold"
+                    className="relative z-10 bg-white hover:bg-slate-100 text-blue-900 font-bold h-12 px-8 rounded-xl shadow-lg transition-transform hover:scale-105 active:scale-95"
                     onClick={() => setIsSubscribed(false)}
                 >
                     다른 이메일로 구독하기

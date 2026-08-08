@@ -935,6 +935,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(stats);
   });
 
+  // 검색어 랭킹 통계 조회 API
+  app.get("/api/admin/stats/keywords", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || req.user?.role !== "master") {
+        return res.status(403).json({ message: "접근 권한이 없습니다." });
+      }
+
+      const limit = parseInt(req.query.limit as string) || 10;
+      const stats = await storage.getTopKeywords(limit);
+      res.json(stats);
+    } catch (error) {
+      console.error("키워드 통계 조회 오류:", error);
+      res.status(500).json({ message: "통계 데이터를 불러오는 중 오류가 발생했습니다." });
+    }
+  });
+
   app.get("/api/admin/stats/popular", async (req, res) => {
     if (!req.isAuthenticated() || !['admin', 'master'].includes((req.user as any)?.role)) {
       return res.status(403).json({ error: '관리자만 이용 가능합니다.' });

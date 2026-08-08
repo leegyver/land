@@ -1,5 +1,5 @@
 import { Helmet } from "react-helmet";
-import PageTransition from "@/components/layout/PageTransition";
+import { PageTransition } from "@/components/layout/PageTransition";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChevronRight } from "lucide-react";

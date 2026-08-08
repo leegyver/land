@@ -1,5 +1,6 @@
 import { Building, Facebook, Instagram, Youtube } from "lucide-react";
 import NewsletterForm from "./NewsletterForm";
+import { Link } from "wouter";
 
 const Footer = () => {
   return (
@@ -28,6 +29,15 @@ const Footer = () => {
         </div>
 
         <div className="border-t border-slate-800 pt-4 mt-6">
+          <div className="flex justify-center md:justify-start gap-4 mb-4 text-sm">
+            <Link href="/terms">
+              <a className="text-slate-400 hover:text-white transition-colors">이용약관</a>
+            </Link>
+            <span className="text-slate-700">|</span>
+            <Link href="/privacy">
+              <a className="text-slate-400 hover:text-white transition-colors font-semibold">개인정보처리방침</a>
+            </Link>
+          </div>
           <div className="mb-4">
             <h3 className="text-sm font-bold text-slate-300 md:text-left text-center">이가이버랜드 대표 이민호</h3>
             <p className="text-slate-500 text-xs md:text-left text-center mt-1">

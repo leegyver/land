@@ -36,6 +36,8 @@ const PostFormPage = lazy(() => import("@/pages/PostFormPage"));
 const PricingPage = lazy(() => import("@/pages/PricingPage"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const RoadviewPopupPage = lazy(() => import("@/pages/RoadviewPopupPage"));
+const TermsPage = lazy(() => import("@/pages/TermsPage"));
+const PrivacyPage = lazy(() => import("@/pages/PrivacyPage"));
 
 // 페이지 로딩 중 표시할 최소한의 스켈레톤
 const PageLoader = () => (
@@ -81,6 +83,8 @@ function Router({ user }: { user: any }) {
         <Route path="/community/edit/:id" component={PostFormPage} />
         <Route path="/community/:id" component={PostDetailPage} />
         <Route path="/popup/roadview" component={RoadviewPopupPage} />
+        <Route path="/terms" component={TermsPage} />
+        <Route path="/privacy" component={PrivacyPage} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>

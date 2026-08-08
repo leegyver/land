@@ -1989,13 +1989,14 @@ export class SQLiteStorage implements IStorage {
 
   async createVisitLog(log: InsertVisitLog): Promise<void> {
     db.prepare(`
-      INSERT INTO visit_logs (ip, userAgent, path, referer, userId)
-      VALUES (@ip, @userAgent, @path, @referer, @userId)
+      INSERT INTO visit_logs (ip, userAgent, path, referer, keyword, userId)
+      VALUES (@ip, @userAgent, @path, @referer, @keyword, @userId)
     `).run({
       ip: log.ip || null,
       userAgent: log.userAgent || null,
       path: log.path,
       referer: log.referer || null,
+      keyword: log.keyword || null,
       userId: log.userId || null,
     });
   }

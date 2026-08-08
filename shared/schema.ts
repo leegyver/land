@@ -551,6 +551,7 @@ export const visitLogs = sqliteTable("visit_logs", {
   userAgent: text("userAgent"),
   path: text("path").notNull(),
   referer: text("referer"),
+  keyword: text("keyword"),
   userId: integer("userId"),
   createdAt: text("createdAt"),
 });
@@ -560,6 +561,7 @@ export const insertVisitLogSchema = z.object({
   userAgent: z.string().nullable().optional(),
   path: z.string(),
   referer: z.string().nullable().optional(),
+  keyword: z.string().nullable().optional(),
   userId: z.number().nullable().optional(),
 });
 

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { 
   XAxis, 
   YAxis, 
@@ -16,7 +17,7 @@ import {
   Bar,
   Legend
 } from "recharts";
-import { BarChart3, TrendingUp, Users, Eye, ArrowUpRight, ArrowDownRight, Home, UserPlus, Award, Mail, Send, Smartphone, Globe } from "lucide-react";
+import { BarChart3, TrendingUp, Users, Eye, ArrowUpRight, ArrowDownRight, Home, UserPlus, Award, Mail, Send, Smartphone, Globe, Search } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -68,7 +69,11 @@ export default function AdminStatsTab() {
     queryKey: ["/api/admin/stats/detailed"],
   });
 
-  if (isLoadingOverview || isLoadingDaily || isLoadingPopular || isLoadingDetailed) {
+  const { data: keywords, isLoading: isLoadingKeywords } = useQuery<{ keyword: string; count: number }[]>({
+    queryKey: ["/api/admin/stats/keywords"],
+  });
+
+  if (isLoadingOverview || isLoadingDaily || isLoadingPopular || isLoadingDetailed || isLoadingKeywords) {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -426,6 +431,30 @@ export default function AdminStatsTab() {
                   <span className="text-xs font-medium text-slate-400">{item.count.toLocaleString()}회</span>
                 </div>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Top Keywords */}
+        <Card className="border-none shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden lg:col-span-3">
+          <CardHeader className="p-8 pb-2">
+            <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Search className="w-5 h-5 text-emerald-500" />
+              유입 검색어 (Top 10)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-8 pt-4">
+            <div className="space-y-4">
+              {keywords && keywords.length > 0 ? (
+                keywords.map((kw: any, i: number) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-slate-700">{kw.keyword}</span>
+                    <Badge variant="secondary" className="bg-emerald-50 text-emerald-700">{kw.count.toLocaleString()}회</Badge>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center text-slate-400 py-4 text-sm">수집된 검색어 데이터가 없습니다.</div>
+              )}
             </div>
           </CardContent>
         </Card>

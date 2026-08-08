@@ -221,12 +221,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const referer = req.headers['referer'];
       const userId = (req.user as any)?.id;
 
+      // 검색어 추출 (keyword, utm_term 파라미터 또는 Referer 파싱)
+      let keyword = null;
+      if (req.query.keyword) {
+        keyword = String(req.query.keyword);
+      } else if (req.query.utm_term) {
+        keyword = String(req.query.utm_term);
+      } else if (referer) {
+        try {
+          const refUrl = new URL(referer);
+          if (refUrl.hostname.includes('naver.com')) {
+            keyword = refUrl.searchParams.get('query');
+          } else if (refUrl.hostname.includes('daum.net')) {
+            keyword = refUrl.searchParams.get('q');
+          } else if (refUrl.hostname.includes('google.com')) {
+            keyword = refUrl.searchParams.get('q');
+          }
+        } catch (e) {
+          // invalid url, 무시
+        }
+      }
+
       try {
         await storage.createVisitLog({
           ip: Array.isArray(ip) ? ip[0] : ip,
           userAgent,
           path,
           referer,
+          keyword,
           userId
         });
       } catch (err) {

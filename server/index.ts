@@ -10,6 +10,17 @@ import { setupNewsletterScheduler } from "./newsletter";
 const app = express();
 console.log("SERVER_STARTUP_ENV:", app.get("env"), "PROCESS_ENV:", process.env.NODE_ENV);
 
+// 자동 DB 스키마 업데이트 (배포 시 적용)
+import { db } from './db';
+try {
+  db.exec(`ALTER TABLE visit_logs ADD COLUMN keyword TEXT`);
+  console.log("[DB] Added keyword column to visit_logs");
+} catch (e: any) {
+  if (!e.message.includes('duplicate column')) {
+    // console.log("[DB] Column keyword already exists or error:", e.message);
+  }
+}
+
 // ... existing code ...
 app.use('/uploads', express.static(path.join(process.cwd(), 'public/uploads')));
 

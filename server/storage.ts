@@ -2069,6 +2069,22 @@ export class SQLiteStorage implements IStorage {
     return { properties, posts };
   }
 
+  async getTopKeywords(limit: number = 10): Promise<{ keyword: string; count: number }[]> {
+    const rows = db.prepare(`
+      SELECT keyword, COUNT(*) as count
+      FROM visit_logs
+      WHERE keyword IS NOT NULL AND keyword != ''
+      GROUP BY keyword
+      ORDER BY count DESC
+      LIMIT ?
+    `).all(limit) as any[];
+
+    return rows.map(r => ({
+      keyword: r.keyword,
+      count: r.count
+    }));
+  }
+
   async getOverviewStats(): Promise<{
     todayVisitors: number;
     totalVisitors: number;

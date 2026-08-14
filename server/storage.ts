@@ -232,6 +232,38 @@ export interface IStorage {
   getAllSiteConfigs(): Promise<SiteConfig[]>;
 }
 
+function calculateSimilarity(str1: string, str2: string) {
+  function getBigrams(str: string) {
+    const bigrams = new Set<string>();
+    const sanitized = str.replace(/\\s+/g, ''); // Remove spaces
+    for (let i = 0; i < sanitized.length - 1; i++) {
+      bigrams.add(sanitized.substring(i, i + 2));
+    }
+    return bigrams;
+  }
+  const bg1 = getBigrams(str1);
+  const bg2 = getBigrams(str2);
+  let intersection = 0;
+  for (const bg of bg1) {
+    if (bg2.has(bg)) intersection++;
+  }
+  const union = bg1.size + bg2.size - intersection;
+  return union === 0 ? 0 : intersection / union;
+}
+
+function deduplicateNews(newsList: any[], limit: number = 5): any[] {
+  const result: any[] = [];
+  for (const news of newsList) {
+    if (result.length >= limit) break;
+    // Check similarity with already added news (threshold > 0.35 = 35% similar bigrams)
+    const isDuplicate = result.some(added => calculateSimilarity(added.title, news.title) > 0.35);
+    if (!isDuplicate) {
+      result.push(news);
+    }
+  }
+  return result;
+}
+
 export class SQLiteStorage implements IStorage {
   sessionStore: session.Store;
 
@@ -1734,17 +1766,17 @@ export class SQLiteStorage implements IStorage {
       `).all();
     }
 
-    let news = db.prepare(`
+    let newsRaw = db.prepare(`
       SELECT * FROM news
       WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-7 days')
         AND (title LIKE '%강화군%' OR content LIKE '%강화군%')
         AND category LIKE '%부동산%'
       ORDER BY viewCount DESC
-      LIMIT 5
+      LIMIT 30
     `).all() as any[];
-    if (news.length < 5) {
-      const remaining = 5 - news.length;
-      const idsToExclude = news.length > 0 ? news.map(n => n.id).join(',') : '';
+    if (newsRaw.length < 30) {
+      const remaining = 30 - newsRaw.length;
+      const idsToExclude = newsRaw.length > 0 ? newsRaw.map(n => n.id).join(',') : '';
       const excludeClause = idsToExclude ? `AND id NOT IN (${idsToExclude})` : '';
       
       const additionalNews = db.prepare(`
@@ -1756,8 +1788,9 @@ export class SQLiteStorage implements IStorage {
         LIMIT ?
       `).all(remaining) as any[];
       
-      news = [...news, ...additionalNews];
+      newsRaw = [...newsRaw, ...additionalNews];
     }
+    const news = deduplicateNews(newsRaw, 5);
 
     return { properties: properties as Property[], posts: posts as Post[], news: news as News[] };
   }
@@ -1805,17 +1838,17 @@ export class SQLiteStorage implements IStorage {
       `).all();
     }
 
-    let news = db.prepare(`
+    let newsRaw = db.prepare(`
       SELECT * FROM news
       WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-1 month')
         AND (title LIKE '%강화군%' OR content LIKE '%강화군%')
         AND category LIKE '%부동산%'
       ORDER BY viewCount DESC
-      LIMIT 5
+      LIMIT 30
     `).all() as any[];
-    if (news.length < 5) {
-      const remaining = 5 - news.length;
-      const idsToExclude = news.length > 0 ? news.map(n => n.id).join(',') : '';
+    if (newsRaw.length < 30) {
+      const remaining = 30 - newsRaw.length;
+      const idsToExclude = newsRaw.length > 0 ? newsRaw.map(n => n.id).join(',') : '';
       const excludeClause = idsToExclude ? `AND id NOT IN (${idsToExclude})` : '';
       
       const additionalNews = db.prepare(`
@@ -1827,8 +1860,9 @@ export class SQLiteStorage implements IStorage {
         LIMIT ?
       `).all(remaining) as any[];
       
-      news = [...news, ...additionalNews];
+      newsRaw = [...newsRaw, ...additionalNews];
     }
+    const news = deduplicateNews(newsRaw, 5);
 
     return { properties: properties as Property[], posts: posts as Post[], news: news as News[] };
   }

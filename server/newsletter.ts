@@ -119,8 +119,21 @@ export async function sendWeeklyNewsletter(testEmail?: string) {
     const { properties, posts, news } = await storage.getWeeklyNewsletterData();
     const html = buildHtmlTemplate('이가이버부동산 주간 부동산 소식', properties, posts, news);
     
-    await sendEmail(emails, '[이가이버부동산] 주간 부동산 매물 및 소식 안내', html);
-    log(`[Newsletter] Weekly newsletter sent to ${emails.includes(',') ? 'subscribers' : emails}.`);
+    const subject = '[이가이버부동산] 주간 부동산 매물 및 소식 안내';
+    const success = await sendEmail(emails, subject, html);
+    
+    // Log the result
+    const recipientCount = emails.split(',').filter(e => e.trim()).length;
+    await storage.insertNewsletterLog({
+      subject,
+      type: 'weekly',
+      target: testEmail ? 'test' : 'all',
+      recipientCount,
+      success,
+      htmlContent: html
+    });
+    
+    log(`[Newsletter] Weekly newsletter sent to ${emails.includes(',') ? 'subscribers' : emails}. Success: ${success}`);
   } catch (error) {
     log(`[Newsletter Error] Weekly job failed: ${error}`);
   }
@@ -142,8 +155,21 @@ export async function sendMonthlyNewsletter(testEmail?: string) {
     const { properties, posts, news } = await storage.getMonthlyNewsletterData();
     const html = buildHtmlTemplate('이가이버부동산 월간 인기 부동산 리포트', properties, posts, news);
     
-    await sendEmail(emails, '[이가이버부동산] 이번 달 가장 뜨거웠던 인기 매물 및 소식', html);
-    log(`[Newsletter] Monthly newsletter sent to ${emails.includes(',') ? 'subscribers' : emails}.`);
+    const subject = '[이가이버부동산] 이번 달 가장 뜨거웠던 인기 매물 및 소식';
+    const success = await sendEmail(emails, subject, html);
+    
+    // Log the result
+    const recipientCount = emails.split(',').filter(e => e.trim()).length;
+    await storage.insertNewsletterLog({
+      subject,
+      type: 'monthly',
+      target: testEmail ? 'test' : 'all',
+      recipientCount,
+      success,
+      htmlContent: html
+    });
+    
+    log(`[Newsletter] Monthly newsletter sent to ${emails.includes(',') ? 'subscribers' : emails}. Success: ${success}`);
   } catch (error) {
     log(`[Newsletter Error] Monthly job failed: ${error}`);
   }

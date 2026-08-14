@@ -428,6 +428,29 @@ export const insertNewsletterSubscriptionSchema = z.object({
 export type NewsletterSubscription = typeof newsletterSubscriptions.$inferSelect;
 export type InsertNewsletterSubscription = z.infer<typeof insertNewsletterSubscriptionSchema>;
 
+// Newsletter Logs schema
+export const newsletterLogs = sqliteTable("newsletter_logs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  subject: text("subject").notNull(),
+  type: text("type").notNull(), // 'weekly', 'monthly', 'custom'
+  target: text("target").notNull(), // 'all', 'master', or specific email
+  recipientCount: integer("recipientCount").default(0),
+  success: integer("success", { mode: 'boolean' }).default(true),
+  htmlContent: text("htmlContent").notNull(),
+  sentAt: text("sentAt"),
+});
+
+export const insertNewsletterLogSchema = z.object({
+  subject: z.string(),
+  type: z.string(),
+  target: z.string(),
+  recipientCount: z.number().optional(),
+  success: z.boolean().optional(),
+  htmlContent: z.string(),
+});
+export type NewsletterLog = typeof newsletterLogs.$inferSelect;
+export type InsertNewsletterLog = z.infer<typeof insertNewsletterLogSchema>;
+
 // Realtor Subscriptions schema
 export const realtorSubscriptions = sqliteTable("realtor_subscriptions", {
   id: integer("id").primaryKey({ autoIncrement: true }),

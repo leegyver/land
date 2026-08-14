@@ -1,13 +1,13 @@
 import { useState, useRef, useCallback, useMemo } from "react";
 import { NewsletterSubscription } from "@shared/schema";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { AdminTabWrapper } from "../AdminShared";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, FileSpreadsheet, Mail, Send } from "lucide-react";
+import { Trash2, FileSpreadsheet, Mail, Send, History } from "lucide-react";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -34,6 +34,14 @@ export default function AdminNewsletterTab({ subscriptions, isLoading, isError, 
   const [isTestPassed, setIsTestPassed] = useState(false);
   const [isSending, setIsSending] = useState(false);
   
+  const [isLogDialogOpen, setIsLogDialogOpen] = useState(false);
+  const [selectedLog, setSelectedLog] = useState<any>(null);
+
+  const { data: logsData, isLoading: isLoadingLogs } = useQuery({
+    queryKey: ["/api/admin/newsletter/logs"],
+  });
+  const logs = (logsData as any[]) || [];
+
   const quillRef = useRef<ReactQuill>(null);
 
   const quillImageHandler = useCallback(() => {
@@ -408,6 +416,96 @@ export default function AdminNewsletterTab({ subscriptions, isLoading, isError, 
                 전체 발송
               </Button>
             </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <div className="mt-8 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div className="p-6 border-b border-slate-50 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-slate-900 flex items-center">
+            <History className="w-5 h-5 mr-2 text-blue-500" />
+            뉴스레터 발송 내역 (히스토리)
+          </h2>
+        </div>
+        <div className="p-0">
+          {isLoadingLogs ? (
+            <div className="p-8 text-center text-slate-500">발송 내역을 불러오는 중입니다...</div>
+          ) : logs.length === 0 ? (
+            <div className="p-8 text-center text-slate-500">아직 뉴스레터 발송 내역이 없습니다.</div>
+          ) : (
+            <div className="max-h-[500px] overflow-y-auto">
+              <Table>
+                <TableHeader className="bg-slate-50/50 sticky top-0">
+                  <TableRow>
+                    <TableHead>발송 일시</TableHead>
+                    <TableHead>발송 유형</TableHead>
+                    <TableHead>대상</TableHead>
+                    <TableHead>수신자 수</TableHead>
+                    <TableHead>메일 제목</TableHead>
+                    <TableHead>상태</TableHead>
+                    <TableHead className="text-right">미리보기</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {logs.map((log: any) => (
+                    <TableRow key={log.id} className="hover:bg-slate-50/50 transition-colors">
+                      <TableCell className="text-sm text-slate-500">
+                        {log.sentAt ? new Date(log.sentAt).toLocaleString('ko-KR') : '-'}
+                      </TableCell>
+                      <TableCell>
+                        {log.type === 'weekly' && <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">주간</span>}
+                        {log.type === 'monthly' && <span className="inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full font-medium">월간</span>}
+                        {log.type === 'custom' && <span className="inline-block px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-full font-medium">수동</span>}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {log.target === 'master' ? '마스터 메일' : log.target === 'all' ? '구독자 전체' : '일반 회원'}
+                      </TableCell>
+                      <TableCell className="text-sm font-medium">{log.recipientCount} 명</TableCell>
+                      <TableCell className="font-medium text-slate-900 max-w-[200px] truncate" title={log.subject}>
+                        {log.subject}
+                      </TableCell>
+                      <TableCell>
+                        {log.success ? (
+                          <span className="text-green-600 text-sm font-medium">성공</span>
+                        ) : (
+                          <span className="text-red-600 text-sm font-medium">실패</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedLog(log);
+                            setIsLogDialogOpen(true);
+                          }}
+                        >
+                          본문 보기
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <Dialog open={isLogDialogOpen} onOpenChange={setIsLogDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>발송된 메일 본문 (미리보기)</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto mt-4 border border-slate-200 rounded-md p-4 bg-slate-50">
+            {selectedLog && (
+              <div 
+                className="email-preview-content bg-white"
+                dangerouslySetInnerHTML={{ __html: selectedLog.htmlContent }}
+              />
+            )}
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setIsLogDialogOpen(false)}>닫기</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

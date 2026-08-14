@@ -2348,7 +2348,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (target === 'master') {
         const masterEmail = user.email || '9551304@naver.com';
-        await sendEmail(masterEmail, subject, htmlWrapper);
+        const success = await sendEmail(masterEmail, subject, htmlWrapper);
+        await storage.insertNewsletterLog({
+          subject,
+          type: 'custom',
+          target: 'master',
+          recipientCount: 1,
+          success,
+          htmlContent: htmlWrapper
+        });
         return res.json({ message: "마스터 메일로 테스트 발송이 완료되었습니다." });
       }
 
@@ -2367,7 +2375,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // Bcc 발송 (쉼표로 구분)
-        await sendEmail(emails.join(','), subject, htmlWrapper);
+        const success = await sendEmail(emails.join(','), subject, htmlWrapper);
+        await storage.insertNewsletterLog({
+          subject,
+          type: 'custom',
+          target: type === 'subscribers' ? 'all' : 'users',
+          recipientCount: emails.length,
+          success,
+          htmlContent: htmlWrapper
+        });
         return res.json({ message: `총 ${emails.length}명에게 전체 발송이 완료되었습니다.` });
       }
 
@@ -2375,6 +2391,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("[API Error] Failed to send custom email:", error);
       res.status(500).json({ message: "메일 발송에 실패했습니다." });
+    }
+  });
+
+  app.get("/api/admin/newsletter/logs", async (req, res) => {
+    try {
+      const user = req.user as any;
+      if (!user || !["admin", "master"].includes(user.role)) {
+        return res.status(403).json({ message: "권한이 없습니다." });
+      }
+      const logs = await storage.getNewsletterLogs(100);
+      res.json(logs);
+    } catch (error) {
+      console.error("[API Error] Failed to fetch newsletter logs:", error);
+      res.status(500).json({ message: "Failed to fetch logs" });
     }
   });
 

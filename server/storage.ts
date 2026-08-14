@@ -182,6 +182,10 @@ export interface IStorage {
   getActiveNewsletterSubscribers(): Promise<NewsletterSubscription[]>;
   getWeeklyNewsletterData(): Promise<{ properties: Property[]; posts: Post[]; news: News[] }>;
   getMonthlyNewsletterData(): Promise<{ properties: Property[]; posts: Post[]; news: News[] }>;
+  
+  // Newsletter Logs
+  insertNewsletterLog(log: Omit<import("@shared/schema").InsertNewsletterLog, "id" | "sentAt">): Promise<void>;
+  getNewsletterLogs(limit?: number): Promise<import("@shared/schema").NewsletterLog[]>;
 
   // Notification methods
   getNotifications(limit?: number): Promise<Notification[]>;
@@ -258,8 +262,8 @@ function isDuplicateNews(news1: any, news2: any): boolean {
   const kw2 = extractKeywords(news2.title);
   
   let matchCount = 0;
-  for (const w1 of kw1) {
-    for (const w2 of kw2) {
+  for (const w1 of Array.from(kw1)) {
+    for (const w2 of Array.from(kw2)) {
       // If words are exactly same, or one is a significant substring of another (e.g. "목함지뢰" and "지뢰")
       if (w1 === w2 || (w1.length >= 3 && w2.includes(w1)) || (w2.length >= 3 && w1.includes(w2))) {
         matchCount++;
@@ -642,7 +646,22 @@ export class SQLiteStorage implements IStorage {
       CREATE TABLE IF NOT EXISTS newsletter_subscriptions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT UNIQUE NOT NULL,
-        createdAt TEXT DEFAULT CURRENT_TIMESTAMP
+        createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+        isActive INTEGER DEFAULT 1
+      )
+    `).run();
+
+    // Newsletter Logs
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS newsletter_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        subject TEXT NOT NULL,
+        type TEXT NOT NULL,
+        target TEXT NOT NULL,
+        recipientCount INTEGER DEFAULT 0,
+        success INTEGER DEFAULT 1,
+        htmlContent TEXT NOT NULL,
+        sentAt TEXT DEFAULT CURRENT_TIMESTAMP
       )
     `).run();
 
@@ -1885,6 +1904,30 @@ export class SQLiteStorage implements IStorage {
     const news = deduplicateNews(newsRaw, 5);
 
     return { properties: properties as Property[], posts: posts as Post[], news: news as News[] };
+  }
+
+  async insertNewsletterLog(log: Omit<import("@shared/schema").InsertNewsletterLog, "id" | "sentAt">): Promise<void> {
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO newsletter_logs(subject, type, target, recipientCount, success, htmlContent, sentAt)
+      VALUES(@subject, @type, @target, @recipientCount, @success, @htmlContent, @sentAt)
+    `).run({
+      subject: log.subject,
+      type: log.type,
+      target: log.target,
+      recipientCount: log.recipientCount || 0,
+      success: this.toInt(log.success ?? true),
+      htmlContent: log.htmlContent,
+      sentAt: now
+    });
+  }
+
+  async getNewsletterLogs(limit: number = 50): Promise<import("@shared/schema").NewsletterLog[]> {
+    const rows = db.prepare('SELECT * FROM newsletter_logs ORDER BY sentAt DESC LIMIT ?').all(limit) as any[];
+    return rows.map(row => ({
+      ...row,
+      success: this.toBoolean(row.success)
+    }));
   }
 
   // --- Posts (Community) ---

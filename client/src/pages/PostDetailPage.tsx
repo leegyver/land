@@ -16,6 +16,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState, useRef } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { Textarea } from "@/components/ui/textarea";
+DOMPurify.addHook('afterSanitizeAttributes', function (node) {
+    if (node.tagName === 'A') {
+        node.setAttribute('target', '_blank');
+        node.setAttribute('rel', 'noopener noreferrer');
+    }
+});
 
 const categories = {
     qa: { name: "궁금해요 부동산", color: "bg-blue-600" },
@@ -223,7 +229,7 @@ const PostDetailPage = () => {
                                 dangerouslySetInnerHTML={{ 
                                     __html: DOMPurify.sanitize(parseYouTubeLinks(post.content), {
                                         ADD_TAGS: ["iframe"],
-                                        ADD_ATTR: ["allow", "allowfullscreen", "frameborder", "scrolling", "style"]
+                                        ADD_ATTR: ["allow", "allowfullscreen", "frameborder", "scrolling", "style", "target"]
                                     }) 
                                 }}
                             />

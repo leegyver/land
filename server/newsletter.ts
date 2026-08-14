@@ -159,6 +159,12 @@ export function setupNewsletterScheduler() {
   cron.schedule('0 8 1 * *', () => {
     sendMonthlyNewsletter();
   });
+  
+  // Special one-time mailing on August 15th at 08:00 AM
+  cron.schedule('0 8 15 8 *', () => {
+    log('[Newsletter] Running special one-time newsletter for Aug 15th');
+    sendWeeklyNewsletter();
+  });
 
-  log('[Newsletter] Scheduler initialized (Weekly: Fri 08:00, Monthly: 1st 08:00)');
+  log('[Newsletter] Scheduler initialized (Weekly: Fri 08:00, Monthly: 1st 08:00, Special: Aug 15 08:00)');
 }

@@ -169,8 +169,10 @@ export default function AdminNewsletterTab({ subscriptions, isLoading, isError, 
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ type: "weekly", target: "master" }),
                 });
-                if (res.ok) toast({ title: "발송 성공", description: "마스터 메일로 샘플이 발송되었습니다." });
-                else throw new Error("발송 실패");
+                if (res.ok) {
+                  toast({ title: "발송 성공", description: "마스터 메일로 샘플이 발송되었습니다." });
+                  queryClient.invalidateQueries({ queryKey: ["/api/admin/newsletter/logs"] });
+                } else throw new Error("발송 실패");
               } catch (e) {
                 toast({ title: "발송 실패", description: "메일 발송 중 오류가 발생했습니다.", variant: "destructive" });
               }
@@ -191,8 +193,10 @@ export default function AdminNewsletterTab({ subscriptions, isLoading, isError, 
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ type: "weekly", target: "all" }),
                 });
-                if (res.ok) toast({ title: "발송 성공", description: "전체 구독자에게 뉴스레터가 발송되었습니다." });
-                else throw new Error("발송 실패");
+                if (res.ok) {
+                  toast({ title: "발송 성공", description: "전체 구독자에게 뉴스레터가 발송되었습니다." });
+                  queryClient.invalidateQueries({ queryKey: ["/api/admin/newsletter/logs"] });
+                } else throw new Error("발송 실패");
               } catch (e) {
                 toast({ title: "발송 실패", description: "메일 발송 중 오류가 발생했습니다.", variant: "destructive" });
               }
@@ -373,6 +377,7 @@ export default function AdminNewsletterTab({ subscriptions, isLoading, isError, 
                     if (res.ok) {
                       toast({ title: "테스트 발송 성공", description: "마스터 메일로 테스트 메일이 발송되었습니다. 내용을 확인하세요." });
                       setIsTestPassed(true);
+                      queryClient.invalidateQueries({ queryKey: ["/api/admin/newsletter/logs"] });
                     } else {
                       const data = await res.json();
                       throw new Error(data.message || "발송 실패");
@@ -402,6 +407,7 @@ export default function AdminNewsletterTab({ subscriptions, isLoading, isError, 
                       const data = await res.json();
                       toast({ title: "전체 발송 성공", description: data.message });
                       setIsCustomDialogOpen(false);
+                      queryClient.invalidateQueries({ queryKey: ["/api/admin/newsletter/logs"] });
                     } else {
                       const data = await res.json();
                       throw new Error(data.message || "발송 실패");

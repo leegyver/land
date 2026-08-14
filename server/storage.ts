@@ -232,31 +232,51 @@ export interface IStorage {
   getAllSiteConfigs(): Promise<SiteConfig[]>;
 }
 
-function calculateSimilarity(str1: string, str2: string) {
-  function getBigrams(str: string) {
-    const bigrams = new Set<string>();
-    const sanitized = str.replace(/\\s+/g, ''); // Remove spaces
-    for (let i = 0; i < sanitized.length - 1; i++) {
-      bigrams.add(sanitized.substring(i, i + 2));
+function extractKeywords(title: string): Set<string> {
+  const stopWords = /강화군|강화도|강화|인천|부동산|뉴스|발견|비상|해안가|휴가철/g; // Added some common words to stop words but wait, '비상' was a good keyword!
+  // Let's only remove truly generic words for our domain
+  const genericWords = /강화군|강화도|강화|인천|부동산|뉴스/g;
+  
+  // Remove punctuation
+  const cleanStr = title.replace(genericWords, '').replace(/[^가-힣a-zA-Z0-9\s]/g, ' ');
+  const words = cleanStr.split(/\s+/).filter(w => w.length >= 2);
+  
+  // Create a set of keywords. We also create 2-char substrings from words to catch partial matches like "지뢰" from "목함지뢰" 
+  // But exact word match is safer. Let's just return the words.
+  return new Set(words);
+}
+
+function isDuplicateNews(news1: any, news2: any): boolean {
+  // 1. Exact same image (and not a generic placeholder)
+  if (news1.imageUrl && news2.imageUrl && news1.imageUrl === news2.imageUrl) {
+    // If it's a very generic placeholder it might falsely match, but usually news images are specific.
+    return true;
+  }
+  
+  // 2. Keyword intersection
+  const kw1 = extractKeywords(news1.title);
+  const kw2 = extractKeywords(news2.title);
+  
+  let matchCount = 0;
+  for (const w1 of kw1) {
+    for (const w2 of kw2) {
+      // If words are exactly same, or one is a significant substring of another (e.g. "목함지뢰" and "지뢰")
+      if (w1 === w2 || (w1.length >= 3 && w2.includes(w1)) || (w2.length >= 3 && w1.includes(w2))) {
+        matchCount++;
+        break; // Count at most once per w1
+      }
     }
-    return bigrams;
   }
-  const bg1 = getBigrams(str1);
-  const bg2 = getBigrams(str2);
-  let intersection = 0;
-  for (const bg of bg1) {
-    if (bg2.has(bg)) intersection++;
-  }
-  const union = bg1.size + bg2.size - intersection;
-  return union === 0 ? 0 : intersection / union;
+  
+  // If they share 2 or more significant words, they are highly likely duplicates
+  return matchCount >= 2;
 }
 
 function deduplicateNews(newsList: any[], limit: number = 5): any[] {
   const result: any[] = [];
   for (const news of newsList) {
     if (result.length >= limit) break;
-    // Check similarity with already added news (threshold > 0.35 = 35% similar bigrams)
-    const isDuplicate = result.some(added => calculateSimilarity(added.title, news.title) > 0.35);
+    const isDuplicate = result.some(added => isDuplicateNews(added, news));
     if (!isDuplicate) {
       result.push(news);
     }

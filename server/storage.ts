@@ -1698,8 +1698,20 @@ export class SQLiteStorage implements IStorage {
       ORDER BY createdAt DESC
       LIMIT 5
     `).all() as any[];
-    if (properties.length === 0) {
-      properties = db.prepare(`SELECT * FROM properties ORDER BY createdAt DESC LIMIT 5`).all();
+    
+    if (properties.length < 5) {
+      const remaining = 5 - properties.length;
+      const idsToExclude = properties.length > 0 ? properties.map(p => p.id).join(',') : '';
+      const excludeClause = idsToExclude ? `WHERE id NOT IN (${idsToExclude})` : '';
+      
+      const additionalProperties = db.prepare(`
+        SELECT * FROM properties 
+        ${excludeClause}
+        ORDER BY viewCount DESC 
+        LIMIT ?
+      `).all(remaining) as any[];
+      
+      properties = [...properties, ...additionalProperties];
     }
 
     let posts = db.prepare(`
@@ -1725,17 +1737,26 @@ export class SQLiteStorage implements IStorage {
     let news = db.prepare(`
       SELECT * FROM news
       WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-7 days')
-        AND (title LIKE '%강화군%' OR title LIKE '%강화도%' OR content LIKE '%강화군%' OR content LIKE '%강화도%')
+        AND (title LIKE '%강화군%' OR content LIKE '%강화군%')
+        AND category LIKE '%부동산%'
       ORDER BY viewCount DESC
       LIMIT 5
     `).all() as any[];
-    if (news.length === 0) {
-      news = db.prepare(`
+    if (news.length < 5) {
+      const remaining = 5 - news.length;
+      const idsToExclude = news.length > 0 ? news.map(n => n.id).join(',') : '';
+      const excludeClause = idsToExclude ? `AND id NOT IN (${idsToExclude})` : '';
+      
+      const additionalNews = db.prepare(`
         SELECT * FROM news 
-        WHERE (title LIKE '%강화군%' OR title LIKE '%강화도%' OR content LIKE '%강화군%' OR content LIKE '%강화도%')
+        WHERE (title LIKE '%강화군%' OR content LIKE '%강화군%')
+          AND category LIKE '%부동산%'
+          ${excludeClause}
         ORDER BY viewCount DESC 
-        LIMIT 5
-      `).all();
+        LIMIT ?
+      `).all(remaining) as any[];
+      
+      news = [...news, ...additionalNews];
     }
 
     return { properties: properties as Property[], posts: posts as Post[], news: news as News[] };
@@ -1748,8 +1769,20 @@ export class SQLiteStorage implements IStorage {
       ORDER BY viewCount DESC
       LIMIT 5
     `).all() as any[];
-    if (properties.length === 0) {
-      properties = db.prepare(`SELECT * FROM properties ORDER BY viewCount DESC LIMIT 5`).all();
+    
+    if (properties.length < 5) {
+      const remaining = 5 - properties.length;
+      const idsToExclude = properties.length > 0 ? properties.map(p => p.id).join(',') : '';
+      const excludeClause = idsToExclude ? `WHERE id NOT IN (${idsToExclude})` : '';
+      
+      const additionalProperties = db.prepare(`
+        SELECT * FROM properties 
+        ${excludeClause}
+        ORDER BY viewCount DESC 
+        LIMIT ?
+      `).all(remaining) as any[];
+      
+      properties = [...properties, ...additionalProperties];
     }
 
     let posts = db.prepare(`
@@ -1775,17 +1808,26 @@ export class SQLiteStorage implements IStorage {
     let news = db.prepare(`
       SELECT * FROM news
       WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-1 month')
-        AND (title LIKE '%강화군%' OR title LIKE '%강화도%' OR content LIKE '%강화군%' OR content LIKE '%강화도%')
+        AND (title LIKE '%강화군%' OR content LIKE '%강화군%')
+        AND category LIKE '%부동산%'
       ORDER BY viewCount DESC
       LIMIT 5
     `).all() as any[];
-    if (news.length === 0) {
-      news = db.prepare(`
+    if (news.length < 5) {
+      const remaining = 5 - news.length;
+      const idsToExclude = news.length > 0 ? news.map(n => n.id).join(',') : '';
+      const excludeClause = idsToExclude ? `AND id NOT IN (${idsToExclude})` : '';
+      
+      const additionalNews = db.prepare(`
         SELECT * FROM news 
-        WHERE (title LIKE '%강화군%' OR title LIKE '%강화도%' OR content LIKE '%강화군%' OR content LIKE '%강화도%')
+        WHERE (title LIKE '%강화군%' OR content LIKE '%강화군%')
+          AND category LIKE '%부동산%'
+          ${excludeClause}
         ORDER BY viewCount DESC 
-        LIMIT 5
-      `).all();
+        LIMIT ?
+      `).all(remaining) as any[];
+      
+      news = [...news, ...additionalNews];
     }
 
     return { properties: properties as Property[], posts: posts as Post[], news: news as News[] };

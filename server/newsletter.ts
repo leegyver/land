@@ -109,11 +109,18 @@ export async function sendWeeklyNewsletter(testEmail?: string) {
     let emails = testEmail;
     if (!emails) {
       const subs = await storage.getActiveNewsletterSubscribers();
-      if (subs.length === 0) {
-        log('[Newsletter] No active subscribers found.');
+      const users = await storage.getAllUsers();
+      
+      const allEmails = new Set([
+        ...subs.map(s => s.email),
+        ...users.filter(u => u.email).map(u => u.email as string)
+      ]);
+      
+      if (allEmails.size === 0) {
+        log('[Newsletter] No active subscribers or users found.');
         return;
       }
-      emails = subs.map(s => s.email).join(',');
+      emails = Array.from(allEmails).join(',');
     }
 
     const { properties, posts, news } = await storage.getWeeklyNewsletterData();
@@ -145,11 +152,18 @@ export async function sendMonthlyNewsletter(testEmail?: string) {
     let emails = testEmail;
     if (!emails) {
       const subs = await storage.getActiveNewsletterSubscribers();
-      if (subs.length === 0) {
-        log('[Newsletter] No active subscribers found.');
+      const users = await storage.getAllUsers();
+      
+      const allEmails = new Set([
+        ...subs.map(s => s.email),
+        ...users.filter(u => u.email).map(u => u.email as string)
+      ]);
+      
+      if (allEmails.size === 0) {
+        log('[Newsletter] No active subscribers or users found.');
         return;
       }
-      emails = subs.map(s => s.email).join(',');
+      emails = Array.from(allEmails).join(',');
     }
 
     const { properties, posts, news } = await storage.getMonthlyNewsletterData();

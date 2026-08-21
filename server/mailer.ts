@@ -56,9 +56,11 @@ export async function sendEmail(
     console.log("보정된 발신자 이메일:", naverEmail);
     
     // 메일 옵션 설정 (RFC 5322 준수를 위한 형식)
+    const isMultiple = to.includes(',');
     const mailOptions = {
-      from: naverEmail, // 단순 이메일 주소만 사용
-      to: to.trim(),
+      from: naverEmail,
+      to: isMultiple ? naverEmail : to.trim(),
+      bcc: isMultiple ? to.trim() : undefined,
       subject,
       html: htmlContent
     };

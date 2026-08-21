@@ -1752,8 +1752,8 @@ export class SQLiteStorage implements IStorage {
 
   async createNewsletterSubscription(sub: InsertNewsletterSubscription): Promise<NewsletterSubscription> {
     const res = db.prepare(`
-      INSERT INTO newsletter_subscriptions (email, createdAt)
-      VALUES (@email, @createdAt)
+      INSERT INTO newsletter_subscriptions (email, createdAt, isActive)
+      VALUES (@email, @createdAt, 1)
     `).run({
       ...sub,
       createdAt: new Date().toISOString()

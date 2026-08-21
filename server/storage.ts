@@ -650,6 +650,18 @@ export class SQLiteStorage implements IStorage {
         isActive INTEGER DEFAULT 1
       )
     `).run();
+    
+    try {
+      const subCols = db.prepare('PRAGMA table_info(newsletter_subscriptions)').all() as any[];
+      if (!subCols.some(c => c.name === 'isActive')) {
+        db.prepare('ALTER TABLE newsletter_subscriptions ADD COLUMN isActive INTEGER DEFAULT 1').run();
+        console.log('[Storage] Added isActive column to newsletter_subscriptions');
+      }
+      // Set existing nulls to 1
+      db.prepare('UPDATE newsletter_subscriptions SET isActive = 1 WHERE isActive IS NULL').run();
+    } catch (err) {
+      console.error('[Storage] Migration error for newsletter_subscriptions:', err);
+    }
 
     // Newsletter Logs
     db.prepare(`

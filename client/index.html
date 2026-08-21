@@ -26,11 +26,16 @@
   <!-- Referrer Policy: 중요! 카카오/네이버 API가 도메인을 확인할 수 있도록 설정 -->
   <meta name="referrer" content="strict-origin-when-cross-origin" />
 
-  <!-- Open Graph 메타태그 (소셜 공유용) -->
+  <!-- Open Graph 메타태그 (소셜 공유용 및 검색 엔진 대표이미지) -->
   <meta property="og:site_name" content="이가이버부동산" />
   <meta property="og:title" content="이가이버부동산 - 강화도 부동산 전문 중개" />
   <meta property="og:description" content="강화도 부동산 전문 중개 - 토지, 주택, 아파트, 상가 매물 정보. 강화도 지역 부동산 매매 및 임대 서비스를 제공합니다." />
   <meta property="og:image" content="https://leegyver.com/images/thumbnail.png" />
+  <meta property="og:image:secure_url" content="https://leegyver.com/images/thumbnail.png" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="600" />
+  <meta property="og:image:alt" content="이가이버부동산" />
   <meta property="og:url" content="https://leegyver.com/" />
   <meta property="og:type" content="website" />
   <meta property="og:locale" content="ko_KR" />
@@ -42,7 +47,57 @@
   <meta name="twitter:description" content="강화도 부동산 전문 중개 - 토지, 주택, 아파트, 상가 매물 정보. 강화도 지역 부동산 매매 및 임대 서비스를 제공합니다." />
   <meta name="twitter:image" content="https://leegyver.com/images/thumbnail.png" />
 
+  <!-- 파비콘 및 대표 아이콘 -->
+  <link rel="icon" type="image/png" href="https://leegyver.com/images/thumbnail.png" />
+  <link rel="shortcut icon" href="https://leegyver.com/images/thumbnail.png" />
+  <link rel="apple-touch-icon" href="https://leegyver.com/images/thumbnail.png" />
+
   <link rel="canonical" href="https://leegyver.com/" />
+
+  <!-- JSON-LD 구조화 데이터 (네이버 및 검색로봇 대표 이미지/업체 인식용) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "RealEstateAgent",
+    "name": "이가이버부동산",
+    "image": "https://leegyver.com/images/thumbnail.png",
+    "logo": "https://leegyver.com/images/thumbnail.png",
+    "@id": "https://leegyver.com",
+    "url": "https://leegyver.com/",
+    "telephone": "032-934-3120",
+    "description": "강화도 부동산 전문 중개 - 토지, 주택, 아파트, 상가 매물 정보. 강화도 지역 부동산 매매 및 임대 서비스를 제공합니다.",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "인천광역시 강화군 강화읍 남문로 51 (남산리 96-1)",
+      "addressLocality": "강화군",
+      "addressRegion": "인천광역시",
+      "postalCode": "23030",
+      "addressCountry": "KR"
+    },
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": 37.6437,
+      "longitude": 126.4912
+    },
+    "openingHoursSpecification": {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ],
+      "opens": "09:00",
+      "closes": "18:00"
+    },
+    "sameAs": [
+      "https://blog.naver.com/9551304",
+      "https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA"
+    ]
+  }
+  </script>
   <!-- %KAKAO_MAP_SCRIPT% -->
   
   <!-- Kakao JavaScript SDK v2 (For Share/Link) -->

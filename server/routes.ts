@@ -41,6 +41,7 @@ import {
   checkYouTubeLive
 } from "./youtube-fetcher";
 import { importPropertiesFromSheet, checkDuplicatesFromSheet } from "./sheet-importer";
+import { generateSitemapXml } from "./sitemap";
 
 import { log } from "./vite";
 
@@ -267,6 +268,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Serve the uploads directory at /uploads path
   app.use('/uploads', express.static(uploadDir));
+
+  // Dynamic Sitemap for Google / Naver SEO
+  app.get('/sitemap.xml', async (_req, res) => {
+    try {
+      const sitemap = await generateSitemapXml(storage);
+      res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.send(sitemap);
+    } catch (e) {
+      console.error('[Sitemap Error]', e);
+      res.status(500).send('Error generating sitemap');
+    }
+  });
 
   const uploadStorage = multer.diskStorage({
     destination: function (req, file, cb) {

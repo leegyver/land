@@ -18,6 +18,9 @@ export function log(message: string, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
+import { storage } from "./storage";
+import { injectSeoIntoHtml } from "./seo";
+
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
     middlewareMode: true,
@@ -55,9 +58,9 @@ export async function setupVite(app: Express, server: Server) {
         `src="/src/main.v2.tsx"`,
         `src="/src/main.v2.tsx?v=${nanoid()}"`,
       );
-      console.log("Serving index.html with new version tag");
+      template = await injectSeoIntoHtml(url, template, storage);
       const page = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+      res.status(200).set({ "Content-Type": "text/html; charset=utf-8" }).end(page);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
       next(e);
@@ -76,8 +79,16 @@ export function serveStatic(app: Express) {
 
   app.use(express.static(distPath));
 
-  // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+  // fall through to index.html with dynamic SEO metadata injection
+  app.use("*", async (req, res) => {
+    try {
+      const indexPath = path.resolve(distPath, "index.html");
+      const template = await fs.promises.readFile(indexPath, "utf-8");
+      const html = await injectSeoIntoHtml(req.originalUrl || req.path, template, storage);
+      res.status(200).set({ "Content-Type": "text/html; charset=utf-8" }).send(html);
+    } catch (e) {
+      console.error("[Static SEO] Error injecting SEO metadata:", e);
+      res.sendFile(path.resolve(distPath, "index.html"));
+    }
   });
 }

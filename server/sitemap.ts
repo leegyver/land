@@ -1,5 +1,25 @@
 import { type IStorage } from "./storage";
 
+function formatToIsoDate(rawDate: any, fallbackDate: string): string {
+  if (!rawDate) return fallbackDate;
+  try {
+    const d = new Date(rawDate);
+    if (!isNaN(d.getTime())) {
+      return d.toISOString().split("T")[0];
+    }
+  } catch (e) {
+    // Ignore and fallback to regex check
+  }
+
+  // YYYY-MM-DD 형태 추출 시도
+  const match = String(rawDate).match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    return `${match[1]}-${match[2]}-${match[3]}`;
+  }
+
+  return fallbackDate;
+}
+
 export async function generateSitemapXml(storage: IStorage): Promise<string> {
   const baseUrl = "https://leegyver.com";
   const today = new Date().toISOString().split("T")[0];
@@ -20,11 +40,10 @@ export async function generateSitemapXml(storage: IStorage): Promise<string> {
     const properties = await storage.getProperties();
     for (const prop of properties) {
       if (prop.isVisible !== false && prop.isActive !== false) {
-        const rawDate = prop.updatedAt || prop.createdAt;
-        const lastmod = rawDate ? String(rawDate).split("T")[0].split(" ")[0] : today;
+        const lastmod = formatToIsoDate(prop.updatedAt || prop.createdAt, today);
         urls.push({
           loc: `${baseUrl}/properties/${prop.id}`,
-          lastmod: lastmod || today,
+          lastmod,
           changefreq: "weekly",
           priority: prop.featured ? "0.9" : "0.8",
         });
@@ -37,11 +56,10 @@ export async function generateSitemapXml(storage: IStorage): Promise<string> {
   try {
     const newsList = await storage.getNews();
     for (const news of newsList) {
-      const rawDate = news.publishedAt || news.createdAt;
-      const lastmod = rawDate ? String(rawDate).split("T")[0].split(" ")[0] : today;
+      const lastmod = formatToIsoDate(news.createdAt, today);
       urls.push({
         loc: `${baseUrl}/news/${news.id}`,
-        lastmod: lastmod || today,
+        lastmod,
         changefreq: "monthly",
         priority: "0.7",
       });
@@ -53,11 +71,10 @@ export async function generateSitemapXml(storage: IStorage): Promise<string> {
   try {
     const posts = await storage.getPosts();
     for (const post of posts) {
-      const rawDate = post.updatedAt || post.createdAt;
-      const lastmod = rawDate ? String(rawDate).split("T")[0].split(" ")[0] : today;
+      const lastmod = formatToIsoDate(post.updatedAt || post.createdAt, today);
       urls.push({
         loc: `${baseUrl}/community/${post.id}`,
-        lastmod: lastmod || today,
+        lastmod,
         changefreq: "weekly",
         priority: post.isPinned ? "0.8" : "0.7",
       });

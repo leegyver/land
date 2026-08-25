@@ -371,16 +371,19 @@ export const comments = sqliteTable("comments", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   postId: integer("postId").notNull(),
   authorId: integer("authorId").notNull(),
+  parentId: integer("parentId"),
   content: text("content").notNull(),
   imageUrl: text("imageUrl"),
   createdAt: text("createdAt"),
+  updatedAt: text("updatedAt"),
 });
 
 export const insertCommentSchema = z.object({
   postId: z.number(),
-  authorId: z.number(),
-  content: z.string(),
-  imageUrl: z.string().optional(),
+  authorId: z.number().optional(),
+  parentId: z.number().nullable().optional(),
+  content: z.string().min(1, "댓글 내용을 입력해주세요"),
+  imageUrl: z.string().nullable().optional(),
 });
 export type Comment = typeof comments.$inferSelect;
 export type InsertComment = z.infer<typeof insertCommentSchema>;

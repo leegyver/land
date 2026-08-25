@@ -4458,8 +4458,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!parsed.success) return res.status(400).json(parsed.error);
 
       const comment = await storage.createPostComment(parsed.data);
+
+      // 커뮤니티 댓글 관리자 알림
+      try {
+        const post = await storage.getPost(postId);
+        await storage.createAdminNotification({
+          type: "community_comment",
+          relatedId: postId,
+          title: "새로운 커뮤니티 댓글",
+          content: `[${post?.title || '게시글'}] ${comment.content.substring(0, 50)}`,
+          isRead: false
+        });
+      } catch (e) {
+        console.error("Failed to create comment admin_notification:", e);
+      }
+
       res.status(201).json(comment);
     } catch (error) {
+      console.error("Error creating comment:", error);
       res.status(500).json({ message: "댓글 작성 중 오류가 발생했습니다." });
     }
   });

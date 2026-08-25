@@ -93,6 +93,10 @@ export function CommunityPostList({ posts, isLoading, activeCategory }: Communit
                                         <Eye className="w-4 h-4 text-slate-400" />
                                         조회 {post.viewCount}
                                     </span>
+                                    <span className="text-sm font-bold text-slate-600 flex items-center gap-1.5">
+                                        <MessageSquare className="w-4 h-4 text-slate-400" />
+                                        댓글 {post.commentCount || 0}
+                                    </span>
                                 </div>
                             </div>
                         </div>

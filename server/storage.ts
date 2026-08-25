@@ -619,11 +619,29 @@ export class SQLiteStorage implements IStorage {
         imageUrls TEXT, -- JSON array
         authorId INTEGER,
         viewCount INTEGER DEFAULT 0,
+        likeCount INTEGER DEFAULT 0,
+        commentCount INTEGER DEFAULT 0,
+        isPinned INTEGER DEFAULT 0,
         createdAt TEXT,
         updatedAt TEXT
       )
     `).run();
     try { db.prepare("CREATE INDEX IF NOT EXISTS idx_posts_category ON posts(category)").run(); } catch (e) { }
+
+    // Post Comments
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS post_comments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        postId INTEGER NOT NULL,
+        authorId INTEGER NOT NULL,
+        parentId INTEGER,
+        content TEXT NOT NULL,
+        imageUrl TEXT,
+        createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run();
+    try { db.prepare("CREATE INDEX IF NOT EXISTS idx_post_comments_postId ON post_comments(postId)").run(); } catch (e) { }
 
     // Realtor Subscriptions
     db.prepare(`
@@ -1710,8 +1728,11 @@ export class SQLiteStorage implements IStorage {
 
   async createPostComment(comment: InsertPostComment): Promise<PostComment> {
     const defaultComment = {
-      ...comment,
-      imageUrl: comment.imageUrl || null,
+      postId: comment.postId,
+      authorId: comment.authorId,
+      parentId: (comment as any).parentId ?? null,
+      content: comment.content,
+      imageUrl: comment.imageUrl ?? null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -1720,6 +1741,11 @@ export class SQLiteStorage implements IStorage {
       VALUES (@postId, @authorId, @parentId, @content, @imageUrl, @createdAt, @updatedAt)
     `);
     const info = stmt.run(defaultComment);
+    try {
+      db.prepare("UPDATE posts SET commentCount = COALESCE(commentCount, 0) + 1 WHERE id = ?").run(comment.postId);
+    } catch (e) {
+      console.error("Failed to increment post commentCount:", e);
+    }
     return this.getPostComment(info.lastInsertRowid as number) as Promise<PostComment>;
   }
 
@@ -1728,7 +1754,15 @@ export class SQLiteStorage implements IStorage {
   }
 
   async deletePostComment(id: number): Promise<boolean> {
+    const existing = await this.getPostComment(id);
     const info = db.prepare("DELETE FROM post_comments WHERE id = ?").run(id);
+    if (info.changes > 0 && existing) {
+      try {
+        db.prepare("UPDATE posts SET commentCount = MAX(0, COALESCE(commentCount, 1) - 1) WHERE id = ?").run(existing.postId);
+      } catch (e) {
+        console.error("Failed to decrement post commentCount:", e);
+      }
+    }
     return info.changes > 0;
   }
 
@@ -1974,11 +2008,15 @@ export class SQLiteStorage implements IStorage {
   async createPost(post: InsertPost): Promise<Post> {
     const now = new Date().toISOString();
     const res = db.prepare(`
-      INSERT INTO posts (category, title, content, imageUrls, authorId, viewCount, createdAt, updatedAt)
-      VALUES (@category, @title, @content, @imageUrls, @authorId, 0, @createdAt, @updatedAt)
+      INSERT INTO posts (category, title, content, imageUrls, authorId, viewCount, likeCount, commentCount, isPinned, createdAt, updatedAt)
+      VALUES (@category, @title, @content, @imageUrls, @authorId, 0, 0, 0, @isPinned, @createdAt, @updatedAt)
     `).run({
-      ...post,
+      category: post.category || 'qa',
+      title: post.title,
+      content: post.content,
       imageUrls: JSON.stringify(post.imageUrls || []),
+      authorId: post.authorId ?? null,
+      isPinned: post.isPinned ? 1 : 0,
       createdAt: now,
       updatedAt: now
     });
@@ -1998,6 +2036,7 @@ export class SQLiteStorage implements IStorage {
     if (post.content !== undefined) { sets.push('content = @content'); params.content = post.content; }
     if (post.imageUrls !== undefined) { sets.push('imageUrls = @imageUrls'); params.imageUrls = JSON.stringify(post.imageUrls); }
     if (post.authorId !== undefined) { sets.push('authorId = @authorId'); params.authorId = post.authorId; }
+    if (post.isPinned !== undefined) { sets.push('isPinned = @isPinned'); params.isPinned = post.isPinned ? 1 : 0; }
 
     if (sets.length === 0) return existing;
 

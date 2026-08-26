@@ -152,6 +152,11 @@ const PostDetailPage = () => {
 
                     <div className="space-y-6">
                         <div className="flex items-center gap-3">
+                            {!!post.isPinned && (
+                                <Badge className="bg-indigo-600 text-white px-4 py-1 font-black border-none rounded-full">
+                                    📌 공지
+                                </Badge>
+                            )}
                             <Badge className={`${category.color} text-white px-4 py-1 font-black border-none rounded-full`}>
                                 {category.name}
                             </Badge>

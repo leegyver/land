@@ -1988,6 +1988,7 @@ export class SQLiteStorage implements IStorage {
     const rows = db.prepare(query).all(...params) as any[];
     return rows.map(row => ({
       ...row,
+      isPinned: this.toBoolean(row.isPinned),
       imageUrls: JSON.parse(row.imageUrls || '[]'),
       createdAt: new Date(row.createdAt),
       updatedAt: row.updatedAt ? new Date(row.updatedAt) : undefined
@@ -1999,6 +2000,7 @@ export class SQLiteStorage implements IStorage {
     if (!row) return undefined;
     return {
       ...row,
+      isPinned: this.toBoolean(row.isPinned),
       imageUrls: JSON.parse(row.imageUrls || '[]'),
       createdAt: new Date(row.createdAt),
       updatedAt: row.updatedAt ? new Date(row.updatedAt) : undefined

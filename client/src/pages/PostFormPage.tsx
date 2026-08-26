@@ -68,6 +68,7 @@ const PostFormPage = () => {
             title: "",
             content: "",
             imageUrls: [],
+            isPinned: false,
         }
     });
 
@@ -78,6 +79,7 @@ const PostFormPage = () => {
                 title: post.title,
                 content: post.content,
                 imageUrls: post.imageUrls || [],
+                isPinned: Boolean(post.isPinned),
             });
             setImages(post.imageUrls || []);
         }

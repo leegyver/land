@@ -25,35 +25,52 @@ const formatKoreanPrice = (price: string | number | null | undefined): string =>
     return numPrice.toLocaleString() + '원';
 };
 
-function buildHtmlTemplate(title: string, properties: any[], posts: any[], news: any[]) {
-  const propertyRows = properties.map(p => {
+function renderPropertyCards(properties: any[]) {
+  if (!properties || properties.length === 0) {
+    return '<p style="color: #888; font-size: 14px; margin: 10px 0;">해당 매물이 없습니다.</p>';
+  }
+  return properties.map(p => {
     const imgUrl = p.imageUrl?.startsWith('/') ? `${APP_URL}${p.imageUrl}` : p.imageUrl;
+    const locationInfo = [p.district, p.type].filter(Boolean).join(' · ');
     return `
-    <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; display: flex; gap: 15px; align-items: center;">
-      ${imgUrl ? `<img src="${imgUrl}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;" alt="매물 이미지" />` : ''}
-      <div>
-        <h3 style="margin: 0; font-size: 16px; color: #3b82f6;">
-          <a href="${APP_URL}/properties/${p.id}" style="text-decoration: none; color: #3b82f6;">${p.title}</a>
-        </h3>
-        <p style="margin: 5px 0; font-size: 14px; color: #666;">가격: <strong style="color: #ef4444;">${formatKoreanPrice(p.price) || '상담'}</strong></p>
+    <div style="margin-bottom: 12px; border-bottom: 1px solid #f0f0f0; padding-bottom: 12px; display: flex; gap: 14px; align-items: center;">
+      ${imgUrl ? `<a href="${APP_URL}/properties/${p.id}"><img src="${imgUrl}" style="width: 84px; height: 84px; object-fit: cover; border-radius: 8px; border: 1px solid #eaeaea;" alt="매물 이미지" /></a>` : ''}
+      <div style="flex: 1; min-width: 0;">
+        ${locationInfo ? `<div style="font-size: 12px; color: #888; margin-bottom: 3px;">${locationInfo}</div>` : ''}
+        <h4 style="margin: 0 0 5px 0; font-size: 15px; font-weight: 600; line-height: 1.4;">
+          <a href="${APP_URL}/properties/${p.id}" style="text-decoration: none; color: #2563eb;">${p.title}</a>
+        </h4>
+        <div style="font-size: 14px; color: #333;">
+          가격: <strong style="color: #ef4444; font-size: 15px;">${formatKoreanPrice(p.price) || '상담'}</strong>
+        </div>
       </div>
     </div>
     `;
   }).join('');
+}
+
+function buildHtmlTemplate(
+  title: string,
+  data: { latestProperties: any[]; popularProperties: any[]; posts: any[]; news: any[] }
+) {
+  const { latestProperties, popularProperties, posts, news } = data;
+
+  const latestPropertyRows = renderPropertyCards(latestProperties);
+  const popularPropertyRows = renderPropertyCards(popularProperties);
 
   const postRows = posts.map(p => {
-    const images = typeof p.imageUrls === 'string' ? JSON.parse(p.imageUrls) : p.imageUrls;
+    const images = typeof p.imageUrls === 'string' ? (() => { try { return JSON.parse(p.imageUrls); } catch { return []; } })() : p.imageUrls;
     let firstImage = images && images.length > 0 ? images[0] : null;
     if (firstImage && firstImage.startsWith('/')) firstImage = `${APP_URL}${firstImage}`;
     
     return `
-    <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; display: flex; gap: 15px; align-items: center;">
-      ${firstImage ? `<img src="${firstImage}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;" alt="소식 이미지" />` : ''}
-      <div>
-        <h3 style="margin: 0; font-size: 16px; color: #10b981;">
-          <a href="${APP_URL}/community/${p.id}" style="text-decoration: none; color: #10b981;">${p.title}</a>
-        </h3>
-        <p style="margin: 5px 0; font-size: 14px; color: #666;">작성자: ${p.authorName}</p>
+    <div style="margin-bottom: 12px; border-bottom: 1px solid #f0f0f0; padding-bottom: 12px; display: flex; gap: 14px; align-items: center;">
+      ${firstImage ? `<a href="${APP_URL}/community/${p.id}"><img src="${firstImage}" style="width: 76px; height: 76px; object-fit: cover; border-radius: 8px; border: 1px solid #eaeaea;" alt="소식 이미지" /></a>` : ''}
+      <div style="flex: 1; min-width: 0;">
+        <h4 style="margin: 0 0 5px 0; font-size: 15px; font-weight: 600; line-height: 1.4;">
+          <a href="${APP_URL}/community/${p.id}" style="text-decoration: none; color: #059669;">${p.title}</a>
+        </h4>
+        <p style="margin: 0; font-size: 13px; color: #777;">작성자: ${p.authorName || '관리자'}</p>
       </div>
     </div>
     `;
@@ -62,42 +79,62 @@ function buildHtmlTemplate(title: string, properties: any[], posts: any[], news:
   const newsRows = news.map(n => {
     const imgUrl = n.imageUrl?.startsWith('/') ? `${APP_URL}${n.imageUrl}` : n.imageUrl;
     return `
-    <div style="margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; display: flex; gap: 15px; align-items: center;">
-      ${imgUrl ? `<img src="${imgUrl}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;" alt="뉴스 이미지" />` : ''}
-      <div>
-        <h3 style="margin: 0; font-size: 16px; color: #ef4444;">
-          <a href="${APP_URL}/news/${n.id}" style="text-decoration: none; color: #ef4444;">${n.title}</a>
-        </h3>
-        <p style="margin: 5px 0; font-size: 14px; color: #666;">출처: ${n.source}</p>
+    <div style="margin-bottom: 12px; border-bottom: 1px solid #f0f0f0; padding-bottom: 12px; display: flex; gap: 14px; align-items: center;">
+      ${imgUrl ? `<a href="${APP_URL}/news/${n.id}"><img src="${imgUrl}" style="width: 76px; height: 76px; object-fit: cover; border-radius: 8px; border: 1px solid #eaeaea;" alt="뉴스 이미지" /></a>` : ''}
+      <div style="flex: 1; min-width: 0;">
+        <h4 style="margin: 0 0 5px 0; font-size: 15px; font-weight: 600; line-height: 1.4;">
+          <a href="${APP_URL}/news/${n.id}" style="text-decoration: none; color: #dc2626;">${n.title}</a>
+        </h4>
+        <p style="margin: 0; font-size: 13px; color: #777;">출처: ${n.source || '강화 부동산 뉴스'}</p>
       </div>
     </div>
     `;
   }).join('');
 
   return `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px;">
-      <h2 style="text-align: center; color: #333; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">
-        ${title}
-      </h2>
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', '맑은 고딕', sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
+      <div style="background: linear-gradient(135deg, #1e40af, #3b82f6); padding: 24px 20px; text-align: center; color: #ffffff;">
+        <h1 style="margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.5px;">${title}</h1>
+        <p style="margin: 6px 0 0 0; font-size: 13px; opacity: 0.9;">이가이버부동산이 전해드리는 엄선된 부동산 소식</p>
+      </div>
       
-      <div style="margin-top: 20px;">
-        <h3 style="background-color: #f3f4f6; padding: 10px; border-radius: 4px;">🏡 최신/인기 매물</h3>
-        ${propertyRows || '<p>새로운 매물이 없습니다.</p>'}
+      <div style="padding: 20px;">
+        <!-- 1. 최신 등록 매물 -->
+        <div style="margin-bottom: 24px;">
+          <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 8px 12px; border-radius: 0 6px 6px 0; margin-bottom: 14px;">
+            <h3 style="margin: 0; font-size: 15px; color: #1e40af; font-weight: 700;">🆕 이번 주 신규 등록 매물</h3>
+          </div>
+          ${latestPropertyRows}
+        </div>
+
+        <!-- 2. 인기 & 추천 매물 -->
+        <div style="margin-bottom: 24px;">
+          <div style="background-color: #fff7ed; border-left: 4px solid #f97316; padding: 8px 12px; border-radius: 0 6px 6px 0; margin-bottom: 14px;">
+            <h3 style="margin: 0; font-size: 15px; color: #c2410c; font-weight: 700;">🔥 인기 & 추천 매물</h3>
+          </div>
+          ${popularPropertyRows}
+        </div>
+
+        <!-- 3. 커뮤니티 소식 -->
+        <div style="margin-bottom: 24px;">
+          <div style="background-color: #ecfdf5; border-left: 4px solid #10b981; padding: 8px 12px; border-radius: 0 6px 6px 0; margin-bottom: 14px;">
+            <h3 style="margin: 0; font-size: 15px; color: #065f46; font-weight: 700;">💬 커뮤니티 인기 소식</h3>
+          </div>
+          ${postRows || '<p style="color: #888; font-size: 14px; margin: 10px 0;">새로운 소식이 없습니다.</p>'}
+        </div>
+
+        <!-- 4. 부동산 주요 뉴스 -->
+        <div style="margin-bottom: 24px;">
+          <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 8px 12px; border-radius: 0 6px 6px 0; margin-bottom: 14px;">
+            <h3 style="margin: 0; font-size: 15px; color: #991b1b; font-weight: 700;">📰 강화도 부동산 주요 뉴스</h3>
+          </div>
+          ${newsRows || '<p style="color: #888; font-size: 14px; margin: 10px 0;">새로운 뉴스가 없습니다.</p>'}
+        </div>
       </div>
 
-      <div style="margin-top: 20px;">
-        <h3 style="background-color: #f3f4f6; padding: 10px; border-radius: 4px;">💬 커뮤니티 소식</h3>
-        ${postRows || '<p>새로운 소식이 없습니다.</p>'}
-      </div>
-
-      <div style="margin-top: 20px;">
-        <h3 style="background-color: #f3f4f6; padding: 10px; border-radius: 4px;">📰 강화도 부동산 주요 뉴스</h3>
-        ${newsRows || '<p>새로운 뉴스가 없습니다.</p>'}
-      </div>
-
-      <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; font-size: 12px; color: #999;">
-        <p>본 메일은 이가이버부동산 뉴스레터 구독자에게 발송되는 정기 메일입니다.</p>
-        <p><a href="${APP_URL}">홈페이지 바로가기</a></p>
+      <div style="padding: 20px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; text-align: center; font-size: 12px; color: #6b7280; line-height: 1.6;">
+        <p style="margin: 0 0 6px 0;">본 메일은 이가이버부동산 뉴스레터 구독자에게 발송되는 정기 소식지입니다.</p>
+        <p style="margin: 0;"><a href="${APP_URL}" style="color: #3b82f6; text-decoration: underline; font-weight: 600;">이가이버부동산 홈페이지 바로가기</a></p>
       </div>
     </div>
   `;
@@ -117,8 +154,8 @@ export async function sendWeeklyNewsletter(testEmail?: string) {
       emails = subs.map(s => s.email).join(',');
     }
 
-    const { properties, posts, news } = await storage.getWeeklyNewsletterData();
-    const html = buildHtmlTemplate('이가이버부동산 주간 부동산 소식', properties, posts, news);
+    const data = await storage.getWeeklyNewsletterData();
+    const html = buildHtmlTemplate('이가이버부동산 주간 부동산 소식', data);
     
     const subject = '[이가이버부동산] 주간 부동산 매물 및 소식 안내';
     const success = await sendEmail(emails, subject, html);
@@ -154,8 +191,8 @@ export async function sendMonthlyNewsletter(testEmail?: string) {
       emails = subs.map(s => s.email).join(',');
     }
 
-    const { properties, posts, news } = await storage.getMonthlyNewsletterData();
-    const html = buildHtmlTemplate('이가이버부동산 월간 인기 부동산 리포트', properties, posts, news);
+    const data = await storage.getMonthlyNewsletterData();
+    const html = buildHtmlTemplate('이가이버부동산 월간 인기 부동산 리포트', data);
     
     const subject = '[이가이버부동산] 이번 달 가장 뜨거웠던 인기 매물 및 소식';
     const success = await sendEmail(emails, subject, html);

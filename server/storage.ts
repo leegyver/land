@@ -180,8 +180,8 @@ export interface IStorage {
   createNewsletterSubscription(sub: InsertNewsletterSubscription): Promise<NewsletterSubscription>;
   deleteNewsletterSubscription(id: number): Promise<boolean>;
   getActiveNewsletterSubscribers(): Promise<NewsletterSubscription[]>;
-  getWeeklyNewsletterData(): Promise<{ properties: Property[]; posts: Post[]; news: News[] }>;
-  getMonthlyNewsletterData(): Promise<{ properties: Property[]; posts: Post[]; news: News[] }>;
+  getWeeklyNewsletterData(): Promise<{ latestProperties: Property[]; popularProperties: Property[]; posts: Post[]; news: News[] }>;
+  getMonthlyNewsletterData(): Promise<{ latestProperties: Property[]; popularProperties: Property[]; posts: Post[]; news: News[] }>;
   
   // Newsletter Logs
   insertNewsletterLog(log: Omit<import("@shared/schema").InsertNewsletterLog, "id" | "sentAt">): Promise<void>;
@@ -1808,148 +1808,121 @@ export class SQLiteStorage implements IStorage {
     })) as NewsletterSubscription[];
   }
 
-  async getWeeklyNewsletterData(): Promise<{ properties: Property[]; posts: Post[]; news: News[] }> {
-    let properties = db.prepare(`
+  async getWeeklyNewsletterData(): Promise<{ latestProperties: Property[]; popularProperties: Property[]; posts: Post[]; news: News[] }> {
+    // 1. 최신 등록 매물 (최신 등록순, 공개 및 판매중 매물)
+    const latestProperties = db.prepare(`
       SELECT * FROM properties
-      WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-7 days')
+      WHERE isVisible = 1 AND (isSold = 0 OR isSold IS NULL)
       ORDER BY createdAt DESC
-      LIMIT 5
+      LIMIT 4
     `).all() as any[];
-    
-    if (properties.length < 5) {
-      const remaining = 5 - properties.length;
-      const idsToExclude = properties.length > 0 ? properties.map(p => p.id).join(',') : '';
-      const excludeClause = idsToExclude ? `WHERE id NOT IN (${idsToExclude})` : '';
-      
-      const additionalProperties = db.prepare(`
-        SELECT * FROM properties 
-        ${excludeClause}
-        ORDER BY viewCount DESC 
-        LIMIT ?
-      `).all(remaining) as any[];
-      
-      properties = [...properties, ...additionalProperties];
-    }
 
+    // 2. 인기/추천 매물 (최신 매물 제외, 추천순/조회수순)
+    const latestIds = latestProperties.map(p => p.id).join(',');
+    const excludeClause = latestIds ? `AND id NOT IN (${latestIds})` : '';
+    const popularProperties = db.prepare(`
+      SELECT * FROM properties
+      WHERE isVisible = 1 AND (isSold = 0 OR isSold IS NULL) ${excludeClause}
+      ORDER BY featured DESC, viewCount DESC, createdAt DESC
+      LIMIT 4
+    `).all() as any[];
+
+    // 3. 커뮤니티 소식
     let posts = db.prepare(`
       SELECT p.*, COALESCE(p.authorName, u.nickname, u.username, '관리자') as authorName
       FROM posts p
       LEFT JOIN users u ON p.authorId = u.id
-      WHERE date(p.createdAt, '+9 hours') >= date('now', '+9 hours', '-7 days')
-        AND p.category IN ('qa', 'architecture', 'stories')
-      ORDER BY p.viewCount DESC
-      LIMIT 5
+      WHERE date(p.createdAt, '+9 hours') >= date('now', '+9 hours', '-14 days')
+        AND p.category IN ('qa', 'architecture', 'stories', 'free', 'news')
+      ORDER BY p.createdAt DESC, p.viewCount DESC
+      LIMIT 4
     `).all() as any[];
     if (posts.length === 0) {
       posts = db.prepare(`
         SELECT p.*, COALESCE(p.authorName, u.nickname, u.username, '관리자') as authorName
         FROM posts p
         LEFT JOIN users u ON p.authorId = u.id
-        WHERE p.category IN ('qa', 'architecture', 'stories')
-        ORDER BY p.viewCount DESC 
-        LIMIT 5
-      `).all();
+        WHERE p.category IN ('qa', 'architecture', 'stories', 'free', 'news')
+        ORDER BY p.createdAt DESC, p.viewCount DESC
+        LIMIT 4
+      `).all() as any[];
     }
 
+    // 4. 부동산 주요 뉴스
     let newsRaw = db.prepare(`
       SELECT * FROM news
-      WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-7 days')
-        AND (title LIKE '%강화군%' OR content LIKE '%강화군%')
-        AND category LIKE '%부동산%'
-      ORDER BY viewCount DESC
+      WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-14 days')
+        AND (title LIKE '%강화%' OR content LIKE '%강화%')
+      ORDER BY createdAt DESC, viewCount DESC
       LIMIT 30
     `).all() as any[];
-    if (newsRaw.length < 30) {
+    if (newsRaw.length < 5) {
       const remaining = 30 - newsRaw.length;
       const idsToExclude = newsRaw.length > 0 ? newsRaw.map(n => n.id).join(',') : '';
-      const excludeClause = idsToExclude ? `AND id NOT IN (${idsToExclude})` : '';
-      
+      const excludeClauseNews = idsToExclude ? `AND id NOT IN (${idsToExclude})` : '';
       const additionalNews = db.prepare(`
         SELECT * FROM news 
-        WHERE (title LIKE '%강화군%' OR content LIKE '%강화군%')
-          AND category LIKE '%부동산%'
-          ${excludeClause}
-        ORDER BY viewCount DESC 
+        WHERE (title LIKE '%강화%' OR content LIKE '%강화%')
+          ${excludeClauseNews}
+        ORDER BY createdAt DESC, viewCount DESC 
         LIMIT ?
       `).all(remaining) as any[];
-      
       newsRaw = [...newsRaw, ...additionalNews];
     }
-    const news = deduplicateNews(newsRaw, 5);
+    const news = deduplicateNews(newsRaw, 4);
 
-    return { properties: properties as Property[], posts: posts as Post[], news: news as News[] };
+    return {
+      latestProperties: latestProperties.map(p => this.mapProperty(p)),
+      popularProperties: popularProperties.map(p => this.mapProperty(p)),
+      posts: posts as Post[],
+      news: news as News[]
+    };
   }
 
-  async getMonthlyNewsletterData(): Promise<{ properties: Property[]; posts: Post[]; news: News[] }> {
-    let properties = db.prepare(`
+  async getMonthlyNewsletterData(): Promise<{ latestProperties: Property[]; popularProperties: Property[]; posts: Post[]; news: News[] }> {
+    // 1. 최신 등록 매물
+    const latestProperties = db.prepare(`
       SELECT * FROM properties
-      WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-1 month')
-      ORDER BY viewCount DESC
-      LIMIT 5
+      WHERE isVisible = 1 AND (isSold = 0 OR isSold IS NULL)
+      ORDER BY createdAt DESC
+      LIMIT 4
     `).all() as any[];
-    
-    if (properties.length < 5) {
-      const remaining = 5 - properties.length;
-      const idsToExclude = properties.length > 0 ? properties.map(p => p.id).join(',') : '';
-      const excludeClause = idsToExclude ? `WHERE id NOT IN (${idsToExclude})` : '';
-      
-      const additionalProperties = db.prepare(`
-        SELECT * FROM properties 
-        ${excludeClause}
-        ORDER BY viewCount DESC 
-        LIMIT ?
-      `).all(remaining) as any[];
-      
-      properties = [...properties, ...additionalProperties];
-    }
 
+    // 2. 월간 인기/추천 매물
+    const latestIds = latestProperties.map(p => p.id).join(',');
+    const excludeClause = latestIds ? `AND id NOT IN (${latestIds})` : '';
+    const popularProperties = db.prepare(`
+      SELECT * FROM properties
+      WHERE isVisible = 1 AND (isSold = 0 OR isSold IS NULL) ${excludeClause}
+      ORDER BY featured DESC, viewCount DESC, createdAt DESC
+      LIMIT 4
+    `).all() as any[];
+
+    // 3. 커뮤니티 소식
     let posts = db.prepare(`
       SELECT p.*, COALESCE(p.authorName, u.nickname, u.username, '관리자') as authorName
       FROM posts p
       LEFT JOIN users u ON p.authorId = u.id
-      WHERE date(p.createdAt, '+9 hours') >= date('now', '+9 hours', '-1 month')
-        AND p.category IN ('qa', 'architecture', 'stories')
-      ORDER BY p.viewCount DESC
-      LIMIT 5
+      WHERE p.category IN ('qa', 'architecture', 'stories', 'free', 'news')
+      ORDER BY p.viewCount DESC, p.createdAt DESC
+      LIMIT 4
     `).all() as any[];
-    if (posts.length === 0) {
-      posts = db.prepare(`
-        SELECT p.*, COALESCE(p.authorName, u.nickname, u.username, '관리자') as authorName
-        FROM posts p
-        LEFT JOIN users u ON p.authorId = u.id
-        WHERE p.category IN ('qa', 'architecture', 'stories')
-        ORDER BY p.viewCount DESC 
-        LIMIT 5
-      `).all();
-    }
 
+    // 4. 부동산 주요 뉴스
     let newsRaw = db.prepare(`
       SELECT * FROM news
-      WHERE date(createdAt, '+9 hours') >= date('now', '+9 hours', '-1 month')
-        AND (title LIKE '%강화군%' OR content LIKE '%강화군%')
-        AND category LIKE '%부동산%'
-      ORDER BY viewCount DESC
+      WHERE (title LIKE '%강화%' OR content LIKE '%강화%')
+      ORDER BY viewCount DESC, createdAt DESC
       LIMIT 30
     `).all() as any[];
-    if (newsRaw.length < 30) {
-      const remaining = 30 - newsRaw.length;
-      const idsToExclude = newsRaw.length > 0 ? newsRaw.map(n => n.id).join(',') : '';
-      const excludeClause = idsToExclude ? `AND id NOT IN (${idsToExclude})` : '';
-      
-      const additionalNews = db.prepare(`
-        SELECT * FROM news 
-        WHERE (title LIKE '%강화군%' OR content LIKE '%강화군%')
-          AND category LIKE '%부동산%'
-          ${excludeClause}
-        ORDER BY viewCount DESC 
-        LIMIT ?
-      `).all(remaining) as any[];
-      
-      newsRaw = [...newsRaw, ...additionalNews];
-    }
-    const news = deduplicateNews(newsRaw, 5);
+    const news = deduplicateNews(newsRaw, 4);
 
-    return { properties: properties as Property[], posts: posts as Post[], news: news as News[] };
+    return {
+      latestProperties: latestProperties.map(p => this.mapProperty(p)),
+      popularProperties: popularProperties.map(p => this.mapProperty(p)),
+      posts: posts as Post[],
+      news: news as News[]
+    };
   }
 
   async insertNewsletterLog(log: Omit<import("@shared/schema").InsertNewsletterLog, "id" | "sentAt">): Promise<void> {

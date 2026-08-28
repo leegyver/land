@@ -220,7 +220,7 @@ export async function resolveSeoMetadata(
           "headline": newsItem.title,
           "description": description,
           "image": [imageUrl],
-          "datePublished": newsItem.publishedAt || new Date().toISOString(),
+          "datePublished": newsItem.createdAt || new Date().toISOString(),
           "author": {
             "@type": "Organization",
             "name": "이가이버부동산",

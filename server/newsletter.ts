@@ -25,6 +25,70 @@ const formatKoreanPrice = (price: string | number | null | undefined): string =>
     return numPrice.toLocaleString() + '원';
 };
 
+function formatPropertyPriceInfo(p: any): string {
+  const parts: string[] = [];
+  
+  let dealTypes: string[] = [];
+  if (Array.isArray(p.dealType)) {
+    dealTypes = p.dealType;
+  } else if (typeof p.dealType === 'string') {
+    try {
+      const parsed = JSON.parse(p.dealType);
+      if (Array.isArray(parsed)) dealTypes = parsed;
+      else dealTypes = [p.dealType];
+    } catch {
+      dealTypes = [p.dealType];
+    }
+  }
+
+  const numPrice = Number(p.price);
+  const hasPrice = !isNaN(numPrice) && numPrice > 0;
+  
+  const numDeposit = Number(p.deposit);
+  const hasDeposit = !isNaN(numDeposit) && numDeposit > 0;
+  
+  const numDepositAmount = Number(p.depositAmount);
+  const hasDepositAmount = !isNaN(numDepositAmount) && numDepositAmount > 0;
+  
+  const numMonthly = Number(p.monthlyRent);
+  const hasMonthly = !isNaN(numMonthly) && numMonthly > 0;
+
+  // 1. 매매가
+  if (hasPrice) {
+    parts.push(`매매 ${formatKoreanPrice(p.price)}`);
+  }
+
+  // 2. 전세
+  if (hasDeposit || (dealTypes.includes('전세') && hasDepositAmount && !hasMonthly)) {
+    const depVal = hasDeposit ? p.deposit : p.depositAmount;
+    parts.push(`전세 ${formatKoreanPrice(depVal)}`);
+  }
+
+  // 3. 월세
+  if (hasMonthly || (dealTypes.includes('월세') && (hasDepositAmount || hasDeposit))) {
+    const depVal = hasDepositAmount ? p.depositAmount : p.deposit;
+    const depStr = depVal && Number(depVal) > 0 ? formatKoreanPrice(depVal) : '0원';
+    const rentStr = hasMonthly ? formatKoreanPrice(p.monthlyRent) : '';
+    if (rentStr) {
+      parts.push(`월세 ${depStr}/${rentStr}`);
+    } else if (depVal && Number(depVal) > 0 && !hasPrice && !hasDeposit) {
+      parts.push(`보증금 ${depStr}`);
+    }
+  }
+
+  // Fallback
+  if (parts.length === 0) {
+    if (hasPrice) return `매매 ${formatKoreanPrice(p.price)}`;
+    if (hasDeposit) return `전세 ${formatKoreanPrice(p.deposit)}`;
+    if (hasDepositAmount && hasMonthly) return `월세 ${formatKoreanPrice(p.depositAmount)}/${formatKoreanPrice(p.monthlyRent)}`;
+    if (hasMonthly) return `월세 ${formatKoreanPrice(p.monthlyRent)}`;
+    if (hasDepositAmount) return `보증금 ${formatKoreanPrice(p.depositAmount)}`;
+    return '가격 상담';
+  }
+
+  return parts.join(' · ');
+}
+
 function renderPropertyCards(properties: any[]) {
   if (!properties || properties.length === 0) {
     return '<p style="color: #888; font-size: 14px; margin: 10px 0;">해당 매물이 없습니다.</p>';
@@ -32,6 +96,7 @@ function renderPropertyCards(properties: any[]) {
   return properties.map(p => {
     const imgUrl = p.imageUrl?.startsWith('/') ? `${APP_URL}${p.imageUrl}` : p.imageUrl;
     const locationInfo = [p.district, p.type].filter(Boolean).join(' · ');
+    const priceText = formatPropertyPriceInfo(p);
     return `
     <div style="margin-bottom: 12px; border-bottom: 1px solid #f0f0f0; padding-bottom: 12px; display: flex; gap: 14px; align-items: center;">
       ${imgUrl ? `<a href="${APP_URL}/properties/${p.id}"><img src="${imgUrl}" style="width: 84px; height: 84px; object-fit: cover; border-radius: 8px; border: 1px solid #eaeaea;" alt="매물 이미지" /></a>` : ''}
@@ -41,7 +106,7 @@ function renderPropertyCards(properties: any[]) {
           <a href="${APP_URL}/properties/${p.id}" style="text-decoration: none; color: #2563eb;">${p.title}</a>
         </h4>
         <div style="font-size: 14px; color: #333;">
-          가격: <strong style="color: #ef4444; font-size: 15px;">${formatKoreanPrice(p.price) || '상담'}</strong>
+          <strong style="color: #ef4444; font-size: 14px;">${priceText}</strong>
         </div>
       </div>
     </div>

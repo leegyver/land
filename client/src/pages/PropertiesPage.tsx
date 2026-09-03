@@ -41,10 +41,19 @@ const PropertiesPage = () => {
   const { sajuData } = useSaju();
   const { user } = useAuth();
 
+  // type 영문 alias -> 셀렉트박스 매핑 정규화 헬퍼
+  const normalizePropertyType = (val: string) => {
+    if (!val || val === "all") return "all";
+    if (val === "land") return "토지";
+    if (val === "house") return "주택";
+    if (val === "commercial") return "상가공장창고펜션";
+    return val;
+  };
+
   // useSearch 훅에서 초기값 파싱
   const initialParams = new URLSearchParams(search);
   const initialDistrict = initialParams.get("district") || "all";
-  const initialType = initialParams.get("type") || "all";
+  const initialType = normalizePropertyType(initialParams.get("type") || "all");
   const initialDealType = initialParams.get("dealType") || "all";
   const initialMinPrice = initialParams.get("minPrice");
   const initialMaxPrice = initialParams.get("maxPrice");
@@ -173,7 +182,7 @@ const PropertiesPage = () => {
   useEffect(() => {
     const params = new URLSearchParams(search);
     const district = params.get("district") || "all";
-    const type = params.get("type") || "all";
+    const type = normalizePropertyType(params.get("type") || "all");
     const dealType = params.get("dealType") || "all";
     const minPrice = params.get("minPrice");
     const maxPrice = params.get("maxPrice");

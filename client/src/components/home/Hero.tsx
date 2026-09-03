@@ -70,7 +70,7 @@ const Hero = () => {
       iconColor: "text-emerald-600",
       bgColor: "bg-emerald-50",
       borderColor: "border-emerald-200 hover:border-emerald-500",
-      onClick: () => setLocation("/properties?type=land"),
+      onClick: () => setLocation(`/properties?type=${encodeURIComponent("토지")}`),
     },
     {
       title: "주택",
@@ -79,7 +79,7 @@ const Hero = () => {
       iconColor: "text-amber-600",
       bgColor: "bg-amber-50",
       borderColor: "border-amber-200 hover:border-amber-500",
-      onClick: () => setLocation("/properties?type=house"),
+      onClick: () => setLocation(`/properties?type=${encodeURIComponent("주택")}`),
     },
     {
       title: "상가",
@@ -88,7 +88,7 @@ const Hero = () => {
       iconColor: "text-blue-600",
       bgColor: "bg-blue-50",
       borderColor: "border-blue-200 hover:border-blue-500",
-      onClick: () => setLocation("/properties?type=commercial"),
+      onClick: () => setLocation(`/properties?type=${encodeURIComponent("상가공장창고펜션")}`),
     },
     {
       title: "법원경매",
@@ -98,7 +98,7 @@ const Hero = () => {
       iconColor: "text-rose-600",
       bgColor: "bg-rose-50",
       borderColor: "border-rose-300 hover:border-rose-500 ring-2 ring-rose-500/20",
-      onClick: scrollToAuction,
+      onClick: () => setLocation("/auctions"),
     },
   ];
 

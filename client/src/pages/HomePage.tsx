@@ -4,7 +4,6 @@ import PropertyMap from "@/components/map/PropertyMap";
 import PropertySection from "@/components/home/PropertySection";
 import BannerSlider from "@/components/home/BannerSlider";
 import Hero from "@/components/home/Hero";
-import ReviewSection from "@/components/home/ReviewSection";
 import { useQuery } from "@tanstack/react-query";
 import { News, Auction } from "@shared/schema";
 import { Link, useLocation } from "wouter";
@@ -533,9 +532,6 @@ const HomePage = () => {
           </div>
         </div>
       </section>
-
-      {/* Review Section */}
-      <ReviewSection />
 
       {/* Map Section */}
       <section className="py-2 bg-white">

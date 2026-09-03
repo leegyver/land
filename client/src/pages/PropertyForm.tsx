@@ -61,6 +61,7 @@ function PropertyFormContent() {
         imageUrls: [], // 다중 이미지 저장용 배열
         agentId: 0, // 나중에 useEffect에서 설정됨
         featured: false,
+        isNegotiable: false,
         isLongTerm: false,
 
         // 위치 정보
@@ -183,6 +184,7 @@ function PropertyFormContent() {
                         elevator: safeBoolean(data.elevator),
                         coListing: safeBoolean(data.coListing),
                         featured: safeBoolean(data.featured),
+                        isNegotiable: safeBoolean(data.isNegotiable),
                         isLongTerm: safeBoolean(data.isLongTerm),
                         isActive: data.isActive !== undefined ? safeBoolean(data.isActive) : true,
                         isSold: safeBoolean(data.isSold),

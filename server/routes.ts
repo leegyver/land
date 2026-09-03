@@ -1361,6 +1361,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 토지추천 별칭 라우트 (메인 테마 탭 연동)
+  app.get("/api/properties/land-featured", async (req, res) => {
+    try {
+      const limit = await getParsedLimit(req.query.limit, 'home_negotiable_limit');
+      const properties = await storage.getNegotiableProperties(limit);
+      let isAdmin = false;
+      const user = req.user as any;
+      if (req.isAuthenticated()) isAdmin = (["admin", "master"].includes(user.role as string));
+      res.json(properties.map(p => getSafeProperty(p, isAdmin || (user?.id && p.ownerId === user.id))));
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch land featured properties" });
+    }
+  });
+
+  // 주택상가추천 별칭 라우트 (메인 테마 탭 연동)
+  app.get("/api/properties/house-featured", async (req, res) => {
+    try {
+      const limit = await getParsedLimit(req.query.limit, 'home_long_term_limit');
+      const properties = await storage.getLongTermProperties(limit);
+      let isAdmin = false;
+      const user = req.user as any;
+      if (req.isAuthenticated()) isAdmin = (["admin", "master"].includes(user.role as string));
+      res.json(properties.map(p => getSafeProperty(p, isAdmin || (user?.id && p.ownerId === user.id))));
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch house featured properties" });
+    }
+  });
+
 
 
   // Reorder Properties

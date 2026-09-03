@@ -14,6 +14,7 @@ export interface PropertyFormData {
     imageUrls: string[];
     agentId: number;
     featured: boolean;
+    isNegotiable: boolean;
     isLongTerm: boolean;
 
     // 위치 정보

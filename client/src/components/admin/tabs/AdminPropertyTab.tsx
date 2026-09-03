@@ -202,6 +202,8 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
       queryClient.invalidateQueries({ queryKey: ["/api/properties/urgent"] });
       queryClient.invalidateQueries({ queryKey: ["/api/properties/negotiable"] });
       queryClient.invalidateQueries({ queryKey: ["/api/properties/long-term"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/properties/land-featured"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/properties/house-featured"] });
       toast({ title: "설정 완료", description: "메인페이지 노출 개수가 변경되었습니다." });
     }
   });
@@ -286,10 +288,10 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
              <p className="text-[11px] text-slate-400 mb-3">메인 화면의 최근매물, 초급매물 및 추천 매물에 노출되는 순서를 관리합니다.</p>
              <div className="flex flex-wrap gap-2">
                <Button variant={sortCategory === "all" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("all")} className={sortCategory === "all" ? "bg-slate-800 font-bold" : "text-xs font-medium"}>전체(최근등록순)</Button>
-               <Button variant={sortCategory === "urgent" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("urgent")} className={sortCategory === "urgent" ? "bg-red-600 hover:bg-red-700 text-white border-none font-bold shadow-sm" : "border-red-200 text-red-600 text-xs"}>🔥 초급매물 탭</Button>
-               <Button variant={sortCategory === "featured" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("featured")} className={sortCategory === "featured" ? "bg-orange-500 hover:bg-orange-600 text-white border-none font-bold shadow-sm" : "border-orange-200 text-orange-600 text-xs"}>⭐ 추천매물</Button>
-               <Button variant={sortCategory === "negotiable" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("negotiable")} className={sortCategory === "negotiable" ? "bg-blue-600 hover:bg-blue-700 text-white border-none font-bold shadow-sm" : "border-blue-200 text-blue-600 text-xs"}>🤝 가격협의</Button>
-               <Button variant={sortCategory === "longTerm" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("longTerm")} className={sortCategory === "longTerm" ? "bg-purple-600 hover:bg-purple-700 text-white border-none font-bold shadow-sm" : "border-purple-200 text-purple-600 text-xs"}>📈 장기투자</Button>
+               <Button variant={sortCategory === "urgent" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("urgent")} className={sortCategory === "urgent" ? "bg-red-600 hover:bg-red-700 text-white border-none font-bold shadow-sm" : "border-red-200 text-red-600 text-xs font-semibold"}>🔥 초급매물 탭</Button>
+               <Button variant={sortCategory === "negotiable" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("negotiable")} className={sortCategory === "negotiable" ? "bg-emerald-600 hover:bg-emerald-700 text-white border-none font-bold shadow-sm" : "border-emerald-200 text-emerald-600 text-xs font-semibold"}>🌲 토지추천 탭</Button>
+               <Button variant={sortCategory === "longTerm" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("longTerm")} className={sortCategory === "longTerm" ? "bg-blue-600 hover:bg-blue-700 text-white border-none font-bold shadow-sm" : "border-blue-200 text-blue-600 text-xs font-semibold"}>🏡 주택상가추천 탭</Button>
+               <Button variant={sortCategory === "featured" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("featured")} className={sortCategory === "featured" ? "bg-purple-600 hover:bg-purple-700 text-white border-none font-bold shadow-sm" : "border-purple-200 text-purple-600 text-xs font-semibold"}>⭐ 추천매물</Button>
              </div>
              {true && (
                 <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2">
@@ -308,10 +310,10 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
                     onClick={() => {
                       const keyMap: Record<string, string> = {
                         all: "home_latest_limit",
-                        featured: "home_featured_limit",
                         urgent: "home_urgent_limit",
                         negotiable: "home_negotiable_limit",
                         longTerm: "home_long_term_limit",
+                        featured: "home_featured_limit",
                       };
                       const key = keyMap[sortCategory] || "home_latest_limit";
                       if (key) {
@@ -341,10 +343,10 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
           {sortCategory !== "all" && (
             <div className="bg-primary/5 text-primary px-4 py-3 text-sm font-bold border-b border-primary/10 flex items-center gap-2">
               <CheckCircle className="h-4 w-4" /> 현재 [{
-                sortCategory === 'urgent' ? '🔥 초급매물' :
-                sortCategory === 'featured' ? '⭐ 추천매물' :
-                sortCategory === 'negotiable' ? '🤝 가격협의' : '📈 장기투자'
-              }] 정렬 모드입니다. 드래그하여 홈페이지 노출 순서를 변경하세요.
+                sortCategory === 'urgent' ? '🔥 초급매물 탭' :
+                sortCategory === 'negotiable' ? '🌲 토지추천 탭' :
+                sortCategory === 'longTerm' ? '🏡 주택상가추천 탭' : '⭐ 추천매물'
+              }] 정렬 모드입니다. 카드를 드래그하여 메인페이지 해당 탭의 노출 순서를 변경하세요.
             </div>
           )}
           {sortCategory === "all" && isFiltered && (
@@ -409,12 +411,12 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
                               {formatPrice(p.price)}
                             </TableCell>
                             <TableCell>
-                              <div className="flex flex-wrap gap-1 max-w-[130px]">
+                              <div className="flex flex-wrap gap-1 max-w-[150px]">
                                 <StatusBadge active={p.isVisible} label="노출" onClick={() => toggleMutation.mutate({ id: p.id, field: 'visibility', value: !p.isVisible })} />
                                 <StatusBadge active={p.isUrgent} label="초급매" color="red" onClick={() => toggleMutation.mutate({ id: p.id, field: 'urgent', value: !p.isUrgent })} />
+                                <StatusBadge active={p.isNegotiable} label="토지추천" color="green" onClick={() => toggleMutation.mutate({ id: p.id, field: 'negotiable', value: !p.isNegotiable })} />
+                                <StatusBadge active={p.isLongTerm} label="주택상가추천" color="blue" onClick={() => toggleMutation.mutate({ id: p.id, field: 'long-term', value: !p.isLongTerm })} />
                                 <StatusBadge active={p.featured} label="추천" color="purple" onClick={() => toggleMutation.mutate({ id: p.id, field: 'featured', value: !p.featured })} />
-                                <StatusBadge active={p.isNegotiable} label="협의" color="blue" onClick={() => toggleMutation.mutate({ id: p.id, field: 'negotiable', value: !p.isNegotiable })} />
-                                <StatusBadge active={p.isLongTerm} label="장기" color="orange" onClick={() => toggleMutation.mutate({ id: p.id, field: 'long-term', value: !p.isLongTerm })} />
                               </div>
                             </TableCell>
                             <TableCell className="text-right">

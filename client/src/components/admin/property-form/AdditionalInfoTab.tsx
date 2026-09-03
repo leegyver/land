@@ -45,14 +45,24 @@ export const AdditionalInfoTab: React.FC<AdditionalInfoTabProps> = ({
 
 
                     {user?.role === 'admin' && (
-                        <div className="flex items-center space-x-2">
-                            <Checkbox
-                                id="isLongTerm"
-                                checked={formData.isLongTerm}
-                                onCheckedChange={(checked) => handleCheckboxChange("isLongTerm", checked as boolean)}
-                            />
-                            <Label htmlFor="isLongTerm">장기투자</Label>
-                        </div>
+                        <>
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="isNegotiable"
+                                    checked={formData.isNegotiable}
+                                    onCheckedChange={(checked) => handleCheckboxChange("isNegotiable", checked as boolean)}
+                                />
+                                <Label htmlFor="isNegotiable" className="font-bold text-emerald-700">🌲 토지추천 (메인 탭 노출)</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="isLongTerm"
+                                    checked={formData.isLongTerm}
+                                    onCheckedChange={(checked) => handleCheckboxChange("isLongTerm", checked as boolean)}
+                                />
+                                <Label htmlFor="isLongTerm" className="font-bold text-blue-700">🏡 주택상가추천 (메인 탭 노출)</Label>
+                            </div>
+                        </>
                     )}
 
                     <div className="flex items-center space-x-2 flex-1">

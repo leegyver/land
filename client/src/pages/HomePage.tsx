@@ -506,7 +506,7 @@ const HomePage = () => {
             <div>
               <PropertySection
                 title=""
-                queryKey="/api/properties/type/land"
+                queryKey="/api/properties/land-featured"
                 bgColor="bg-white"
               />
             </div>
@@ -517,7 +517,7 @@ const HomePage = () => {
             <div>
               <PropertySection
                 title=""
-                queryKey="/api/properties/type/house_comm"
+                queryKey="/api/properties/house-featured"
                 bgColor="bg-white"
               />
             </div>

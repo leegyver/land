@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Home, Phone, User, Search, MessageSquare } from "lucide-react";
+import { Home, Phone, User, Search, Gavel } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const MobileBottomNav = () => {
@@ -8,8 +8,8 @@ const MobileBottomNav = () => {
     const navItems = [
         { icon: Home, label: "홈", path: "/" },
         { icon: Search, label: "매물찾기", path: "/properties" },
-        { icon: MessageSquare, label: "커뮤니티", path: "/community" },
-        { icon: Phone, label: "문의", path: "tel:010-4787-3120", isExternal: true },
+        { icon: Gavel, label: "반값경매", path: "/auctions" },
+        { icon: Phone, label: "전화상담", path: "tel:010-4787-3120", isExternal: true },
         { icon: User, label: "MY", path: "/profile" },
     ];
 

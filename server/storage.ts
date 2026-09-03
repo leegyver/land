@@ -17,7 +17,8 @@ import {
   type AdminNotification, type InsertAdminNotification,
   type VisitLog, type InsertVisitLog,
   type SiteConfig, type InsertSiteConfig,
-  type Popup, type InsertPopup
+  type Popup, type InsertPopup,
+  type Auction, type InsertAuction
 } from "@shared/schema";
 import { db } from "./db";
 import session from "express-session";
@@ -234,6 +235,14 @@ export interface IStorage {
   getSiteConfig(key: string): Promise<string | undefined>;
   setSiteConfig(key: string, value: string): Promise<void>;
   getAllSiteConfigs(): Promise<SiteConfig[]>;
+
+  // Auction methods
+  getAuctions(status?: string): Promise<Auction[]>;
+  getFeaturedAuctions(limit?: number): Promise<Auction[]>;
+  getAuction(id: number): Promise<Auction | undefined>;
+  createAuction(auction: InsertAuction): Promise<Auction>;
+  updateAuction(id: number, auction: Partial<InsertAuction>): Promise<Auction | undefined>;
+  deleteAuction(id: number): Promise<boolean>;
 }
 
 function extractKeywords(title: string): Set<string> {
@@ -758,6 +767,37 @@ export class SQLiteStorage implements IStorage {
         startDate TEXT,
         endDate TEXT,
         createdAt TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run();
+
+    // Auctions (경매·공매)
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS auctions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        caseNumber TEXT NOT NULL,
+        court TEXT NOT NULL DEFAULT '인천지방법원 본원',
+        propertyType TEXT NOT NULL DEFAULT '주택',
+        title TEXT NOT NULL,
+        address TEXT NOT NULL,
+        district TEXT,
+        landArea TEXT,
+        buildingArea TEXT,
+        appraisalPrice TEXT NOT NULL,
+        minimumPrice TEXT NOT NULL,
+        deposit TEXT NOT NULL,
+        discountRate INTEGER DEFAULT 0,
+        auctionDate TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT '진행중',
+        safetyRating TEXT DEFAULT '안전',
+        expertComment TEXT,
+        specialRights TEXT,
+        imageUrl TEXT NOT NULL,
+        imageUrls TEXT,
+        youtubeUrl TEXT,
+        featured INTEGER DEFAULT 0,
+        viewCount INTEGER DEFAULT 0,
+        createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
       )
     `).run();
   }
@@ -2484,6 +2524,151 @@ export class SQLiteStorage implements IStorage {
 
   async updatePopupOrder(id: number, newOrder: number): Promise<boolean> {
     const result = db.prepare('UPDATE popups SET displayOrder = ? WHERE id = ?').run(newOrder, id);
+    return result.changes > 0;
+  }
+
+  // ==================== Auction Methods ====================
+  private mapAuction(row: any): Auction {
+    return {
+      ...row,
+      featured: row.featured === 1,
+    };
+  }
+
+  async getAuctions(status?: string): Promise<Auction[]> {
+    let query = 'SELECT * FROM auctions';
+    const params: any[] = [];
+    if (status && status !== 'all') {
+      query += ' WHERE status = ?';
+      params.push(status);
+    }
+    query += ' ORDER BY auctionDate ASC, id DESC';
+    const rows = db.prepare(query).all(...params);
+    return rows.map((r: any) => this.mapAuction(r));
+  }
+
+  async getFeaturedAuctions(limit: number = 6): Promise<Auction[]> {
+    const rows = db.prepare(`
+      SELECT * FROM auctions 
+      WHERE status = '진행중' 
+      ORDER BY featured DESC, auctionDate ASC, id DESC 
+      LIMIT ?
+    `).all(limit);
+    return rows.map((r: any) => this.mapAuction(r));
+  }
+
+  async getAuction(id: number): Promise<Auction | undefined> {
+    const row = db.prepare('SELECT * FROM auctions WHERE id = ?').get(id);
+    if (!row) return undefined;
+    return this.mapAuction(row);
+  }
+
+  async createAuction(auction: InsertAuction): Promise<Auction> {
+    const stmt = db.prepare(`
+      INSERT INTO auctions (
+        caseNumber, court, propertyType, title, address, district,
+        landArea, buildingArea, appraisalPrice, minimumPrice, deposit,
+        discountRate, auctionDate, status, safetyRating, expertComment,
+        specialRights, imageUrl, imageUrls, youtubeUrl, featured, viewCount,
+        createdAt, updatedAt
+      ) VALUES (
+        ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, 0,
+        CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+      )
+    `);
+
+    const result = stmt.run(
+      auction.caseNumber,
+      auction.court || '인천지방법원 본원',
+      auction.propertyType || '주택',
+      auction.title,
+      auction.address,
+      auction.district || null,
+      auction.landArea || null,
+      auction.buildingArea || null,
+      auction.appraisalPrice,
+      auction.minimumPrice,
+      auction.deposit,
+      auction.discountRate || 0,
+      auction.auctionDate,
+      auction.status || '진행중',
+      auction.safetyRating || '안전',
+      auction.expertComment || null,
+      auction.specialRights || null,
+      auction.imageUrl,
+      auction.imageUrls || null,
+      auction.youtubeUrl || null,
+      auction.featured ? 1 : 0
+    );
+
+    const created = await this.getAuction(Number(result.lastInsertRowid));
+    return created!;
+  }
+
+  async updateAuction(id: number, auction: Partial<InsertAuction>): Promise<Auction | undefined> {
+    const current = await this.getAuction(id);
+    if (!current) return undefined;
+
+    const featuredVal = auction.featured !== undefined ? (auction.featured ? 1 : 0) : (current.featured ? 1 : 0);
+
+    db.prepare(`
+      UPDATE auctions
+      SET caseNumber = COALESCE(?, caseNumber),
+          court = COALESCE(?, court),
+          propertyType = COALESCE(?, propertyType),
+          title = COALESCE(?, title),
+          address = COALESCE(?, address),
+          district = COALESCE(?, district),
+          landArea = COALESCE(?, landArea),
+          buildingArea = COALESCE(?, buildingArea),
+          appraisalPrice = COALESCE(?, appraisalPrice),
+          minimumPrice = COALESCE(?, minimumPrice),
+          deposit = COALESCE(?, deposit),
+          discountRate = COALESCE(?, discountRate),
+          auctionDate = COALESCE(?, auctionDate),
+          status = COALESCE(?, status),
+          safetyRating = COALESCE(?, safetyRating),
+          expertComment = COALESCE(?, expertComment),
+          specialRights = COALESCE(?, specialRights),
+          imageUrl = COALESCE(?, imageUrl),
+          imageUrls = COALESCE(?, imageUrls),
+          youtubeUrl = COALESCE(?, youtubeUrl),
+          featured = ?,
+          updatedAt = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(
+      auction.caseNumber !== undefined ? auction.caseNumber : null,
+      auction.court !== undefined ? auction.court : null,
+      auction.propertyType !== undefined ? auction.propertyType : null,
+      auction.title !== undefined ? auction.title : null,
+      auction.address !== undefined ? auction.address : null,
+      auction.district !== undefined ? auction.district : null,
+      auction.landArea !== undefined ? auction.landArea : null,
+      auction.buildingArea !== undefined ? auction.buildingArea : null,
+      auction.appraisalPrice !== undefined ? auction.appraisalPrice : null,
+      auction.minimumPrice !== undefined ? auction.minimumPrice : null,
+      auction.deposit !== undefined ? auction.deposit : null,
+      auction.discountRate !== undefined ? auction.discountRate : null,
+      auction.auctionDate !== undefined ? auction.auctionDate : null,
+      auction.status !== undefined ? auction.status : null,
+      auction.safetyRating !== undefined ? auction.safetyRating : null,
+      auction.expertComment !== undefined ? auction.expertComment : null,
+      auction.specialRights !== undefined ? auction.specialRights : null,
+      auction.imageUrl !== undefined ? auction.imageUrl : null,
+      auction.imageUrls !== undefined ? auction.imageUrls : null,
+      auction.youtubeUrl !== undefined ? auction.youtubeUrl : null,
+      featuredVal,
+      id
+    );
+
+    return this.getAuction(id);
+  }
+
+  async deleteAuction(id: number): Promise<boolean> {
+    const result = db.prepare('DELETE FROM auctions WHERE id = ?').run(id);
     return result.changes > 0;
   }
 }

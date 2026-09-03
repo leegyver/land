@@ -638,3 +638,59 @@ export const insertPopupSchema = z.object({
 export type Popup = typeof popups.$inferSelect;
 export type InsertPopup = z.infer<typeof insertPopupSchema>;
 
+// Auctions (법원 경매 및 공매) schema
+export const auctions = sqliteTable("auctions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  caseNumber: text("caseNumber").notNull(), // 사건번호 (예: 2024타경 12345)
+  court: text("court").notNull().default("인천지방법원 본원"), // 관할법원
+  propertyType: text("propertyType").notNull().default("주택"), // 토지, 주택, 상가, 기타
+  title: text("title").notNull(), // 물건명 / 제목
+  address: text("address").notNull(), // 소재지 주소
+  district: text("district"), // 강화읍, 길상면 등
+  landArea: text("landArea"), // 토지면적 (㎡ 또는 평)
+  buildingArea: text("buildingArea"), // 건물면적 (㎡ 또는 평)
+  appraisalPrice: text("appraisalPrice").notNull(), // 감정평가액
+  minimumPrice: text("minimumPrice").notNull(), // 최저입찰가
+  deposit: text("deposit").notNull(), // 입찰보증금 (최저가의 10%)
+  discountRate: integer("discountRate").default(0), // 할인율 (예: 30, 50)
+  auctionDate: text("auctionDate").notNull(), // 매각기일 (YYYY-MM-DD HH:mm)
+  status: text("status").notNull().default("진행중"), // 진행중, 유찰, 낙찰, 변경, 취하
+  safetyRating: text("safetyRating").default("안전"), // 안전, 보통, 상담필요, 주의
+  expertComment: text("expertComment"), // 이가이버 권리분석 및 전문가 추천평
+  specialRights: text("specialRights"), // 특수권리 / 권리분석 상세
+  imageUrl: text("imageUrl").notNull(), // 대표 사진
+  imageUrls: text("imageUrls"), // 추가 사진 JSON
+  youtubeUrl: text("youtubeUrl"), // 유튜브 영상 링크
+  featured: integer("featured", { mode: 'boolean' }).default(false), // 메인 추천 여부
+  viewCount: integer("viewCount").default(0),
+  createdAt: text("createdAt"),
+  updatedAt: text("updatedAt"),
+});
+
+export const insertAuctionSchema = z.object({
+  caseNumber: z.string().min(1, "사건번호를 입력해주세요"),
+  court: z.string().default("인천지방법원 본원"),
+  propertyType: z.string().default("주택"),
+  title: z.string().min(1, "물건명을 입력해주세요"),
+  address: z.string().min(1, "소재지 주소를 입력해주세요"),
+  district: z.string().nullable().optional(),
+  landArea: z.string().nullable().optional(),
+  buildingArea: z.string().nullable().optional(),
+  appraisalPrice: z.string().min(1, "감정가를 입력해주세요"),
+  minimumPrice: z.string().min(1, "최저입찰가를 입력해주세요"),
+  deposit: z.string().min(1, "입찰보증금을 입력해주세요"),
+  discountRate: z.number().optional().default(0),
+  auctionDate: z.string().min(1, "매각기일을 입력해주세요"),
+  status: z.string().default("진행중"),
+  safetyRating: z.string().default("안전"),
+  expertComment: z.string().nullable().optional(),
+  specialRights: z.string().nullable().optional(),
+  imageUrl: z.string().min(1, "대표 이미지를 등록해주세요"),
+  imageUrls: z.string().nullable().optional(),
+  youtubeUrl: z.string().nullable().optional(),
+  featured: z.boolean().optional().default(false),
+});
+
+export type Auction = typeof auctions.$inferSelect;
+export type InsertAuction = z.infer<typeof insertAuctionSchema>;
+

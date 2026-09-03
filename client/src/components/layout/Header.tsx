@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Building, LogIn, LogOut, User, Settings, Menu } from "lucide-react";
+import { Building, LogIn, LogOut, User, Settings, Menu, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
@@ -24,13 +24,10 @@ const Header = () => {
 
   const navItems = [
     { name: "홈", path: "/" },
-    { name: "모든매물보기", path: "/properties" },
-    { name: "강화도뉴스", path: "/news" },
-    { name: "부동산소개", path: "/about" },
+    { name: "강화도 매물", path: "/properties" },
+    { name: "반값 경매·공매", path: "/auctions", isHot: true },
     { name: "유튜브", path: "/youtube" },
-    { name: "오늘의 운세", path: "/saju" },
-    { name: "커뮤니티", path: "/community" },
-    { name: "문의하기", path: "/contact" },
+    { name: "왜 이가이버인가", path: "/about" },
   ];
 
   const handleLogout = () => {
@@ -43,25 +40,40 @@ const Header = () => {
         <div className="flex justify-between items-center">
           <Link href="/" className="flex items-center">
             <Building className="text-blue-600 text-3xl mr-2" />
-            <span className="text-lg md:text-2xl font-bold text-slate-900">강화도부동산-이가이버</span>
+            <div>
+              <span className="text-lg md:text-2xl font-bold text-slate-900 tracking-tight">강화도부동산-이가이버</span>
+              <span className="hidden xl:inline-block ml-2 text-[11px] font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">법원등록 경매·공매 전문</span>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-8">
+          <nav className="hidden md:flex items-center space-x-6 lg:space-x-8">
             {navItems.map((item) => (
               <Link
                 key={item.path}
                 href={item.path}
-                className={`font-medium hover:text-primary transition-colors ${location === item.path ? "text-primary" : "text-neutral-800"
+                className={`font-semibold text-sm lg:text-base hover:text-primary transition-colors flex items-center gap-1.5 ${location === item.path ? "text-primary font-bold" : "text-neutral-800"
                   }`}
               >
-                {item.name}
+                <span>{item.name}</span>
+                {item.isHot && (
+                  <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse shadow-sm">
+                    HOT
+                  </span>
+                )}
               </Link>
             ))}
           </nav>
 
-          {/* Auth Buttons (Desktop) */}
-          <div className="hidden md:flex items-center space-x-2">
+          {/* Desktop Quick Call & Auth */}
+          <div className="hidden md:flex items-center space-x-3">
+            <a
+              href="tel:010-4787-3120"
+              className="flex items-center gap-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs lg:text-sm font-bold px-3.5 py-2 rounded-full shadow-md shadow-orange-500/20 transition-all transform hover:scale-105"
+            >
+              <Phone className="w-3.5 h-3.5 fill-white" />
+              <span>010-4787-3120</span>
+            </a>
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -127,12 +139,28 @@ const Header = () => {
                     key={item.path}
                     href={item.path}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`text-lg font-medium hover:text-primary transition-colors ${location === item.path ? "text-primary" : "text-neutral-800"
+                    className={`text-lg font-semibold hover:text-primary transition-colors flex items-center justify-between ${location === item.path ? "text-primary" : "text-neutral-800"
                       }`}
                   >
-                    {item.name}
+                    <span>{item.name}</span>
+                    {item.isHot && (
+                      <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
+                        HOT
+                      </span>
+                    )}
                   </Link>
                 ))}
+
+                {/* Mobile Quick Call Button */}
+                <div className="pt-2">
+                  <a
+                    href="tel:010-4787-3120"
+                    className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold py-3 rounded-xl shadow-md"
+                  >
+                    <Phone className="w-5 h-5 fill-white" />
+                    <span>전화상담 010-4787-3120</span>
+                  </a>
+                </div>
 
                 {/* Auth Items (Mobile) */}
                 <div className="pt-4 border-t">

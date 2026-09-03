@@ -19,6 +19,7 @@ import AdminConfigTab from "@/components/admin/tabs/AdminConfigTab";
 
 import AdminBannerTab from "@/components/admin/tabs/AdminBannerTab";
 import AdminPopupTab from "@/components/admin/tabs/AdminPopupTab";
+import AdminAuctionsTab from "@/components/admin/tabs/AdminAuctionsTab";
 
 // Types
 import { Property, News, User, NewsletterSubscription } from "@shared/schema";
@@ -117,6 +118,7 @@ export default function AdminPage() {
           <TabsTrigger value="properties" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">부동산 매물 관리</TabsTrigger>
           {(user?.role === "admin" || user?.role === "master") && (
             <>
+              <TabsTrigger value="auctions" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all text-amber-900 bg-amber-100/60 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">🔨 경매·공매 관리</TabsTrigger>
               <TabsTrigger value="news" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">뉴스 소식</TabsTrigger>
               <TabsTrigger value="newsletter" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">구독자 관리</TabsTrigger>
               <TabsTrigger value="banners" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">배너 관리</TabsTrigger>
@@ -155,6 +157,9 @@ export default function AdminPage() {
 
         {(user?.role === "admin" || user?.role === "master") && (
           <>
+            <TabsContent value="auctions" className="mt-0">
+              <AdminAuctionsTab />
+            </TabsContent>
 
             <TabsContent value="news" className="mt-0">
               <AdminNewsTab news={news} isLoading={isLoadingNews} isError={isErrorNews} error={errorNews} refetch={refetchNews} />

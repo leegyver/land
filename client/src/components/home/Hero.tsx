@@ -1,11 +1,9 @@
 import { useRef, useCallback, useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, Mic, MicOff, ArrowRight, Building, CheckCircle2, Trophy, Users, Star } from "lucide-react";
+import { Search, Mic, MicOff, Phone, Trees, Home as HomeIcon, Store, Gavel, Trophy, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { motion, useScroll, useTransform } from "framer-motion";
-
-// Types are now in src/types/speech-recognition.d.ts
+import { motion } from "framer-motion";
 import type { SpeechRecognition } from "@/types/speech-recognition";
 import { KAKAO_CHANNEL_URL } from "@/lib/constants";
 
@@ -15,8 +13,6 @@ const Hero = () => {
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const { scrollY } = useScroll();
-  const y = useTransform(scrollY, [0, 500], [0, 150]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition)) {
@@ -40,7 +36,7 @@ const Hero = () => {
 
   const toggleListening = useCallback(() => {
     if (!recognitionRef.current) {
-      alert("음성 검색은 보안 연결(HTTPS) 환경이나 지원되는 브라우저(Chrome, Safari 등)에서만 사용 가능합니다.");
+      alert("음성 검색은 보안 연결(HTTPS) 환경이나 지원되는 브라우저에서 사용 가능합니다.");
       return;
     }
     if (isListening) recognitionRef.current.stop();
@@ -57,188 +53,173 @@ const Hero = () => {
     if (e.key === "Enter") handleSearch();
   };
 
+  const scrollToAuction = () => {
+    const el = document.getElementById("auction-section");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth" });
+    } else {
+      setLocation("/properties?category=auction");
+    }
+  };
+
+  const categoryButtons = [
+    {
+      title: "토지",
+      desc: "전·답·대지·임야",
+      icon: Trees,
+      iconColor: "text-emerald-600",
+      bgColor: "bg-emerald-50",
+      borderColor: "border-emerald-200 hover:border-emerald-500",
+      onClick: () => setLocation("/properties?type=land"),
+    },
+    {
+      title: "주택",
+      desc: "전원주택·농가주택",
+      icon: HomeIcon,
+      iconColor: "text-amber-600",
+      bgColor: "bg-amber-50",
+      borderColor: "border-amber-200 hover:border-amber-500",
+      onClick: () => setLocation("/properties?type=house"),
+    },
+    {
+      title: "상가",
+      desc: "근린상가·점포·창고",
+      icon: Store,
+      iconColor: "text-blue-600",
+      bgColor: "bg-blue-50",
+      borderColor: "border-blue-200 hover:border-blue-500",
+      onClick: () => setLocation("/properties?type=commercial"),
+    },
+    {
+      title: "법원경매",
+      desc: "⚡반값 찬스·안전입찰",
+      badge: "시세 50%↓",
+      icon: Gavel,
+      iconColor: "text-rose-600",
+      bgColor: "bg-rose-50",
+      borderColor: "border-rose-300 hover:border-rose-500 ring-2 ring-rose-500/20",
+      onClick: scrollToAuction,
+    },
+  ];
+
   return (
-    <section className="relative w-full overflow-hidden">
-      {/* Desktop/Tablet Hero (Hidden on Mobile) */}
-      <div className="hidden md:flex relative w-full py-12 lg:py-24 items-center justify-center min-h-[500px]">
-      {/* Background Image with Parallax */}
-      <motion.div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat z-0"
-        style={{
-          backgroundImage: 'url("https://images.unsplash.com/photo-1542224566-6e85f2e6772f?auto=format&fit=crop&w=1920&q=80")',
-          y: y,
-          scale: 1.1
-        }}
-      />
-      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent z-10" />
+    <section className="relative w-full bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden pt-8 pb-12 md:pt-14 md:pb-20">
+      {/* Background Subtle Pattern */}
+      <div className="absolute inset-0 opacity-25 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+      <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-orange-500/20 blur-[100px] rounded-full pointer-events-none" />
 
-      {/* Content Container */}
-      <div className="container relative z-20 px-4 h-full flex flex-col justify-center">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div className="container relative z-10 mx-auto px-4 max-w-5xl">
+        {/* Top Badges */}
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-500/20 border border-orange-400/40 text-orange-300 text-xs md:text-sm font-semibold">
+            <Trophy className="w-3.5 h-3.5 text-yellow-400" />
+            강화도 20년 전문 중개
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/40 text-blue-200 text-xs md:text-sm font-semibold">
+            <ShieldCheck className="w-3.5 h-3.5 text-blue-300" />
+            강화군 유일 법원등록 입찰대리
+          </span>
+        </div>
 
-          {/* Left Column: Text & CTA */}
-          <div className="text-left space-y-8">
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
+        {/* Main Title */}
+        <div className="text-center space-y-3 mb-8">
+          <h1 className="text-2xl sm:text-3xl md:text-5xl font-black tracking-tight text-white leading-tight">
+            강화도 최고의 부동산 파트너,{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-300 to-yellow-200">
+              이가이버
+            </span>
+          </h1>
+          <p className="text-slate-300 text-sm md:text-lg max-w-2xl mx-auto font-medium">
+            토지·주택·상가 급매물부터 시세 반값 법원 경매까지 안전하게 찾아드립니다.
+          </p>
+        </div>
+
+        {/* Big Search Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="max-w-2xl mx-auto mb-10"
+        >
+          <div className="relative flex items-center bg-white rounded-2xl shadow-2xl p-1.5 border-2 border-white/80 focus-within:border-orange-500 transition-all">
+            <Search className="w-5 h-5 text-gray-400 ml-3 shrink-0" />
+            <Input
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="지역(예: 길상면, 강화읍), 매물종류, 키워드 검색"
+              className="flex-1 border-0 focus-visible:ring-0 text-slate-900 placeholder:text-gray-400 text-sm md:text-base bg-transparent h-11 md:h-12 px-3 font-medium"
+            />
+            {speechSupported && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={toggleListening}
+                className={`w-9 h-9 rounded-xl mr-1 hover:bg-slate-100 ${isListening ? "text-red-500 animate-pulse" : "text-gray-400"}`}
+                title="음성 검색"
+              >
+                {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              </Button>
+            )}
+            <Button
+              onClick={() => handleSearch()}
+              className="h-11 md:h-12 px-5 md:px-7 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm md:text-base shrink-0 shadow-md transition-transform active:scale-95"
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 bg-orange-500/20 backdrop-blur-md border border-orange-500/50 rounded-full">
-                <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-                <span className="text-orange-300 font-bold text-sm tracking-wide">강화도 토지·주택·상가 전문</span>
-                <span className="text-gray-400 text-xs">|</span>
-                <span className="text-white font-medium text-sm">바로 지금이 기회입니다</span>
-              </div>
-
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight mb-6">
-                강화도의 소중한 공간,<br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-amber-300 relative">
-                  이가이버가 찾아드립니다
-                  <svg className="absolute w-full h-3 -bottom-1 left-0 text-orange-500 opacity-50" viewBox="0 0 100 10" preserveAspectRatio="none">
-                    <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="3" fill="none" />
-                  </svg>
-                </span>
-              </h1>
-
-              <div className="flex items-center gap-6 text-gray-300 mb-8">
-                <div className="flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-yellow-400" />
-                  <span className="font-medium">누적 거래 127건+</span>
-                </div>
-                <div className="w-px h-4 bg-gray-600" />
-                <div className="flex items-center gap-2">
-                  <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                  <span className="font-medium">고객 만족도 4.98점</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button
-                  onClick={() => window.open(KAKAO_CHANNEL_URL, '_blank')}
-                  size="lg"
-                  className="h-14 px-8 btn-primary-cta text-lg rounded-full"
-                >
-                  지금 상담 신청하고 <br className="sm:hidden" />무료로 매물 추천 받기
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-
-                <Button
-                  onClick={() => setLocation("/properties")}
-                  size="lg"
-                  variant="outline"
-                  className="h-14 px-8 bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 hover:text-white font-bold text-lg rounded-full transition-all"
-                >
-                  지도에서 바로 매물 보기
-                </Button>
-              </div>
-            </motion.div>
-
-            {/* Simple Search Bar (Secondary) */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="relative max-w-md"
-            >
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <Input
-                  value={searchKeyword}
-                  onChange={(e) => setSearchKeyword(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="원하시는 지역이나 매물을 검색해보세요"
-                  className="pl-12 pr-12 h-12 bg-white/10 backdrop-blur-md border-white/20 text-white placeholder:text-gray-400 rounded-xl focus-visible:ring-orange-500/50"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleListening}
-                  className={`absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full hover:bg-white/10 ${isListening ? "text-red-500 animate-pulse" : "text-gray-400 hover:text-white"}`}
-                >
-                  {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-                </Button>
-              </div>
-            </motion.div>
+              검색
+            </Button>
           </div>
+        </motion.div>
 
-          {/* Right Column: Representative Image */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="hidden lg:block relative"
-          >
-            <div className="relative z-10 w-[400px] h-[500px] mx-auto bg-gradient-to-b from-gray-900/0 to-gray-900/80 rounded-b-3xl overflow-hidden">
-              {/* Placeholder for Representative Image - Replace src with actual image */}
-              <img
-                src="/assets/uploads/ceo_profile.jpg"
-                alt="이가이버 대표"
-                className="w-full h-full object-cover object-center mask-image-gradient"
-                style={{ maskImage: 'linear-gradient(to bottom, black 80%, transparent 100%)' }}
-              />
-
-              {/* Expert Badge */}
-              <div className="absolute top-64 -right-4 bg-white p-4 rounded-xl shadow-2xl transform rotate-3 border border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                    20
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 font-medium">SINCE 2014</p>
-                    <p className="text-gray-900 font-bold text-sm">강화도 20년차 전문가</p>
-                  </div>
+        {/* 4 Super Friendly Category Buttons */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-4xl mx-auto">
+          {categoryButtons.map((cat, idx) => {
+            const Icon = cat.icon;
+            return (
+              <motion.button
+                key={cat.title}
+                onClick={cat.onClick}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: idx * 0.1 }}
+                whileHover={{ y: -4, scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={`relative flex flex-col items-center justify-center p-4 sm:p-5 rounded-2xl bg-white text-slate-900 border-2 ${cat.borderColor} shadow-lg transition-all text-center group cursor-pointer`}
+              >
+                {cat.badge && (
+                  <span className="absolute -top-2.5 right-2 bg-gradient-to-r from-rose-500 to-red-600 text-white text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-full shadow-md animate-bounce">
+                    {cat.badge}
+                  </span>
+                )}
+                <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl ${cat.bgColor} flex items-center justify-center mb-2.5 sm:mb-3 shadow-inner group-hover:scale-110 transition-transform duration-300`}>
+                  <Icon className={`w-8 h-8 sm:w-9 sm:h-9 ${cat.iconColor}`} />
                 </div>
-              </div>
-
-              {/* Name Tag */}
-              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md px-6 py-3 rounded-full border border-white/20 text-center w-max">
-                <p className="text-white font-bold text-lg">이민호 <span className="text-orange-400 font-normal text-sm ml-1">대표 공인중개사</span></p>
-              </div>
-            </div>
-
-            {/* Decorative Elements */}
-            <div className="absolute -inset-4 bg-orange-500/20 blur-3xl rounded-full z-0 opacity-50" />
-          </motion.div>
-
+                <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 mb-0.5 tracking-tight group-hover:text-orange-600 transition-colors">
+                  {cat.title}
+                </h3>
+                <p className="text-[11px] sm:text-xs font-semibold text-slate-500 line-clamp-1">
+                  {cat.desc}
+                </p>
+              </motion.button>
+            );
+          })}
         </div>
-      </div>
-      </div>
 
-      {/* Mobile Compact Hero (Visible only on Mobile) */}
-      <div className="flex md:hidden flex-col px-4 py-6 bg-slate-900 relative z-20">
-        <div className="relative mb-4 w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input
-            value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="검색어 입력 (예: 길상면)"
-            className="pl-10 pr-10 h-11 bg-white/10 backdrop-blur-md border-white/20 text-white placeholder:text-gray-400 rounded-xl focus-visible:ring-orange-500/50 text-sm"
-          />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={toggleListening}
-            className={`absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full hover:bg-white/10 ${isListening ? "text-red-500 animate-pulse" : "text-gray-400 hover:text-white"}`}
+        {/* Direct Call & Kakao Quick CTA */}
+        <div className="flex flex-wrap items-center justify-center gap-3 mt-8 pt-4 border-t border-slate-700/50">
+          <a
+            href="tel:010-4787-3120"
+            className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black text-sm sm:text-base px-6 py-3 rounded-full shadow-lg shadow-orange-500/30 transition-all transform hover:scale-105"
           >
-            {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-          </Button>
-        </div>
-        <div className="flex gap-3">
+            <Phone className="w-4 h-4 fill-white" />
+            <span>010-4787-3120 직통 상담</span>
+          </a>
           <Button
             onClick={() => window.open(KAKAO_CHANNEL_URL, '_blank')}
-            className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold h-11 rounded-xl text-sm"
-          >
-            상담 신청하기
-          </Button>
-          <Button
-            onClick={() => setLocation("/properties")}
             variant="outline"
-            className="flex-1 bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 hover:text-white font-bold h-11 rounded-xl text-sm transition-all"
+            className="bg-white/10 hover:bg-white/20 border-white/30 text-white font-bold text-sm sm:text-base h-12 px-6 rounded-full"
           >
-            지도 매물보기
+            카카오톡 1:1 상담
           </Button>
         </div>
       </div>

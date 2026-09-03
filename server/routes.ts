@@ -20,6 +20,7 @@ import {
   insertNewsletterSubscriptionSchema,
   insertPostSchema,
   insertCommentSchema,
+  insertAuctionSchema,
   realtorSubscriptions,
   users
 } from "@shared/schema";
@@ -5117,6 +5118,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Failed to delete notice:", error);
       res.status(500).json({ message: "공지사항 삭제 중 오류가 발생했습니다." });
+    }
+  });
+
+  // ==================== Auction APIs (법원 경매 및 공매) ====================
+  // 1. 전체 경매 목록 조회 (공개)
+  app.get("/api/auctions", async (req, res) => {
+    try {
+      const status = req.query.status as string | undefined;
+      const auctions = await storage.getAuctions(status);
+      res.json(auctions);
+    } catch (error) {
+      console.error("Failed to fetch auctions:", error);
+      res.status(500).json({ message: "경매 목록을 불러오는 중 오류가 발생했습니다." });
+    }
+  });
+
+  // 2. 메인 노출용 추천 경매 목록 조회 (공개)
+  app.get("/api/auctions/featured", async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 6;
+      const auctions = await storage.getFeaturedAuctions(limit);
+      res.json(auctions);
+    } catch (error) {
+      console.error("Failed to fetch featured auctions:", error);
+      res.status(500).json({ message: "추천 경매 목록을 불러오는 중 오류가 발생했습니다." });
+    }
+  });
+
+  // 3. 단일 경매 상세 조회 (공개)
+  app.get("/api/auctions/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "유효하지 않은 ID입니다." });
+      const auction = await storage.getAuction(id);
+      if (!auction) return res.status(404).json({ message: "경매 물건을 찾을 수 없습니다." });
+      res.json(auction);
+    } catch (error) {
+      console.error("Failed to fetch auction:", error);
+      res.status(500).json({ message: "경매 정보를 불러오는 중 오류가 발생했습니다." });
+    }
+  });
+
+  // 4. 새 경매 물건 등록 (관리자 전용)
+  app.post("/api/auctions", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "로그인이 필요합니다." });
+      const user = req.user as any;
+      if (user.role !== "admin" && user.role !== "master") {
+        return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+      }
+
+      const parsed = insertAuctionSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "입력값이 올바르지 않습니다.", errors: parsed.error.errors });
+      }
+
+      const newAuction = await storage.createAuction(parsed.data);
+      res.status(201).json(newAuction);
+    } catch (error) {
+      console.error("Failed to create auction:", error);
+      res.status(500).json({ message: "경매 물건 등록 중 오류가 발생했습니다." });
+    }
+  });
+
+  // 5. 경매 물건 수정 (관리자 전용)
+  app.patch("/api/auctions/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "로그인이 필요합니다." });
+      const user = req.user as any;
+      if (user.role !== "admin" && user.role !== "master") {
+        return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+      }
+
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "유효하지 않은 ID입니다." });
+
+      const updated = await storage.updateAuction(id, req.body);
+      if (!updated) return res.status(404).json({ message: "경매 물건을 찾을 수 없습니다." });
+      res.json(updated);
+    } catch (error) {
+      console.error("Failed to update auction:", error);
+      res.status(500).json({ message: "경매 물건 수정 중 오류가 발생했습니다." });
+    }
+  });
+
+  // 6. 경매 물건 삭제 (관리자 전용)
+  app.delete("/api/auctions/:id", async (req, res) => {
+    try {
+      if (!req.isAuthenticated()) return res.status(401).json({ message: "로그인이 필요합니다." });
+      const user = req.user as any;
+      if (user.role !== "admin" && user.role !== "master") {
+        return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
+      }
+
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "유효하지 않은 ID입니다." });
+
+      const success = await storage.deleteAuction(id);
+      if (!success) return res.status(404).json({ message: "경매 물건을 찾을 수 없습니다." });
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to delete auction:", error);
+      res.status(500).json({ message: "경매 물건 삭제 중 오류가 발생했습니다." });
     }
   });
 

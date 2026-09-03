@@ -6,10 +6,10 @@ import BannerSlider from "@/components/home/BannerSlider";
 import Hero from "@/components/home/Hero";
 import ReviewSection from "@/components/home/ReviewSection";
 import { useQuery } from "@tanstack/react-query";
-import { News } from "@shared/schema";
+import { News, Auction } from "@shared/schema";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
-import { Calendar, ArrowRight, Newspaper, Youtube, Play, BookOpen, Search, Map, ThumbsUp, MessageSquare } from "lucide-react";
+import { Calendar, ArrowRight, Newspaper, Youtube, Play, BookOpen, Search, Map, ThumbsUp, MessageSquare, Gavel, ShieldCheck, Clock, CheckCircle2, Phone, Sparkles, Trees, Home as HomeIcon } from "lucide-react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -124,6 +124,31 @@ const HomePage = () => {
     queryKey: ["/api/posts", { limit: 3 }],
   });
 
+  // 추천 경매 데이터 가져오기
+  const { data: featuredAuctions, isLoading: isAuctionsLoading } = useQuery<Auction[]>({
+    queryKey: ["/api/auctions/featured"],
+  });
+
+  // 테마별 추천 매물 탭 상태 ('urgent' | 'auction' | 'land' | 'house')
+  const [selectedThemeTab, setSelectedThemeTab] = useState<'urgent' | 'auction' | 'land' | 'house'>('urgent');
+
+  // D-Day 계산 헬퍼
+  const getDDay = (targetDateStr: string) => {
+    try {
+      const target = new Date(targetDateStr);
+      const today = new Date();
+      target.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+      const diffTime = target.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays === 0) return "D-Day (오늘)";
+      if (diffDays > 0) return `D-${diffDays}`;
+      return "마감";
+    } catch {
+      return "진행중";
+    }
+  };
+
   const handleSearch = (keyword?: string) => {
     const term = keyword || searchKeyword;
     if (term.trim()) {
@@ -217,92 +242,276 @@ const HomePage = () => {
 
 
 
-      {/* Featured Properties Section */}
-      <section className="pt-8 pb-0 bg-[#F7F5F0]">
-        <div className="container mx-auto px-4">
+      {/* 강화군 유일 법원등록 경매·공매 신뢰 배너 */}
+      <section className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white py-4 md:py-5 border-y-2 border-amber-500/40 shadow-xl">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5 text-center md:text-left">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-slate-950 shadow-lg shrink-0">
+                <Gavel className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 justify-center md:justify-start">
+                  <span className="bg-amber-400/20 text-amber-300 text-xs font-black px-2.5 py-0.5 rounded-md border border-amber-400/40">
+                    강화군 유일
+                  </span>
+                  <span className="text-xs text-slate-400 font-medium">인천지방법원 등록 공제 4억원 보증</span>
+                </div>
+                <h2 className="text-base sm:text-xl font-extrabold text-white mt-0.5 tracking-tight">
+                  법원 정식 등록 경매·공매 입찰대리 중개사
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-300">
+                  권리분석부터 현장 답사, 법원 입찰, 명도까지 100% 안전하게 이가이버가 직접 책임집니다.
+                </p>
+              </div>
+            </div>
 
+            <div className="flex items-center gap-2.5 shrink-0">
+              <button
+                onClick={() => setSelectedThemeTab('auction')}
+                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5"
+              >
+                <span>🔨 이번 주 추천 경매 보기</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+              <a
+                href="tel:010-4787-3120"
+                className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs sm:text-sm px-3.5 py-2.5 rounded-xl transition-all flex items-center gap-1"
+              >
+                <Phone className="w-3.5 h-3.5 fill-white" />
+                <span>010-4787-3120</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
 
-          <div className="flex justify-between items-center mb-2 mt-4 md:mt-0 md:mb-1">
-            <h2 className="text-xl md:text-2xl font-bold">✨ 최신매물</h2>
+      {/* Theme Tab Property Showcase */}
+      <section id="auction-section" className="pt-8 pb-10 bg-[#F7F5F0]">
+        <div className="container mx-auto px-4 max-w-6xl">
+          {/* Header & Tabs */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <span className="text-xs font-bold text-orange-600 tracking-wider uppercase">HOT & FEATURED</span>
+              <h2 className="text-xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                <span>🔥 이가이버 추천 매물 & 경매관</span>
+              </h2>
+            </div>
+
+            {/* Tab Buttons */}
+            <div className="flex flex-wrap gap-1.5 bg-slate-200/80 p-1.5 rounded-2xl">
+              <button
+                onClick={() => setSelectedThemeTab('urgent')}
+                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                  selectedThemeTab === 'urgent'
+                    ? 'bg-red-600 text-white shadow-md'
+                    : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'
+                }`}
+              >
+                🔥 초급매물
+              </button>
+              <button
+                onClick={() => setSelectedThemeTab('auction')}
+                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1 ${
+                  selectedThemeTab === 'auction'
+                    ? 'bg-amber-500 text-slate-950 shadow-md ring-2 ring-amber-400/50'
+                    : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'
+                }`}
+              >
+                <span>🔨 반값 경매·공매</span>
+                <span className="bg-red-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full">HOT</span>
+              </button>
+              <button
+                onClick={() => setSelectedThemeTab('land')}
+                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                  selectedThemeTab === 'land'
+                    ? 'bg-emerald-600 text-white shadow-md'
+                    : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'
+                }`}
+              >
+                🌲 추천 토지
+              </button>
+              <button
+                onClick={() => setSelectedThemeTab('house')}
+                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                  selectedThemeTab === 'house'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'
+                }`}
+              >
+                🏡 전원주택
+              </button>
+            </div>
+          </div>
+
+          {/* Tab 1: 법원 경매·공매 */}
+          {selectedThemeTab === 'auction' && (
+            <div>
+              {isAuctionsLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="h-80 bg-white rounded-3xl animate-pulse shadow-sm" />
+                  ))}
+                </div>
+              ) : featuredAuctions && featuredAuctions.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {featuredAuctions.map((auction) => (
+                    <div
+                      key={auction.id}
+                      className="bg-white rounded-3xl overflow-hidden shadow-lg border border-slate-200/80 hover:shadow-2xl transition-all duration-300 flex flex-col group"
+                    >
+                      {/* Image & Badges */}
+                      <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
+                        <img
+                          src={auction.imageUrl || "/assets/default-property-images/house.png"}
+                          alt={auction.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        {/* Discount Badge */}
+                        {auction.discountRate && auction.discountRate > 0 && (
+                          <div className="absolute top-3 left-3 bg-gradient-to-r from-red-600 to-rose-600 text-white text-xs sm:text-sm font-black px-2.5 py-1 rounded-full shadow-lg">
+                            ⚡ -{auction.discountRate}% 반값
+                          </div>
+                        )}
+                        {/* D-Day Badge */}
+                        <div className="absolute top-3 right-3 bg-slate-950/80 backdrop-blur-md text-amber-400 text-xs font-black px-2.5 py-1 rounded-full shadow-md flex items-center gap-1 border border-amber-400/30">
+                          <Clock className="w-3 h-3" />
+                          <span>{getDDay(auction.auctionDate)}</span>
+                        </div>
+                        {/* Case Number on Image */}
+                        <div className="absolute bottom-2 left-3 bg-black/60 backdrop-blur-md text-white text-[11px] font-semibold px-2 py-0.5 rounded-md">
+                          {auction.court} | {auction.caseNumber}
+                        </div>
+                      </div>
+
+                      {/* Content */}
+                      <div className="p-5 flex-1 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                              {auction.propertyType}
+                            </span>
+                            <span className="text-xs text-slate-500 font-medium">
+                              입찰일: {auction.auctionDate.split(' ')[0]}
+                            </span>
+                            {auction.safetyRating && (
+                              <span className="ml-auto text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md flex items-center gap-0.5 border border-emerald-200">
+                                <ShieldCheck className="w-3 h-3" />
+                                {auction.safetyRating}
+                              </span>
+                            )}
+                          </div>
+
+                          <h3 className="font-extrabold text-base sm:text-lg text-slate-900 group-hover:text-amber-600 transition-colors line-clamp-1 mb-1">
+                            {auction.title}
+                          </h3>
+                          <p className="text-xs text-slate-500 line-clamp-1 mb-3">
+                            {auction.address}
+                          </p>
+
+                          {/* Prices */}
+                          <div className="bg-slate-50 rounded-2xl p-3 mb-3 border border-slate-100">
+                            <div className="flex justify-between text-xs text-slate-400 mb-0.5">
+                              <span>감정평가액</span>
+                              <span className="line-through">{auction.appraisalPrice}</span>
+                            </div>
+                            <div className="flex justify-between items-baseline">
+                              <span className="text-xs font-bold text-slate-700">최저입찰가</span>
+                              <span className="text-lg sm:text-xl font-black text-rose-600">
+                                {auction.minimumPrice}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Expert Comment */}
+                          {auction.expertComment && (
+                            <p className="text-xs text-slate-600 bg-amber-50/50 p-2.5 rounded-xl border border-amber-100 mb-2 line-clamp-2">
+                              💡 <strong>이가이버 소견:</strong> {auction.expertComment}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* CTA Call Button */}
+                        <a
+                          href="tel:010-4787-3120"
+                          className="mt-3 w-full bg-slate-900 hover:bg-amber-500 hover:text-slate-950 text-white font-bold text-xs sm:text-sm py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md"
+                        >
+                          <Phone className="w-3.5 h-3.5 fill-current" />
+                          <span>입찰대리 의뢰 (010-4787-3120)</span>
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                /* 경매 물건 준비 중일 때 안내 카드 */
+                <div className="bg-white rounded-3xl p-8 sm:p-12 text-center border-2 border-dashed border-amber-300 max-w-2xl mx-auto shadow-sm">
+                  <div className="w-16 h-16 rounded-3xl bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-4">
+                    <Gavel className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-black text-slate-900 mb-2">
+                    현재 강화군 추천 경매 물건을 권리분석 중입니다
+                  </h3>
+                  <p className="text-sm text-slate-500 mb-6 max-w-md mx-auto">
+                    강화도 내에 관심 있으신 경매 사건번호나 원하시는 물건 조건(예: 1억원대 전원주택 경매)을 알려주시면 가장 안전한 물건을 직접 발굴해 드립니다.
+                  </p>
+                  <div className="flex flex-wrap justify-center gap-3">
+                    <a
+                      href="tel:010-4787-3120"
+                      className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-sm px-6 py-3 rounded-xl shadow-md transition-all flex items-center gap-2"
+                    >
+                      <Phone className="w-4 h-4 fill-slate-950" />
+                      <span>010-4787-3120 경매 의뢰하기</span>
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Tab 2: 초급매물 */}
+          {selectedThemeTab === 'urgent' && (
+            <div>
+              <PropertySection
+                title=""
+                queryKey="/api/properties/urgent"
+                bgColor="bg-white"
+              />
+            </div>
+          )}
+
+          {/* Tab 3: 추천 토지 */}
+          {selectedThemeTab === 'land' && (
+            <div>
+              <PropertySection
+                title=""
+                queryKey="/api/properties?type=land"
+                bgColor="bg-white"
+              />
+            </div>
+          )}
+
+          {/* Tab 4: 추천 주택 */}
+          {selectedThemeTab === 'house' && (
+            <div>
+              <PropertySection
+                title=""
+                queryKey="/api/properties?type=house"
+                bgColor="bg-white"
+              />
+            </div>
+          )}
+
+          {/* Bottom View All Link */}
+          <div className="text-center pt-8">
             <Link href="/properties">
-              <Button variant="ghost" size="sm" className="text-gray-500 hover:text-primary">
-                더보기 <ArrowRight className="ml-1 h-3 w-3" />
-              </Button>
-            </Link>
-          </div>
-          <PropertySection
-            title=""
-            queryKey="/api/properties/latest"
-            bgColor="bg-white"
-          />
-
-          <div className="flex justify-between items-center mb-2 mt-8 md:mt-6 md:mb-1">
-            <h2 className="text-xl md:text-2xl font-bold">🔥 급매물</h2>
-            <Link href="/properties?tag=urgent">
-              <Button variant="ghost" size="sm" className="text-gray-500 hover:text-primary">
-                더보기 <ArrowRight className="ml-1 h-3 w-3" />
-              </Button>
-            </Link>
-          </div>
-          <PropertySection
-            title=""
-            queryKey="/api/properties/urgent"
-            bgColor="bg-red-50"
-          />
-
-          {/* 흥정 매물 섹션 */}
-          <div className="flex justify-between items-center mb-2 mt-8 md:mt-6 md:mb-1">
-            <h2 className="text-xl md:text-2xl font-bold">🤝 가격 협의 가능</h2>
-            <Link href="/properties?tag=negotiable">
-              <Button variant="ghost" size="sm" className="text-gray-500 hover:text-primary">
-                더보기 <ArrowRight className="ml-1 h-3 w-3" />
-              </Button>
-            </Link>
-          </div>
-          <PropertySection
-            title=""
-            queryKey="/api/properties/negotiable"
-            bgColor="bg-blue-50"
-          />
-
-          {/* 장기투자 매물 섹션 */}
-          <div className="flex justify-between items-center mb-2 mt-8 md:mt-6 md:mb-1">
-            <h2 className="text-xl md:text-2xl font-bold text-red-600">📈 장기투자 추천</h2>
-            <Link href="/properties?tag=long-term">
-              <Button variant="ghost" size="sm" className="text-gray-500 hover:text-primary">
-                더보기 <ArrowRight className="ml-1 h-3 w-3" />
-              </Button>
-            </Link>
-          </div>
-          <PropertySection
-            title=""
-            queryKey="/api/properties/long-term"
-            bgColor="bg-green-50"
-          />
-
-          {/* 추천 매물 섹션 */}
-          <div className="flex justify-between items-center mb-2 mt-8 md:mt-6 md:mb-1">
-            <h2 className="text-xl md:text-2xl font-bold flex items-center"><ThumbsUp className="w-5 h-5 md:w-6 md:h-6 mr-2 text-primary" />추천 매물</h2>
-            <Link href="/properties?tag=featured">
-              <Button variant="ghost" size="sm" className="text-gray-500 hover:text-primary">
-                더보기 <ArrowRight className="ml-1 h-3 w-3" />
-              </Button>
-            </Link>
-          </div>
-          <PropertySection
-            title=""
-            queryKey="/api/properties/featured"
-          />
-
-          <div className="text-center py-3">
-            <Link href="/properties">
-              <Button variant="outline" size="lg" className="border-primary text-primary hover:bg-primary hover:text-white px-8 h-8 rounded-full text-sm">
-                매물 더 보기 <ArrowRight className="ml-2 h-3 w-3" />
+              <Button variant="outline" size="lg" className="border-slate-300 text-slate-800 hover:bg-slate-900 hover:text-white px-8 h-11 rounded-full text-sm font-bold transition-all shadow-sm">
+                강화도 전체 매물 더 보기 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
           </div>
         </div>
-      </section >
+      </section>
 
       {/* Review Section */}
       <ReviewSection />

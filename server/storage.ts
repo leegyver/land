@@ -946,7 +946,28 @@ export class SQLiteStorage implements IStorage {
   }
 
   async getPropertiesByType(type: string): Promise<Property[]> {
-    const rows = db.prepare('SELECT * FROM properties WHERE type = ? AND isVisible = 1 ORDER BY displayOrder ASC, createdAt DESC').all(type);
+    const typeAliasMap: Record<string, string[]> = {
+      land: ['토지'],
+      house: ['단독', '다가구', '다세대', '연립'],
+      commercial: ['근린', '상가'],
+      house_commercial: ['단독', '다가구', '다세대', '연립', '근린', '아파트'],
+      house_comm: ['단독', '다가구', '다세대', '연립', '근린', '아파트'],
+    };
+
+    let targetTypes: string[] = [];
+    const parts = type.split(',').map(s => s.trim());
+    for (const part of parts) {
+      if (typeAliasMap[part]) {
+        targetTypes.push(...typeAliasMap[part]);
+      } else {
+        targetTypes.push(part);
+      }
+    }
+    targetTypes = Array.from(new Set(targetTypes));
+    if (targetTypes.length === 0) return [];
+
+    const placeholders = targetTypes.map(() => '?').join(',');
+    const rows = db.prepare(`SELECT * FROM properties WHERE type IN (${placeholders}) AND isVisible = 1 ORDER BY displayOrder ASC, createdAt DESC`).all(...targetTypes);
     return rows.map(row => this.mapProperty(row));
   }
 

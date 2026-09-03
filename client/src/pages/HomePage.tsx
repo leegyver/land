@@ -129,8 +129,8 @@ const HomePage = () => {
     queryKey: ["/api/auctions/featured"],
   });
 
-  // 테마별 추천 매물 탭 상태 ('urgent' | 'auction' | 'land' | 'house')
-  const [selectedThemeTab, setSelectedThemeTab] = useState<'urgent' | 'auction' | 'land' | 'house'>('urgent');
+  // 테마별 추천 매물 탭 상태 ('latest' | 'urgent' | 'auction' | 'land' | 'house_comm')
+  const [selectedThemeTab, setSelectedThemeTab] = useState<'latest' | 'urgent' | 'auction' | 'land' | 'house_comm'>('latest');
 
   // D-Day 계산 헬퍼
   const getDDay = (targetDateStr: string) => {
@@ -298,8 +298,18 @@ const HomePage = () => {
               </h2>
             </div>
 
-            {/* Tab Buttons */}
+            {/* Tab Buttons (5개 테마) */}
             <div className="flex flex-wrap gap-1.5 bg-slate-200/80 p-1.5 rounded-2xl">
+              <button
+                onClick={() => setSelectedThemeTab('latest')}
+                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                  selectedThemeTab === 'latest'
+                    ? 'bg-slate-900 text-white shadow-md'
+                    : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'
+                }`}
+              >
+                ✨ 최근매물
+              </button>
               <button
                 onClick={() => setSelectedThemeTab('urgent')}
                 className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
@@ -318,7 +328,7 @@ const HomePage = () => {
                     : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'
                 }`}
               >
-                <span>🔨 반값 경매·공매</span>
+                <span>🔨 반값경매공매</span>
                 <span className="bg-red-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full">HOT</span>
               </button>
               <button
@@ -329,17 +339,17 @@ const HomePage = () => {
                     : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'
                 }`}
               >
-                🌲 추천 토지
+                🌲 토지추천
               </button>
               <button
-                onClick={() => setSelectedThemeTab('house')}
+                onClick={() => setSelectedThemeTab('house_comm')}
                 className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-                  selectedThemeTab === 'house'
+                  selectedThemeTab === 'house_comm'
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'
                 }`}
               >
-                🏡 전원주택
+                🏡 주택상가추천
               </button>
             </div>
           </div>
@@ -469,7 +479,18 @@ const HomePage = () => {
             </div>
           )}
 
-          {/* Tab 2: 초급매물 */}
+          {/* Tab: 최근매물 */}
+          {selectedThemeTab === 'latest' && (
+            <div>
+              <PropertySection
+                title=""
+                queryKey="/api/properties/latest"
+                bgColor="bg-white"
+              />
+            </div>
+          )}
+
+          {/* Tab: 초급매물 */}
           {selectedThemeTab === 'urgent' && (
             <div>
               <PropertySection
@@ -480,23 +501,23 @@ const HomePage = () => {
             </div>
           )}
 
-          {/* Tab 3: 추천 토지 */}
+          {/* Tab: 토지추천 */}
           {selectedThemeTab === 'land' && (
             <div>
               <PropertySection
                 title=""
-                queryKey="/api/properties?type=land"
+                queryKey="/api/properties/type/land"
                 bgColor="bg-white"
               />
             </div>
           )}
 
-          {/* Tab 4: 추천 주택 */}
-          {selectedThemeTab === 'house' && (
+          {/* Tab: 주택상가추천 */}
+          {selectedThemeTab === 'house_comm' && (
             <div>
               <PropertySection
                 title=""
-                queryKey="/api/properties?type=house"
+                queryKey="/api/properties/type/house_comm"
                 bgColor="bg-white"
               />
             </div>

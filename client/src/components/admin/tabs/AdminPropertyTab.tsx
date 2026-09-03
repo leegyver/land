@@ -279,13 +279,17 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
         {/* Sort Controls */}
         {isAdmin && (
           <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">진열 관리 (홈페이지 노출 순서)</h3>
+             <div className="flex items-center justify-between mb-2">
+               <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">홈페이지 테마별 진열 순서 관리</h3>
+               <span className="text-[11px] text-amber-600 font-semibold bg-amber-50 px-2 py-0.5 rounded-md">메인 탭 노출과 연동</span>
+             </div>
+             <p className="text-[11px] text-slate-400 mb-3">메인 화면의 최근매물, 초급매물 및 추천 매물에 노출되는 순서를 관리합니다.</p>
              <div className="flex flex-wrap gap-2">
-               <Button variant={sortCategory === "all" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("all")} className={sortCategory === "all" ? "bg-slate-800" : ""}>전체보기</Button>
-               <Button variant={sortCategory === "featured" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("featured")} className={sortCategory === "featured" ? "bg-orange-500 hover:bg-orange-600 text-white border-none" : "border-orange-200 text-orange-600"}>추천</Button>
-               <Button variant={sortCategory === "urgent" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("urgent")} className={sortCategory === "urgent" ? "bg-red-500 hover:bg-red-600 text-white border-none" : "border-red-200 text-red-600"}>급매</Button>
-               <Button variant={sortCategory === "negotiable" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("negotiable")} className={sortCategory === "negotiable" ? "bg-blue-500 hover:bg-blue-600 text-white border-none" : "border-blue-200 text-blue-600"}>협의</Button>
-               <Button variant={sortCategory === "longTerm" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("longTerm")} className={sortCategory === "longTerm" ? "bg-purple-500 hover:bg-purple-600 text-white border-none" : "border-purple-200 text-purple-600"}>장기</Button>
+               <Button variant={sortCategory === "all" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("all")} className={sortCategory === "all" ? "bg-slate-800 font-bold" : "text-xs font-medium"}>전체(최근등록순)</Button>
+               <Button variant={sortCategory === "urgent" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("urgent")} className={sortCategory === "urgent" ? "bg-red-600 hover:bg-red-700 text-white border-none font-bold shadow-sm" : "border-red-200 text-red-600 text-xs"}>🔥 초급매물 탭</Button>
+               <Button variant={sortCategory === "featured" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("featured")} className={sortCategory === "featured" ? "bg-orange-500 hover:bg-orange-600 text-white border-none font-bold shadow-sm" : "border-orange-200 text-orange-600 text-xs"}>⭐ 추천매물</Button>
+               <Button variant={sortCategory === "negotiable" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("negotiable")} className={sortCategory === "negotiable" ? "bg-blue-600 hover:bg-blue-700 text-white border-none font-bold shadow-sm" : "border-blue-200 text-blue-600 text-xs"}>🤝 가격협의</Button>
+               <Button variant={sortCategory === "longTerm" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("longTerm")} className={sortCategory === "longTerm" ? "bg-purple-600 hover:bg-purple-700 text-white border-none font-bold shadow-sm" : "border-purple-200 text-purple-600 text-xs"}>📈 장기투자</Button>
              </div>
              {true && (
                 <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2">
@@ -337,9 +341,9 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
           {sortCategory !== "all" && (
             <div className="bg-primary/5 text-primary px-4 py-3 text-sm font-bold border-b border-primary/10 flex items-center gap-2">
               <CheckCircle className="h-4 w-4" /> 현재 [{
-                sortCategory === 'featured' ? '추천' :
-                sortCategory === 'urgent' ? '급매' :
-                sortCategory === 'negotiable' ? '협의' : '장기'
+                sortCategory === 'urgent' ? '🔥 초급매물' :
+                sortCategory === 'featured' ? '⭐ 추천매물' :
+                sortCategory === 'negotiable' ? '🤝 가격협의' : '📈 장기투자'
               }] 정렬 모드입니다. 드래그하여 홈페이지 노출 순서를 변경하세요.
             </div>
           )}
@@ -405,10 +409,10 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
                               {formatPrice(p.price)}
                             </TableCell>
                             <TableCell>
-                              <div className="flex flex-wrap gap-1 max-w-[120px]">
+                              <div className="flex flex-wrap gap-1 max-w-[130px]">
                                 <StatusBadge active={p.isVisible} label="노출" onClick={() => toggleMutation.mutate({ id: p.id, field: 'visibility', value: !p.isVisible })} />
+                                <StatusBadge active={p.isUrgent} label="초급매" color="red" onClick={() => toggleMutation.mutate({ id: p.id, field: 'urgent', value: !p.isUrgent })} />
                                 <StatusBadge active={p.featured} label="추천" color="purple" onClick={() => toggleMutation.mutate({ id: p.id, field: 'featured', value: !p.featured })} />
-                                <StatusBadge active={p.isUrgent} label="급매" color="red" onClick={() => toggleMutation.mutate({ id: p.id, field: 'urgent', value: !p.isUrgent })} />
                                 <StatusBadge active={p.isNegotiable} label="협의" color="blue" onClick={() => toggleMutation.mutate({ id: p.id, field: 'negotiable', value: !p.isNegotiable })} />
                                 <StatusBadge active={p.isLongTerm} label="장기" color="orange" onClick={() => toggleMutation.mutate({ id: p.id, field: 'long-term', value: !p.isLongTerm })} />
                               </div>

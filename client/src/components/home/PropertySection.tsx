@@ -78,31 +78,39 @@ const PropertySection = ({ title, queryKey, bgColor = "bg-white", limit = 12 }: 
                     </div>
                 )}
 
-                <div className="relative px-0 md:px-4">
+                {/* Carousel & Controls Header */}
+                <div className="flex justify-between items-center mb-2 px-1 text-xs text-slate-500 font-medium">
+                    <span>총 <strong className="text-slate-900 font-bold">{displayProperties.length}</strong>개의 엄선 매물</span>
+                    <span className="text-[11px] text-slate-400">👉 좌우로 스크롤하여 더 많은 매물을 확인하세요</span>
+                </div>
+
+                <div className="relative px-0 md:px-2">
                     <Carousel
                         opts={{
                             align: "start",
-                            loop: true,
+                            loop: displayProperties.length > 4,
                         }}
                         plugins={[
                             Autoplay({
-                                delay: 3500,
+                                delay: 4000,
                                 stopOnInteraction: false,
                             }),
                         ]}
                         className="w-full"
                     >
-                        <CarouselContent className="">
+                        <CarouselContent className="-ml-2 md:-ml-4">
                             {displayProperties.map((property) => (
-                                <CarouselItem key={property.id} className="pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                                <CarouselItem key={property.id} className="pl-2 md:pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
                                     <PropertyCard property={property} />
                                 </CarouselItem>
                             ))}
                         </CarouselContent>
-                        <div className="hidden md:flex">
-                            <CarouselPrevious className="-left-4 border-slate-200 bg-white hover:bg-slate-100 shadow-md" />
-                            <CarouselNext className="-right-4 border-slate-200 bg-white hover:bg-slate-100 shadow-md" />
-                        </div>
+                        {displayProperties.length > 1 && (
+                            <>
+                                <CarouselPrevious className="flex -left-2 md:-left-5 h-9 w-9 border-slate-300 bg-white/95 hover:bg-slate-900 hover:text-white shadow-lg z-20 transition-all" />
+                                <CarouselNext className="flex -right-2 md:-right-5 h-9 w-9 border-slate-300 bg-white/95 hover:bg-slate-900 hover:text-white shadow-lg z-20 transition-all" />
+                            </>
+                        )}
                     </Carousel>
                 </div>
             </div>

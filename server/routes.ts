@@ -1259,7 +1259,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  const getParsedLimit = async (reqLimit: any, configKey: string, defaultLimit = 4) => {
+  const getParsedLimit = async (reqLimit: any, configKey: string, defaultLimit = 50) => {
     if (reqLimit !== undefined) {
       const l = parseInt(reqLimit as string);
       if (!isNaN(l) && l > 0) return l;

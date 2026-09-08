@@ -2,10 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { useParams, useLocation } from "wouter";
+import { useQueryClient } from "@tanstack/react-query";
 import { Loader2, ArrowLeft, Save, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ErrorBoundary } from "@/components/layout/ErrorBoundary";
+import { parseKoreanPriceToWon } from "@/lib/formatter";
 import { Card, CardContent } from "@/components/ui/card";
 import {
     Tabs,
@@ -29,6 +31,7 @@ const defaultPropertyImage = "/uploads/default-property.png";
 function PropertyFormContent() {
     const { user } = useAuth();
     const { toast } = useToast();
+    const queryClient = useQueryClient();
     const params = useParams<{ id?: string }>();
     const [, setLocation] = useLocation();
     const isEditMode = !!params.id;
@@ -336,6 +339,11 @@ function PropertyFormContent() {
             // 서버에 맞게 데이터 타입 변환하기
             const submissionData: any = {
                 ...formData,
+                price: parseKoreanPriceToWon(formData.price),
+                deposit: parseKoreanPriceToWon(formData.deposit),
+                depositAmount: parseKoreanPriceToWon(formData.depositAmount),
+                monthlyRent: parseKoreanPriceToWon(formData.monthlyRent),
+                maintenanceFee: parseKoreanPriceToWon(formData.maintenanceFee),
                 agentId: Number(formData.agentId) || user?.id || 4, // 기본값 설정
                 agent_id: Number(formData.agentId) || user?.id || 4, // DB 호환
                 totalFloors: Number(formData.totalFloors || 0),
@@ -382,6 +390,17 @@ function PropertyFormContent() {
             });
 
             if (response.ok) {
+                // React Query 캐시 무효화로 매물 목록 및 홈페이지 즉시 갱신
+                queryClient.invalidateQueries({ queryKey: ["/api/properties"] });
+                queryClient.invalidateQueries({ queryKey: ["/api/admin/properties"] });
+                if (params.id) {
+                    queryClient.invalidateQueries({ queryKey: [`/api/properties/${params.id}`] });
+                }
+                queryClient.refetchQueries({ 
+                    predicate: (query) => typeof query.queryKey[0] === 'string' && query.queryKey[0].startsWith('/api/properties'),
+                    type: 'all'
+                });
+
                 toast({
                     title: "성공",
                     description: isEditMode ? "부동산 정보가 수정되었습니다" : "부동산 정보가 등록되었습니다",

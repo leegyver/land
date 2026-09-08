@@ -2140,6 +2140,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return String(value).replace(/,/g, '');
         };
 
+        // 한글 금액(억, 천, 만 등) 및 쉼표 표기를 '원' 단위 순수 숫자 문자열로 변환하는 헬퍼
+        const parsePriceToWon = (value: any): string | null => {
+          if (value === "" || value === null || value === undefined) return null;
+          const str = String(value).trim().replace(/,/g, '');
+          if (!str) return null;
+          if (/^\d+$/.test(str)) return str;
+
+          let totalWon = 0;
+          let matched = false;
+          const ukMatch = str.match(/([\d.]+)\s*억/);
+          if (ukMatch) {
+            matched = true;
+            totalWon += Math.round(parseFloat(ukMatch[1]) * 100000000);
+          }
+          const cheonMatch = str.match(/(\d+)\s*천(?:\s*만(?:원)?)?/);
+          if (cheonMatch) {
+            matched = true;
+            totalWon += parseInt(cheonMatch[1], 10) * 10000000;
+          }
+          const manMatch = str.match(/(\d+)\s*만(?:원)?/);
+          if (manMatch) {
+            matched = true;
+            totalWon += parseInt(manMatch[1], 10) * 10000;
+          }
+          const wonMatch = str.match(/(\d+)\s*원$/);
+          if (wonMatch) {
+            matched = true;
+            totalWon += parseInt(wonMatch[1], 10);
+          }
+          if (matched && totalWon > 0) return String(totalWon);
+          const digitsOnly = str.replace(/[^\d]/g, '');
+          return digitsOnly || null;
+        };
+
         // 다중 이미지 URLs 배열을 처리
         // imageUrls가 있으면 그대로 사용하고, 없으면 기본값인 빈 배열을 사용
         // 타입을 변환하지 않고 원래 타입 그대로 유지
@@ -2168,8 +2202,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           address: req.body.address || "주소 미입력",
           district: req.body.district || "기타지역",
           imageUrl: req.body.imageUrl || (Array.isArray(req.body.imageUrls) && req.body.imageUrls.length > 0 ? req.body.imageUrls[0] : "/uploads/default-property.png"),
-          // 숫자 필드들 - 쉼표 제거 후 처리
-          price: stripCommas(req.body.price) || "0",
+          // 숫자 필드들 - 한글 및 쉼표 파싱 후 처리
+          price: parsePriceToWon(req.body.price) || "0",
           size: stripCommas(req.body.size) || "0",
           // agentId 처리 - 필수 필드이므로 기본값 설정 (database에서는 agent_id로 저장됨)
           agentId: (() => {
@@ -2180,10 +2214,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           privateArea: stripCommas(req.body.privateArea),
           floor: req.body.floor === "" ? null : (req.body.floor ? parseInt(req.body.floor) || null : null),
           totalFloors: req.body.totalFloors === "" ? null : (req.body.totalFloors ? parseInt(req.body.totalFloors) || null : null),
-          deposit: stripCommas(req.body.deposit),
-          depositAmount: stripCommas(req.body.depositAmount),
-          monthlyRent: stripCommas(req.body.monthlyRent),
-          maintenanceFee: stripCommas(req.body.maintenanceFee),
+          deposit: parsePriceToWon(req.body.deposit),
+          depositAmount: parsePriceToWon(req.body.depositAmount),
+          monthlyRent: parsePriceToWon(req.body.monthlyRent),
+          maintenanceFee: parsePriceToWon(req.body.maintenanceFee),
           // 공동중개 체크 안되어 있으면(false/undefined) 담당자를 '이가이버'로 자동 설정
           agentName: (!req.body.coListing) ? "이가이버" : (req.body.agentName || ""),
           // Realtor logic
@@ -2199,6 +2233,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const validatedData = insertPropertySchema.parse(processedData);
         const property = await storage.createProperty(validatedData);
+        memoryCache.deleteByPrefix("properties_");
         res.status(201).json(property);
       } catch (e) {
         if (e instanceof z.ZodError) {
@@ -2244,6 +2279,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return String(value).replace(/,/g, '');
       };
 
+      // 한글 금액(억, 천, 만 등) 및 쉼표 표기를 '원' 단위 순수 숫자 문자열로 변환하는 헬퍼
+      const parsePriceToWon = (value: any): string | null => {
+        if (value === "" || value === null || value === undefined) return null;
+        const str = String(value).trim().replace(/,/g, '');
+        if (!str) return null;
+        if (/^\d+$/.test(str)) return str;
+
+        let totalWon = 0;
+        let matched = false;
+        const ukMatch = str.match(/([\d.]+)\s*억/);
+        if (ukMatch) {
+          matched = true;
+          totalWon += Math.round(parseFloat(ukMatch[1]) * 100000000);
+        }
+        const cheonMatch = str.match(/(\d+)\s*천(?:\s*만(?:원)?)?/);
+        if (cheonMatch) {
+          matched = true;
+          totalWon += parseInt(cheonMatch[1], 10) * 10000000;
+        }
+        const manMatch = str.match(/(\d+)\s*만(?:원)?/);
+        if (manMatch) {
+          matched = true;
+          totalWon += parseInt(manMatch[1], 10) * 10000;
+        }
+        const wonMatch = str.match(/(\d+)\s*원$/);
+        if (wonMatch) {
+          matched = true;
+          totalWon += parseInt(wonMatch[1], 10);
+        }
+        if (matched && totalWon > 0) return String(totalWon);
+        const digitsOnly = str.replace(/[^\d]/g, '');
+        return digitsOnly || null;
+      };
+
       const user = req.user as Express.User;
       const isAdmin = ["admin", "master"].includes(user.role as string);
       const isPaidRealtor = user.role === 'realtor' && ["monthly", "yearly", "approved", "lifetime"].includes(user.subscriptionTier as string);
@@ -2276,9 +2345,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         address: req.body.address || existingProperty.address || "주소 미입력",
         district: req.body.district || existingProperty.district || "기타지역",
         imageUrl: req.body.imageUrl || (Array.isArray(req.body.imageUrls) && req.body.imageUrls.length > 0 ? req.body.imageUrls[0] : existingProperty.imageUrl || "/uploads/default-property.png"),
-        // 숫자 필드들 - 쉼표 제거 후 처리
-        price: stripCommas(req.body.price) || existingProperty.price || "0",
-        size: stripCommas(req.body.size) || existingProperty.size || "0",
+        // 숫자 필드들 - 한글 및 쉼표 파싱 후 처리 (명시적으로 요청에 포함된 경우 기존 값 대신 사용자 입력 반영)
+        price: req.body.price !== undefined
+          ? (parsePriceToWon(req.body.price) || "0")
+          : (existingProperty.price || "0"),
+        size: req.body.size !== undefined
+          ? (stripCommas(req.body.size) || "0")
+          : (existingProperty.size || "0"),
         // agentId 처리 - 필수 필드이므로 기본값 설정 (database에서는 agent_id로 저장됨)
         agentId: (() => {
           const raw = Number(req.body.agentId || req.body.agent_id || existingProperty.agentId);
@@ -2288,10 +2361,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         privateArea: stripCommas(req.body.privateArea),
         floor: req.body.floor === "" ? null : (req.body.floor ? parseInt(req.body.floor) || null : null),
         totalFloors: req.body.totalFloors === "" ? null : (req.body.totalFloors ? parseInt(req.body.totalFloors) || null : null),
-        deposit: stripCommas(req.body.deposit),
-        depositAmount: stripCommas(req.body.depositAmount),
-        monthlyRent: stripCommas(req.body.monthlyRent),
-        maintenanceFee: stripCommas(req.body.maintenanceFee),
+        deposit: req.body.deposit !== undefined ? parsePriceToWon(req.body.deposit) : existingProperty.deposit,
+        depositAmount: req.body.depositAmount !== undefined ? parsePriceToWon(req.body.depositAmount) : existingProperty.depositAmount,
+        monthlyRent: req.body.monthlyRent !== undefined ? parsePriceToWon(req.body.monthlyRent) : existingProperty.monthlyRent,
+        maintenanceFee: req.body.maintenanceFee !== undefined ? parsePriceToWon(req.body.maintenanceFee) : existingProperty.maintenanceFee,
         // 공동중개 체크 안되어 있고(false 또는 undefined) agentName이 없으면 '이가이버'로 자동 설정
         // 이미 agentName이 "이가이버 공인중개사" 등으로 들어오면 유지함
         agentName: (req.body.coListing === false && (!req.body.agentName || req.body.agentName.trim() === ""))
@@ -2303,6 +2376,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const validatedData = insertPropertySchema.partial().parse(processedData);
       const updatedProperty = await storage.updateProperty(id, validatedData);
+
+      // 캐시 무효화 (홈페이지 및 관리자 목록에 즉시 반영)
+      memoryCache.deleteByPrefix("properties_");
 
       if (updatedProperty) {
         console.log(`[API] Property ${id} successfully updated.`);

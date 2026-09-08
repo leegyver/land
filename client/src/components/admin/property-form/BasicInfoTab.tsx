@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { PropertyFormProps } from "./types";
 import { propertyTypeOptions, allLocations } from "./constants";
+import { formatKoreanPrice } from "@/lib/formatter";
 
 interface BasicInfoTabProps extends PropertyFormProps {
     user: any;
@@ -205,14 +206,21 @@ export const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="price">매매가</Label>
+                        <div className="flex justify-between items-center">
+                            <Label htmlFor="price">매매가 (원)</Label>
+                            {formatKoreanPrice(formData.price) && (
+                                <span className="text-xs font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded">
+                                    {formatKoreanPrice(formData.price)}
+                                </span>
+                            )}
+                        </div>
                         <Input
                             id="price"
                             name="price"
                             type="text"
                             value={formData.price}
                             onChange={handleChange}
-                            placeholder="선택사항"
+                            placeholder="예: 350000000 (또는 3억 5천)"
                         />
                     </div>
 

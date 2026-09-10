@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
+import { useQueryClient, useIsFetching } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,28 +28,37 @@ import { Property, News, User, NewsletterSubscription } from "@shared/schema";
 export default function AdminPage() {
   const { user } = useAuth();
   const [location] = useLocation();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("stats");
-  const [skipCache, setSkipCache] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
+  // 방문한 탭만 추적하여 필요 시에만 백엔드 API 요청 (초기 진입 부하 대폭 감소)
+  const [visitedTabs, setVisitedTabs] = useState<string[]>(() => ["stats"]);
 
   // URL의 ?tab= 파라미터를 읽어 활성 탭 동기화
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const tabParam = searchParams.get("tab");
-    if (tabParam) {
-      setActiveTab(tabParam);
-    } else if (user && user.role !== "admin" && user.role !== "master") {
-      setActiveTab("properties");
-    }
+    const targetTab = tabParam || ((user && user.role !== "admin" && user.role !== "master") ? "properties" : "stats");
+    setActiveTab(targetTab);
+    setVisitedTabs(prev => prev.includes(targetTab) ? prev : [...prev, targetTab]);
   }, [location, user]);
 
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab);
+    setVisitedTabs(prev => prev.includes(newTab) ? prev : [...prev, newTab]);
+  };
+
+  // 해당 탭을 열었을 때만 쿼리 활성화 (불필요한 동시 호출 방지)
   const { 
     data: properties = [], 
     isLoading: isLoadingProperties, 
     isError: isErrorProperties, 
     error: errorProperties, 
     refetch: refetchProperties 
-  } = useAdminQuery<Property>(["/api/admin/properties", { skipCache }]);
+  } = useAdminQuery<Property>(["/api/admin/properties"], { 
+    enabled: visitedTabs.includes("properties") 
+  });
 
   const { 
     data: news = [], 
@@ -56,7 +66,9 @@ export default function AdminPage() {
     isError: isErrorNews, 
     error: errorNews, 
     refetch: refetchNews 
-  } = useAdminQuery<News>(["/api/news"]);
+  } = useAdminQuery<News>(["/api/news"], { 
+    enabled: visitedTabs.includes("news") 
+  });
 
   const { 
     data: users = [], 
@@ -64,7 +76,9 @@ export default function AdminPage() {
     isError: isErrorUsers, 
     error: errorUsers, 
     refetch: refetchUsers 
-  } = useAdminQuery<User>(["/api/admin/users"], { enabled: ["admin", "master"].includes(user?.role as string) });
+  } = useAdminQuery<User>(["/api/admin/users"], { 
+    enabled: visitedTabs.includes("users") && ["admin", "master"].includes(user?.role as string) 
+  });
 
   const {
     data: subscriptions = [],
@@ -72,14 +86,40 @@ export default function AdminPage() {
     isError: isErrorSubs,
     error: errorSubs,
     refetch: refetchSubs
-  } = useAdminQuery<NewsletterSubscription>(["/api/admin/newsletter"], { enabled: ["admin", "master"].includes(user?.role as string) });
+  } = useAdminQuery<NewsletterSubscription>(["/api/admin/newsletter"], { 
+    enabled: visitedTabs.includes("newsletter") && ["admin", "master"].includes(user?.role as string) 
+  });
 
-  const handleRefresh = () => {
-    setSkipCache(true);
-    refetchProperties();
-    refetchNews();
-    refetchUsers();
-    refetchSubs();
+  // 현재 진행 중인 API 요청 감지 (로딩 스피너 및 중복 클릭 방지)
+  const isFetchingCount = useIsFetching();
+  const isRefreshing = isFetchingCount > 0;
+
+  // 현재 활성화된 탭에 맞춰 효율적으로 데이터 새로고침
+  const handleRefresh = async () => {
+    if (activeTab === "stats") {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/notifications"] }),
+      ]);
+    } else if (activeTab === "properties") {
+      await queryClient.invalidateQueries({ queryKey: ["/api/admin/properties"] });
+    } else if (activeTab === "news") {
+      await queryClient.invalidateQueries({ queryKey: ["/api/news"] });
+    } else if (activeTab === "users") {
+      await queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+    } else if (activeTab === "newsletter") {
+      await queryClient.invalidateQueries({ queryKey: ["/api/admin/newsletter"] });
+    } else if (activeTab === "auctions") {
+      await queryClient.invalidateQueries({ queryKey: ["/api/auctions"] });
+    } else if (activeTab === "config") {
+      await queryClient.invalidateQueries({ queryKey: ["/api/admin/config"] });
+    } else if (activeTab === "banners") {
+      await queryClient.invalidateQueries({ queryKey: ["/api/banners"] });
+    } else if (activeTab === "popups") {
+      await queryClient.invalidateQueries({ queryKey: ["/api/popups"] });
+    } else {
+      await queryClient.invalidateQueries({ queryKey: ["/api"] });
+    }
   };
 
   return (
@@ -102,15 +142,16 @@ export default function AdminPage() {
             size="lg"
             className="rounded-xl border-slate-200 shadow-sm hover:bg-slate-50 transition-all flex items-center gap-2"
             onClick={handleRefresh}
+            disabled={isRefreshing}
           >
-            <RefreshCw className={`h-4 w-4 ${isLoadingProperties ? 'animate-spin' : ''}`} />
-            데이터 새로고침
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? '데이터 동기화 중...' : '데이터 새로고침'}
           </Button>
         </div>
       </div>
 
       {/* Main Content Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="bg-slate-100/80 p-1 rounded-2xl border border-slate-200 shadow-inner h-14 w-full md:w-auto flex overflow-x-auto whitespace-nowrap">
           {(user?.role === "admin" || user?.role === "master") && (
             <TabsTrigger value="stats" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">통계 요약</TabsTrigger>

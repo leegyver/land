@@ -2233,16 +2233,21 @@ export class SQLiteStorage implements IStorage {
         SELECT date('now', '+9 hours', '-' || (? - 1) || ' days')
         UNION ALL
         SELECT date(date, '+1 day') FROM dates WHERE date < date('now', '+9 hours')
+      ),
+      recent_visits AS (
+        SELECT date(createdAt, '+9 hours') as vdate, ip, id
+        FROM visit_logs
+        WHERE createdAt >= datetime('now', '-' || (? + 1) || ' days')
       )
       SELECT 
         d.date,
         COUNT(DISTINCT v.ip) as visitors,
         COUNT(v.id) as views
       FROM dates d
-      LEFT JOIN visit_logs v ON date(v.createdAt, '+9 hours') = d.date
+      LEFT JOIN recent_visits v ON v.vdate = d.date
       GROUP BY d.date
       ORDER BY d.date ASC
-    `).all(days) as any[];
+    `).all(days, days) as any[];
 
     return rows.map(r => ({
       date: r.date,
@@ -2256,10 +2261,16 @@ export class SQLiteStorage implements IStorage {
     posts: { id: number; title: string; views: number }[];
   }> {
     let properties = db.prepare(`
-      SELECT p.id, p.title, COUNT(v.id) as views 
+      WITH recent_logs AS (
+        SELECT path, COUNT(*) as views
+        FROM visit_logs
+        WHERE createdAt >= datetime('now', '-7 days')
+          AND (path LIKE '/properties/%' OR path LIKE '/api/properties/%')
+        GROUP BY path
+      )
+      SELECT p.id, p.title, SUM(r.views) as views 
       FROM properties p
-      JOIN visit_logs v ON v.path IN ('/properties/' || p.id, '/api/properties/' || p.id)
-      WHERE v.createdAt >= datetime('now', '-7 days')
+      JOIN recent_logs r ON r.path IN ('/properties/' || p.id, '/api/properties/' || p.id)
       GROUP BY p.id
       ORDER BY views DESC 
       LIMIT 5
@@ -2275,10 +2286,16 @@ export class SQLiteStorage implements IStorage {
     }
 
     let posts = db.prepare(`
-      SELECT p.id, p.title, COUNT(v.id) as views 
+      WITH recent_logs AS (
+        SELECT path, COUNT(*) as views
+        FROM visit_logs
+        WHERE createdAt >= datetime('now', '-7 days')
+          AND (path LIKE '/community/%' OR path LIKE '/api/posts/%' OR path LIKE '/posts/%')
+        GROUP BY path
+      )
+      SELECT p.id, p.title, SUM(r.views) as views 
       FROM posts p
-      JOIN visit_logs v ON v.path IN ('/community/' || p.id, '/api/posts/' || p.id, '/posts/' || p.id)
-      WHERE v.createdAt >= datetime('now', '-7 days')
+      JOIN recent_logs r ON r.path IN ('/community/' || p.id, '/api/posts/' || p.id, '/posts/' || p.id)
       GROUP BY p.id
       ORDER BY views DESC 
       LIMIT 5
@@ -2327,7 +2344,7 @@ export class SQLiteStorage implements IStorage {
     const todayVisitors = db.prepare(`
       SELECT COUNT(DISTINCT ip) as count 
       FROM visit_logs 
-      WHERE date(createdAt, '+9 hours') = date('now', '+9 hours')
+      WHERE createdAt >= datetime('now', '+9 hours', 'start of day', '-9 hours')
     `).get() as any;
 
     const totalVisitors = db.prepare(`

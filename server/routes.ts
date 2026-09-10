@@ -940,7 +940,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated() || !['admin', 'master'].includes((req.user as any)?.role)) {
       return res.status(403).json({ error: '관리자만 이용 가능합니다.' });
     }
+    const skipCache = req.query.skipCache === 'true';
+    const cacheKey = "admin_stats_overview";
+    if (!skipCache) {
+      const cached = memoryCache.get(cacheKey);
+      if (cached) return res.json(cached);
+    }
     const stats = await storage.getOverviewStats();
+    memoryCache.set(cacheKey, stats, 60 * 1000);
     res.json(stats);
   });
 
@@ -948,8 +955,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated() || !['admin', 'master'].includes((req.user as any)?.role)) {
       return res.status(403).json({ error: '관리자만 이용 가능합니다.' });
     }
+    const skipCache = req.query.skipCache === 'true';
     const days = parseInt(req.query.days as string) || 7;
+    const cacheKey = `admin_stats_daily_${days}`;
+    if (!skipCache) {
+      const cached = memoryCache.get(cacheKey);
+      if (cached) return res.json(cached);
+    }
     const stats = await storage.getVisitStats(days);
+    memoryCache.set(cacheKey, stats, 60 * 1000);
     res.json(stats);
   });
 
@@ -960,8 +974,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "접근 권한이 없습니다." });
       }
 
+      const skipCache = req.query.skipCache === 'true';
       const limit = parseInt(req.query.limit as string) || 10;
+      const cacheKey = `admin_stats_keywords_${limit}`;
+      if (!skipCache) {
+        const cached = memoryCache.get(cacheKey);
+        if (cached) return res.json(cached);
+      }
       const stats = await storage.getTopKeywords(limit);
+      memoryCache.set(cacheKey, stats, 60 * 1000);
       res.json(stats);
     } catch (error) {
       console.error("키워드 통계 조회 오류:", error);
@@ -973,7 +994,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated() || !['admin', 'master'].includes((req.user as any)?.role)) {
       return res.status(403).json({ error: '관리자만 이용 가능합니다.' });
     }
+    const skipCache = req.query.skipCache === 'true';
+    const cacheKey = "admin_stats_popular";
+    if (!skipCache) {
+      const cached = memoryCache.get(cacheKey);
+      if (cached) return res.json(cached);
+    }
     const stats = await storage.getPopularStats();
+    memoryCache.set(cacheKey, stats, 60 * 1000);
     res.json(stats);
   });
 
@@ -981,7 +1009,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated() || !['admin', 'master'].includes((req.user as any)?.role)) {
       return res.status(403).json({ error: '관리자만 이용 가능합니다.' });
     }
+    const skipCache = req.query.skipCache === 'true';
+    const cacheKey = "admin_stats_detailed";
+    if (!skipCache) {
+      const cached = memoryCache.get(cacheKey);
+      if (cached) return res.json(cached);
+    }
     const stats = await storage.getDetailedStats();
+    memoryCache.set(cacheKey, stats, 60 * 1000);
     res.json(stats);
   });
 
@@ -1205,6 +1240,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const filterDealType = req.query.dealType as string;
       const filterAgent = req.query.agent as string;
 
+      const skipCache = req.query.skipCache === 'true';
+      const isUnfiltered = (!filterType || filterType === 'all') && 
+                           (!filterDistrict || filterDistrict === 'all') && 
+                           (!filterDealType || filterDealType === 'all') && 
+                           (!filterAgent || filterAgent === 'all');
+      const cacheKey = isAdmin ? "properties_admin_all" : `properties_admin_owner_${user.id}`;
+
+      if (!skipCache && isUnfiltered) {
+        const cached = memoryCache.get(cacheKey);
+        if (cached) {
+          return res.json(cached);
+        }
+      }
+
       let properties: any[] = [];
       console.log(`[API] /api/admin/properties: user=${user.username}, role=${user.role}, isAdmin=${isAdmin}, isRealtor=${isRealtor}`);
       
@@ -1250,6 +1299,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 페이징 처리된 매물 (Drag & Drop 순서 변경 기준이 displayOrder이므로 정렬 유지)
       const sortedProperties = filteredProperties.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
       const paginatedProperties = sortedProperties.slice(offset, offset + limit);
+
+      if (!skipCache && isUnfiltered) {
+        memoryCache.set(cacheKey, sortedProperties, 60 * 1000);
+      }
 
       // sortedProperties를 직접 반환 (프론트엔드 호환성 및 클라이언트 사이드 필터링 지원)
       res.json(sortedProperties);

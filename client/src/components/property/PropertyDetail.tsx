@@ -308,12 +308,12 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
       : `${property.district}${property.address ? ` ${property.address}` : ""}`
     : "";
 
-  // 제목/이미지 보강 로직 (대표님 요청사항)
-  const displayTitle = (property.title === "제목을 입력하세요" || !property.title || property.title.length > 50) 
-    ? (property.description && property.description.length > 5 && property.description.length < 50 
+  // 제목 출력 로직 (입력한 제목 우선 표시)
+  const displayTitle = (property.title && property.title.trim() !== "" && property.title !== "제목을 입력하세요")
+    ? property.title
+    : (property.description && property.description.length > 5 && property.description.length < 50 
         ? property.description 
-        : `${property.type} - ${property.district} ${property.address || ""}`)
-    : property.title;
+        : `${property.type || "매물"} - ${property.district || ""}`);
 
   return (
     <div className="container mx-auto px-4 py-8">

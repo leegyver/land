@@ -212,8 +212,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Exclude common static file extensions and system paths
     const isStatic = req.url.match(/\.(png|jpg|jpeg|gif|svg|ico|css|js|woff|woff2|ttf|map)$/i);
     const isExcluded = req.url.startsWith('/uploads') || 
-                       req.url.startsWith('/api/admin') || 
-                       req.url.startsWith('/api/status') ||
+                       req.url.startsWith('/api') || 
+                       req.url.startsWith('/assets') ||
+                       req.url.startsWith('/favicon') ||
                        req.url.startsWith('/@');
 
     if (req.method === 'GET' && !isStatic && !isExcluded) {

@@ -102,26 +102,24 @@ export default function AdminPage() {
 
   const { toast } = useToast();
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
-  const isFetchingCount = useIsFetching();
-  const isRefreshing = isFetchingCount > 0 || isManualRefreshing;
+  // 전역 백그라운드 폴링(알림 5초 주기 등)과 분리하여 실제 새로고침 시에만 동기화 중 표시
+  const isRefreshing = isManualRefreshing;
 
   // 현재 활성화된 탭에 맞춰 효율적으로 데이터 새로고침
   const handleRefresh = async () => {
     setIsManualRefreshing(true);
     try {
       // 1. 백엔드 메모리 캐시 강제 무효화
-      try {
-        await apiRequest("POST", "/api/admin/clear-cache");
-      } catch (cacheErr) {
+      await apiRequest("POST", "/api/admin/clear-cache").catch((cacheErr) => {
         console.warn("Backend cache clear notice:", cacheErr);
-      }
+      });
 
       // 2. 현재 활성화된 탭에 맞춰 쿼리 강제 재조회 (predicate 매칭)
       if (activeTab === "stats") {
         await queryClient.refetchQueries({
           predicate: (query) => {
             const key = query.queryKey[0];
-            return typeof key === "string" && (key.startsWith("/api/admin/stats") || key === "/api/admin/notifications");
+            return typeof key === "string" && key.startsWith("/api/admin/stats");
           },
         });
       } else if (activeTab === "properties") {

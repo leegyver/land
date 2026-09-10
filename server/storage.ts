@@ -2234,18 +2234,18 @@ export class SQLiteStorage implements IStorage {
         UNION ALL
         SELECT date(date, '+1 day') FROM dates WHERE date < date('now', '+9 hours')
       ),
-      recent_visits AS (
-        SELECT date(createdAt, '+9 hours') as vdate, ip, id
+      aggregated AS (
+        SELECT date(createdAt, '+9 hours') as vdate, COUNT(DISTINCT ip) as visitors, COUNT(*) as views
         FROM visit_logs
         WHERE createdAt >= datetime('now', '-' || (? + 1) || ' days')
+        GROUP BY vdate
       )
       SELECT 
         d.date,
-        COUNT(DISTINCT v.ip) as visitors,
-        COUNT(v.id) as views
+        COALESCE(a.visitors, 0) as visitors,
+        COALESCE(a.views, 0) as views
       FROM dates d
-      LEFT JOIN recent_visits v ON v.vdate = d.date
-      GROUP BY d.date
+      LEFT JOIN aggregated a ON a.vdate = d.date
       ORDER BY d.date ASC
     `).all(days, days) as any[];
 
@@ -2343,7 +2343,7 @@ export class SQLiteStorage implements IStorage {
   }> {
     const todayVisitors = db.prepare(`
       SELECT COUNT(DISTINCT ip) as count 
-      FROM visit_logs 
+      FROM visit_logs INDEXED BY idx_visit_logs_created_at_ip
       WHERE createdAt >= datetime('now', '+9 hours', 'start of day', '-9 hours')
     `).get() as any;
 
@@ -2423,8 +2423,8 @@ export class SQLiteStorage implements IStorage {
           ELSE 'Other'
         END as source,
         COUNT(*) as count 
-      FROM visit_logs 
-      WHERE createdAt >= datetime('now', '-30 days')
+      FROM visit_logs INDEXED BY idx_visit_logs_created_at
+      WHERE createdAt >= datetime('now', '-14 days')
       GROUP BY source 
       ORDER BY count DESC 
       LIMIT 5
@@ -2437,8 +2437,8 @@ export class SQLiteStorage implements IStorage {
           ELSE 'Desktop'
         END as device,
         COUNT(*) as count 
-      FROM visit_logs 
-      WHERE createdAt >= datetime('now', '-30 days')
+      FROM visit_logs INDEXED BY idx_visit_logs_created_at
+      WHERE createdAt >= datetime('now', '-14 days')
       GROUP BY device
     `).all() as any[];
 

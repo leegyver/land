@@ -2424,6 +2424,7 @@ export class SQLiteStorage implements IStorage {
         END as source,
         COUNT(*) as count 
       FROM visit_logs 
+      WHERE createdAt >= datetime('now', '-30 days')
       GROUP BY source 
       ORDER BY count DESC 
       LIMIT 5
@@ -2437,6 +2438,7 @@ export class SQLiteStorage implements IStorage {
         END as device,
         COUNT(*) as count 
       FROM visit_logs 
+      WHERE createdAt >= datetime('now', '-30 days')
       GROUP BY device
     `).all() as any[];
 

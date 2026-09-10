@@ -947,7 +947,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (cached) return res.json(cached);
     }
     const stats = await storage.getOverviewStats();
-    memoryCache.set(cacheKey, stats, 60 * 1000);
+    memoryCache.set(cacheKey, stats, 5 * 60 * 1000);
     res.json(stats);
   });
 
@@ -963,7 +963,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (cached) return res.json(cached);
     }
     const stats = await storage.getVisitStats(days);
-    memoryCache.set(cacheKey, stats, 60 * 1000);
+    memoryCache.set(cacheKey, stats, 5 * 60 * 1000);
     res.json(stats);
   });
 
@@ -982,7 +982,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (cached) return res.json(cached);
       }
       const stats = await storage.getTopKeywords(limit);
-      memoryCache.set(cacheKey, stats, 60 * 1000);
+      memoryCache.set(cacheKey, stats, 5 * 60 * 1000);
       res.json(stats);
     } catch (error) {
       console.error("키워드 통계 조회 오류:", error);
@@ -1001,7 +1001,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (cached) return res.json(cached);
     }
     const stats = await storage.getPopularStats();
-    memoryCache.set(cacheKey, stats, 60 * 1000);
+    memoryCache.set(cacheKey, stats, 5 * 60 * 1000);
     res.json(stats);
   });
 
@@ -1016,8 +1016,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (cached) return res.json(cached);
     }
     const stats = await storage.getDetailedStats();
-    memoryCache.set(cacheKey, stats, 60 * 1000);
+    memoryCache.set(cacheKey, stats, 5 * 60 * 1000);
     res.json(stats);
+  });
+
+  // 관리자 캐시 강제 초기화 API (데이터 새로고침 시 호출)
+  app.post("/api/admin/clear-cache", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !['admin', 'master', 'realtor'].includes((req.user as any)?.role)) {
+        return res.status(403).json({ error: '관리자 권한이 필요합니다.' });
+      }
+      memoryCache.deleteByPrefix("properties_");
+      memoryCache.deleteByPrefix("admin_stats_");
+      memoryCache.deleteByPrefix("news_");
+      memoryCache.deleteByPrefix("banners_");
+      memoryCache.deleteByPrefix("popups_");
+      console.log(`[API] Admin cache cleared by user=${(req.user as any)?.username}`);
+      res.json({ success: true, message: "관리자 캐시가 초기화되었습니다." });
+    } catch (error) {
+      console.error("Cache clear failed:", error);
+      res.status(500).json({ error: "캐시 초기화 실패" });
+    }
   });
 
   // --- Site Config APIs ---

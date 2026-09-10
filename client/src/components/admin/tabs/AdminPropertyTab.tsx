@@ -151,9 +151,8 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: ["/api/admin/properties"] });
 
-      // Snapshot the previous state (find exact match of cache array)
-      const queryParams = { skipCache: false };
-      const cacheKey = ["/api/admin/properties", queryParams];
+      // Snapshot the previous state
+      const cacheKey = ["/api/admin/properties"];
       const previousProperties = queryClient.getQueryData(cacheKey);
 
       // Optimistically update the cache

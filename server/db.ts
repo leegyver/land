@@ -20,6 +20,8 @@ try {
     CREATE INDEX IF NOT EXISTS idx_visit_logs_path ON visit_logs(path);
     CREATE INDEX IF NOT EXISTS idx_visit_logs_ip ON visit_logs(ip);
     CREATE INDEX IF NOT EXISTS idx_visit_logs_keyword ON visit_logs(keyword);
+    CREATE INDEX IF NOT EXISTS idx_visit_logs_created_at_ip ON visit_logs(createdAt, ip);
+    CREATE INDEX IF NOT EXISTS idx_visit_logs_created_at_path ON visit_logs(createdAt, path);
     CREATE INDEX IF NOT EXISTS idx_properties_is_visible ON properties(isVisible);
     CREATE INDEX IF NOT EXISTS idx_properties_display_order ON properties(displayOrder);
     CREATE INDEX IF NOT EXISTS idx_properties_created_at ON properties(createdAt);

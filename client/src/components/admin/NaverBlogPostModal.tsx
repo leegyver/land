@@ -48,6 +48,9 @@ export function NaverBlogPostModal({
   const [geminiKeyInput, setGeminiKeyInput] = useState("");
   const [isSavingConfig, setIsSavingConfig] = useState(false);
   const [isOpeningLogin, setIsOpeningLogin] = useState(false);
+  const [nidAutInput, setNidAutInput] = useState("");
+  const [nidSesInput, setNidSesInput] = useState("");
+  const [isSavingCookies, setIsSavingCookies] = useState(false);
 
   // 원고 데이터
   const [title, setTitle] = useState("");
@@ -150,6 +153,40 @@ export function NaverBlogPostModal({
       });
     } finally {
       setIsSavingConfig(false);
+    }
+  };
+
+  // 수동 쿠키 등록
+  const handleSaveCookies = async () => {
+    if (!nidAutInput.trim() || !nidSesInput.trim()) {
+      toast({
+        title: "쿠키 입력 필요",
+        description: "NID_AUT와 NID_SES 값을 모두 입력해주세요.",
+        variant: "destructive"
+      });
+      return;
+    }
+    setIsSavingCookies(true);
+    try {
+      await apiRequest("POST", "/api/admin/naver-blog/save-cookies", {
+        nidAut: nidAutInput.trim(),
+        nidSes: nidSesInput.trim()
+      });
+      toast({
+        title: "네이버 쿠키 저장 완료!",
+        description: "로그인 세션이 등록되었습니다. 이제 블로그로 바로 발행하실 수 있습니다."
+      });
+      fetchStatus();
+      setNidAutInput("");
+      setNidSesInput("");
+    } catch (err: any) {
+      toast({
+        title: "쿠키 저장 실패",
+        description: err.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsSavingCookies(false);
     }
   };
 
@@ -345,36 +382,85 @@ export function NaverBlogPostModal({
               </div>
             </div>
 
-            <div className="pt-2 flex items-center justify-between border-t border-slate-200">
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 text-xs border-[#03C75A] text-[#03C75A] hover:bg-emerald-50"
-                  onClick={handleOpenLogin}
-                  disabled={isOpeningLogin}
-                >
-                  {isOpeningLogin ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />
-                  ) : (
-                    <LogIn className="w-3.5 h-3.5 mr-1" />
-                  )}
-                  네이버 브라우저로 1회 로그인하기
-                </Button>
-                <span className="text-[11px] text-slate-500">
-                  (브라우저가 뜨면 로그인/2단계 인증 완료 시 세션이 자동 저장됩니다)
-                </span>
-              </div>
-
+            <div className="flex justify-end pt-1">
               <Button
                 size="sm"
-                className="h-8 text-xs"
+                className="h-8 text-xs font-bold"
                 onClick={handleSaveConfig}
                 disabled={isSavingConfig}
               >
                 {isSavingConfig ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
-                설정 저장
+                기본 설정 저장
               </Button>
+            </div>
+
+            {/* 네이버 로그인 세션 등록 섹션 */}
+            <div className="pt-3 border-t border-slate-200 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+                  <Key className="w-3.5 h-3.5 text-[#03C75A]" />
+                  네이버 로그인 세션 등록 (최초 1회만 필요)
+                </span>
+                {status?.sessionExists && (
+                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 text-[10px] font-bold border-emerald-300">
+                    현재 세션 정상 연결됨
+                  </Badge>
+                )}
+              </div>
+
+              {/* 방법 1: 쿠키 직접 입력 (가장 간단하고 빠름) */}
+              <div className="p-3 bg-white rounded-lg border border-slate-200 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-700">⚡ 방법 1: 네이버 쿠키 직접 입력 (추천)</span>
+                  <span className="text-[11px] text-slate-400">naver.com 로그인 상태에서 복사</span>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-[11px] text-slate-500 font-semibold">NID_AUT 값</Label>
+                    <Input
+                      value={nidAutInput}
+                      onChange={(e) => setNidAutInput(e.target.value)}
+                      placeholder="NID_AUT 쿠키 값 붙여넣기"
+                      className="h-8 text-xs font-mono mt-0.5"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[11px] text-slate-500 font-semibold">NID_SES 값</Label>
+                    <Input
+                      value={nidSesInput}
+                      onChange={(e) => setNidSesInput(e.target.value)}
+                      placeholder="NID_SES 쿠키 값 붙여넣기"
+                      className="h-8 text-xs font-mono mt-0.5"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <p className="text-[10px] text-slate-400">
+                    * 크롬에서 F12 키 → Application(애플리케이션) → Cookies → https://www.naver.com 에서 확인
+                  </p>
+                  <Button
+                    size="sm"
+                    className="h-7 text-xs bg-[#03C75A] hover:bg-[#02b350] text-white font-bold"
+                    onClick={handleSaveCookies}
+                    disabled={isSavingCookies}
+                  >
+                    {isSavingCookies ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                    쿠키 등록하기
+                  </Button>
+                </div>
+              </div>
+
+              {/* 방법 2: PC 전용 로그인 프로그램 안내 */}
+              <div className="p-3 bg-slate-100/70 rounded-lg border border-slate-200 text-xs text-slate-600 space-y-1">
+                <div className="font-bold text-slate-700 flex items-center gap-1">
+                  <span>🖥️ 방법 2: 내 컴퓨터에서 1회 로그인 프로그램 실행</span>
+                </div>
+                <p className="text-[11px] text-slate-500 leading-relaxed">
+                  프로젝트 폴더(<code className="bg-white px-1 py-0.5 rounded border text-slate-700">e:\server\homepage</code>)에 생성된 <strong>네이버로그인.bat</strong> 파일을 더블클릭하시면, 화면에 실제 크롬 브라우저가 뜨면서 로그인 세션이 서버로 자동 전송됩니다.
+                </p>
+              </div>
             </div>
           </div>
         )}

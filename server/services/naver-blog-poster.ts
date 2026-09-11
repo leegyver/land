@@ -172,8 +172,26 @@ export async function launchNaverLoginWindow(): Promise<{ success: boolean; mess
 /**
  * 수동 쿠키(NID_AUT, NID_SES 등) 직접 저장
  */
-export function saveNaverCookiesManually(cookies: Array<{ name: string; value: string; domain?: string; path?: string }>) {
-  const formattedCookies = cookies.map(c => ({
+export function saveNaverCookiesManually(input: any) {
+  const cookieList: Array<{ name: string; value: string; domain?: string; path?: string }> = [];
+
+  if (typeof input === "string") {
+    input.split(";").forEach(pair => {
+      const parts = pair.split("=");
+      const name = parts[0]?.trim();
+      const value = parts.slice(1).join("=").trim();
+      if (name && value) {
+        cookieList.push({ name, value });
+      }
+    });
+  } else if (input && typeof input === "object" && !Array.isArray(input)) {
+    if (input.nidAut) cookieList.push({ name: "NID_AUT", value: String(input.nidAut).trim() });
+    if (input.nidSes) cookieList.push({ name: "NID_SES", value: String(input.nidSes).trim() });
+  } else if (Array.isArray(input)) {
+    cookieList.push(...input);
+  }
+
+  const formattedCookies = cookieList.map(c => ({
     name: c.name,
     value: c.value,
     domain: c.domain || ".naver.com",
@@ -261,8 +279,9 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
 
   console.log(`[NaverPoster] 블로그 포스팅 시작: blogId=${blogId}, title=${options.title}, isPublic=${isPublic}`);
 
+  const isLinux = process.platform === "linux";
   const browser = await chromium.launch({
-    headless: false, // 디버깅 및 CAPTCHA 회피를 위해 visible/headless 모드 지원 (실행 안정성 우수)
+    headless: isLinux ? true : false,
     args: [
       "--disable-blink-features=AutomationControlled",
       "--no-sandbox",

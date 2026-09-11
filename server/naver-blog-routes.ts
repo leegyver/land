@@ -100,11 +100,12 @@ naverBlogRouter.post("/open-login", requireAdminOrRealtor, async (req, res) => {
  */
 naverBlogRouter.post("/save-cookies", requireAdminOrRealtor, (req, res) => {
   try {
-    const { cookies } = req.body;
-    if (!Array.isArray(cookies)) {
-      return res.status(400).json({ message: "올바른 쿠키 목록 형식이 아닙니다." });
+    const { cookies, nidAut, nidSes, cookieString } = req.body;
+    const input = cookieString || (nidAut && nidSes ? { nidAut, nidSes } : cookies);
+    if (!input) {
+      return res.status(400).json({ message: "쿠키 정보(NID_AUT, NID_SES)를 입력해주세요." });
     }
-    const result = saveNaverCookiesManually(cookies);
+    const result = saveNaverCookiesManually(input);
     res.json(result);
   } catch (error: any) {
     console.error("[NaverBlogRoute] 쿠키 저장 실패:", error);

@@ -228,18 +228,23 @@ async function resolveImageFiles(imageUrls: string[]): Promise<string[]> {
 
     // 2. uploads/ 경로 또는 /uploads/ 상대 경로인 경우
     const cleanPath = img.startsWith("/") ? img.slice(1) : img;
-    const localUploadPath = path.resolve(process.cwd(), cleanPath);
-    if (fs.existsSync(localUploadPath)) {
-      resolvedPaths.push(localUploadPath);
-      continue;
-    }
+    const searchRoots = [
+      process.cwd(),
+      path.resolve(process.cwd(), "public"),
+      path.resolve(process.cwd(), "client", "public"),
+      path.resolve(process.cwd(), "dist", "public")
+    ];
 
-    // 3. public/ 상대 경로인 경우
-    const localPublicPath = path.resolve(process.cwd(), "public", cleanPath);
-    if (fs.existsSync(localPublicPath)) {
-      resolvedPaths.push(localPublicPath);
-      continue;
+    let found = false;
+    for (const root of searchRoots) {
+      const p = path.resolve(root, cleanPath);
+      if (fs.existsSync(p)) {
+        resolvedPaths.push(p);
+        found = true;
+        break;
+      }
     }
+    if (found) continue;
 
     // 4. HTTP(S) URL인 경우 임시 디렉토리에 다운로드
     if (img.startsWith("http://") || img.startsWith("https://")) {
@@ -395,8 +400,10 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     console.log("[NaverPoster] 본문 입력 중...");
     await dismissPopups();
     
-    // 본문 단락 클릭 또는 Enter로 본문 영역 진입
-    const contentLocator = page.locator('.se-content p.se-text-paragraph').nth(1);
+    // 본문 단락 클릭 (사진이 있으면 사진 아래 마지막 단락, 없으면 첫 번째 본문 단락)
+    const contentLocator = (options.imageUrls && options.imageUrls.length > 0)
+      ? page.locator('.se-content p.se-text-paragraph').last()
+      : page.locator('.se-content p.se-text-paragraph').nth(1);
     if (await contentLocator.isVisible({ timeout: 3000 }).catch(() => false)) {
       await contentLocator.click({ force: true });
     } else {

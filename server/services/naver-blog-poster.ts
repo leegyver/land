@@ -364,8 +364,24 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
               photoBtn.click({ force: true })
             ]);
             await fileChooser.setFiles(localImages);
-            console.log("[NaverPoster] 이미지 파일 주입 완료. 업로드 대기 중...");
-            await page.waitForTimeout(5000);
+            console.log("[NaverPoster] 이미지 파일 주입 완료. 레이아웃 팝업 처리 대기 중...");
+            await page.waitForTimeout(1500);
+
+            // "사진 첨부 방식" 팝업이 뜨는 경우 [개별사진] 자동 선택
+            try {
+              const individualPhotoBtn = page.locator(
+                'label[for="image-type-list"], button#image-type-list, .se-image-type-option-list, [data-log="limgatt.ind"]'
+              ).first();
+              if (await individualPhotoBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+                console.log("[NaverPoster] '사진 첨부 방식' 팝업 감지 -> [개별사진] 자동 클릭");
+                await individualPhotoBtn.click({ force: true });
+                await page.waitForTimeout(1000);
+              }
+            } catch (popErr) {
+              console.warn("[NaverPoster] 사진 첨부 방식 선택 건너뜀:", popErr);
+            }
+
+            await page.waitForTimeout(3000);
           } else {
             console.warn("[NaverPoster] 사진 버튼을 찾지 못해 이미지 업로드를 건너뜁니다.");
           }
@@ -391,10 +407,10 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     const paragraphs = options.content.split("\n");
     for (const para of paragraphs) {
       if (para.length > 0) {
-        await page.keyboard.type(para, { delay: 5 });
+        await page.keyboard.type(para, { delay: 2 });
       }
       await page.keyboard.press("Enter");
-      await page.waitForTimeout(50);
+      await page.waitForTimeout(30);
     }
     await page.waitForTimeout(1000);
 
@@ -461,6 +477,10 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
 
     const finalUrl = page.url();
     console.log("[NaverPoster] 발행 완료 URL:", finalUrl);
+
+    if (finalUrl.includes("postwrite")) {
+      throw new Error("네이버 블로그 발행 후 페이지가 이동되지 않았습니다. 본문 내용이나 설정을 확인해주세요.");
+    }
 
     // 세션 갱신 저장
     await context.storageState({ path: SESSION_FILE });

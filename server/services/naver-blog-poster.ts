@@ -290,6 +290,7 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
   });
 
   let context: BrowserContext | null = null;
+  let page: any = null;
 
   try {
     context = await browser.newContext({
@@ -298,7 +299,7 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
       viewport: { width: 1280, height: 900 }
     });
 
-    const page = await context.newPage();
+    page = await context.newPage();
 
     // 스마트에디터 글쓰기 URL
     const writeUrl = `https://blog.naver.com/${blogId}/postwrite`;
@@ -393,11 +394,14 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     }
     await page.waitForTimeout(1000);
 
-    // 4. [발행] 버튼 클릭 (우측 상단 1단계 발행 버튼)
+    // 4. [발행] 버튼 클릭 (우측 상단 1단계 발행 설정 패널 열기)
     console.log("[NaverPoster] 상단 발행 설정 패널 열기...");
-    const openPublishBtn = page.locator('button.publish_btn__m9nTr, button:has-text("발행")');
-    await openPublishBtn.first().click();
-    await page.waitForTimeout(1500);
+    const openPublishBtn = page.locator(
+      'button[data-click-area="tpb*t.publish"], button.publish_btn__m9nTr, header button:has-text("발행"):visible, .header__P_w9_ button:has-text("발행"):visible'
+    ).first();
+    await openPublishBtn.waitFor({ state: "visible", timeout: 15000 });
+    await openPublishBtn.click();
+    await page.waitForTimeout(2000);
 
     // 5. 공개 설정 (전체공개 vs 비공개)
     try {
@@ -436,10 +440,13 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
       }
     }
 
-    // 7. 최종 [발행] 확인 버튼 클릭
+    // 7. 최종 [발행] 확인 버튼 클릭 (하단 확인 버튼)
     console.log("[NaverPoster] 최종 발행 확인 클릭...");
-    const confirmPublishBtn = page.locator('button.confirm_btn__Ubdjh, button[data-testid="publish-btn"], .publish_btn:has-text("발행")');
-    await confirmPublishBtn.last().click();
+    const confirmPublishBtn = page.locator(
+      'button[data-click-area="tps*p.publish"], button.confirm_btn__Ubdjh, .publish_popup_container button:has-text("발행"):visible, button.btn_apply:has-text("발행"):visible, button:has-text("발행"):visible'
+    ).last();
+    await confirmPublishBtn.waitFor({ state: "visible", timeout: 15000 });
+    await confirmPublishBtn.click();
 
     // 8. 발행 완료 및 리다이렉트 대기
     console.log("[NaverPoster] 발행 완료 대기 중...");
@@ -461,6 +468,13 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
 
   } catch (err: any) {
     console.error("[NaverPoster] 블로그 발행 실패:", err);
+    if (page) {
+      try {
+        const errorShotPath = path.join(DATA_DIR, "publish-error.png");
+        await page.screenshot({ path: errorShotPath });
+        console.log("[NaverPoster] 에러 스크린샷 저장 완료:", errorShotPath);
+      } catch (shotErr) {}
+    }
     if (context) {
       try { await browser.close(); } catch (e) {}
     }

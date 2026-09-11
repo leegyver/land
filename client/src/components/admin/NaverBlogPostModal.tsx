@@ -281,12 +281,16 @@ export function NaverBlogPostModal({
       const MANDATORY_TAGS = ["강화도부동산", "강화군부동산", "이가이버", "부동산전문"];
       const finalTagsToPublish = Array.from(new Set([...MANDATORY_TAGS, ...tags.map(t => t.replace(/^#/, "").trim())])).filter(Boolean).slice(0, 10);
 
+      const categoryName = targetType === "property" ? "매물 정보" : "일상다반사";
+
       const res = await apiRequest("POST", "/api/admin/naver-blog/publish", {
-        title: title.trim(),
-        content: content.trim(),
+        title: title.trim().replace(/\*\*/g, ""),
+        content: content.trim().replace(/\*\*/g, ""),
         tags: finalTagsToPublish,
         imageUrls: selectedImages,
-        isPublic
+        isPublic,
+        categoryName,
+        targetType
       });
       const data = await res.json();
       
@@ -652,6 +656,13 @@ export function NaverBlogPostModal({
         {/* 하단 액션 버튼 */}
         <DialogFooter className="pt-3 border-t mt-3 flex items-center justify-between sm:justify-between">
           <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-md">
+              <span className="text-xs text-slate-500 font-medium">발행 카테고리:</span>
+              <span className="text-xs font-bold text-slate-800">
+                {targetType === "property" ? "매물 정보™" : "일상다반사"}
+              </span>
+            </div>
+
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="isPublic"

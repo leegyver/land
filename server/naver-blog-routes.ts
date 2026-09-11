@@ -155,7 +155,7 @@ naverBlogRouter.post("/generate", requireAdminOrRealtor, async (req, res) => {
  */
 naverBlogRouter.post("/publish", requireAdminOrRealtor, async (req, res) => {
   try {
-    const { title, content, tags, imageUrls, isPublic } = req.body;
+    const { title, content, tags, imageUrls, isPublic, categoryName, targetType } = req.body;
 
     if (!title || !content) {
       return res.status(400).json({ message: "제목과 본문 내용은 필수입니다." });
@@ -168,12 +168,15 @@ naverBlogRouter.post("/publish", requireAdminOrRealtor, async (req, res) => {
       });
     }
 
+    const resolvedCategory = categoryName || (targetType === "post" ? "일상다반사" : "매물 정보");
+
     const result = await publishToNaverBlog({
       title,
       content,
       tags: Array.isArray(tags) ? tags : [],
       imageUrls: Array.isArray(imageUrls) ? imageUrls : [],
-      isPublic: Boolean(isPublic)
+      isPublic: Boolean(isPublic),
+      categoryName: resolvedCategory
     });
 
     if (!result.success) {

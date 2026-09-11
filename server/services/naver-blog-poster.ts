@@ -17,6 +17,7 @@ export interface PublishOptions {
   tags: string[];
   imageUrls: string[];
   isPublic?: boolean;
+  categoryName?: string;
 }
 
 export interface PublishResult {
@@ -272,7 +273,9 @@ async function resolveImageFiles(imageUrls: string[]): Promise<string[]> {
  */
 function cleanAndFormatContent(text: string): string {
   if (!text) return "";
-  let cleaned = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  // ** 마크다운 볼드 기호 완전 제거
+  let cleaned = text.replace(/\*\*/g, "");
+  cleaned = cleaned.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   // 불렛포인트(•, ·, ▪, ■, ▶)가 줄 중간에 붙어있으면 줄바꿈 분리
   cleaned = cleaned.replace(/([^\n])\s*([•·▪■▶✔]\s+)/g, "$1\n$2");
   // 구분선 앞뒤 개행 보장
@@ -361,11 +364,12 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     // 1. 제목 입력
     console.log("[NaverPoster] 제목 입력 중...");
     await dismissPopups();
+    const cleanTitle = (options.title || "").replace(/\*\*/g, "").trim();
     const titleLocator = page.locator('.se-documentTitle .se-text-paragraph, .se-documentTitle p, .se-title-text').first();
     await titleLocator.waitFor({ state: "visible", timeout: 15000 });
     await titleLocator.click({ force: true });
     await page.waitForTimeout(300);
-    await page.keyboard.type(options.title, { delay: 15 });
+    await page.keyboard.type(cleanTitle, { delay: 15 });
     await page.waitForTimeout(300);
 
     // 2. 이미지 업로드 (있는 경우)
@@ -472,7 +476,29 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     await openPublishBtn.click({ force: true });
     await page.waitForTimeout(2000);
 
-    // 5. 공개 설정 (전체공개 vs 비공개)
+    // 5-1. 카테고리 선택 (부동산 매물: 매물 정보™, 커뮤니티 글: 일상다반사)
+    const targetCategory = options.categoryName || "매물 정보";
+    console.log(`[NaverPoster] 카테고리 설정 시도: ${targetCategory}`);
+    try {
+      const catBtn = page.locator('button[data-click-area="tpb*i.category"], button[class*="selectbox_button"]').first();
+      if (await catBtn.isVisible({ timeout: 3000 })) {
+        await catBtn.click({ force: true });
+        await page.waitForTimeout(600);
+
+        const itemLocator = page.locator('li, span, button').filter({ hasText: targetCategory }).first();
+        if (await itemLocator.isVisible({ timeout: 3000 })) {
+          await itemLocator.click({ force: true });
+          console.log(`[NaverPoster] 카테고리 [${targetCategory}] 선택 완료`);
+        } else {
+          console.warn(`[NaverPoster] 카테고리 [${targetCategory}] 항목을 찾지 못했습니다.`);
+        }
+        await page.waitForTimeout(500);
+      }
+    } catch (catErr) {
+      console.warn("[NaverPoster] 카테고리 선택 처리 건너뜀:", catErr);
+    }
+
+    // 5-2. 공개 설정 (전체공개 vs 비공개)
     try {
       if (isPublic) {
         const publicRadio = page.locator('input#open_public, label[for="open_public"], input[data-click-area*="public"]').first();

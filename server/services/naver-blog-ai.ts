@@ -188,26 +188,31 @@ ${propertyDetails}
 
 ${customInstructions ? `[추가 요청사항]: ${customInstructions}` : ""}
 
-[매우 중요한 서식 및 줄바꿈 규칙 - 절대 엄수!]
-1. 줄바꿈 및 문단 분리:
+[매우 중요한 서식 및 작성 규칙 - 절대 엄수!]
+1. 첫 줄 인사말 규정:
+   - 본문의 맨 첫 번째 줄은 반드시 정확하게 아래 문구로 시작해야 합니다:
+     안녕하세요! 여러분의 든든한 부동산 파트너 강화도 이가이버 공인중개사의 이민호 대표입니다.
+2. 마크다운 볼드(**) 절대 금지:
+   - 네이버 블로그는 마크다운 문법을 지원하지 않고 일반 텍스트로 타이핑되므로, 본문 전체에서 별표 두 개(**) 기호는 절대 사용하지 마세요. 강조할 때도 ** 를 쓰지 말고 따옴표, 불렛, 대괄호, 이모지 등을 사용하세요.
+3. 줄바꿈 및 문단 분리:
    - 각 불렛포인트(•) 항목은 절대로 한 줄에 이어 쓰지 마세요. 반드시 하나의 항목당 하나의 독립된 줄로 작성해야 합니다.
    - 소제목, 구분선(━━━━━━━━━━━━━━━━━━━), 번호 항목(1., 2., 3.)의 앞과 뒤에는 반드시 빈 줄(\n\n)을 넣어 여백을 충분히 두세요.
    - 모바일 화면에서도 편하게 읽을 수 있도록 문단 사이사이에 빈 줄(\n\n)을 적극 활용하세요.
-2. 필수 해시태그 규정:
+4. 필수 해시태그 규정:
    - 태그 배열(tags)에는 반드시 아래 4개의 필수 태그가 맨 앞에 포함되어야 합니다:
      "강화도부동산", "강화군부동산", "이가이버", "부동산전문"
    - 그 뒤로 지역/매물 관련 키워드를 추가하여 총 8~10개의 태그를 완성하세요.
-3. 이미지 SEO & GEO 문구:
+5. 이미지 SEO & GEO 문구:
    - 글 서두의 사진 배치 위치에 "인천 강화군 ${district} ${cleanTitle} 실매물 현장 사진" 형태의 GEO(지역) 및 SEO(키워드) 안내 문구를 자연스럽게 삽입해주세요.
-4. 매물 상세 정보:
+6. 매물 상세 정보:
    - 제공된 [공개 매물 정보]의 모든 항목(매물번호, 종류, 거래유형, 가격, 면적, 지목, 용도지역, 층수, 방수 등)을 빠짐없이 깔끔한 불렛포인트 목록으로 정리하여 수록하세요.
-5. 비공개 정보 보호:
+7. 비공개 정보 보호:
    - 제공되지 않은 소유자/의뢰인 정보, 상세 번지수 등 개인정보는 절대로 상상하여 적지 마세요.
 
 반드시 아래 JSON 형식으로만 응답하세요. 마크다운 백틱 이외의 불필요한 설명은 포함하지 마세요:
 {
   "title": "네이버 블로그용 매력적인 제목 (지역명, 핵심 키워드, 매물 특징 포함 25~35자)",
-  "content": "블로그 전체 본문 텍스트 (줄바꿈과 빈 줄이 완벽하게 적용된 텍스트)",
+  "content": "블로그 전체 본문 텍스트 (줄바꿈과 빈 줄이 완벽하게 적용된 텍스트, ** 기호 절대 금지)",
   "tags": ["강화도부동산", "강화군부동산", "이가이버", "부동산전문", "태그5", "태그6", "태그7", "태그8"]
 }
   `.trim();
@@ -241,9 +246,12 @@ ${customInstructions ? `[추가 요청사항]: ${customInstructions}` : ""}
     ])
   ).filter(Boolean).slice(0, 10);
 
+  // ** 기호 완전 제거
+  let cleanContent = (parsed.content || "").replace(/\*\*/g, "");
+
   return {
     title: parsed.title || `[강화도] ${cleanTitle} | ${district} 실매물 현장 안내✨`,
-    content: parsed.content || "",
+    content: cleanContent,
     tags: finalTags,
     images
   };
@@ -267,11 +275,20 @@ ${post.content}
 
 ${customInstructions ? `[추가 요청사항]: ${customInstructions}` : ""}
 
+[매우 중요한 서식 및 작성 규칙 - 절대 엄수!]
+1. 첫 줄 인사말 규정:
+   - 본문의 맨 첫 번째 줄은 반드시 정확하게 아래 문구로 시작해야 합니다:
+     안녕하세요! 여러분의 든든한 부동산 파트너 강화도 이가이버 공인중개사의 이민호 대표입니다.
+2. 마크다운 볼드(**) 절대 금지:
+   - 본문 전체에서 별표 두 개(**) 기호는 절대 사용하지 마세요. 강조할 때도 ** 를 쓰지 말고 따옴표, 불렛, 대괄호 등을 사용하세요.
+3. 줄바꿈 및 문단 분리:
+   - 문단과 문단 사이에는 빈 줄(\\n\\n)을 충분히 넣어 모바일에서도 편안하게 읽을 수 있도록 하세요.
+
 반드시 아래 JSON 형식으로만 응답하세요:
 {
   "title": "네이버 블로그용 매력적인 제목",
-  "content": "재작성된 본문 텍스트",
-  "tags": ["태그1", "태그2", "태그3", "태그4", "태그5"]
+  "content": "재작성된 본문 텍스트 (** 기호 절대 금지)",
+  "tags": ["부동산정보", "부동산소식", "소통", "커뮤니티", "강화도"]
 }
   `.trim();
 
@@ -296,9 +313,11 @@ ${customInstructions ? `[추가 요청사항]: ${customInstructions}` : ""}
   if (!textResponse) throw new Error("Empty response from Gemini");
 
   const parsed = JSON.parse(textResponse);
+  const cleanContent = (parsed.content || post.content).replace(/\*\*/g, "");
+
   return {
     title: parsed.title || post.title,
-    content: parsed.content || post.content,
+    content: cleanContent,
     tags: Array.isArray(parsed.tags) ? parsed.tags : ["부동산정보", "부동산소식", "소통", "커뮤니티"],
     images
   };
@@ -354,10 +373,10 @@ function generateTemplateBlogPostFromProperty(property: Property, images: string
 
   const specTableText = specs.join("\n");
 
-  const content = `안녕하세요! 강화도 부동산 전문 파트너 **이가이버**입니다. 😊
+  const content = `안녕하세요! 여러분의 든든한 부동산 파트너 강화도 이가이버 공인중개사의 이민호 대표입니다. 😊
 
 오늘 소개해드릴 매물은 인천 강화군 ${district}에 위치한 강력 추천 매물,
-**[${cleanTitle}]** 현장입니다!
+[${cleanTitle}] 현장입니다!
 
 실제 현장을 꼼꼼하게 답사하고 입지와 권리분석을 완료한 알짜 실매물입니다.
 사진과 함께 주요 상세 정보와 매물 특장점을 자세히 살펴보겠습니다. 🌿
@@ -416,7 +435,7 @@ ${specTableText}
 
   return {
     title,
-    content,
+    content: content.replace(/\*\*/g, ""),
     tags: finalTags,
     images
   };
@@ -426,13 +445,15 @@ ${specTableText}
  * 커뮤니티 글 템플릿 생성기
  */
 function generateTemplateBlogPostFromPost(post: Post, images: string[]): GeneratedBlogPost {
-  return {
-    title: `[소식] ${post.title}`,
-    content: `안녕하세요! 오늘의 소식을 전해드립니다. 😊
+  const content = `안녕하세요! 여러분의 든든한 부동산 파트너 강화도 이가이버 공인중개사의 이민호 대표입니다. 😊
 
 ${post.content}
 
-더 많은 정보와 상담은 언제든 편하게 문의해주세요! 감사합니다. ✨`,
+더 많은 정보와 상담은 언제든 편하게 문의해주세요! 감사합니다. ✨`;
+
+  return {
+    title: `[소식] ${post.title}`,
+    content: content.replace(/\*\*/g, ""),
     tags: ["부동산정보", "부동산소식", "소통", "커뮤니티"],
     images
   };

@@ -73,7 +73,8 @@ export function formatDetailedDescription(desc: string): string {
   // 이모지와 바로 이어지는 텍스트/대괄호 제목이 줄바꿈으로 떨어져 있으면 즉시 한 줄로 병합!
   text = text.replace(/([\uD800-\uDFFF📸📍🏡✨💡■💬📞☎🌿👉]+)\s*\n+\s*([가-힣A-Za-z0-9\[【])/g, "$1 $2");
 
-  // 단독 마크다운 구분선(--, --- 등) 제거
+  // 불필요한 마크다운 구분선(--, --- 등) 및 (GEO & SEO) 제거
+  text = text.replace(/\s*\(GEO\s*&\s*SEO\)/gi, "");
   text = text.replace(/^\s*[-_=*]{2,}\s*$/gm, "");
 
   // 연속 3개 이상의 개행은 2개로 통일
@@ -90,8 +91,8 @@ export function verifyAndSanitizeBlogPost(
   post: { title: string; content: string; tags: string[]; images: string[] },
   property?: Property
 ): GeneratedBlogPost {
-  let content = (post.content || "").replace(/\*\*/g, "");
-  let title = (post.title || "").replace(/\*\*/g, "");
+  let content = (post.content || "").replace(/\*\*/g, "").replace(/\s*\(GEO\s*&\s*SEO\)/gi, "");
+  let title = (post.title || "").replace(/\*\*/g, "").replace(/\s*\(GEO\s*&\s*SEO\)/gi, "");
 
   // 1. 첫 줄 인사말 엄격 검증 및 보정
   const MANDATORY_GREETING = "안녕하세요! 여러분의 든든한 부동산 파트너 강화도 이가이버 공인중개사의 이민호 대표입니다.";
@@ -237,6 +238,7 @@ export async function generateBlogPostFromProperty(
   if (property.monthlyRent) specLines.push(`• 월세 : ${formatKoreanPrice(property.monthlyRent)}`);
   if (property.maintenanceFee) specLines.push(`• 관리비 : ${property.maintenanceFee}`);
   specLines.push(`• 소재지 : ${displayLocation} (상세위치 유선문의)`);
+  if (property.buildingName) specLines.push(`• 건물명/단지 : ${property.buildingName}`);
 
   if (property.size) specLines.push(`• 토지/대지면적 : ${formatArea(property.size)}`);
   if (property.supplyArea && property.supplyArea !== property.size) specLines.push(`• 공급면적 : ${formatArea(property.supplyArea)}`);
@@ -495,6 +497,7 @@ function generateTemplateBlogPostFromProperty(property: Property, images: string
   if (property.monthlyRent) specs.push(`• 월세 : ${formatKoreanPrice(property.monthlyRent)}`);
   if (property.maintenanceFee) specs.push(`• 관리비 : ${property.maintenanceFee}`);
   specs.push(`• 매물위치 : 인천광역시 ${displayDistrict} (상세위치는 유선문의)`);
+  if (property.buildingName) specs.push(`• 건물명/단지 : ${property.buildingName}`);
 
   if (property.size) specs.push(`• 토지/대지면적 : ${formatArea(property.size)}`);
   if (property.supplyArea && property.supplyArea !== property.size) specs.push(`• 공급면적 : ${formatArea(property.supplyArea)}`);
@@ -534,7 +537,7 @@ function generateTemplateBlogPostFromProperty(property: Property, images: string
 실제 현장을 꼼꼼하게 답사하고 입지와 권리분석을 완료한 알짜 실매물입니다.
 사진과 함께 주요 상세 정보와 매물 특장점을 자세히 살펴보겠습니다. 🌿
 
-📸 [현장 사진 안내] (GEO & SEO)
+📸 [현장 사진 안내]
 인천 강화군 ${district} ${cleanTitle} 현장 실매물 사진
 (강화도부동산 / 강화군부동산 / 이가이버 / 부동산전문)
 

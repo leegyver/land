@@ -290,7 +290,8 @@ function cleanAndFormatContent(text: string): string {
   // 문장 종결 어미(습니다. 합니다. 입니다. 됩니다. 세요. 니다. 등) 뒤에 바로 한글이 붙어있는 경우 줄바꿈 2회 추가
   cleaned = cleaned.replace(/([다요죠음됨임함]\.|\!|\?)(?=[가-힣A-Za-z0-9\[【<])/g, "$1\n\n");
 
-  // 단독 마크다운 구분선(--, --- 등) 제거
+  // 단독 마크다운 구분선(--, --- 등) 및 (GEO & SEO) 제거
+  cleaned = cleaned.replace(/\s*\(GEO\s*&\s*SEO\)/gi, "");
   cleaned = cleaned.replace(/^\s*[-_=*]{2,}\s*$/gm, "");
 
   // 중복되는 ━━━ 라인 정리 (연속된 구분선 제거)
@@ -344,7 +345,7 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     // 스마트에디터 글쓰기 URL
     const writeUrl = `https://blog.naver.com/${blogId}/postwrite`;
     console.log("[NaverPoster] 글쓰기 페이지 접속:", writeUrl);
-    await page.goto(writeUrl, { waitUntil: "networkidle", timeout: 45000 });
+    await page.goto(writeUrl, { waitUntil: "domcontentloaded", timeout: 35000 });
 
     // 로그인 만료 체크 (로그인 페이지로 튕겼는지 확인)
     if (page.url().includes("nidlogin.login")) {
@@ -355,8 +356,9 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
       };
     }
 
-    // 스마트에디터 로딩 및 비동기 팝업 렌더링 대기
-    await page.waitForTimeout(2500);
+    // 스마트에디터 기본 제목 엘리먼트 렌더링 대기
+    const titleLocator = page.locator('.se-documentTitle .se-text-paragraph, .se-documentTitle p, .se-title-text').first();
+    await titleLocator.waitFor({ state: "visible", timeout: 25000 });
 
     // 팝업 및 도움말 닫기 헬퍼 함수
     const dismissPopups = async () => {
@@ -374,33 +376,21 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
           if (helpPanel) helpPanel.remove();
         });
       } catch (e) {}
-      await page.waitForTimeout(500);
     };
 
     await dismissPopups();
 
     // 1. 제목 입력
     console.log("[NaverPoster] 제목 입력 중...");
-    await dismissPopups();
-    const cleanTitle = (options.title || "").replace(/\*\*/g, "").trim();
-    const titleLocator = page.locator('.se-documentTitle .se-text-paragraph, .se-documentTitle p, .se-title-text').first();
-    await titleLocator.waitFor({ state: "visible", timeout: 15000 });
+    const cleanTitle = (options.title || "").replace(/\*\*/g, "").replace(/\s*\(GEO\s*&\s*SEO\)/gi, "").trim();
     await titleLocator.click({ force: true });
-    await page.waitForTimeout(300);
-    await page.keyboard.type(cleanTitle, { delay: 15 });
-    await page.waitForTimeout(300);
+    await page.keyboard.type(cleanTitle, { delay: 0 });
+    await page.waitForTimeout(100);
 
-    // 2. 본문 먼저 입력 (스마트에디터 ONE의 본문 영역에 직접 진입하여 완벽한 줄바꿈 보장)
-    console.log("[NaverPoster] 본문 영역 진입 및 단락별 줄바꿈 텍스트 입력 중...");
-    // 제목에서 Enter를 누르면 스마트에디터 ONE은 자동으로 첫 번째 본문 텍스트 단락으로 포커스를 이동합니다.
+    // 2. 본문 먼저 입력
+    console.log("[NaverPoster] 본문 영역 진입 및 초고속 정밀 입력 중...");
     await page.keyboard.press("Enter");
-    await page.waitForTimeout(400);
-
-    const bodyParagraphLocator = page.locator('.se-component.se-text p.se-text-paragraph').first();
-    if (await bodyParagraphLocator.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await bodyParagraphLocator.click({ force: true }).catch(() => {});
-      await page.waitForTimeout(200);
-    }
+    await page.waitForTimeout(150);
 
     const formattedContent = cleanAndFormatContent(options.content);
     const rawLines = formattedContent.split("\n");
@@ -424,15 +414,14 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
 
     for (const line of normalizedLines) {
       if (line.length > 0) {
-        await page.keyboard.type(line, { delay: 4 });
+        await page.keyboard.type(line, { delay: 0 });
       } else {
-        // 단락 구분을 위해 공백 1개 입력 후 Enter
         await page.keyboard.type(" ");
       }
       await page.keyboard.press("Enter");
-      await page.waitForTimeout(60); // React 상태 머신의 안정적인 단락 처리 지연
+      await page.waitForTimeout(15);
     }
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(400);
     console.log("[NaverPoster] 본문 단락 입력 완료!");
 
     // 3. 매물 사진 업로드 (본문 아래 배치, 배너 이미지는 제외)
@@ -458,20 +447,20 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
             ]);
             await fileChooser.setFiles(localPropertyImages);
             console.log("[NaverPoster] 매물 사진 주입 완료. 레이아웃 팝업 대기...");
-            await page.waitForTimeout(2500);
+            await page.waitForTimeout(1200);
 
             // "사진 첨부 방식" 팝업이 뜨는 경우 [개별사진] 자동 선택
             try {
               const individualPhotoBtn = page.locator(
                 'label[for="image-type-list"], button#image-type-list, .se-image-type-option-list, [data-log="limgatt.ind"]'
               ).first();
-              if (await individualPhotoBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+              if (await individualPhotoBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
                 await individualPhotoBtn.click({ force: true });
-                await page.waitForTimeout(1000);
+                await page.waitForTimeout(500);
               }
             } catch (popErr) {}
 
-            // 매물 사진 SEO/GEO 태그 주입
+            // 매물 사진 SEO 태그 주입
             try {
               await page.evaluate((info: { title: string; tags: string[] }) => {
                 const imgs = document.querySelectorAll('.se-component.se-image img:not([src*="banner_"])');
@@ -484,7 +473,7 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
               }, { title: options.title, tags: options.tags || [] });
             } catch (seoErr) {}
 
-            await page.waitForTimeout(1500);
+            await page.waitForTimeout(500);
           }
         } catch (imgErr) {
           console.warn("[NaverPoster] 매물 사진 업로드 중 오류 발생:", imgErr);
@@ -498,7 +487,7 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
       const bannerFiles = await resolveImageFiles(["/images/banner_kakao.png", "/images/banner_call.png"]);
       if (bannerFiles.length > 0) {
         await page.evaluate(() => window.scrollTo(0, 0));
-        await page.waitForTimeout(400);
+        await page.waitForTimeout(200);
 
         const photoBtn = page.locator('button[data-name="image"], button:has-text("사진")').first();
         if (await photoBtn.isVisible({ timeout: 3000 })) {
@@ -508,13 +497,13 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
           ]);
           await fileChooser.setFiles(bannerFiles);
           console.log("[NaverPoster] 배너 이미지 파일 주입 완료. 레이아웃 팝업 대기...");
-          await page.waitForTimeout(2500);
+          await page.waitForTimeout(1200);
 
           try {
             const indBtn = page.locator('label[for="image-type-list"], button#image-type-list').first();
-            if (await indBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+            if (await indBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
               await indBtn.click({ force: true });
-              await page.waitForTimeout(1000);
+              await page.waitForTimeout(500);
             }
           } catch (e) {}
 
@@ -529,19 +518,19 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
               const kakaoImg = allImgsLocator.nth(totalImgs - 2);
               await kakaoImg.scrollIntoViewIfNeeded().catch(() => {});
               await kakaoImg.click({ force: true });
-              await page.waitForTimeout(500);
+              await page.waitForTimeout(300);
 
               const linkBtn = page.locator('.se-link-toolbar-button, button[data-name="text-link"]').first();
-              if (await linkBtn.isVisible({ timeout: 3000 })) {
+              if (await linkBtn.isVisible({ timeout: 2000 })) {
                 await linkBtn.click({ force: true });
-                await page.waitForTimeout(500);
+                await page.waitForTimeout(300);
 
                 const urlInput = page.locator('input.se-custom-layer-link-input').first();
                 if (await urlInput.isVisible({ timeout: 2000 })) {
                   await urlInput.fill('https://pf.kakao.com/_xaxbxlxfs/chat');
-                  await page.waitForTimeout(200);
+                  await page.waitForTimeout(100);
                   await page.keyboard.press('Enter');
-                  await page.waitForTimeout(800);
+                  await page.waitForTimeout(400);
                   console.log("[NaverPoster] ✅ 카카오톡 1:1 상담 배너 하이퍼링크 연결 성공!");
                 }
               }
@@ -554,19 +543,19 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
               const callImg = allImgsLocator.last();
               await callImg.scrollIntoViewIfNeeded().catch(() => {});
               await callImg.click({ force: true });
-              await page.waitForTimeout(500);
+              await page.waitForTimeout(300);
 
               const linkBtn = page.locator('.se-link-toolbar-button, button[data-name="text-link"]').first();
-              if (await linkBtn.isVisible({ timeout: 3000 })) {
+              if (await linkBtn.isVisible({ timeout: 2000 })) {
                 await linkBtn.click({ force: true });
-                await page.waitForTimeout(500);
+                await page.waitForTimeout(300);
 
                 const urlInput = page.locator('input.se-custom-layer-link-input').first();
                 if (await urlInput.isVisible({ timeout: 2000 })) {
                   await urlInput.fill('https://leegyver.co.kr/tel');
-                  await page.waitForTimeout(200);
+                  await page.waitForTimeout(100);
                   await page.keyboard.press('Enter');
-                  await page.waitForTimeout(800);
+                  await page.waitForTimeout(400);
                   console.log("[NaverPoster] ✅ 전화 상담 배너 하이퍼링크 연결 성공!");
                 }
               }
@@ -586,27 +575,27 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     const openPublishBtn = page.locator(
       'button[data-click-area="tpb.publish"], [class*="publish_btn"]:has-text("발행"), button:has-text("발행"):visible'
     ).first();
-    await openPublishBtn.waitFor({ state: "visible", timeout: 15000 });
+    await openPublishBtn.waitFor({ state: "visible", timeout: 10000 });
     await openPublishBtn.click({ force: true });
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(800);
 
-    // 5-1. 카테고리 선택 (부동산 매물: 매물 정보™, 커뮤니티 글: 일상다반사)
+    // 5-1. 카테고리 선택 (부동산 매물: 매물 정보, 커뮤니티 글: 일상다반사)
     const targetCategory = options.categoryName || "매물 정보";
     console.log(`[NaverPoster] 카테고리 설정 시도: ${targetCategory}`);
     try {
       const catBtn = page.locator('button[data-click-area="tpb*i.category"], button[class*="selectbox_button"]').first();
-      if (await catBtn.isVisible({ timeout: 3000 })) {
+      if (await catBtn.isVisible({ timeout: 2000 })) {
         await catBtn.click({ force: true });
-        await page.waitForTimeout(600);
+        await page.waitForTimeout(300);
 
         const itemLocator = page.locator('li, span, button').filter({ hasText: targetCategory }).first();
-        if (await itemLocator.isVisible({ timeout: 3000 })) {
+        if (await itemLocator.isVisible({ timeout: 2000 })) {
           await itemLocator.click({ force: true });
           console.log(`[NaverPoster] 카테고리 [${targetCategory}] 선택 완료`);
         } else {
           console.warn(`[NaverPoster] 카테고리 [${targetCategory}] 항목을 찾지 못했습니다.`);
         }
-        await page.waitForTimeout(500);
+        await page.waitForTimeout(200);
       }
     } catch (catErr) {
       console.warn("[NaverPoster] 카테고리 선택 처리 건너뜀:", catErr);
@@ -616,16 +605,16 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     try {
       if (isPublic) {
         const publicRadio = page.locator('input#open_public, label[for="open_public"], input[data-click-area*="public"]').first();
-        if (await publicRadio.isVisible({ timeout: 2000 })) {
+        if (await publicRadio.isVisible({ timeout: 1500 })) {
           await publicRadio.click({ force: true });
         }
       } else {
         const privateRadio = page.locator('input#open_private, label[for="open_private"], input[data-click-area*="secret"]').first();
-        if (await privateRadio.isVisible({ timeout: 2000 })) {
+        if (await privateRadio.isVisible({ timeout: 1500 })) {
           await privateRadio.click({ force: true });
         }
       }
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(150);
     } catch (e) {
       console.warn("[NaverPoster] 공개 설정 선택 건너뜀:", e);
     }
@@ -648,7 +637,7 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
           if (cleanTag) {
             await tagInput.fill(cleanTag);
             await page.keyboard.press("Enter");
-            await page.waitForTimeout(150);
+            await page.waitForTimeout(50);
           }
         }
       }
@@ -661,13 +650,13 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     const confirmPublishBtn = page.locator(
       'button[data-testid="seOnePublishBtn"], button.confirm_btn__byZZW, button[data-click-area="tpb*i.publish"]'
     ).first();
-    await confirmPublishBtn.waitFor({ state: "visible", timeout: 15000 });
+    await confirmPublishBtn.waitFor({ state: "visible", timeout: 10000 });
 
     await Promise.all([
       page.waitForURL((url: any) => !url.toString().includes("postwrite"), { timeout: 35000 }).catch(() => {}),
       confirmPublishBtn.click({ force: true })
     ]);
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(1500);
 
     const finalUrl = page.url();
     console.log("[NaverPoster] 발행 완료 URL:", finalUrl);

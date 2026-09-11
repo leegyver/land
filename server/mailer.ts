@@ -127,7 +127,7 @@ export function createWelcomeEmailTemplate(data: { username: string; name?: stri
       
       <div style="margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 6px; text-align: center;">
         <p style="color: #64748b; font-size: 14px; margin: 0;">로그인하여 관심 있는 매물을 찜하고 다양한 소식을 받아보세요!</p>
-        <a href="https://leegyver.co.kr" style="display: inline-block; margin-top: 15px; padding: 12px 24px; background-color: #3b82f6; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold;">홈페이지 바로가기</a>
+        <a href="https://leegyver.com" style="display: inline-block; margin-top: 15px; padding: 12px 24px; background-color: #3b82f6; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold;">홈페이지 바로가기</a>
       </div>
       
       <div style="font-size: 12px; color: #94a3b8; margin-top: 30px; text-align: center; padding-top: 20px; border-top: 1px solid #e2e8f0;">

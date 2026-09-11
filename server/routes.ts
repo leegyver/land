@@ -310,7 +310,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // 네이버 블로그 배너 클릭 시 바로 전화 연결 및 카카오톡 오픈채팅 리다이렉트
   app.get('/tel', (_req, res) => {
-    res.redirect('tel:010-4787-3120');
+    res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta http-equiv="refresh" content="0;url=tel:01047873120"><title>전화 연결</title></head><body style="display:flex;align-items:center;justify-content:center;height:100vh;margin:0;font-family:sans-serif;background:#f8fafc;"><script>window.location.href="tel:01047873120";</script><div style="text-align:center;padding:24px;"><p style="font-size:18px;font-weight:bold;margin-bottom:12px;">이민호 대표에게 전화 연결 중입니다...</p><a href="tel:01047873120" style="display:inline-block;padding:12px 24px;background:#059669;color:#fff;text-decoration:none;border-radius:8px;font-size:16px;font-weight:bold;">010-4787-3120 바로 통화하기</a></div></body></html>`);
   });
   app.get('/kakao', (_req, res) => {
     res.redirect('https://pf.kakao.com/_xaxbxlxfs/chat');

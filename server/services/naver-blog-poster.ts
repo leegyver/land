@@ -587,7 +587,7 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
       // 전화 바로연결 배너 삽입 위치 감지
       if (line.includes('[전화 바로연결 배너]') || (line.includes('010-4787-3120') && i > 0 && normalizedLines[i - 1].includes('전화'))) {
         if (!callBannerInserted && callBannerFile) {
-          await insertBannerWithLink(callBannerFile, 'https://leegyver.co.kr/tel', '전화 바로연결 배너');
+          await insertBannerWithLink(callBannerFile, 'https://leegyver.com/tel', '전화 바로연결 배너');
           callBannerInserted = true;
         }
         continue;
@@ -616,7 +616,7 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
       await insertBannerWithLink(kakaoBannerFile, 'https://pf.kakao.com/_xaxbxlxfs/chat', '카카오톡 상담 배너(하단)');
     }
     if (!callBannerInserted && callBannerFile) {
-      await insertBannerWithLink(callBannerFile, 'https://leegyver.co.kr/tel', '전화 바로연결 배너(하단)');
+      await insertBannerWithLink(callBannerFile, 'https://leegyver.com/tel', '전화 바로연결 배너(하단)');
     }
 
     await page.waitForTimeout(400);

@@ -12,6 +12,7 @@
     "import:api": "cross-env NODE_ENV=development tsx scripts/import-from-api.ts"
   },
   "dependencies": {
+    "@google/genai": "^2.22.0",
     "@hookform/resolvers": "^3.10.0",
     "@jridgewell/trace-mapping": "^0.3.25",
     "@radix-ui/react-accordion": "^1.2.4",
@@ -92,6 +93,7 @@
     "passport-kakao": "^1.0.1",
     "passport-local": "^1.0.0",
     "passport-naver": "^1.0.6",
+    "playwright": "^1.63.0",
     "postcss": "^8.4.47",
     "react": "^18.3.1",
     "react-beautiful-dnd": "^13.1.1",

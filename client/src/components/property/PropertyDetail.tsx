@@ -42,6 +42,7 @@ import { useSaju } from "@/contexts/SajuContext";
 import { getCompatibilityScore } from "@/lib/saju";
 import SajuFormModal from "@/components/saju/SajuFormModal";
 import TarotModal from "@/components/tarot/TarotModal";
+import { NaverBlogPostModal } from "@/components/admin/NaverBlogPostModal";
 
 // 타입 문제를 위한 전역 선언
 declare global {
@@ -98,6 +99,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
   // Saju & Tarot Logic
   const { sajuData, openSajuModal } = useSaju();
   const [isTarotOpen, setIsTarotOpen] = useState(false);
+  const [isNaverBlogModalOpen, setIsNaverBlogModalOpen] = useState(false);
   const [compatibility, setCompatibility] = useState<{
     score: number,
     comment: string,
@@ -322,12 +324,22 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
         <div className="flex justify-between items-start gap-4 mb-1">
           <h1 className="text-2xl font-bold text-gray-900">{displayTitle}</h1>
           {isAdminOrMaster && (
-            <Link href={`/admin/properties/edit/${property.id}`}>
-              <Button size="sm" className="hidden md:flex bg-slate-800 hover:bg-slate-900 text-white items-center gap-2">
-                <Edit className="w-4 h-4" />
-                매물 수정하기
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                onClick={() => setIsNaverBlogModalOpen(true)}
+                className="bg-[#03C75A] hover:bg-[#02b350] text-white font-bold items-center gap-1.5 shadow-sm"
+              >
+                <span className="bg-white text-[#03C75A] font-black text-[10px] w-4 h-4 rounded-xs flex items-center justify-center">N</span>
+                네이버 블로그 포스팅
               </Button>
-            </Link>
+              <Link href={`/admin/properties/edit/${property.id}`}>
+                <Button size="sm" className="hidden md:flex bg-slate-800 hover:bg-slate-900 text-white items-center gap-2">
+                  <Edit className="w-4 h-4" />
+                  매물 수정하기
+                </Button>
+              </Link>
+            </div>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-1 mb-1">
@@ -973,6 +985,14 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
           isOpen={isTarotOpen}
           onClose={() => setIsTarotOpen(false)}
           propertyTitle={property.title}
+        />
+      )}
+      {isNaverBlogModalOpen && property && (
+        <NaverBlogPostModal
+          isOpen={isNaverBlogModalOpen}
+          onClose={() => setIsNaverBlogModalOpen(false)}
+          targetType="property"
+          targetId={Number(property.id)}
         />
       )}
     </div>

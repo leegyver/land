@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState, useRef } from "react";
 import { apiRequest } from "@/lib/queryClient";
 import { Textarea } from "@/components/ui/textarea";
+import { NaverBlogPostModal } from "@/components/admin/NaverBlogPostModal";
 DOMPurify.addHook('afterSanitizeAttributes', function (node) {
     if (node.tagName === 'A') {
         node.setAttribute('target', '_blank');
@@ -80,6 +81,7 @@ const PostDetailPage = () => {
     const [commentImageUrl, setCommentImageUrl] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [isNaverModalOpen, setIsNaverModalOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const emojis = ["😊", "😂", "🤣", "😍", "👍", "🙌", "🔥", "😮", "😢", "👏", "🧡", "✨", "💯", "🙏"];
@@ -139,7 +141,7 @@ const PostDetailPage = () => {
     );
 
     const category = (categories as any)[post.category] || { name: post.category, color: "bg-slate-600" };
-    const isAuthor = user?.id === post.authorId || user?.role === "admin" || user?.role === "master";
+    const isAuthor = user?.id === post.authorId || user?.role === "admin" || user?.role === "master" || user?.role === "realtor";
 
     return (
         <div className="bg-slate-50 min-h-screen pb-24">
@@ -242,7 +244,15 @@ const PostDetailPage = () => {
 
 
                             {isAuthor && (
-                                <div className="flex justify-end gap-3 mt-16 pt-8 border-t border-slate-50">
+                                <div className="flex justify-end gap-3 mt-16 pt-8 border-t border-slate-50 items-center flex-wrap">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setIsNaverModalOpen(true)}
+                                        className="h-12 px-6 rounded-xl font-bold border-[#03C75A]/40 text-[#03C75A] hover:bg-[#03C75A]/10 gap-2 shadow-xs"
+                                    >
+                                        <span className="bg-[#03C75A] text-white font-black text-xs px-2 py-0.5 rounded">N</span>
+                                        네이버 블로그 포스팅
+                                    </Button>
                                     <Button
                                         variant="outline"
                                         onClick={() => setLocation(`/community/edit/${id}`)}
@@ -524,6 +534,16 @@ const PostDetailPage = () => {
                     </div>
                 </div>
             </div>
+
+            {/* 네이버 블로그 포스팅 모달 */}
+            {isNaverModalOpen && id && (
+                <NaverBlogPostModal
+                    isOpen={isNaverModalOpen}
+                    onClose={() => setIsNaverModalOpen(false)}
+                    targetType="post"
+                    targetId={Number(id)}
+                />
+            )}
         </div>
     );
 };

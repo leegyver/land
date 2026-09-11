@@ -43,6 +43,7 @@ import {
 } from "./youtube-fetcher";
 import { importPropertiesFromSheet, checkDuplicatesFromSheet } from "./sheet-importer";
 import { generateSitemapXml } from "./sitemap";
+import { naverBlogRouter } from "./naver-blog-routes";
 
 import { log } from "./vite";
 
@@ -303,6 +304,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // 인증 시스템 설정
   setupAuth(app);
+
+  // 네이버 블로그 자동 포스팅 API 라우터 등록
+  app.use('/api/admin/naver-blog', naverBlogRouter);
 
   // ─────────────────────────────────────────────
   // 프로필 이미지 업로드 API

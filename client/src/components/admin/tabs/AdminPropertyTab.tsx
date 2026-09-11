@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Trash2, Edit, Eye, Plus, FileSpreadsheet, AlertCircle, GripVertical, CheckCircle, ExternalLink } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
+import { NaverBlogPostModal } from "../NaverBlogPostModal";
 
 interface AdminPropertyTabProps {
   properties: Property[];
@@ -33,6 +34,7 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [naverModalPropertyId, setNaverModalPropertyId] = useState<number | null>(null);
   
   // Sorting Mode
   const [sortCategory, setSortCategory] = useState<SortCategory>("all");
@@ -419,7 +421,17 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
                               </div>
                             </TableCell>
                             <TableCell className="text-right">
-                              <div className="flex justify-end gap-1 opacity-20 group-hover:opacity-100 transition-opacity">
+                              <div className="flex justify-end gap-1 items-center">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  onClick={() => setNaverModalPropertyId(p.id)}
+                                  className="h-8 px-2 text-xs font-bold text-[#03C75A] border-[#03C75A]/40 hover:bg-[#03C75A]/10 gap-1 mr-1 shadow-xs" 
+                                  title="네이버 블로그 자동 포스팅"
+                                >
+                                  <span className="bg-[#03C75A] text-white font-black text-[10px] w-4 h-4 rounded flex items-center justify-center">N</span>
+                                  블로그
+                                </Button>
                                 <Button variant="ghost" size="icon" className="h-8 w-8" title="미리보기" asChild><a href={`/properties/${p.id}`} target="_blank"><Eye className="h-4 w-4 text-blue-500" /></a></Button>
                                 <Button variant="ghost" size="icon" className="h-8 w-8" title="수정" asChild><a href={`/admin/properties/edit/${p.id}`}><Edit className="h-4 w-4 text-slate-500" /></a></Button>
                                 <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)} disabled={deleteMutation.isPending} className="h-8 w-8 text-red-400 hover:text-red-500" title="삭제"><Trash2 className="h-4 w-4" /></Button>
@@ -481,6 +493,16 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
           )}
         </div>
       </AdminTabWrapper>
+
+      {/* 네이버 블로그 포스팅 모달 */}
+      {naverModalPropertyId && (
+        <NaverBlogPostModal
+          isOpen={Boolean(naverModalPropertyId)}
+          onClose={() => setNaverModalPropertyId(null)}
+          targetType="property"
+          targetId={naverModalPropertyId}
+        />
+      )}
     </div>
   );
 }

@@ -617,38 +617,56 @@ export function NaverBlogPostModal({
                 />
               </div>
 
-              {/* 하단 자동 삽입 배너 미리보기 */}
-              <div className="space-y-1.5 p-3 bg-slate-50 border rounded-lg">
+              {/* 본문 자동 삽입 배너 이미지 미리보기 */}
+              <div className="space-y-2 p-3 bg-slate-50 border rounded-lg">
                 <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                   <ExternalLink className="w-3.5 h-3.5 text-primary" />
-                  포스팅 하단 자동 삽입 배너 버튼 (클릭 시 실시간 연동)
+                  본문 자동 삽입 배너 이미지 및 하이퍼링크 (교차 배치)
                 </Label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                  <a
-                    href="https://pf.kakao.com/_xaxbxlxfs/chat"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="flex items-center justify-between p-2.5 rounded-lg bg-[#FEE500] hover:bg-[#ebd300] text-[#191919] font-bold text-xs transition-colors shadow-sm group"
-                  >
-                    <div className="flex items-center gap-2">
-                      <MessageCircle className="w-4 h-4 text-[#191919]" />
-                      <span>카카오톡 1:1 실시간 매물 상담</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div className="border rounded-lg overflow-hidden bg-white p-2 shadow-xs space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-medium text-slate-700">
+                      <span className="flex items-center gap-1 font-semibold text-slate-800">
+                        <MessageCircle className="w-3.5 h-3.5 text-amber-500" />
+                        카카오톡 1:1 상담 배너
+                      </span>
+                      <a
+                        href="https://pf.kakao.com/_xaxbxlxfs/chat"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10px] bg-amber-100 hover:bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-mono transition-colors"
+                      >
+                        pf.kakao.com ↗
+                      </a>
                     </div>
-                    <span className="text-[10px] bg-black/10 px-1.5 py-0.5 rounded font-mono">pf.kakao.com</span>
-                  </a>
-                  <a
-                    href="tel:010-4787-3120"
-                    className="flex items-center justify-between p-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-sm group"
-                  >
-                    <div className="flex items-center gap-2">
-                      <PhoneCall className="w-4 h-4 text-white" />
-                      <span>전화 상담 바로연결 (이민호 대표)</span>
+                    <img
+                      src="/images/banner_kakao.png"
+                      alt="카카오톡 실시간 상담 배너"
+                      className="w-full h-auto rounded border object-contain"
+                    />
+                  </div>
+                  <div className="border rounded-lg overflow-hidden bg-white p-2 shadow-xs space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-medium text-slate-700">
+                      <span className="flex items-center gap-1 font-semibold text-slate-800">
+                        <PhoneCall className="w-3.5 h-3.5 text-emerald-600" />
+                        전화 상담 바로연결 배너
+                      </span>
+                      <a
+                        href="tel:010-4787-3120"
+                        className="text-[10px] bg-emerald-100 hover:bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded font-mono transition-colors"
+                      >
+                        010-4787-3120 📞
+                      </a>
                     </div>
-                    <span className="text-[11px] font-mono tracking-wider">010-4787-3120</span>
-                  </a>
+                    <img
+                      src="/images/banner_call.png"
+                      alt="전화 상담 바로연결 배너"
+                      className="w-full h-auto rounded border object-contain"
+                    />
+                  </div>
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1">
-                  * 포스팅 하단에 위 배너 이미지 및 바로가기 링크, 중개사무소 정보가 자동으로 함께 발행됩니다.
+                  * 본문 안내문 아래에 각 배너 이미지가 정밀하게 삽입되며, 터치 시 카카오톡 상담창 및 전화 연결로 이동하도록 하이퍼링크가 자동 설정됩니다.
                 </p>
               </div>
 

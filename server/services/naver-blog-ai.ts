@@ -38,12 +38,12 @@ export const OFFICE_INFO_BLOCK = `
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 💬 [카카오톡 실시간 1:1 상담 문의]
-👉 아래 링크를 터치하시면 카카오톡 실시간 1:1 상담창으로 바로 연결됩니다!
-https://pf.kakao.com/_xaxbxlxfs/chat
+👉 아래 배너를 터치하시면 카카오톡 실시간 1:1 상담창으로 바로 연결됩니다!
+[카카오톡 실시간 상담 배너]
 
 📞 [전화 상담 바로 연결]
-👉 모바일에서 아래 번호를 터치하시면 대표 공인중개사에게 바로 전화 연결됩니다!
-☎ 전화 문의 : 010-4787-3120
+👉 모바일에서 아래 배너를 터치하시면 대표 공인중개사에게 바로 전화 연결됩니다!
+[전화 바로연결 배너]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 `.trim();
 
@@ -101,7 +101,7 @@ export function verifyAndSanitizeBlogPost(
   }
 
   // 2. 중개사무소 정보 및 카카오/전화 바로연결 배너 블록 엄격 검증 및 보정
-  if (!content.includes("010-4787-3120") || !content.includes("https://pf.kakao.com/_xaxbxlxfs/chat") || !content.includes("대표 : 이민호")) {
+  if (!content.includes("010-4787-3120") || !content.includes("대표 : 이민호") || !content.includes("카카오톡") || !content.includes("[카카오톡 실시간 상담 배너]")) {
     content = content.replace(/■\s*중개사무소\s*안내[\s\S]*$/g, "").trim();
     content += `\n\n${OFFICE_INFO_BLOCK}\n\n감사합니다! 🏠✨`;
   }
@@ -122,7 +122,7 @@ export function verifyAndSanitizeBlogPost(
     agentVerified: content.includes("이민호") && content.includes("010-4787-3120"),
     greetingVerified: content.startsWith(MANDATORY_GREETING),
     noMarkdownBold: !content.includes("**") && !title.includes("**"),
-    contactLinksVerified: content.includes("https://pf.kakao.com/_xaxbxlxfs/chat") && content.includes("010-4787-3120")
+    contactLinksVerified: content.includes("010-4787-3120") && (content.includes("[카카오톡 실시간 상담 배너]") || content.includes("카카오톡"))
   };
 
   if (property) {

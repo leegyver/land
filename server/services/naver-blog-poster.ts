@@ -274,12 +274,10 @@ function cleanAndFormatContent(text: string): string {
   if (!text) return "";
   let cleaned = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   // 불렛포인트(•, ·, ▪, ■, ▶)가 줄 중간에 붙어있으면 줄바꿈 분리
-  cleaned = cleaned.replace(/([^\n])\s*([•·▪■▶✔-]\s+)/g, "$1\n$2");
-  // 번호 목록(1., 2., 3.) 앞에 빈 줄 보장
-  cleaned = cleaned.replace(/([^\n])\s*(\d+\.\s+)/g, "$1\n\n$2");
+  cleaned = cleaned.replace(/([^\n])\s*([•·▪■▶✔]\s+)/g, "$1\n$2");
   // 구분선 앞뒤 개행 보장
-  cleaned = cleaned.replace(/([^\n])\s*(━{4,}|═{4,}|-{4,})/g, "$1\n\n$2");
-  cleaned = cleaned.replace(/(━{4,}|═{4,}|-{4,})\s*([^\n])/g, "$1\n\n$2");
+  cleaned = cleaned.replace(/([^\n])\s*(━{4,}|═{4,})/g, "$1\n\n$2");
+  cleaned = cleaned.replace(/(━{4,}|═{4,})\s*([^\n])/g, "$1\n\n$2");
   return cleaned;
 }
 
@@ -448,10 +446,10 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     const paragraphs = formattedContent.split("\n");
     for (const para of paragraphs) {
       if (para.trim().length > 0) {
-        await page.keyboard.type(para, { delay: 2 });
+        await page.keyboard.type(para, { delay: 4 });
       }
       await page.keyboard.press("Enter");
-      await page.waitForTimeout(30);
+      await page.waitForTimeout(60);
     }
     await page.waitForTimeout(1000);
 

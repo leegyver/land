@@ -268,6 +268,22 @@ async function resolveImageFiles(imageUrls: string[]): Promise<string[]> {
 }
 
 /**
+ * 네이버 스마트에디터 가독성을 위해 불렛포인트, 번호 목록, 소제목 줄바꿈을 정규화
+ */
+function cleanAndFormatContent(text: string): string {
+  if (!text) return "";
+  let cleaned = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  // 불렛포인트(•, ·, ▪, ■, ▶)가 줄 중간에 붙어있으면 줄바꿈 분리
+  cleaned = cleaned.replace(/([^\n])\s*([•·▪■▶✔-]\s+)/g, "$1\n$2");
+  // 번호 목록(1., 2., 3.) 앞에 빈 줄 보장
+  cleaned = cleaned.replace(/([^\n])\s*(\d+\.\s+)/g, "$1\n\n$2");
+  // 구분선 앞뒤 개행 보장
+  cleaned = cleaned.replace(/([^\n])\s*(━{4,}|═{4,}|-{4,})/g, "$1\n\n$2");
+  cleaned = cleaned.replace(/(━{4,}|═{4,}|-{4,})\s*([^\n])/g, "$1\n\n$2");
+  return cleaned;
+}
+
+/**
  * 네이버 스마트에디터 ONE을 통해 블로그 글 자동 발행
  */
 export async function publishToNaverBlog(options: PublishOptions): Promise<PublishResult> {
@@ -387,6 +403,23 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
             }
 
             await page.waitForTimeout(3000);
+
+            // 이미지 요소에 SEO & GEO alt 및 title 태그 주입
+            try {
+              await page.evaluate((info: { title: string; tags: string[] }) => {
+                const imgs = document.querySelectorAll('.se-component.se-image img, .se-image-resource img, img.se-image-resource, .se-module-image img');
+                imgs.forEach((img, idx) => {
+                  const tagList = info.tags.slice(0, 4).join(', ');
+                  const seoText = `인천 강화도 부동산 이가이버 - ${info.title} 실매물 사진 ${idx + 1} (${tagList})`;
+                  img.setAttribute('alt', seoText);
+                  img.setAttribute('title', seoText);
+                  img.setAttribute('data-title', seoText);
+                });
+              }, { title: options.title, tags: options.tags || [] });
+              console.log("[NaverPoster] 이미지 SEO/GEO 메타데이터 주입 완료");
+            } catch (seoErr) {
+              console.warn("[NaverPoster] 이미지 SEO 속성 주입 건너뜀:", seoErr);
+            }
           } else {
             console.warn("[NaverPoster] 사진 버튼을 찾지 못해 이미지 업로드를 건너뜁니다.");
           }
@@ -411,9 +444,10 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     }
     await page.waitForTimeout(300);
 
-    const paragraphs = options.content.split("\n");
+    const formattedContent = cleanAndFormatContent(options.content);
+    const paragraphs = formattedContent.split("\n");
     for (const para of paragraphs) {
-      if (para.length > 0) {
+      if (para.trim().length > 0) {
         await page.keyboard.type(para, { delay: 2 });
       }
       await page.keyboard.press("Enter");
@@ -449,24 +483,30 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
       console.warn("[NaverPoster] 공개 설정 선택 건너뜀:", e);
     }
 
-    // 6. 태그 입력
-    if (options.tags && options.tags.length > 0) {
-      console.log("[NaverPoster] 태그 입력 중:", options.tags.join(", "));
-      try {
-        const tagInput = page.locator('input#tag-input, input.tag_input__zdSy_, input[placeholder*="태그"]').first();
-        if (await tagInput.isVisible({ timeout: 2000 })) {
-          for (const tag of options.tags.slice(0, 10)) {
-            const cleanTag = tag.replace(/^#/, "").trim();
-            if (cleanTag) {
-              await tagInput.fill(cleanTag);
-              await page.keyboard.press("Enter");
-              await page.waitForTimeout(150);
-            }
+    // 6. 태그 입력 (필수 4대 태그 보장)
+    const MANDATORY_TAGS = ["강화도부동산", "강화군부동산", "이가이버", "부동산전문"];
+    const tagsToPublish = Array.from(
+      new Set([
+        ...MANDATORY_TAGS,
+        ...(options.tags || []).map(t => t.replace(/^#/, "").trim())
+      ])
+    ).filter(Boolean).slice(0, 10);
+
+    console.log("[NaverPoster] 태그 입력 중:", tagsToPublish.join(", "));
+    try {
+      const tagInput = page.locator('input#tag-input, input.tag_input__zdSy_, input[placeholder*="태그"]').first();
+      if (await tagInput.isVisible({ timeout: 2000 })) {
+        for (const tag of tagsToPublish) {
+          const cleanTag = tag.replace(/^#/, "").trim();
+          if (cleanTag) {
+            await tagInput.fill(cleanTag);
+            await page.keyboard.press("Enter");
+            await page.waitForTimeout(150);
           }
         }
-      } catch (tagErr) {
-        console.warn("[NaverPoster] 태그 입력 중 건너뜀:", tagErr);
       }
+    } catch (tagErr) {
+      console.warn("[NaverPoster] 태그 입력 중 건너뜀:", tagErr);
     }
 
     // 7. 최종 [발행] 확인 버튼 클릭 (하단 확인 버튼)

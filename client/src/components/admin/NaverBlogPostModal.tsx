@@ -97,7 +97,11 @@ export function NaverBlogPostModal({
       
       setTitle(data.title || "");
       setContent(data.content || "");
-      setTags(Array.isArray(data.tags) ? data.tags : []);
+      
+      const MANDATORY_TAGS = ["강화도부동산", "강화군부동산", "이가이버", "부동산전문"];
+      const rawTags = Array.isArray(data.tags) ? data.tags : [];
+      const combinedTags = Array.from(new Set([...MANDATORY_TAGS, ...rawTags.map((t: string) => String(t).replace(/^#/, "").trim())])).filter(Boolean).slice(0, 10);
+      setTags(combinedTags);
       
       const imgs = Array.isArray(data.images) ? data.images : [];
       setAvailableImages(imgs);
@@ -274,10 +278,13 @@ export function NaverBlogPostModal({
     setIsPublishing(true);
     setPublishedUrl(null);
     try {
+      const MANDATORY_TAGS = ["강화도부동산", "강화군부동산", "이가이버", "부동산전문"];
+      const finalTagsToPublish = Array.from(new Set([...MANDATORY_TAGS, ...tags.map(t => t.replace(/^#/, "").trim())])).filter(Boolean).slice(0, 10);
+
       const res = await apiRequest("POST", "/api/admin/naver-blog/publish", {
         title: title.trim(),
         content: content.trim(),
-        tags,
+        tags: finalTagsToPublish,
         imageUrls: selectedImages,
         isPublic
       });

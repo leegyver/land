@@ -308,6 +308,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // 네이버 블로그 자동 포스팅 API 라우터 등록
   app.use('/api/admin/naver-blog', naverBlogRouter);
 
+  // 네이버 블로그 배너 클릭 시 바로 전화 연결 및 카카오톡 오픈채팅 리다이렉트
+  app.get('/tel', (_req, res) => {
+    res.redirect('tel:010-4787-3120');
+  });
+  app.get('/kakao', (_req, res) => {
+    res.redirect('https://pf.kakao.com/_xaxbxlxfs/chat');
+  });
+
   // ─────────────────────────────────────────────
   // 프로필 이미지 업로드 API
   // POST /api/upload/profile  → { url: '/uploads/filename.jpg' }

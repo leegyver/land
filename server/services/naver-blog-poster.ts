@@ -277,21 +277,26 @@ function cleanAndFormatContent(text: string): string {
   let cleaned = text.replace(/\*\*/g, "");
   cleaned = cleaned.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 
-  // 불렛포인트(•, ·, ▪, ■, ▶)가 줄 중간에 붙어있으면 줄바꿈 분리
-  cleaned = cleaned.replace(/([^\n])\s*([•·▪■▶✔]\s*)/g, "$1\n$2");
+  // 불렛포인트(•, ·, ▪, ■, ▶)가 줄 중간에 붙어있으면 줄바꿈 분리 (단, 앞에 이모지나 불렛이 있으면 분리하지 않음)
+  cleaned = cleaned.replace(/([^\n\s\uD800-\uDFFF📸📍🏡✨💡■💬📞☎🌿👉•·▪▶✔])\s*([•·▪■▶✔]\s*)/g, "$1\n$2");
 
-  // 섹션 제목 ([입지 및 환경], [공간 및 구조], [전문가 제언], [현장 사진 안내] 등) 앞뒤 여백 확보
-  cleaned = cleaned.replace(/([^\n])\s*(\[[^\]]+\])/g, "$1\n\n$2\n");
+  // 섹션 제목 ([입지 및 환경], [공간 및 구조], [전문가 제언], [현장 사진 안내] 등) 앞뒤 여백 확보 (단, 앞에 이모지나 불렛이 있으면 분리하지 않음)
+  cleaned = cleaned.replace(/([^\n\s\uD800-\uDFFF📸📍🏡✨💡■💬📞☎🌿👉•·▪▶✔])\s*(\[[^\]]+\])/g, "$1\n\n$2\n");
   cleaned = cleaned.replace(/(\[[^\]]+\])\s*([^\n])/g, "$1\n$2");
+
+  // 이모지와 바로 이어지는 텍스트/대괄호 제목이 줄바꿈으로 분리되어 있으면 즉시 한 줄로 병합!
+  cleaned = cleaned.replace(/([\uD800-\uDFFF📸📍🏡✨💡■💬📞☎🌿👉]+)\s*\n+\s*([가-힣A-Za-z0-9\[【])/g, "$1 $2");
 
   // 문장 종결 어미(습니다. 합니다. 입니다. 됩니다. 세요. 니다. 등) 뒤에 바로 한글이 붙어있는 경우 줄바꿈 2회 추가
   cleaned = cleaned.replace(/([다요죠음됨임함]\.|\!|\?)(?=[가-힣A-Za-z0-9\[【<])/g, "$1\n\n");
 
-  // 구분선 앞뒤 개행 보장
-  cleaned = cleaned.replace(/([^\n])\s*(━{4,}|═{4,})/g, "$1\n\n$2");
-  cleaned = cleaned.replace(/(━{4,}|═{4,})\s*([^\n])/g, "$1\n\n$2");
+  // 단독 마크다운 구분선(--, --- 등) 제거
+  cleaned = cleaned.replace(/^\s*[-_=*]{2,}\s*$/gm, "");
 
-  // 연속 3개 이상의 개행은 2개로 통일
+  // 중복되는 ━━━ 라인 정리 (연속된 구분선 제거)
+  cleaned = cleaned.replace(/(━{4,}\s*\n*)+/g, "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
+
+  // 연속 3개 이상의 개행은 2개(단락 1개 간격)로 축소
   cleaned = cleaned.replace(/\n{3,}/g, "\n\n");
 
   return cleaned.trim();
@@ -398,18 +403,34 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     }
 
     const formattedContent = cleanAndFormatContent(options.content);
-    const paragraphs = formattedContent.split("\n");
-    console.log(`[NaverPoster] 총 ${paragraphs.length}개 줄바꿈 단락 입력 시작`);
+    const rawLines = formattedContent.split("\n");
+    const normalizedLines: string[] = [];
+    let lastWasEmpty = false;
 
-    for (const para of paragraphs) {
-      if (para.trim().length > 0) {
-        await page.keyboard.type(para, { delay: 4 });
+    for (const line of rawLines) {
+      const trimmed = line.trim();
+      if (trimmed.length === 0) {
+        if (!lastWasEmpty && normalizedLines.length > 0) {
+          normalizedLines.push("");
+          lastWasEmpty = true;
+        }
       } else {
-        // 스마트에디터 ONE에서 빈 줄이 삭제되거나 병합되지 않도록 공백 문자(' ') 1개 입력 후 개행
+        normalizedLines.push(trimmed);
+        lastWasEmpty = false;
+      }
+    }
+
+    console.log(`[NaverPoster] 총 ${normalizedLines.length}개 라인 본문 입력 시작`);
+
+    for (const line of normalizedLines) {
+      if (line.length > 0) {
+        await page.keyboard.type(line, { delay: 4 });
+      } else {
+        // 단락 구분을 위해 공백 1개 입력 후 Enter
         await page.keyboard.type(" ");
       }
       await page.keyboard.press("Enter");
-      await page.waitForTimeout(80); // React 상태 머신의 단락 분할을 위한 안정적인 지연
+      await page.waitForTimeout(60); // React 상태 머신의 안정적인 단락 처리 지연
     }
     await page.waitForTimeout(1000);
     console.log("[NaverPoster] 본문 단락 입력 완료!");
@@ -542,7 +563,7 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
 
                 const urlInput = page.locator('input.se-custom-layer-link-input').first();
                 if (await urlInput.isVisible({ timeout: 2000 })) {
-                  await urlInput.fill('https://leegyver.co.kr/contact');
+                  await urlInput.fill('https://leegyver.co.kr/tel');
                   await page.waitForTimeout(200);
                   await page.keyboard.press('Enter');
                   await page.waitForTimeout(800);
@@ -643,7 +664,7 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     await confirmPublishBtn.waitFor({ state: "visible", timeout: 15000 });
 
     await Promise.all([
-      page.waitForURL((url) => !url.toString().includes("postwrite"), { timeout: 35000 }).catch(() => {}),
+      page.waitForURL((url: any) => !url.toString().includes("postwrite"), { timeout: 35000 }).catch(() => {}),
       confirmPublishBtn.click({ force: true })
     ]);
     await page.waitForTimeout(3000);

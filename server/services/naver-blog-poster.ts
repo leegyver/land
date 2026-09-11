@@ -342,6 +342,13 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
 
     page = await context.newPage();
 
+    let dialogMessage = "";
+    page.on("dialog", async (dialog: any) => {
+      dialogMessage = dialog.message();
+      console.warn(`[NaverPoster] 🚨 브라우저 알림 팝업 감지: [${dialog.type()}] ${dialogMessage}`);
+      await dialog.accept().catch(() => {});
+    });
+
     // 스마트에디터 글쓰기 URL
     const writeUrl = `https://blog.naver.com/${blogId}/postwrite`;
     console.log("[NaverPoster] 글쓰기 페이지 접속:", writeUrl);
@@ -363,17 +370,21 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     // 팝업 및 도움말 닫기 헬퍼 함수
     const dismissPopups = async () => {
       try {
+        // 1. 도움말 닫기 버튼 클릭 (우측 상단 발행 버튼을 덮는 핵심 원인 제거)
+        const helpCloseBtn = page.locator('button.se-help-panel-close-button, button:has-text("닫기")').first();
+        if (await helpCloseBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+          await helpCloseBtn.click({ force: true });
+          await page.waitForTimeout(300);
+        }
+
         await page.evaluate(() => {
-          // 1. 임시저장 복구 팝업 "취소" 클릭
+          // 2. 임시저장 복구 팝업 "취소" 클릭
           const cancelBtn = document.querySelector('.se-popup-button-cancel') as HTMLElement;
           if (cancelBtn) cancelBtn.click();
-          // 2. 팝업 레이어 및 dim 제거
+          // 3. 팝업 레이어 및 dim 제거
           document.querySelectorAll('.se-popup, .se-popup-dim, [data-group="popupLayer"]').forEach(el => el.remove());
-          // 3. 도움말 패널 닫기 및 제거
-          const helpClose = document.querySelector('.se-help-panel button, [class*="help-panel-close"]') as HTMLElement;
-          if (helpClose) helpClose.click();
-          const helpPanel = document.querySelector('.se-help-panel') as HTMLElement;
-          if (helpPanel) helpPanel.remove();
+          // 4. 도움말 패널 및 사이드바 제거
+          document.querySelectorAll('.se-help-panel, .se-help-panel-close-button, .se-utils, .se-content-guide').forEach(el => el.remove());
         });
       } catch (e) {}
     };
@@ -698,13 +709,16 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
       page.waitForURL((url: any) => !url.toString().includes("postwrite"), { timeout: 35000 }).catch(() => {}),
       confirmPublishBtn.click({ force: true })
     ]);
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(2000);
 
     const finalUrl = page.url();
     console.log("[NaverPoster] 발행 완료 URL:", finalUrl);
 
     if (finalUrl.includes("postwrite")) {
-      throw new Error("네이버 블로그 발행 후 페이지가 이동되지 않았습니다. 본문 내용이나 설정을 확인해주세요.");
+      const errMsg = dialogMessage
+        ? `네이버 안내: ${dialogMessage}`
+        : "네이버 블로그 발행 후 페이지가 이동되지 않았습니다. 본문 내용이나 설정을 확인해주세요.";
+      throw new Error(errMsg);
     }
 
     // 세션 갱신 저장

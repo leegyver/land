@@ -315,35 +315,52 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
       };
     }
 
-    // 팝업 창 처리: "작성 중인 글이 있습니다. 이어서 작성하시겠습니까?" -> 취소 클릭
-    try {
-      const cancelBtn = page.locator('.se-popup-button-cancel, button:has-text("취소")');
-      if (await cancelBtn.first().isVisible({ timeout: 3000 })) {
-        console.log("[NaverPoster] 임시저장 복구 팝업 '취소' 클릭");
-        await cancelBtn.first().click();
-        await page.waitForTimeout(500);
-      }
-    } catch (e) {
-      // ignore
-    }
+    // 스마트에디터 로딩 및 비동기 팝업 렌더링 대기
+    await page.waitForTimeout(2500);
 
-    // 도움말 등 안내 팝업 닫기
-    try {
-      const helpCloseBtn = page.locator('button.se-help-panel-close-button, button[aria-label="닫기"]');
-      if (await helpCloseBtn.first().isVisible({ timeout: 1500 })) {
-        await helpCloseBtn.first().click();
-      }
-    } catch (e) {
-      // ignore
-    }
+    // 팝업 및 도움말 닫기 헬퍼 함수
+    const dismissPopups = async () => {
+      try {
+        // 1. 임시저장 복구 팝업 "취소" 클릭
+        const cancelBtn = page.locator('.se-popup-button-cancel, [data-name*="se-popup-alert"] button:has-text("취소"), button:has-text("취소")');
+        if (await cancelBtn.first().isVisible({ timeout: 2000 })) {
+          console.log("[NaverPoster] 임시저장 복구 팝업 '취소' 클릭");
+          await cancelBtn.first().click({ force: true });
+          await page.waitForTimeout(500);
+        }
+      } catch (e) {}
+
+      try {
+        // 2. 우측 '도움말' 패널 닫기
+        const helpCloseBtn = page.locator('button.se-help-panel-close-button, button[aria-label="닫기"], .help_panel button');
+        if (await helpCloseBtn.first().isVisible({ timeout: 1500 })) {
+          console.log("[NaverPoster] 도움말 패널 닫기 클릭");
+          await helpCloseBtn.first().click({ force: true });
+          await page.waitForTimeout(300);
+        }
+      } catch (e) {}
+
+      // 3. 브라우저 DOM 내 잔여 팝업 및 방해되는 dim 레이어 강제 정리
+      try {
+        await page.evaluate(() => {
+          const cancel = document.querySelector('.se-popup-button-cancel, [data-name*="se-popup-alert"] button') as HTMLElement;
+          if (cancel && cancel.innerText.includes('취소')) cancel.click();
+          document.querySelectorAll('.se-popup-dim, [data-name*="se-popup-alert"]').forEach(el => el.remove());
+        });
+      } catch (e) {}
+    };
+
+    await dismissPopups();
 
     // 1. 제목 입력
     console.log("[NaverPoster] 제목 입력 중...");
-    const titleLocator = page.locator('.se-documentTitle .se-text-paragraph, .se-title-text, p[placeholder="제목을 입력하세요"]');
-    await titleLocator.first().click({ timeout: 10000 });
+    await dismissPopups();
+    const titleLocator = page.locator('.se-documentTitle .se-text-paragraph, .se-title-text, p[placeholder="제목을 입력하세요"]').first();
+    await titleLocator.waitFor({ state: "visible", timeout: 15000 });
+    await titleLocator.click({ force: true });
     await page.waitForTimeout(300);
     // 스마트에디터 제목에 텍스트 입력
-    await page.keyboard.type(options.title, { delay: 30 });
+    await page.keyboard.type(options.title, { delay: 20 });
     await page.waitForTimeout(500);
 
     // 2. 이미지 업로드 (있는 경우)
@@ -372,10 +389,11 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
 
     // 3. 본문 입력
     console.log("[NaverPoster] 본문 입력 중...");
+    await dismissPopups();
     // 본문 컨테이너 포커스
     const contentLocator = page.locator('.se-main-container .se-text-paragraph, .se-component-content, .se-content');
     if (await contentLocator.first().isVisible({ timeout: 5000 })) {
-      await contentLocator.last().click();
+      await contentLocator.last().click({ force: true });
       await page.waitForTimeout(300);
       
       // 줄바꿈을 포함하여 본문 입력 (Shift+Enter 또는 일반 Enter)
@@ -396,11 +414,12 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
 
     // 4. [발행] 버튼 클릭 (우측 상단 1단계 발행 설정 패널 열기)
     console.log("[NaverPoster] 상단 발행 설정 패널 열기...");
+    await dismissPopups();
     const openPublishBtn = page.locator(
       'button[data-click-area="tpb*t.publish"], button.publish_btn__m9nTr, header button:has-text("발행"):visible, .header__P_w9_ button:has-text("발행"):visible'
     ).first();
     await openPublishBtn.waitFor({ state: "visible", timeout: 15000 });
-    await openPublishBtn.click();
+    await openPublishBtn.click({ force: true });
     await page.waitForTimeout(2000);
 
     // 5. 공개 설정 (전체공개 vs 비공개)

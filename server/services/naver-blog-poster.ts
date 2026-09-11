@@ -500,11 +500,16 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
           console.warn(`[NaverPoster] ${label} 링크 연결 중 경고:`, linkErr);
         }
 
-        // 다음 문단 작성을 위해 커서를 이미지 아래로 이동
+        // 링크 팝업 닫기 및 이미지 선택 해제 (상단 사진 버튼 활성화 필수)
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(200);
+        const mainContainer = page.locator('.se-main-container').first();
+        await mainContainer.click({ position: { x: 300, y: 600 }, force: true }).catch(() => {});
+        await page.waitForTimeout(200);
         await page.keyboard.press('ArrowDown');
         await page.waitForTimeout(100);
         await page.keyboard.press('Enter');
-        await page.waitForTimeout(100);
+        await page.waitForTimeout(200);
       } catch (err) {
         console.warn(`[NaverPoster] ${label} 삽입 실패:`, err);
       }
@@ -558,11 +563,14 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
         } catch (seoErr) {}
 
         // 커서를 사진 아래 새 단락으로 확실히 이동
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(200);
         await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
         await page.waitForTimeout(300);
         const mainContainer = page.locator('.se-main-container').first();
         await mainContainer.click({ position: { x: 200, y: 800 }, force: true }).catch(() => {});
         await page.keyboard.press('PageDown');
+        await page.keyboard.press('ArrowDown');
         await page.keyboard.press('Enter');
         await page.waitForTimeout(200);
       } catch (imgErr) {

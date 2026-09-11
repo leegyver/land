@@ -431,16 +431,19 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     console.log("[NaverPoster] 본문 입력 중...");
     await dismissPopups();
     
-    // 본문 단락 클릭 (사진이 있으면 사진 아래 마지막 단락, 없으면 첫 번째 본문 단락)
-    const contentLocator = (options.imageUrls && options.imageUrls.length > 0)
-      ? page.locator('.se-content p.se-text-paragraph').last()
-      : page.locator('.se-content p.se-text-paragraph').nth(1);
-    if (await contentLocator.isVisible({ timeout: 3000 }).catch(() => false)) {
+    // 본문 단락 클릭 (사진 캡션 .se-caption이 아닌 실제 본문 텍스트 컴포넌트 타겟)
+    const contentLocator = page.locator('.se-component.se-text p.se-text-paragraph, .se-content .se-component:not(.se-image) p.se-text-paragraph').first();
+
+    if (await contentLocator.isVisible({ timeout: 4000 }).catch(() => false)) {
+      await contentLocator.scrollIntoViewIfNeeded().catch(() => {});
       await contentLocator.click({ force: true });
     } else {
+      // 본문 텍스트 영역이 아직 없는 경우 캔버스 하단 클릭
+      const canvas = page.locator('.se-canvas, .se-content').first();
+      await canvas.click({ position: { x: 300, y: 700 }, force: true }).catch(() => {});
       await page.keyboard.press("Enter");
     }
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(400);
 
     const formattedContent = cleanAndFormatContent(options.content);
     const paragraphs = formattedContent.split("\n");

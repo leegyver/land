@@ -321,33 +321,20 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     // 팝업 및 도움말 닫기 헬퍼 함수
     const dismissPopups = async () => {
       try {
-        // 1. 임시저장 복구 팝업 "취소" 클릭
-        const cancelBtn = page.locator('.se-popup-button-cancel, [data-name*="se-popup-alert"] button:has-text("취소"), button:has-text("취소")');
-        if (await cancelBtn.first().isVisible({ timeout: 2000 })) {
-          console.log("[NaverPoster] 임시저장 복구 팝업 '취소' 클릭");
-          await cancelBtn.first().click({ force: true });
-          await page.waitForTimeout(500);
-        }
-      } catch (e) {}
-
-      try {
-        // 2. 우측 '도움말' 패널 닫기
-        const helpCloseBtn = page.locator('button.se-help-panel-close-button, button[aria-label="닫기"], .help_panel button');
-        if (await helpCloseBtn.first().isVisible({ timeout: 1500 })) {
-          console.log("[NaverPoster] 도움말 패널 닫기 클릭");
-          await helpCloseBtn.first().click({ force: true });
-          await page.waitForTimeout(300);
-        }
-      } catch (e) {}
-
-      // 3. 브라우저 DOM 내 잔여 팝업 및 방해되는 dim 레이어 강제 정리
-      try {
         await page.evaluate(() => {
-          const cancel = document.querySelector('.se-popup-button-cancel, [data-name*="se-popup-alert"] button') as HTMLElement;
-          if (cancel && cancel.innerText.includes('취소')) cancel.click();
-          document.querySelectorAll('.se-popup-dim, [data-name*="se-popup-alert"]').forEach(el => el.remove());
+          // 1. 임시저장 복구 팝업 "취소" 클릭
+          const cancelBtn = document.querySelector('.se-popup-button-cancel') as HTMLElement;
+          if (cancelBtn) cancelBtn.click();
+          // 2. 팝업 레이어 및 dim 제거
+          document.querySelectorAll('.se-popup, .se-popup-dim, [data-group="popupLayer"]').forEach(el => el.remove());
+          // 3. 도움말 패널 닫기 및 제거
+          const helpClose = document.querySelector('.se-help-panel button, [class*="help-panel-close"]') as HTMLElement;
+          if (helpClose) helpClose.click();
+          const helpPanel = document.querySelector('.se-help-panel') as HTMLElement;
+          if (helpPanel) helpPanel.remove();
         });
       } catch (e) {}
+      await page.waitForTimeout(500);
     };
 
     await dismissPopups();
@@ -355,13 +342,12 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     // 1. 제목 입력
     console.log("[NaverPoster] 제목 입력 중...");
     await dismissPopups();
-    const titleLocator = page.locator('.se-documentTitle .se-text-paragraph, .se-title-text, p[placeholder="제목을 입력하세요"]').first();
+    const titleLocator = page.locator('.se-documentTitle .se-text-paragraph, .se-documentTitle p, .se-title-text').first();
     await titleLocator.waitFor({ state: "visible", timeout: 15000 });
     await titleLocator.click({ force: true });
     await page.waitForTimeout(300);
-    // 스마트에디터 제목에 텍스트 입력
-    await page.keyboard.type(options.title, { delay: 20 });
-    await page.waitForTimeout(500);
+    await page.keyboard.type(options.title, { delay: 15 });
+    await page.waitForTimeout(300);
 
     // 2. 이미지 업로드 (있는 경우)
     if (options.imageUrls && options.imageUrls.length > 0) {
@@ -371,15 +357,17 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
       if (localImages.length > 0) {
         console.log(`[NaverPoster] ${localImages.length}개 이미지 업로드 시도 중...`);
         try {
-          // 스마트에디터의 숨겨진 file input 탐색
-          const fileInput = page.locator('input[type="file"][accept*="image"], input[type="file"]');
-          if (await fileInput.count() > 0) {
-            await fileInput.first().setInputFiles(localImages);
+          const photoBtn = page.locator('button:has-text("사진"), button[data-name="image"], [data-click-area*="image"]').first();
+          if (await photoBtn.isVisible({ timeout: 3000 })) {
+            const [fileChooser] = await Promise.all([
+              page.waitForEvent("filechooser", { timeout: 10000 }),
+              photoBtn.click({ force: true })
+            ]);
+            await fileChooser.setFiles(localImages);
             console.log("[NaverPoster] 이미지 파일 주입 완료. 업로드 대기 중...");
-            // 사진 처리 및 렌더링 대기
-            await page.waitForTimeout(4000);
+            await page.waitForTimeout(5000);
           } else {
-            console.warn("[NaverPoster] 파일 입력 태그(input[type='file'])를 찾지 못해 이미지 업로드를 건너뜁니다.");
+            console.warn("[NaverPoster] 사진 버튼을 찾지 못해 이미지 업로드를 건너뜁니다.");
           }
         } catch (imgErr) {
           console.warn("[NaverPoster] 이미지 업로드 중 오류 발생:", imgErr);
@@ -390,25 +378,23 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     // 3. 본문 입력
     console.log("[NaverPoster] 본문 입력 중...");
     await dismissPopups();
-    // 본문 컨테이너 포커스
-    const contentLocator = page.locator('.se-main-container .se-text-paragraph, .se-component-content, .se-content');
-    if (await contentLocator.first().isVisible({ timeout: 5000 })) {
-      await contentLocator.last().click({ force: true });
-      await page.waitForTimeout(300);
-      
-      // 줄바꿈을 포함하여 본문 입력 (Shift+Enter 또는 일반 Enter)
-      const paragraphs = options.content.split("\n");
-      for (let i = 0; i < paragraphs.length; i++) {
-        const para = paragraphs[i];
-        if (para.length > 0) {
-          // 클립보드 붙여넣기 모방: 긴 텍스트의 타이핑 속도 최적화
-          await page.evaluate((text) => {
-            document.execCommand("insertText", false, text);
-          }, para);
-        }
-        await page.keyboard.press("Enter");
-        await page.waitForTimeout(50);
+    
+    // 본문 단락 클릭 또는 Enter로 본문 영역 진입
+    const contentLocator = page.locator('.se-content p.se-text-paragraph').nth(1);
+    if (await contentLocator.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await contentLocator.click({ force: true });
+    } else {
+      await page.keyboard.press("Enter");
+    }
+    await page.waitForTimeout(300);
+
+    const paragraphs = options.content.split("\n");
+    for (const para of paragraphs) {
+      if (para.length > 0) {
+        await page.keyboard.type(para, { delay: 5 });
       }
+      await page.keyboard.press("Enter");
+      await page.waitForTimeout(50);
     }
     await page.waitForTimeout(1000);
 
@@ -416,7 +402,7 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     console.log("[NaverPoster] 상단 발행 설정 패널 열기...");
     await dismissPopups();
     const openPublishBtn = page.locator(
-      'button[data-click-area="tpb*t.publish"], button.publish_btn__m9nTr, header button:has-text("발행"):visible, .header__P_w9_ button:has-text("발행"):visible'
+      'button[data-click-area="tpb.publish"], [class*="publish_btn"]:has-text("발행"), button:has-text("발행"):visible'
     ).first();
     await openPublishBtn.waitFor({ state: "visible", timeout: 15000 });
     await openPublishBtn.click({ force: true });
@@ -425,30 +411,31 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     // 5. 공개 설정 (전체공개 vs 비공개)
     try {
       if (isPublic) {
-        const publicRadio = page.locator('label:has-text("전체공개"), input[value="public"]');
-        if (await publicRadio.first().isVisible({ timeout: 2000 })) {
-          await publicRadio.first().click();
+        const publicRadio = page.locator('input#open_public, label[for="open_public"], input[data-click-area*="public"]').first();
+        if (await publicRadio.isVisible({ timeout: 2000 })) {
+          await publicRadio.click({ force: true });
         }
       } else {
-        const privateRadio = page.locator('label:has-text("비공개"), input[value="private"]');
-        if (await privateRadio.first().isVisible({ timeout: 2000 })) {
-          await privateRadio.first().click();
+        const privateRadio = page.locator('input#open_private, label[for="open_private"], input[data-click-area*="secret"]').first();
+        if (await privateRadio.isVisible({ timeout: 2000 })) {
+          await privateRadio.click({ force: true });
         }
       }
+      await page.waitForTimeout(300);
     } catch (e) {
-      console.warn("[NaverPoster] 공개 설정 선택 건너뜀");
+      console.warn("[NaverPoster] 공개 설정 선택 건너뜀:", e);
     }
 
     // 6. 태그 입력
     if (options.tags && options.tags.length > 0) {
       console.log("[NaverPoster] 태그 입력 중:", options.tags.join(", "));
       try {
-        const tagInput = page.locator('input[placeholder*="태그"], input#tag_input, .tag_input__p_bI9 input');
-        if (await tagInput.first().isVisible({ timeout: 2000 })) {
+        const tagInput = page.locator('input#tag-input, input.tag_input__zdSy_, input[placeholder*="태그"]').first();
+        if (await tagInput.isVisible({ timeout: 2000 })) {
           for (const tag of options.tags.slice(0, 10)) {
             const cleanTag = tag.replace(/^#/, "").trim();
             if (cleanTag) {
-              await tagInput.first().fill(cleanTag);
+              await tagInput.fill(cleanTag);
               await page.keyboard.press("Enter");
               await page.waitForTimeout(150);
             }
@@ -462,14 +449,14 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     // 7. 최종 [발행] 확인 버튼 클릭 (하단 확인 버튼)
     console.log("[NaverPoster] 최종 발행 확인 클릭...");
     const confirmPublishBtn = page.locator(
-      'button[data-click-area="tps*p.publish"], button.confirm_btn__Ubdjh, .publish_popup_container button:has-text("발행"):visible, button.btn_apply:has-text("발행"):visible, button:has-text("발행"):visible'
-    ).last();
+      'button[data-testid="seOnePublishBtn"], button.confirm_btn__byZZW, button[data-click-area="tpb*i.publish"]'
+    ).first();
     await confirmPublishBtn.waitFor({ state: "visible", timeout: 15000 });
-    await confirmPublishBtn.click();
 
-    // 8. 발행 완료 및 리다이렉트 대기
-    console.log("[NaverPoster] 발행 완료 대기 중...");
-    await page.waitForNavigation({ timeout: 25000 }).catch(() => {});
+    await Promise.all([
+      page.waitForURL((url) => !url.toString().includes("postwrite"), { timeout: 35000 }).catch(() => {}),
+      confirmPublishBtn.click({ force: true })
+    ]);
     await page.waitForTimeout(3000);
 
     const finalUrl = page.url();

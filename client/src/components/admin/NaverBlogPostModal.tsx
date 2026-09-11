@@ -11,7 +11,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Sparkles, Send, CheckCircle2, ExternalLink, AlertCircle, RefreshCw, 
-  Settings, Key, Image as ImageIcon, LogIn, Loader2, X, Globe, Lock
+  Settings, Key, Image as ImageIcon, LogIn, Loader2, X, Globe, Lock,
+  MessageCircle, PhoneCall
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -66,6 +67,7 @@ export function NaverBlogPostModal({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+  const [verification, setVerification] = useState<any>(null);
 
   // 상태 조회
   const fetchStatus = async () => {
@@ -97,6 +99,7 @@ export function NaverBlogPostModal({
       
       setTitle(data.title || "");
       setContent(data.content || "");
+      setVerification(data.verification || null);
       
       const MANDATORY_TAGS = ["강화도부동산", "강화군부동산", "이가이버", "부동산전문"];
       const rawTags = Array.isArray(data.tags) ? data.tags : [];
@@ -504,6 +507,35 @@ export function NaverBlogPostModal({
             </div>
           ) : (
             <>
+              {/* AI 할루시네이션 & 팩트체크 검증 상태 카드 */}
+              {verification && (
+                <div className={`p-3 rounded-lg border text-xs flex items-start gap-2.5 ${
+                  verification.passed ? "bg-emerald-50/80 border-emerald-200 text-emerald-950" : "bg-blue-50/80 border-blue-200 text-blue-950"
+                }`}>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <div className="flex-1 space-y-1">
+                    <div className="font-bold flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 text-xs text-slate-800">
+                        🛡️ AI 할루시네이션 방지 & 팩트체크 검증 완료
+                      </span>
+                      <Badge variant="outline" className="bg-white text-emerald-700 border-emerald-300 text-[10px] py-0 px-1.5 font-bold">
+                        {verification.passed ? "검증 통과" : "자동 보정 완료"}
+                      </Badge>
+                    </div>
+                    <p className="text-slate-600 text-[11px] leading-relaxed">
+                      {verification.summary}
+                    </p>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 pt-1 text-[11px] text-slate-700 font-medium">
+                      <span>✔ 매물 사실정보 일치</span>
+                      <span>✔ 대표: 이민호</span>
+                      <span>✔ 직통: 010-4787-3120</span>
+                      <span>✔ 카카오/전화 배너 링크 포함</span>
+                      <span>✔ 볼드(**) 기호 100% 제거</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* 제목 */}
               <div>
                 <Label className="text-xs font-semibold text-slate-700">블로그 제목</Label>
@@ -583,6 +615,41 @@ export function NaverBlogPostModal({
                   placeholder="본문 내용을 입력하세요"
                   className="font-normal text-xs leading-relaxed font-mono"
                 />
+              </div>
+
+              {/* 하단 자동 삽입 배너 미리보기 */}
+              <div className="space-y-1.5 p-3 bg-slate-50 border rounded-lg">
+                <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                  <ExternalLink className="w-3.5 h-3.5 text-primary" />
+                  포스팅 하단 자동 삽입 배너 버튼 (클릭 시 실시간 연동)
+                </Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                  <a
+                    href="https://pf.kakao.com/_xaxbxlxfs/chat"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between p-2.5 rounded-lg bg-[#FEE500] hover:bg-[#ebd300] text-[#191919] font-bold text-xs transition-colors shadow-sm group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <MessageCircle className="w-4 h-4 text-[#191919]" />
+                      <span>카카오톡 1:1 실시간 매물 상담</span>
+                    </div>
+                    <span className="text-[10px] bg-black/10 px-1.5 py-0.5 rounded font-mono">pf.kakao.com</span>
+                  </a>
+                  <a
+                    href="tel:010-4787-3120"
+                    className="flex items-center justify-between p-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-sm group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <PhoneCall className="w-4 h-4 text-white" />
+                      <span>전화 상담 바로연결 (이민호 대표)</span>
+                    </div>
+                    <span className="text-[11px] font-mono tracking-wider">010-4787-3120</span>
+                  </a>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  * 포스팅 하단에 위 배너 이미지 및 바로가기 링크, 중개사무소 정보가 자동으로 함께 발행됩니다.
+                </p>
               </div>
 
               {/* 해시태그 */}

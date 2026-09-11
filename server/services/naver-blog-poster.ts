@@ -276,12 +276,25 @@ function cleanAndFormatContent(text: string): string {
   // ** 마크다운 볼드 기호 완전 제거
   let cleaned = text.replace(/\*\*/g, "");
   cleaned = cleaned.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
   // 불렛포인트(•, ·, ▪, ■, ▶)가 줄 중간에 붙어있으면 줄바꿈 분리
-  cleaned = cleaned.replace(/([^\n])\s*([•·▪■▶✔]\s+)/g, "$1\n$2");
+  cleaned = cleaned.replace(/([^\n])\s*([•·▪■▶✔]\s*)/g, "$1\n$2");
+
+  // 섹션 제목 ([입지 및 환경], [공간 및 구조], [전문가 제언], [현장 사진 안내] 등) 앞뒤 여백 확보
+  cleaned = cleaned.replace(/([^\n])\s*(\[[^\]]+\])/g, "$1\n\n$2\n");
+  cleaned = cleaned.replace(/(\[[^\]]+\])\s*([^\n])/g, "$1\n$2");
+
+  // 문장 종결 어미(습니다. 합니다. 입니다. 됩니다. 세요. 니다. 등) 뒤에 바로 한글이 붙어있는 경우 줄바꿈 2회 추가
+  cleaned = cleaned.replace(/([다요죠음됨임함]\.|\!|\?)(?=[가-힣A-Za-z0-9\[【<])/g, "$1\n\n");
+
   // 구분선 앞뒤 개행 보장
   cleaned = cleaned.replace(/([^\n])\s*(━{4,}|═{4,})/g, "$1\n\n$2");
   cleaned = cleaned.replace(/(━{4,}|═{4,})\s*([^\n])/g, "$1\n\n$2");
-  return cleaned;
+
+  // 연속 3개 이상의 개행은 2개로 통일
+  cleaned = cleaned.replace(/\n{3,}/g, "\n\n");
+
+  return cleaned.trim();
 }
 
 /**
@@ -459,10 +472,13 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     const paragraphs = formattedContent.split("\n");
     for (const para of paragraphs) {
       if (para.trim().length > 0) {
-        await page.keyboard.type(para, { delay: 4 });
+        await page.keyboard.type(para, { delay: 3 });
+      } else {
+        // 스마트에디터 ONE에서 빈 줄이 삭제되거나 합쳐지지 않도록 공백 문자(' ') 1개 입력 후 개행
+        await page.keyboard.type(" ");
       }
       await page.keyboard.press("Enter");
-      await page.waitForTimeout(60);
+      await page.waitForTimeout(50);
     }
     await page.waitForTimeout(1000);
 

@@ -182,7 +182,7 @@ export default function AdminStatsTab() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Visitor Trend Chart */}
         <Card className="lg:col-span-2 border-none shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden">
-          <CardHeader className="p-8 pb-2">
+          <CardHeader className="p-5 md:p-8 pb-2">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <CardTitle className="text-xl font-bold text-slate-900">방문자 및 트래픽 추이</CardTitle>
@@ -224,7 +224,7 @@ export default function AdminStatsTab() {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="p-8 h-[350px]">
+          <CardContent className="p-3 md:p-8 h-[350px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={dailyStats}>
                 <defs>
@@ -286,14 +286,14 @@ export default function AdminStatsTab() {
 
         {/* Popular Content */}
         <Card className="border-none shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden">
-          <CardHeader className="p-8 pb-4">
+          <CardHeader className="p-5 md:p-8 pb-4">
             <CardTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
               <Award className="w-5 h-5 text-orange-500" />
               인기 콘텐츠
             </CardTitle>
             <CardDescription>가장 많이 본 매물과 게시글</CardDescription>
           </CardHeader>
-          <CardContent className="p-8 pt-0 space-y-6">
+          <CardContent className="p-5 md:p-8 pt-0 space-y-6">
             <div>
               <h4 className="text-sm font-bold text-slate-400 mb-4 uppercase tracking-widest">최근 주간 인기 매물</h4>
               <div className="space-y-4">
@@ -351,11 +351,11 @@ export default function AdminStatsTab() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {/* Property Type Distribution */}
         <Card className="lg:col-span-2 border-none shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden">
-          <CardHeader className="p-8 pb-0">
+          <CardHeader className="p-5 md:p-8 pb-0">
             <CardTitle className="text-lg font-bold text-slate-900">매물 유형별 분포</CardTitle>
             <CardDescription>전체 매물의 카테고리별 비중</CardDescription>
           </CardHeader>
-          <CardContent className="p-8 flex flex-col md:flex-row items-center gap-8">
+          <CardContent className="p-5 md:p-8 flex flex-col md:flex-row items-center gap-8">
             <div className="h-[200px] w-full md:w-1/2">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -389,13 +389,13 @@ export default function AdminStatsTab() {
 
         {/* Device Distribution */}
         <Card className="border-none shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden">
-          <CardHeader className="p-8 pb-2">
+          <CardHeader className="p-5 md:p-8 pb-2">
             <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
               <Smartphone className="w-5 h-5 text-slate-400" />
               기기별 접속
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-8 pt-4">
+          <CardContent className="p-5 md:p-8 pt-4">
             <div className="space-y-6">
               {detailed?.deviceDistribution?.map((item: any, i: number) => (
                 <div key={i} className="space-y-2">
@@ -417,13 +417,13 @@ export default function AdminStatsTab() {
 
         {/* Top Referrers */}
         <Card className="border-none shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden">
-          <CardHeader className="p-8 pb-2">
+          <CardHeader className="p-5 md:p-8 pb-2">
             <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
               <Globe className="w-5 h-5 text-slate-400" />
               유입 경로 (Top 5)
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-8 pt-4">
+          <CardContent className="p-5 md:p-8 pt-4">
             <div className="space-y-4">
               {detailed?.topReferrers?.map((item: any, i: number) => (
                 <div key={i} className="flex items-center justify-between">
@@ -437,7 +437,7 @@ export default function AdminStatsTab() {
 
         {/* Top Keywords */}
         <Card className="border-none shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden lg:col-span-3">
-          <CardHeader className="p-8 pb-2">
+          <CardHeader className="p-5 md:p-8 pb-2">
             <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
               <Search className="w-5 h-5 text-emerald-500" />
               유입 검색어 (Top 10)

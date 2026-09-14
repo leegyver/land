@@ -59,6 +59,17 @@ export default function AdminPage() {
     setVisitedTabs(prev => prev.includes(newTab) ? prev : [...prev, newTab]);
   };
 
+  // 모바일 가로 스크롤 시 선택된 탭이 뷰포트 내에 잘 보이도록 자동 스크롤
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const activeTabEl = document.querySelector(`[role="tab"][data-state="active"]`);
+      if (activeTabEl) {
+        activeTabEl.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [activeTab]);
+
   // 해당 탭을 열었을 때만 쿼리 활성화 (불필요한 동시 호출 방지)
   const { 
     data: properties = [], 
@@ -205,20 +216,20 @@ export default function AdminPage() {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-        <TabsList className="bg-slate-100/80 p-1 rounded-2xl border border-slate-200 shadow-inner h-14 w-full md:w-auto flex overflow-x-auto whitespace-nowrap">
+        <TabsList className="bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200 shadow-inner h-14 w-full md:w-auto flex justify-start items-center overflow-x-auto whitespace-nowrap scrollbar-none gap-1.5">
           {(user?.role === "admin" || user?.role === "master") && (
-            <TabsTrigger value="stats" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">통계 요약</TabsTrigger>
+            <TabsTrigger value="stats" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-semibold transition-all text-sm">통계 요약</TabsTrigger>
           )}
-          <TabsTrigger value="properties" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">부동산 매물 관리</TabsTrigger>
+          <TabsTrigger value="properties" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-semibold transition-all text-sm">부동산 매물 관리</TabsTrigger>
           {(user?.role === "admin" || user?.role === "master") && (
             <>
-              <TabsTrigger value="auctions" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all text-amber-900 bg-amber-100/60 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">🔨 경매·공매 관리</TabsTrigger>
-              <TabsTrigger value="news" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">뉴스 소식</TabsTrigger>
-              <TabsTrigger value="newsletter" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">구독자 관리</TabsTrigger>
-              <TabsTrigger value="banners" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">배너 관리</TabsTrigger>
-              <TabsTrigger value="popups" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">팝업 관리</TabsTrigger>
-              <TabsTrigger value="users" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">사용자 권한</TabsTrigger>
-              <TabsTrigger value="config" className="flex-1 md:flex-none rounded-xl px-4 md:px-8 h-full font-semibold transition-all">사이트 설정</TabsTrigger>
+              <TabsTrigger value="auctions" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-semibold transition-all text-sm text-amber-900 bg-amber-100/60 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">🔨 경매·공매 관리</TabsTrigger>
+              <TabsTrigger value="news" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-semibold transition-all text-sm">뉴스 소식</TabsTrigger>
+              <TabsTrigger value="newsletter" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-semibold transition-all text-sm">구독자 관리</TabsTrigger>
+              <TabsTrigger value="banners" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-semibold transition-all text-sm">배너 관리</TabsTrigger>
+              <TabsTrigger value="popups" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-semibold transition-all text-sm">팝업 관리</TabsTrigger>
+              <TabsTrigger value="users" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-semibold transition-all text-sm">사용자 권한</TabsTrigger>
+              <TabsTrigger value="config" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-semibold transition-all text-sm">사이트 설정</TabsTrigger>
             </>
           )}
         </TabsList>
@@ -232,18 +243,18 @@ export default function AdminPage() {
 
           <TabsContent value="properties" className="mt-0 focus-visible:outline-none">
             <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden">
-              <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50/30">
-                <h2 className="text-2xl font-bold text-slate-900">부동산 매물 관리</h2>
-                <div className="flex gap-2">
+              <div className="p-4 md:p-8 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50/30">
+                <h2 className="text-xl md:text-2xl font-bold text-slate-900">부동산 매물 관리</h2>
+                <div className="flex gap-2 w-full md:w-auto">
                   {(user?.role === "admin" || user?.role === "master") && (
-                    <Button variant="outline" size="sm" className="rounded-xl" onClick={() => setIsImportModalOpen(true)}>스프레드시트 로드</Button>
+                    <Button variant="outline" size="sm" className="rounded-xl flex-1 md:flex-none" onClick={() => setIsImportModalOpen(true)}>스프레드시트 로드</Button>
                   )}
                   {(["admin", "master"].includes(user?.role as string) || (user?.role === 'realtor' && ["monthly", "yearly", "approved", "lifetime"].includes(user?.subscriptionTier as string))) && (
-                    <a href="/admin/properties/new" className="bg-primary text-white rounded-xl px-4 py-2 text-sm font-bold shadow-lg shadow-primary/20">새 매물 등록</a>
+                    <a href="/admin/properties/new" className="bg-primary text-white rounded-xl px-4 py-2 text-sm font-bold shadow-lg shadow-primary/20 text-center flex-1 md:flex-none">새 매물 등록</a>
                   )}
                 </div>
               </div>
-              <div className="p-8">
+              <div className="p-4 md:p-8">
                 <AdminPropertyTab properties={properties} isLoading={isLoadingProperties} isError={isErrorProperties} error={errorProperties} refetch={refetchProperties} />
               </div>
             </div>

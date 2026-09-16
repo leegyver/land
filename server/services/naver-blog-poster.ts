@@ -468,71 +468,96 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     const insertBannerWithLink = async (filePath: string, linkUrl: string, label: string) => {
       try {
         console.log(`[NaverPoster] ${label} 이미지 주입 시작...`);
-        await page.evaluate(() => window.scrollTo(0, 0));
-        await page.waitForTimeout(200);
-        await waitEditorIdle(3);
+        await waitEditorIdle(2);
 
-        // 툴바 활성화를 위해 본문 빈 영역 클릭 및 Escape
-        await page.keyboard.press('Escape').catch(() => {});
-        const mainContainer = page.locator('.se-main-container').first();
-        await mainContainer.click({ position: { x: 300, y: 300 }, force: true }).catch(() => {});
-        await page.waitForTimeout(200);
-
-        const currentPhotoBtn = page.locator('button[data-name="image"], button:has-text("사진")').first();
-        await currentPhotoBtn.waitFor({ state: "visible", timeout: 8000 });
+        // 상단 사진 추가 버튼 (고유 클래스 사용)
+        const photoBtn = page.locator('button.se-image-toolbar-button').first();
+        await photoBtn.waitFor({ state: "visible", timeout: 8000 });
 
         const [fileChooser] = await Promise.all([
           page.waitForEvent("filechooser", { timeout: 10000 }),
-          currentPhotoBtn.click({ force: true })
+          photoBtn.click({ force: true })
         ]);
         await fileChooser.setFiles([filePath]);
-        await page.waitForTimeout(1000);
+        console.log(`[NaverPoster] ${label} 파일 주입 완료.`);
+        await page.waitForTimeout(1500);
 
+        // 개별 사진 레이아웃 옵션 팝업 처리
         try {
-          const indBtn = page.locator('label[for="image-type-list"], button#image-type-list').first();
+          const indBtn = page.locator('label[for="image-type-list"], button#image-type-list, .se-image-type-option-list').first();
           if (await indBtn.isVisible({ timeout: 1500 }).catch(() => false)) {
             await indBtn.click({ force: true });
             await page.waitForTimeout(400);
           }
         } catch (e) {}
 
-        await waitEditorIdle(5);
+        // 라이브러리 사이드 패널 닫기
+        try {
+          const sideCloseBtn = page.locator('button.se-side-panel-close-button, button.se-help-panel-close-button').first();
+          if (await sideCloseBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+            await sideCloseBtn.click({ force: true });
+            await page.waitForTimeout(300);
+          }
+        } catch (e) {}
 
-        // 방금 추가된 배너 이미지 클릭 후 하이퍼링크 설정
+        await waitEditorIdle(3);
+
+        // 배너 이미지 클릭 후 하이퍼링크 설정
         try {
           const lastImg = page.locator('.se-component.se-image img').last();
-          await lastImg.scrollIntoViewIfNeeded().catch(() => {});
-          await lastImg.click({ force: true });
-          await page.waitForTimeout(300);
+          if (await lastImg.isVisible({ timeout: 2000 }).catch(() => false)) {
+            await lastImg.click({ force: true });
+            await page.waitForTimeout(400);
 
-          const linkBtn = page.locator('.se-link-toolbar-button, button[data-name="text-link"]').first();
-          if (await linkBtn.isVisible({ timeout: 2000 })) {
-            await linkBtn.click({ force: true });
-            await page.waitForTimeout(300);
-            const urlInput = page.locator('input.se-custom-layer-link-input').first();
-            if (await urlInput.isVisible({ timeout: 2000 })) {
-              await urlInput.fill(linkUrl);
-              await page.waitForTimeout(100);
-              await page.keyboard.press('Enter');
+            const linkBtn = page.locator('button.se-link-toolbar-button[data-name="image-link"], button[data-name="image-link"], button[data-name="text-link"]').first();
+            if (await linkBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+              await linkBtn.click({ force: true });
               await page.waitForTimeout(300);
-              console.log(`[NaverPoster] ✅ ${label} 하이퍼링크 연결 성공 (${linkUrl})`);
+
+              const urlInput = page.locator('input.se-custom-layer-link-input, input[placeholder*="http"], input[placeholder*="링크"]').first();
+              if (await urlInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+                await urlInput.fill(linkUrl);
+                await page.keyboard.press('Enter');
+                await page.waitForTimeout(300);
+                console.log(`[NaverPoster] ✅ ${label} 이미지 하이퍼링크 연결 성공 (${linkUrl})`);
+              }
             }
           }
         } catch (linkErr) {
-          console.warn(`[NaverPoster] ${label} 링크 연결 중 경고:`, linkErr);
+          console.warn(`[NaverPoster] ${label} 이미지 링크 연결 중 경고:`, linkErr);
         }
 
-        // 링크 팝업 닫기 및 이미지 선택 해제 (상단 사진 버튼 활성화 필수)
-        await page.keyboard.press('Escape');
-        await page.waitForTimeout(200);
-        await mainContainer.click({ position: { x: 300, y: 600 }, force: true }).catch(() => {});
-        await page.waitForTimeout(200);
-        await page.keyboard.press('ArrowDown');
+        // 링크 팝업 닫기 및 커서를 배너 아래 새 단락으로 이동
+        await page.keyboard.press('Escape').catch(() => {});
+        await page.waitForTimeout(150);
+        await page.keyboard.press('ArrowDown').catch(() => {});
         await page.waitForTimeout(100);
-        await page.keyboard.press('Enter');
+        await page.keyboard.press('Enter').catch(() => {});
         await page.waitForTimeout(200);
+
+        // 모바일/PC 100% 터치 접근성을 위해 배너 바로 아래에 터치 가능한 텍스트 링크 항상 함께 배치
+        if (linkUrl.includes('kakao.com')) {
+          await page.keyboard.type(`👉 카카오톡 1:1 상담 바로가기 : ${linkUrl}`);
+          await page.keyboard.press('Enter');
+          await page.waitForTimeout(200);
+        } else if (linkUrl.includes('tel') || linkUrl.includes('leegyver.com/tel')) {
+          await page.keyboard.type(`👉 전화 상담 바로 연결 : 010-4787-3120 (터치 시 통화 연결)`);
+          await page.keyboard.press('Enter');
+          await page.waitForTimeout(200);
+        }
       } catch (err) {
-        console.warn(`[NaverPoster] ${label} 삽입 실패:`, err);
+        console.warn(`[NaverPoster] ${label} 이미지 삽입 실패, 텍스트 링크로 폴백 대체:`, err);
+        // 이미지 삽입이 실패하더라도 연락처/상담 링크는 본문에 100% 보존
+        try {
+          if (linkUrl.includes('kakao.com')) {
+            await page.keyboard.type(`💬 [카카오톡 실시간 1:1 상담 문의]\n👉 바로가기: ${linkUrl}\n`);
+            await page.keyboard.press('Enter');
+          } else {
+            await page.keyboard.type(`📞 [전화 상담 바로 연결]\n☎ 대표 공인중개사: 010-4787-3120\n`);
+            await page.keyboard.press('Enter');
+          }
+          await page.waitForTimeout(200);
+        } catch (fbErr) {}
       }
     };
 
@@ -542,26 +567,18 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
       propertyPhotosInserted = true;
       try {
         console.log(`[NaverPoster] 매물 사진 ${localPropertyImages.length}개 업로드 시작...`);
-        await page.evaluate(() => window.scrollTo(0, 0));
-        await page.waitForTimeout(200);
-        await waitEditorIdle(3);
+        await waitEditorIdle(2);
 
-        // 툴바 활성화를 위해 본문 빈 영역 클릭 및 Escape
-        await page.keyboard.press('Escape').catch(() => {});
-        const mainContainer = page.locator('.se-main-container').first();
-        await mainContainer.click({ position: { x: 300, y: 300 }, force: true }).catch(() => {});
-        await page.waitForTimeout(200);
-
-        const currentPhotoBtn = page.locator('button[data-name="image"], button:has-text("사진")').first();
-        await currentPhotoBtn.waitFor({ state: "visible", timeout: 8000 });
+        const photoBtn = page.locator('button.se-image-toolbar-button').first();
+        await photoBtn.waitFor({ state: "visible", timeout: 8000 });
 
         const [fileChooser] = await Promise.all([
-          page.waitForEvent("filechooser", { timeout: 10000 }),
-          currentPhotoBtn.click({ force: true })
+          page.waitForEvent("filechooser", { timeout: 12000 }),
+          photoBtn.click({ force: true })
         ]);
         await fileChooser.setFiles(localPropertyImages);
         console.log("[NaverPoster] 매물 사진 주입 완료. 레이아웃 팝업 대기...");
-        await page.waitForTimeout(1200);
+        await page.waitForTimeout(1500);
 
         try {
           const individualPhotoBtn = page.locator(
@@ -572,6 +589,15 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
             await page.waitForTimeout(500);
           }
         } catch (popErr) {}
+
+        // 라이브러리 사이드 패널 닫기
+        try {
+          const sideCloseBtn = page.locator('button.se-side-panel-close-button, button.se-help-panel-close-button').first();
+          if (await sideCloseBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+            await sideCloseBtn.click({ force: true });
+            await page.waitForTimeout(300);
+          }
+        } catch (e) {}
 
         // 네이버 서버 이미지 업로드 완료 대기 (중요: 줄바꿈 씹힘 방지)
         await waitEditorIdle(15);
@@ -591,14 +617,11 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
         } catch (seoErr) {}
 
         // 커서를 사진 아래 새 단락으로 확실히 이동
-        await page.keyboard.press('Escape');
+        await page.keyboard.press('Escape').catch(() => {});
         await page.waitForTimeout(200);
-        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-        await page.waitForTimeout(300);
-        await mainContainer.click({ position: { x: 200, y: 800 }, force: true }).catch(() => {});
-        await page.keyboard.press('PageDown');
-        await page.keyboard.press('ArrowDown');
-        await page.keyboard.press('Enter');
+        await page.keyboard.press('PageDown').catch(() => {});
+        await page.keyboard.press('ArrowDown').catch(() => {});
+        await page.keyboard.press('Enter').catch(() => {});
         await page.waitForTimeout(200);
       } catch (imgErr) {
         console.warn("[NaverPoster] 매물 사진 업로드 중 오류 발생:", imgErr);
@@ -707,12 +730,15 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
       console.warn("[NaverPoster] 공개 설정 선택 건너뜀:", e);
     }
 
-    // 6. 태그 입력 (필수 4대 태그 보장)
+    // 6. 태그 입력 (사용자 지정 태그 최우선 + 필수 태그 최대 10개)
     const MANDATORY_TAGS = ["강화도부동산", "강화군부동산", "이가이버", "부동산전문"];
+    const userCleanTags = (options.tags || [])
+      .map(t => String(t).replace(/^#/, "").replace(/\s+/g, "").trim())
+      .filter(Boolean);
     const tagsToPublish = Array.from(
       new Set([
-        ...MANDATORY_TAGS,
-        ...(options.tags || []).map(t => t.replace(/^#/, "").trim())
+        ...userCleanTags,
+        ...MANDATORY_TAGS
       ])
     ).filter(Boolean).slice(0, 10);
 
@@ -721,11 +747,12 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
       const tagInput = page.locator('input#tag-input, input.tag_input__zdSy_, input[placeholder*="태그"]').first();
       if (await tagInput.isVisible({ timeout: 2000 })) {
         for (const tag of tagsToPublish) {
-          const cleanTag = tag.replace(/^#/, "").trim();
+          const cleanTag = tag.replace(/^#/, "").replace(/\s+/g, "").trim();
           if (cleanTag) {
+            await tagInput.click().catch(() => {});
             await tagInput.fill(cleanTag);
             await page.keyboard.press("Enter");
-            await page.waitForTimeout(50);
+            await page.waitForTimeout(300);
           }
         }
       }

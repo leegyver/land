@@ -103,7 +103,8 @@ export function NaverBlogPostModal({
       
       const MANDATORY_TAGS = ["강화도부동산", "강화군부동산", "이가이버", "부동산전문"];
       const rawTags = Array.isArray(data.tags) ? data.tags : [];
-      const combinedTags = Array.from(new Set([...MANDATORY_TAGS, ...rawTags.map((t: string) => String(t).replace(/^#/, "").trim())])).filter(Boolean).slice(0, 10);
+      const userCleanTags = rawTags.map((t: string) => String(t).replace(/^#/, "").replace(/\s+/g, "").trim()).filter(Boolean);
+      const combinedTags = Array.from(new Set([...userCleanTags, ...MANDATORY_TAGS])).filter(Boolean).slice(0, 10);
       setTags(combinedTags);
       
       const imgs = Array.isArray(data.images) ? data.images : [];
@@ -282,7 +283,8 @@ export function NaverBlogPostModal({
     setPublishedUrl(null);
     try {
       const MANDATORY_TAGS = ["강화도부동산", "강화군부동산", "이가이버", "부동산전문"];
-      const finalTagsToPublish = Array.from(new Set([...MANDATORY_TAGS, ...tags.map(t => t.replace(/^#/, "").trim())])).filter(Boolean).slice(0, 10);
+      const userCleanTags = tags.map(t => String(t).replace(/^#/, "").replace(/\s+/g, "").trim()).filter(Boolean);
+      const finalTagsToPublish = Array.from(new Set([...userCleanTags, ...MANDATORY_TAGS])).slice(0, 10);
 
       const categoryName = targetType === "property" ? "매물 정보" : "일상다반사";
 

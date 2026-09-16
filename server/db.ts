@@ -6,9 +6,7 @@ const dbPath = path.join(process.cwd(), 'database.sqlite');
 
 // DB 연결 (파일이 없으면 생성됨)
 console.log(`[DB] Connecting to SQLite at: ${dbPath}`);
-export const db = new Database(dbPath, {
-  verbose: console.log
-});
+export const db = new Database(dbPath);
 
 // 동시성 및 쓰기 성능 향상을 위한 WAL 모드 활성화 (서버 속도 최적화 3단계)
 db.pragma('journal_mode = WAL');

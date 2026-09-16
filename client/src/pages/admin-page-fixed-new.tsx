@@ -5,7 +5,7 @@ import { useQueryClient, useIsFetching } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Loader2 } from "lucide-react";
+import { RefreshCw, Loader2, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -39,17 +39,18 @@ export default function AdminPage() {
   const { user } = useAuth();
   const [location] = useLocation();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("stats");
+  const [activeTab, setActiveTab] = useState("properties");
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // 방문한 탭만 추적하여 필요 시에만 백엔드 API 요청 (초기 진입 부하 대폭 감소)
-  const [visitedTabs, setVisitedTabs] = useState<string[]>(() => ["stats"]);
+  // 기본적으로 '매물 관리'만 로드하며, 무거운 '통계'는 클릭 시에만 지연 로드
+  const [visitedTabs, setVisitedTabs] = useState<string[]>(() => ["properties"]);
 
   // URL의 ?tab= 파라미터를 읽어 활성 탭 동기화
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const tabParam = searchParams.get("tab");
-    const targetTab = tabParam || ((user && user.role !== "admin" && user.role !== "master") ? "properties" : "stats");
+    const targetTab = tabParam || "properties";
     setActiveTab(targetTab);
     setVisitedTabs(prev => prev.includes(targetTab) ? prev : [...prev, targetTab]);
   }, [location, user]);
@@ -200,6 +201,15 @@ export default function AdminPage() {
           <p className="text-slate-500 max-w-lg">강화도의 소중한 매물과 소식을 정교하게 관리하세요.</p>
         </div>
         <div className="flex items-center gap-3">
+          {(user?.role === "admin" || user?.role === "master") && (
+            <a
+              href="/admin/stats"
+              className="rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-4 py-2.5 text-sm font-bold shadow-sm transition-all flex items-center gap-2"
+            >
+              <BarChart3 className="h-4 w-4 text-indigo-600" />
+              <span>통계 분석실</span>
+            </a>
+          )}
           <AdminNotifications />
           <Button 
             variant="outline" 
@@ -217,10 +227,10 @@ export default function AdminPage() {
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200 shadow-inner h-14 w-full md:w-auto flex justify-start items-center overflow-x-auto whitespace-nowrap scrollbar-none gap-1.5">
+          <TabsTrigger value="properties" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-semibold transition-all text-sm">부동산 매물 관리</TabsTrigger>
           {(user?.role === "admin" || user?.role === "master") && (
             <TabsTrigger value="stats" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-semibold transition-all text-sm">통계 요약</TabsTrigger>
           )}
-          <TabsTrigger value="properties" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-semibold transition-all text-sm">부동산 매물 관리</TabsTrigger>
           {(user?.role === "admin" || user?.role === "master") && (
             <>
               <TabsTrigger value="auctions" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-semibold transition-all text-sm text-amber-900 bg-amber-100/60 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">🔨 경매·공매 관리</TabsTrigger>

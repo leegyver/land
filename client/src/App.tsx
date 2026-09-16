@@ -29,6 +29,7 @@ const SajuPage = lazy(() => import("@/pages/SajuPage"));
 const ContactPage = lazy(() => import("@/pages/ContactPage"));
 const ProfilePage = lazy(() => import("@/pages/profile-page-v2"));
 const AdminPage = lazy(() => import("@/pages/admin-page-fixed-new"));
+const AdminStatsPage = lazy(() => import("@/pages/AdminStatsPage"));
 // @ts-ignore
 const PropertyForm = lazy(() => import("@/pages/PropertyForm"));
 const CommunityPage = lazy(() => import("@/pages/CommunityPage"));
@@ -65,6 +66,19 @@ function Router({ user }: { user: any }) {
         <Route path="/contact" component={ContactPage} />
         <Route path="/profile" component={ProfilePage} />
         <Route path="/pricing" component={PricingPage} />
+        <Route path="/admin/stats">
+          {() => (
+            user ? (
+              ["admin", "master"].includes(user.role) ? (
+                <AdminStatsPage />
+              ) : (
+                <Redirect to="/admin" />
+              )
+            ) : (
+              <Redirect to="/auth" />
+            )
+          )}
+        </Route>
         <Route path="/admin">
           {() => (
             user ? (

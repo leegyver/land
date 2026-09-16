@@ -303,10 +303,19 @@ function cleanAndFormatContent(text: string): string {
   return cleaned.trim();
 }
 
+let isPublishing = false;
+
 /**
  * 네이버 스마트에디터 ONE을 통해 블로그 글 자동 발행
  */
 export async function publishToNaverBlog(options: PublishOptions): Promise<PublishResult> {
+  if (isPublishing) {
+    return {
+      success: false,
+      error: "현재 다른 네이버 블로그 발행 작업이 진행 중입니다. 잠시 후 다시 시도해주세요."
+    };
+  }
+
   if (!fs.existsSync(SESSION_FILE)) {
     return {
       success: false,
@@ -314,6 +323,7 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     };
   }
 
+  isPublishing = true;
   const config = getNaverConfig();
   const blogId = config.blogId;
   const isPublic = options.isPublic ?? (config.defaultVisibility === "public");
@@ -321,19 +331,25 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
   console.log(`[NaverPoster] 블로그 포스팅 시작: blogId=${blogId}, title=${options.title}, isPublic=${isPublic}`);
 
   const isLinux = process.platform === "linux";
-  const browser = await chromium.launch({
-    headless: isLinux ? true : false,
-    args: [
-      "--disable-blink-features=AutomationControlled",
-      "--no-sandbox",
-      "--disable-setuid-sandbox"
-    ]
-  });
-
+  let browser: any = null;
   let context: BrowserContext | null = null;
   let page: any = null;
+  let browserPid: number | undefined;
 
   try {
+    browser = await chromium.launch({
+      headless: isLinux ? true : false,
+      args: [
+        "--disable-blink-features=AutomationControlled",
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage"
+      ]
+    });
+
+    browserPid = browser.process?.()?.pid;
+    console.log(`[NaverPoster] Chromium 브라우저 구동 완료 (PID: ${browserPid || 'unknown'})`);
+
     context = await browser.newContext({
       storageState: SESSION_FILE,
       userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
@@ -454,7 +470,13 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
         console.log(`[NaverPoster] ${label} 이미지 주입 시작...`);
         await page.evaluate(() => window.scrollTo(0, 0));
         await page.waitForTimeout(200);
-        await waitEditorIdle(5);
+        await waitEditorIdle(3);
+
+        // 툴바 활성화를 위해 본문 빈 영역 클릭 및 Escape
+        await page.keyboard.press('Escape').catch(() => {});
+        const mainContainer = page.locator('.se-main-container').first();
+        await mainContainer.click({ position: { x: 300, y: 300 }, force: true }).catch(() => {});
+        await page.waitForTimeout(200);
 
         const currentPhotoBtn = page.locator('button[data-name="image"], button:has-text("사진")').first();
         await currentPhotoBtn.waitFor({ state: "visible", timeout: 8000 });
@@ -503,7 +525,6 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
         // 링크 팝업 닫기 및 이미지 선택 해제 (상단 사진 버튼 활성화 필수)
         await page.keyboard.press('Escape');
         await page.waitForTimeout(200);
-        const mainContainer = page.locator('.se-main-container').first();
         await mainContainer.click({ position: { x: 300, y: 600 }, force: true }).catch(() => {});
         await page.waitForTimeout(200);
         await page.keyboard.press('ArrowDown');
@@ -522,6 +543,13 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
       try {
         console.log(`[NaverPoster] 매물 사진 ${localPropertyImages.length}개 업로드 시작...`);
         await page.evaluate(() => window.scrollTo(0, 0));
+        await page.waitForTimeout(200);
+        await waitEditorIdle(3);
+
+        // 툴바 활성화를 위해 본문 빈 영역 클릭 및 Escape
+        await page.keyboard.press('Escape').catch(() => {});
+        const mainContainer = page.locator('.se-main-container').first();
+        await mainContainer.click({ position: { x: 300, y: 300 }, force: true }).catch(() => {});
         await page.waitForTimeout(200);
 
         const currentPhotoBtn = page.locator('button[data-name="image"], button:has-text("사진")').first();
@@ -567,7 +595,6 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
         await page.waitForTimeout(200);
         await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
         await page.waitForTimeout(300);
-        const mainContainer = page.locator('.se-main-container').first();
         await mainContainer.click({ position: { x: 200, y: 800 }, force: true }).catch(() => {});
         await page.keyboard.press('PageDown');
         await page.keyboard.press('ArrowDown');
@@ -730,9 +757,9 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     }
 
     // 세션 갱신 저장
-    await context.storageState({ path: SESSION_FILE });
-
-    await browser.close();
+    if (context) {
+      await context.storageState({ path: SESSION_FILE }).catch(() => {});
+    }
 
     return {
       success: true,
@@ -744,16 +771,35 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     if (page) {
       try {
         const errorShotPath = path.join(DATA_DIR, "publish-error.png");
-        await page.screenshot({ path: errorShotPath });
+        await page.screenshot({ path: errorShotPath, timeout: 4000 });
         console.log("[NaverPoster] 에러 스크린샷 저장 완료:", errorShotPath);
       } catch (shotErr) {}
-    }
-    if (context) {
-      try { await browser.close(); } catch (e) {}
     }
     return {
       success: false,
       error: err.message || "네이버 블로그 포스팅 중 오류가 발생했습니다."
     };
+  } finally {
+    try {
+      if (page) await page.close().catch(() => {});
+    } catch (e) {}
+    try {
+      if (context) await context.close().catch(() => {});
+    } catch (e) {}
+    try {
+      if (browser) await browser.close().catch(() => {});
+    } catch (e) {}
+
+    // 리눅스 환경에서 좀비 Chromium 프로세스 방지 (SIGKILL 강제 정리)
+    if (browserPid && process.platform === "linux") {
+      try {
+        process.kill(browserPid, "SIGKILL");
+        console.log(`[NaverPoster] 브라우저 PID(${browserPid}) 정리 확인`);
+      } catch (e) {
+        // 이미 정상 종료됨
+      }
+    }
+
+    isPublishing = false;
   }
 }

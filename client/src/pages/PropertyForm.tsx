@@ -396,16 +396,12 @@ function PropertyFormContent() {
                 if (params.id) {
                     queryClient.invalidateQueries({ queryKey: [`/api/properties/${params.id}`] });
                 }
-                queryClient.refetchQueries({ 
-                    predicate: (query) => typeof query.queryKey[0] === 'string' && query.queryKey[0].startsWith('/api/properties'),
-                    type: 'all'
-                });
 
                 toast({
                     title: "성공",
                     description: isEditMode ? "부동산 정보가 수정되었습니다" : "부동산 정보가 등록되었습니다",
                 });
-                setLocation("/admin");
+                setLocation("/admin?tab=properties");
             } else {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "요청 처리 실패");

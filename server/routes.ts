@@ -4093,53 +4093,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
 
-  // 파일 업로드 API (이미지 리사이징 적용)
+  // 파일 업로드 API (초고속 스트림 저장: 클라이언트 Canvas 리사이징 활용)
   app.post("/api/upload", upload.single("file"), async (req, res) => {
     try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "로그인이 필요합니다." });
+      }
+
       if (!req.file) {
         return res.status(400).json({ message: "파일이 업로드되지 않았습니다." });
       }
 
-      const originalPath = req.file.path;
-      const filename = req.file.filename;
-
-      console.log(`[Upload DEBUG] File: ${filename}, Type: ${req.file.mimetype}, Size: ${req.file.size}`);
-
-      // 이미지 파일인 경우 리사이징 수행
-      if (req.file.mimetype.startsWith('image/')) {
-        const tempPath = path.join(uploadDir, `temp_${filename}`);
-
-        try {
-          // Jimp로 이미지 리사이징 및 최적화
-          const image = await Jimp.read(originalPath);
-          const currentWidth = image.getWidth();
-
-          console.log(`[Upload] Original Width: ${currentWidth}px`);
-
-          // 가로 1200px 초과 시 비율 유지하며 리사이징
-          if (currentWidth > 1200) {
-            console.log(`[Upload] Resizing from ${currentWidth}px to 1200px`);
-            image.resize(1200, Jimp.AUTO);
-          }
-
-          // 품질 80%로 저장
-          image.quality(80);
-          await image.writeAsync(originalPath);
-
-          console.log(`[Upload] 이미지 최적화 완료(Jimp, 최대 너비 1200px): ${filename}`);
-        } catch (resizeError) {
-          console.error(`[Upload] 이미지 최적화 실패 (원본 유지):`, resizeError);
-          // 처리 실패 시 임시 파일 정리
-          if (fs.existsSync(tempPath)) {
-            fs.unlinkSync(tempPath);
-          }
-        }
-      } else {
-        console.log(`[Upload] Not an image, skipping resize. Mimetype: ${req.file.mimetype}`);
-      }
-
       const fileUrl = `/uploads/${req.file.filename}`;
-      res.json({ url: fileUrl });
+      res.status(200).json({ url: fileUrl });
     } catch (error) {
       console.error("파일 업로드 오류:", error);
       res.status(500).json({ message: "파일 업로드 중 오류가 발생했습니다." });
@@ -5413,26 +5379,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Failed to delete auction:", error);
       res.status(500).json({ message: "경매 물건 삭제 중 오류가 발생했습니다." });
-    }
-  });
-
-  // --- Upload API (인증 필수) ---
-  app.post("/api/upload", (req, res, next) => {
-    // 보안: 인증된 사용자만 파일 업로드 가능
-    if (!req.isAuthenticated()) {
-      return res.status(401).json({ message: "로그인이 필요합니다." });
-    }
-    next();
-  }, upload.single("file"), (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ message: "파일이 업로드되지 않았습니다." });
-      }
-      // Return the URL path
-      res.status(200).json({ url: `/uploads/${req.file.filename}` });
-    } catch (error) {
-      console.error("File upload error:", error);
-      res.status(500).json({ message: "파일 업로드 중 오류가 발생했습니다." });
     }
   });
 

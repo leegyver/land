@@ -475,26 +475,29 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
           photoBtn.click({ force: true })
         ]);
         await fileChooser.setFiles([filePath]);
-        console.log(`[NaverPoster] ${label} 파일 주입 완료.`);
+        console.log(`[NaverPoster] ${label} 파일 주입 완료. 네이버 업로드 완료 대기...`);
+
+        // 네이버 서버 이미지 업로드 완료 대기
+        const lastImg = page.locator('.se-component.se-image img').last();
+        await lastImg.waitFor({ state: "visible", timeout: 15000 }).catch(() => {});
         await page.waitForTimeout(2000);
 
         // 배너 이미지 클릭 후 하이퍼링크 설정
         try {
-          const lastImg = page.locator('.se-component.se-image img').last();
           if (await lastImg.isVisible({ timeout: 2000 }).catch(() => false)) {
             await lastImg.click({ force: true });
-            await page.waitForTimeout(400);
+            await page.waitForTimeout(500);
 
-            const linkBtn = page.locator('button.se-link-toolbar-button[data-name="image-link"], button[data-name="image-link"], button[data-name="text-link"]').first();
+            const linkBtn = page.locator('button.se-link-toolbar-button[data-name="image-link"]').first();
             if (await linkBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
               await linkBtn.click({ force: true });
-              await page.waitForTimeout(300);
+              await page.waitForTimeout(500);
 
-              const urlInput = page.locator('input.se-custom-layer-link-input, input[placeholder*="http"], input[placeholder*="링크"]').first();
+              const urlInput = page.locator('input.se-custom-layer-link-input').first();
               if (await urlInput.isVisible({ timeout: 2000 }).catch(() => false)) {
                 await urlInput.fill(linkUrl);
                 await page.keyboard.press('Enter');
-                await page.waitForTimeout(300);
+                await page.waitForTimeout(500);
                 console.log(`[NaverPoster] ✅ ${label} 이미지 하이퍼링크 연결 성공 (${linkUrl})`);
               }
             }
@@ -505,7 +508,7 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
 
         // 링크 팝업 닫기 및 커서를 배너 아래 새 단락으로 이동
         await page.keyboard.press('Escape').catch(() => {});
-        await page.waitForTimeout(150);
+        await page.waitForTimeout(200);
         await page.keyboard.press('ArrowDown').catch(() => {});
         await page.waitForTimeout(100);
         await page.keyboard.press('Enter').catch(() => {});
@@ -515,24 +518,30 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
         if (linkUrl.includes('kakao.com')) {
           await page.keyboard.type(`👉 카카오톡 1:1 상담 바로가기 : ${linkUrl}`);
           await page.keyboard.press('Enter');
-          await page.waitForTimeout(2000);
+          await page.waitForTimeout(1000);
         } else if (linkUrl.includes('tel') || linkUrl.includes('leegyver.com/tel')) {
           await page.keyboard.type(`👉 전화 상담 바로 연결 : 010-4787-3120 (터치 시 통화 연결)`);
           await page.keyboard.press('Enter');
           await page.waitForTimeout(500);
         }
+        await page.keyboard.press('Enter').catch(() => {});
+        await page.waitForTimeout(300);
       } catch (err) {
         console.warn(`[NaverPoster] ${label} 이미지 삽입 실패, 텍스트 링크로 폴백 대체:`, err);
         // 이미지 삽입이 실패하더라도 연락처/상담 링크는 본문에 100% 보존
         try {
           if (linkUrl.includes('kakao.com')) {
-            await page.keyboard.type(`💬 [카카오톡 실시간 1:1 상담 문의]\n👉 바로가기: ${linkUrl}\n`);
+            await page.keyboard.type(`💬 [카카오톡 실시간 1:1 상담 문의]`);
+            await page.keyboard.press('Enter');
+            await page.keyboard.type(`👉 바로가기: ${linkUrl}`);
             await page.keyboard.press('Enter');
           } else {
-            await page.keyboard.type(`📞 [전화 상담 바로 연결]\n☎ 대표 공인중개사: 010-4787-3120\n`);
+            await page.keyboard.type(`📞 [전화 상담 바로 연결]`);
+            await page.keyboard.press('Enter');
+            await page.keyboard.type(`☎ 대표 공인중개사: 010-4787-3120`);
             await page.keyboard.press('Enter');
           }
-          await page.waitForTimeout(200);
+          await page.waitForTimeout(300);
         } catch (fbErr) {}
       }
     };

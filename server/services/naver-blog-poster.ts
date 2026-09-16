@@ -470,9 +470,10 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
         console.log(`[NaverPoster] ${label} 이미지 주입 시작...`);
         await waitEditorIdle(2);
 
-        // 상단 사진 추가 버튼 (고유 클래스 사용)
-        const photoBtn = page.locator('button.se-image-toolbar-button').first();
-        await photoBtn.waitFor({ state: "visible", timeout: 8000 });
+        // 상단 사진 추가 버튼 (고유 클래스 사용 및 포커스 해제)
+        await page.keyboard.press('Escape').catch(() => {});
+        await page.waitForTimeout(200);
+        const photoBtn = page.locator('button.se-image-toolbar-button, button[data-name="image"]').first();
 
         const [fileChooser] = await Promise.all([
           page.waitForEvent("filechooser", { timeout: 10000 }),
@@ -569,8 +570,9 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
         console.log(`[NaverPoster] 매물 사진 ${localPropertyImages.length}개 업로드 시작...`);
         await waitEditorIdle(2);
 
-        const photoBtn = page.locator('button.se-image-toolbar-button').first();
-        await photoBtn.waitFor({ state: "visible", timeout: 8000 });
+        await page.keyboard.press('Escape').catch(() => {});
+        await page.waitForTimeout(200);
+        const photoBtn = page.locator('button.se-image-toolbar-button, button[data-name="image"]').first();
 
         const [fileChooser] = await Promise.all([
           page.waitForEvent("filechooser", { timeout: 12000 }),

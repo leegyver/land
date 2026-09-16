@@ -549,11 +549,11 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
         if (linkUrl.includes('kakao.com')) {
           await page.keyboard.type(`👉 카카오톡 1:1 상담 바로가기 : ${linkUrl}`);
           await page.keyboard.press('Enter');
-          await page.waitForTimeout(200);
+          await page.waitForTimeout(2000);
         } else if (linkUrl.includes('tel') || linkUrl.includes('leegyver.com/tel')) {
           await page.keyboard.type(`👉 전화 상담 바로 연결 : 010-4787-3120 (터치 시 통화 연결)`);
           await page.keyboard.press('Enter');
-          await page.waitForTimeout(200);
+          await page.waitForTimeout(500);
         }
       } catch (err) {
         console.warn(`[NaverPoster] ${label} 이미지 삽입 실패, 텍스트 링크로 폴백 대체:`, err);

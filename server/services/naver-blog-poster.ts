@@ -470,13 +470,22 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
         console.log(`[NaverPoster] ${label} 이미지 주입 시작...`);
         await waitEditorIdle(2);
 
-        // 상단 사진 추가 버튼 (고유 클래스 사용 및 포커스 해제)
+        // 1. 기존 사이드바나 팝업이 열려있다면 닫기
         await page.keyboard.press('Escape').catch(() => {});
+        try {
+          const preSideClose = page.locator('button.se-sidebar-close-button, button.se-help-panel-close-button').first();
+          if (await preSideClose.isVisible({ timeout: 500 }).catch(() => false)) {
+            await preSideClose.click({ force: true });
+            await page.waitForTimeout(200);
+          }
+        } catch (e) {}
         await page.waitForTimeout(200);
-        const photoBtn = page.locator('button.se-image-toolbar-button, button[data-name="image"]').first();
+
+        // 2. 상단 사진 추가 버튼 (정확한 클래스 사용)
+        const photoBtn = page.locator('button.se-image-toolbar-button').first();
 
         const [fileChooser] = await Promise.all([
-          page.waitForEvent("filechooser", { timeout: 10000 }),
+          page.waitForEvent("filechooser", { timeout: 12000 }),
           photoBtn.click({ force: true })
         ]);
         await fileChooser.setFiles([filePath]);
@@ -492,9 +501,9 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
           }
         } catch (e) {}
 
-        // 라이브러리 사이드 패널 닫기
+        // 라이브러리 사이드 패널 닫기 (se-sidebar-close-button)
         try {
-          const sideCloseBtn = page.locator('button.se-side-panel-close-button, button.se-help-panel-close-button').first();
+          const sideCloseBtn = page.locator('button.se-sidebar-close-button, button.se-side-panel-close-button, button.se-help-panel-close-button').first();
           if (await sideCloseBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
             await sideCloseBtn.click({ force: true });
             await page.waitForTimeout(300);
@@ -571,8 +580,16 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
         await waitEditorIdle(2);
 
         await page.keyboard.press('Escape').catch(() => {});
+        try {
+          const preSideClose = page.locator('button.se-sidebar-close-button, button.se-help-panel-close-button').first();
+          if (await preSideClose.isVisible({ timeout: 500 }).catch(() => false)) {
+            await preSideClose.click({ force: true });
+            await page.waitForTimeout(200);
+          }
+        } catch (e) {}
         await page.waitForTimeout(200);
-        const photoBtn = page.locator('button.se-image-toolbar-button, button[data-name="image"]').first();
+
+        const photoBtn = page.locator('button.se-image-toolbar-button').first();
 
         const [fileChooser] = await Promise.all([
           page.waitForEvent("filechooser", { timeout: 12000 }),
@@ -594,7 +611,7 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
 
         // 라이브러리 사이드 패널 닫기
         try {
-          const sideCloseBtn = page.locator('button.se-side-panel-close-button, button.se-help-panel-close-button').first();
+          const sideCloseBtn = page.locator('button.se-sidebar-close-button, button.se-side-panel-close-button, button.se-help-panel-close-button').first();
           if (await sideCloseBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
             await sideCloseBtn.click({ force: true });
             await page.waitForTimeout(300);

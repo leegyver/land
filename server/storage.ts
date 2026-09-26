@@ -1869,6 +1869,78 @@ export class SQLiteStorage implements IStorage {
     })) as NewsletterSubscription[];
   }
 
+  private getPopularNewsletterProperties(latestIds: number[], type: 'weekly' | 'monthly'): any[] {
+    // 직전 발송 뉴스레터에서 인기 매물로 발송되었던 ID 추출 (동일 매물 연속 반복 발송 방지)
+    let previousPopularIds: number[] = [];
+    try {
+      const lastLog = db.prepare(`
+        SELECT htmlContent FROM newsletter_logs 
+        WHERE type = ? AND success = 1 
+        ORDER BY id DESC LIMIT 1
+      `).get(type) as { htmlContent?: string } | undefined;
+
+      if (lastLog?.htmlContent) {
+        const match = lastLog.htmlContent.match(/🔥 인기 & 추천 매물[\s\S]*?💬 커뮤니티 인기 소식/);
+        if (match) {
+          const regex = /properties\/(\d+)/g;
+          let m: RegExpExecArray | null;
+          while ((m = regex.exec(match[0])) !== null) {
+            previousPopularIds.push(Number(m[1]));
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[Newsletter] Failed to fetch previous popular IDs:', e);
+    }
+    previousPopularIds = Array.from(new Set(previousPopularIds));
+
+    // 최신 등록 매물 및 직전 발송 인기매물 제외
+    const primaryExclude = Array.from(new Set([...latestIds, ...previousPopularIds]));
+    const primaryExcludeClause = primaryExclude.length > 0 ? `AND id NOT IN (${primaryExclude.join(',')})` : '';
+
+    // 1차: 최근 60일 이내 등록된 매물 중 인기/추천순 (과거 오래된 매물 독점 방지)
+    let popular = db.prepare(`
+      SELECT * FROM properties
+      WHERE isVisible = 1 AND (isSold = 0 OR isSold IS NULL)
+        AND date(createdAt, '+9 hours') >= date('now', '+9 hours', '-60 days')
+        ${primaryExcludeClause}
+      ORDER BY featured DESC, viewCount DESC, createdAt DESC
+      LIMIT 4
+    `).all() as any[];
+
+    // 2차: 4개 미만인 경우 전체 기간에서 보충 (직전 발송 매물은 계속 제외)
+    if (popular.length < 4) {
+      const currentIds = Array.from(new Set([...primaryExclude, ...popular.map(p => p.id)]));
+      const fallbackClause = currentIds.length > 0 ? `AND id NOT IN (${currentIds.join(',')})` : '';
+      const needed = 4 - popular.length;
+      const additional = db.prepare(`
+        SELECT * FROM properties
+        WHERE isVisible = 1 AND (isSold = 0 OR isSold IS NULL)
+          ${fallbackClause}
+        ORDER BY featured DESC, viewCount DESC, createdAt DESC
+        LIMIT ?
+      `).all(needed) as any[];
+      popular = [...popular, ...additional];
+    }
+
+    // 3차: 그래도 매물이 부족한 경우 직전 발송 제외 조건까지 풀어서 4개 보충
+    if (popular.length < 4) {
+      const currentIds = Array.from(new Set([...latestIds, ...popular.map(p => p.id)]));
+      const finalClause = currentIds.length > 0 ? `AND id NOT IN (${currentIds.join(',')})` : '';
+      const needed = 4 - popular.length;
+      const finalFallback = db.prepare(`
+        SELECT * FROM properties
+        WHERE isVisible = 1 AND (isSold = 0 OR isSold IS NULL)
+          ${finalClause}
+        ORDER BY featured DESC, viewCount DESC, createdAt DESC
+        LIMIT ?
+      `).all(needed) as any[];
+      popular = [...popular, ...finalFallback];
+    }
+
+    return popular;
+  }
+
   async getWeeklyNewsletterData(): Promise<{ latestProperties: Property[]; popularProperties: Property[]; posts: Post[]; news: News[] }> {
     // 1. 최신 등록 매물 (최신 등록순, 공개 및 판매중 매물)
     const latestProperties = db.prepare(`
@@ -1878,15 +1950,9 @@ export class SQLiteStorage implements IStorage {
       LIMIT 4
     `).all() as any[];
 
-    // 2. 인기/추천 매물 (최신 매물 제외, 추천순/조회수순)
-    const latestIds = latestProperties.map(p => p.id).join(',');
-    const excludeClause = latestIds ? `AND id NOT IN (${latestIds})` : '';
-    const popularProperties = db.prepare(`
-      SELECT * FROM properties
-      WHERE isVisible = 1 AND (isSold = 0 OR isSold IS NULL) ${excludeClause}
-      ORDER BY featured DESC, viewCount DESC, createdAt DESC
-      LIMIT 4
-    `).all() as any[];
+    // 2. 인기/추천 매물 (최근 60일 등록 매물 중 인기순 & 직전 발송 매물 순환 제외)
+    const latestIds = latestProperties.map(p => p.id);
+    const popularProperties = this.getPopularNewsletterProperties(latestIds, 'weekly');
 
     // 3. 커뮤니티 소식
     let posts = db.prepare(`
@@ -1949,15 +2015,9 @@ export class SQLiteStorage implements IStorage {
       LIMIT 4
     `).all() as any[];
 
-    // 2. 월간 인기/추천 매물
-    const latestIds = latestProperties.map(p => p.id).join(',');
-    const excludeClause = latestIds ? `AND id NOT IN (${latestIds})` : '';
-    const popularProperties = db.prepare(`
-      SELECT * FROM properties
-      WHERE isVisible = 1 AND (isSold = 0 OR isSold IS NULL) ${excludeClause}
-      ORDER BY featured DESC, viewCount DESC, createdAt DESC
-      LIMIT 4
-    `).all() as any[];
+    // 2. 월간 인기/추천 매물 (최근 60일 등록 매물 중 인기순 & 직전 발송 매물 순환 제외)
+    const latestIds = latestProperties.map(p => p.id);
+    const popularProperties = this.getPopularNewsletterProperties(latestIds, 'monthly');
 
     // 3. 커뮤니티 소식
     let posts = db.prepare(`

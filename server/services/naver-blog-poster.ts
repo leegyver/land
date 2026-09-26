@@ -356,6 +356,10 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
       viewport: { width: 1280, height: 900 }
     });
 
+    if (!context) {
+      throw new Error("브라우저 컨텍스트 생성에 실패했습니다.");
+    }
+
     page = await context.newPage();
 
     let dialogMessage = "";

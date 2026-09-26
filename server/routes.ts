@@ -1489,6 +1489,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const item of items) {
         await storage.updatePropertyUrgentOrder(item.id, item.order);
       }
+      memoryCache.deleteByPrefix("properties_");
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: "Failed to update urgent order" });
@@ -1504,6 +1505,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const item of items) {
         await storage.updatePropertyNegotiableOrder(item.id, item.order);
       }
+      memoryCache.deleteByPrefix("properties_");
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: "Failed to update negotiable order" });
@@ -1519,6 +1521,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const item of items) {
         await storage.updatePropertyLongTermOrder(item.id, item.order);
       }
+      memoryCache.deleteByPrefix("properties_");
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: "Failed to update long-term order" });
@@ -1661,6 +1664,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const { urgentOrder } = req.body;
       await storage.updatePropertyUrgentOrder(id, urgentOrder);
+      memoryCache.deleteByPrefix("properties_");
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: "Failed to update property urgent order" });
@@ -1675,6 +1679,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const { negotiableOrder } = req.body;
       await storage.updatePropertyNegotiableOrder(id, negotiableOrder);
+      memoryCache.deleteByPrefix("properties_");
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: "Failed to update property negotiable order" });
@@ -1689,6 +1694,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const { longTermOrder } = req.body;
       await storage.updatePropertyLongTermOrder(id, longTermOrder);
+      memoryCache.deleteByPrefix("properties_");
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: "Failed to update property long-term order" });
@@ -3317,6 +3323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Property not found" });
       }
 
+      memoryCache.deleteByPrefix("properties_");
       res.json({ message: "Property order updated successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to update property order" });
@@ -3350,6 +3357,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Property not found" });
       }
 
+      memoryCache.deleteByPrefix("properties_");
       res.json({ message: "Property visibility updated successfully" });
     } catch (error) {
       console.error("Error updating property visibility:", error);
@@ -3383,6 +3391,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Property not found" });
       }
 
+      memoryCache.deleteByPrefix("properties_");
       res.json({ message: "Property featured status updated successfully" });
     } catch (error) {
       console.error("Error updating property featured status:", error);
@@ -3403,6 +3412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const success = await storage.togglePropertyUrgent(propertyId, urgent);
       if (!success) return res.status(404).json({ message: "Property not found" });
+      memoryCache.deleteByPrefix("properties_");
       res.json({ message: "Property urgent status updated successfully" });
     } catch (err) {
       res.status(500).json({ message: "Failed to update property urgent status" });
@@ -3422,6 +3432,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const success = await storage.togglePropertyNegotiable(propertyId, negotiable);
       if (!success) return res.status(404).json({ message: "Property not found" });
+      memoryCache.deleteByPrefix("properties_");
       res.json({ message: "Property negotiable status updated successfully" });
     } catch (err) {
       res.status(500).json({ message: "Failed to update property negotiable status" });
@@ -3441,6 +3452,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const success = await storage.togglePropertyLongTerm(propertyId, longTerm);
       if (!success) return res.status(404).json({ message: "Property not found" });
+      memoryCache.deleteByPrefix("properties_");
       res.json({ message: "Property long-term status updated successfully" });
     } catch (err) {
       res.status(500).json({ message: "Failed to update property long-term status" });

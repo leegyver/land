@@ -49,7 +49,7 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
   const [filterAgent, setFilterAgent] = useState("all");
 
   const filteredProperties = useMemo(() => {
-    let list = properties;
+    let list = [...properties];
 
     if (sortCategory === "all") {
       list = properties.filter(p => {
@@ -184,13 +184,17 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/properties"] });
-      // Eagerly fetch the new properties data using predicate to match substring query strings
-      queryClient.refetchQueries({ 
-        predicate: (query) => typeof query.queryKey[0] === 'string' && query.queryKey[0].startsWith('/api/properties'),
-        type: 'all'
+      // Invalidate public queries so they get refreshed on demand without network storms
+      queryClient.invalidateQueries({ 
+        predicate: (query) => typeof query.queryKey[0] === 'string' && query.queryKey[0].startsWith('/api/properties') && query.queryKey[0] !== '/api/admin/properties',
       });
     }
   });
+
+  const isMutatingBadge = (id: number, field: string) =>
+    toggleMutation.isPending &&
+    (toggleMutation.variables as any)?.id === id &&
+    (toggleMutation.variables as any)?.field === field;
 
   const configMutation = useMutation({
     mutationFn: async ({ key, value }: { key: string; value: string }) => {
@@ -223,10 +227,8 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/properties"] });
-      // Invalidate frontend queries to immediately reflect changes on homepage using predicate wrapper
-      queryClient.refetchQueries({ 
-        predicate: (query) => typeof query.queryKey[0] === 'string' && query.queryKey[0].startsWith('/api/properties'),
-        type: 'all'
+      queryClient.invalidateQueries({ 
+        predicate: (query) => typeof query.queryKey[0] === 'string' && query.queryKey[0].startsWith('/api/properties') && query.queryKey[0] !== '/api/admin/properties',
       });
     }
   });
@@ -413,11 +415,11 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
                             </TableCell>
                             <TableCell>
                               <div className="flex flex-wrap gap-1 max-w-[150px]">
-                                <StatusBadge active={p.isVisible} label="노출" onClick={() => toggleMutation.mutate({ id: p.id, field: 'visibility', value: !p.isVisible })} />
-                                <StatusBadge active={p.isUrgent} label="초급매" color="red" onClick={() => toggleMutation.mutate({ id: p.id, field: 'urgent', value: !p.isUrgent })} />
-                                <StatusBadge active={p.isNegotiable} label="토지추천" color="green" onClick={() => toggleMutation.mutate({ id: p.id, field: 'negotiable', value: !p.isNegotiable })} />
-                                <StatusBadge active={p.isLongTerm} label="주택상가추천" color="blue" onClick={() => toggleMutation.mutate({ id: p.id, field: 'long-term', value: !p.isLongTerm })} />
-                                <StatusBadge active={p.featured} label="추천" color="purple" onClick={() => toggleMutation.mutate({ id: p.id, field: 'featured', value: !p.featured })} />
+                                <StatusBadge active={p.isVisible} label="노출" disabled={isMutatingBadge(p.id, 'visibility')} onClick={() => toggleMutation.mutate({ id: p.id, field: 'visibility', value: !p.isVisible })} />
+                                <StatusBadge active={p.isUrgent} label="초급매" color="red" disabled={isMutatingBadge(p.id, 'urgent')} onClick={() => toggleMutation.mutate({ id: p.id, field: 'urgent', value: !p.isUrgent })} />
+                                <StatusBadge active={p.isNegotiable} label="토지추천" color="green" disabled={isMutatingBadge(p.id, 'negotiable')} onClick={() => toggleMutation.mutate({ id: p.id, field: 'negotiable', value: !p.isNegotiable })} />
+                                <StatusBadge active={p.isLongTerm} label="주택상가추천" color="blue" disabled={isMutatingBadge(p.id, 'long-term')} onClick={() => toggleMutation.mutate({ id: p.id, field: 'long-term', value: !p.isLongTerm })} />
+                                <StatusBadge active={p.featured} label="추천" color="purple" disabled={isMutatingBadge(p.id, 'featured')} onClick={() => toggleMutation.mutate({ id: p.id, field: 'featured', value: !p.featured })} />
                               </div>
                             </TableCell>
                             <TableCell className="text-right">
@@ -521,7 +523,7 @@ function FilterSelect({ label, value, onChange, options }: any) {
   );
 }
 
-function StatusBadge({ active, label, onClick, color = "green" }: any) {
+function StatusBadge({ active, label, onClick, color = "green", disabled = false }: any) {
   const colors: any = {
     green: active ? "bg-green-100 text-green-700 border-green-200" : "bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200",
     purple: active ? "bg-purple-100 text-purple-700 border-purple-200" : "bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200",
@@ -530,7 +532,12 @@ function StatusBadge({ active, label, onClick, color = "green" }: any) {
     orange: active ? "bg-orange-100 text-orange-700 border-orange-200" : "bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200"
   };
   return (
-    <button onClick={onClick} className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all ${colors[color]}`}>
+    <button 
+      type="button"
+      onClick={onClick} 
+      disabled={disabled}
+      className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all select-none ${colors[color]} ${disabled ? 'opacity-50 cursor-wait pointer-events-none' : 'cursor-pointer active:scale-95'}`}
+    >
       {label}
     </button>
   );

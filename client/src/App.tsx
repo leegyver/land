@@ -49,7 +49,7 @@ const PageLoader = () => (
   </div>
 );
 
-function Router({ user }: { user: any }) {
+function Router({ user, isLoading }: { user: any; isLoading: boolean }) {
   return (
     <Suspense fallback={<PageLoader />}>
       <Switch>
@@ -69,30 +69,22 @@ function Router({ user }: { user: any }) {
         <Route path="/profile" component={ProfilePage} />
         <Route path="/pricing" component={PricingPage} />
         <Route path="/admin/stats">
-          {() => (
-            user ? (
-              ["admin", "master"].includes(user.role) ? (
-                <AdminStatsPage />
-              ) : (
-                <Redirect to="/admin" />
-              )
-            ) : (
-              <Redirect to="/auth" />
-            )
-          )}
+          {() => {
+            if (isLoading) return <PageLoader />;
+            if (!user) return <Redirect to="/auth" />;
+            if (!["admin", "master"].includes(user.role)) return <Redirect to="/admin" />;
+            return <AdminStatsPage />;
+          }}
         </Route>
         <Route path="/admin">
-          {() => (
-            user ? (
-              (["admin", "master"].includes(user.role) || (user.role === "realtor" && ["monthly", "yearly", "approved", "lifetime"].includes(user.subscriptionTier as string))) ? (
-                <AdminPage />
-              ) : (
-                <Redirect to="/" />
-              )
-            ) : (
-              <Redirect to="/auth" />
-            )
-          )}
+          {() => {
+            if (isLoading) return <PageLoader />;
+            if (!user) return <Redirect to="/auth" />;
+            const isAuthorized = ["admin", "master"].includes(user.role) || 
+              (user.role === "realtor" && ["monthly", "yearly", "approved", "lifetime"].includes(user.subscriptionTier as string));
+            if (!isAuthorized) return <Redirect to="/" />;
+            return <AdminPage />;
+          }}
         </Route>
         <Route path="/admin/properties/new" component={PropertyForm} />
         <Route path="/admin/properties/edit/:id" component={PropertyForm} />
@@ -110,14 +102,14 @@ function Router({ user }: { user: any }) {
 }
 
 function AppContent() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const [location] = useLocation();
   const isPopup = location.startsWith("/popup");
 
   if (isPopup) {
     return (
       <main className="h-screen w-screen overflow-hidden">
-        <Router user={user} />
+        <Router user={user} isLoading={isLoading} />
       </main>
     );
   }
@@ -128,7 +120,7 @@ function AppContent() {
       <ScrollToTop />
       <Header />
       <main className="flex-grow">
-        <Router user={user} />
+        <Router user={user} isLoading={isLoading} />
       </main>
       <Footer />
       <FloatingCTA />

@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useQueryClient, useIsFetching } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -202,13 +202,13 @@ export default function AdminPage() {
         </div>
         <div className="flex items-center gap-3">
           {(user?.role === "admin" || user?.role === "master") && (
-            <a
+            <Link
               href="/admin/stats"
-              className="rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-4 py-2.5 text-sm font-bold shadow-sm transition-all flex items-center gap-2"
+              className="rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-4 py-2.5 text-sm font-bold shadow-sm transition-all flex items-center gap-2 cursor-pointer"
             >
               <BarChart3 className="h-4 w-4 text-indigo-600" />
               <span>통계 분석실</span>
-            </a>
+            </Link>
           )}
           <AdminNotifications />
           <Button 

@@ -22,6 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
+import { formatKoreanPrice } from "@/lib/formatter";
 
 const PIE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
@@ -73,7 +74,31 @@ export default function AdminStatsTab() {
     queryKey: ["/api/admin/stats/keywords"],
   });
 
-  if (isLoadingOverview || isLoadingDaily || isLoadingPopular || isLoadingDetailed || isLoadingKeywords) {
+  const { data: portalInflow, isLoading: isLoadingPortalInflow } = useQuery<{
+    properties: {
+      id: number;
+      title: string;
+      type: string;
+      price: string;
+      district: string;
+      totalPortalViews: number;
+      naverViews: number;
+      googleViews: number;
+      daumViews: number;
+    }[];
+    posts: {
+      id: number;
+      title: string;
+      totalPortalViews: number;
+      naverViews: number;
+      googleViews: number;
+      daumViews: number;
+    }[];
+  }>({
+    queryKey: ["/api/admin/stats/portal-inflow"],
+  });
+
+  if (isLoadingOverview || isLoadingDaily || isLoadingPopular || isLoadingDetailed || isLoadingKeywords || isLoadingPortalInflow) {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -427,33 +452,137 @@ export default function AdminStatsTab() {
             <div className="space-y-4">
               {detailed?.topReferrers?.map((item: any, i: number) => (
                 <div key={i} className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-600">{item.referer}</span>
+                  <span className="text-xs font-bold text-slate-600 truncate max-w-[150px]" title={item.referer}>{item.referer}</span>
                   <span className="text-xs font-medium text-slate-400">{item.count.toLocaleString()}회</span>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
+      </div>
 
-        {/* Top Keywords */}
-        <Card className="border-none shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden lg:col-span-3">
-          <CardHeader className="p-5 md:p-8 pb-2">
-            <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <Search className="w-5 h-5 text-emerald-500" />
-              유입 검색어 (Top 10)
-            </CardTitle>
+      {/* [1순위 & 2순위] 포털 검색 유입 인기 매물 & 검색어 통계 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* [1순위] 네이버 & 포털 검색 유입 인기 매물 */}
+        <Card className="lg:col-span-2 border-none shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden">
+          <CardHeader className="p-5 md:p-8 pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <CardTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-500 text-white font-black text-xs flex items-center justify-center">
+                    N
+                  </div>
+                  네이버 / 포털 검색 유입 인기 매물 (Top 10)
+                </CardTitle>
+                <CardDescription className="mt-1">
+                  네이버, 다음, 구글 등 외부 검색포털을 통해 방문자가 처음 접속한 인기 매물
+                </CardDescription>
+              </div>
+              <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 font-semibold self-start sm:self-auto">
+                검색엔진 랜딩 집계
+              </Badge>
+            </div>
           </CardHeader>
-          <CardContent className="p-8 pt-4">
-            <div className="space-y-4">
-              {keywords && keywords.length > 0 ? (
-                keywords.map((kw: any, i: number) => (
-                  <div key={i} className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-slate-700">{kw.keyword}</span>
-                    <Badge variant="secondary" className="bg-emerald-50 text-emerald-700">{kw.count.toLocaleString()}회</Badge>
+          <CardContent className="p-5 md:p-8 pt-0">
+            <div className="divide-y divide-slate-100">
+              {portalInflow?.properties && portalInflow.properties.length > 0 ? (
+                portalInflow.properties.map((item, idx) => (
+                  <div key={item.id} className="py-3.5 flex items-center justify-between gap-4 group hover:bg-slate-50/60 rounded-xl px-2 -mx-2 transition-colors">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <span className={`w-5 text-center text-xs font-black shrink-0 ${idx < 3 ? 'text-emerald-600' : 'text-slate-300'}`}>
+                        {idx + 1}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          {item.type && (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-slate-100 text-slate-600 font-medium">
+                              {item.type}
+                            </Badge>
+                          )}
+                          {item.district && (
+                            <span className="text-[11px] text-slate-400 font-medium truncate">
+                              {item.district}
+                            </span>
+                          )}
+                        </div>
+                        <a
+                          href={`/properties/${item.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-bold text-slate-800 line-clamp-1 group-hover:text-emerald-600 transition-colors cursor-pointer"
+                        >
+                          {item.title}
+                        </a>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      {item.price && Number(item.price) > 0 && (
+                        <span className="text-xs font-bold text-slate-500 hidden sm:inline-block">
+                          {formatKoreanPrice(item.price)}
+                        </span>
+                      )}
+                      <div className="flex items-center gap-1.5">
+                        {item.naverViews > 0 && (
+                          <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-100">
+                            N {item.naverViews}
+                          </span>
+                        )}
+                        {item.googleViews > 0 && (
+                          <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-100">
+                            G {item.googleViews}
+                          </span>
+                        )}
+                        {item.daumViews > 0 && (
+                          <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-100">
+                            D {item.daumViews}
+                          </span>
+                        )}
+                        <span className="text-xs font-black text-slate-700 w-12 text-right">
+                          {item.totalPortalViews.toLocaleString()}회
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 ))
               ) : (
-                <div className="text-center text-slate-400 py-4 text-sm">수집된 검색어 데이터가 없습니다.</div>
+                <div className="text-center text-slate-400 py-10 text-sm">
+                  아직 포털 검색을 통한 매물 유입 데이터가 수집되지 않았습니다.
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* [2순위] 유입 & 사이트 검색어 Top 10 */}
+        <Card className="border-none shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden">
+          <CardHeader className="p-5 md:p-8 pb-3">
+            <CardTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <Search className="w-5 h-5 text-emerald-500" />
+              유입 및 인기 검색어 (Top 10)
+            </CardTitle>
+            <CardDescription>
+              포털 검색 유입어 및 사이트 내 검색어
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-5 md:p-8 pt-0">
+            <div className="divide-y divide-slate-100">
+              {keywords && keywords.length > 0 ? (
+                keywords.map((kw: any, i: number) => (
+                  <div key={i} className="py-3 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className={`w-4 text-center text-xs font-black shrink-0 ${i < 3 ? 'text-emerald-600' : 'text-slate-300'}`}>
+                        {i + 1}
+                      </span>
+                      <span className="text-sm font-bold text-slate-700 truncate">{kw.keyword}</span>
+                    </div>
+                    <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 shrink-0 font-bold">
+                      {kw.count.toLocaleString()}회
+                    </Badge>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center text-slate-400 py-10 text-sm">수집된 검색어 데이터가 없습니다.</div>
               )}
             </div>
           </CardContent>

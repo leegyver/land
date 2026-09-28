@@ -231,6 +231,28 @@ export interface IStorage {
     deviceDistribution: { device: string; count: number }[];
   }>;
 
+  getPortalInflowStats(limit?: number): Promise<{
+    properties: {
+      id: number;
+      title: string;
+      type: string;
+      price: string;
+      district: string;
+      totalPortalViews: number;
+      naverViews: number;
+      googleViews: number;
+      daumViews: number;
+    }[];
+    posts: {
+      id: number;
+      title: string;
+      totalPortalViews: number;
+      naverViews: number;
+      googleViews: number;
+      daumViews: number;
+    }[];
+  }>;
+
   // Site Config methods
   getSiteConfig(key: string): Promise<string | undefined>;
   setSiteConfig(key: string, value: string): Promise<void>;
@@ -2377,7 +2399,16 @@ export class SQLiteStorage implements IStorage {
     const rows = db.prepare(`
       SELECT keyword, COUNT(*) as count
       FROM visit_logs
-      WHERE keyword IS NOT NULL AND keyword != ''
+      WHERE keyword IS NOT NULL 
+        AND TRIM(keyword) != ''
+        AND keyword NOT LIKE 'site:%'
+        AND keyword NOT LIKE 'http:%'
+        AND keyword NOT LIKE 'https:%'
+        AND keyword NOT LIKE '%<%'
+        AND keyword NOT LIKE '%>%'
+        AND keyword NOT LIKE '%"%'
+        AND keyword NOT LIKE '%''%'
+        AND LOWER(keyword) NOT IN ('wordpress', 'leegyver', 'test', '테스트', '테스트키워드')
       GROUP BY keyword
       ORDER BY count DESC
       LIMIT ?
@@ -2387,6 +2418,65 @@ export class SQLiteStorage implements IStorage {
       keyword: r.keyword,
       count: r.count
     }));
+  }
+
+  async getPortalInflowStats(limit: number = 10): Promise<{
+    properties: {
+      id: number;
+      title: string;
+      type: string;
+      price: string;
+      district: string;
+      totalPortalViews: number;
+      naverViews: number;
+      googleViews: number;
+      daumViews: number;
+    }[];
+    posts: {
+      id: number;
+      title: string;
+      totalPortalViews: number;
+      naverViews: number;
+      googleViews: number;
+      daumViews: number;
+    }[];
+  }> {
+    const properties = db.prepare(`
+      SELECT 
+        p.id, 
+        p.title, 
+        p.type,
+        p.price,
+        p.district,
+        COUNT(v.id) as totalPortalViews,
+        SUM(CASE WHEN v.referer LIKE '%naver.com%' THEN 1 ELSE 0 END) as naverViews,
+        SUM(CASE WHEN v.referer LIKE '%google.com%' THEN 1 ELSE 0 END) as googleViews,
+        SUM(CASE WHEN v.referer LIKE '%daum.net%' THEN 1 ELSE 0 END) as daumViews
+      FROM visit_logs v
+      JOIN properties p ON (v.path = '/properties/' || p.id OR v.path LIKE '/properties/' || p.id || '?%' OR v.path LIKE '/properties/' || p.id || '/%')
+      WHERE (v.referer LIKE '%naver.com%' OR v.referer LIKE '%google.com%' OR v.referer LIKE '%daum.net%')
+      GROUP BY p.id
+      ORDER BY totalPortalViews DESC
+      LIMIT ?
+    `).all(limit) as any[];
+
+    const posts = db.prepare(`
+      SELECT 
+        p.id, 
+        p.title,
+        COUNT(v.id) as totalPortalViews,
+        SUM(CASE WHEN v.referer LIKE '%naver.com%' THEN 1 ELSE 0 END) as naverViews,
+        SUM(CASE WHEN v.referer LIKE '%google.com%' THEN 1 ELSE 0 END) as googleViews,
+        SUM(CASE WHEN v.referer LIKE '%daum.net%' THEN 1 ELSE 0 END) as daumViews
+      FROM visit_logs v
+      JOIN posts p ON (v.path = '/community/' || p.id OR v.path LIKE '/community/' || p.id || '?%' OR v.path LIKE '/community/' || p.id || '/%')
+      WHERE (v.referer LIKE '%naver.com%' OR v.referer LIKE '%google.com%' OR v.referer LIKE '%daum.net%')
+      GROUP BY p.id
+      ORDER BY totalPortalViews DESC
+      LIMIT ?
+    `).all(limit) as any[];
+
+    return { properties, posts };
   }
 
   async getOverviewStats(): Promise<{

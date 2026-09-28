@@ -218,32 +218,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
                        req.url.startsWith('/favicon') ||
                        req.url.startsWith('/@');
 
-    if (req.method === 'GET' && !isStatic && !isExcluded) {
+    // 악성 취약점 스캐너 파일 요청 제외
+    const isBotScan = req.url.match(/\.(env|yml|yaml|sql|bak|config|php|asp|aspx|jsp|cgi|sh|bash|git)$/i) ||
+                      req.url.match(/\/(wp-|\.git|\.env|Dockerfile|phpmyadmin)/i);
+
+    if (req.method === 'GET' && !isStatic && !isExcluded && !isBotScan) {
       const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
       const userAgent = req.headers['user-agent'];
       const path = req.url;
       const referer = req.headers['referer'];
       const userId = (req.user as any)?.id;
 
-      // 검색어 추출 (keyword, utm_term 파라미터 또는 Referer 파싱)
-      let keyword = null;
-      if (req.query.keyword) {
-        keyword = String(req.query.keyword);
-      } else if (req.query.utm_term) {
-        keyword = String(req.query.utm_term);
-      } else if (referer) {
+      // 검색어 정제 헬퍼 함수
+      const sanitizeKeyword = (raw: any): string | null => {
+        if (!raw || typeof raw !== 'string') return null;
+        try {
+          raw = decodeURIComponent(raw).trim();
+        } catch (e) {
+          raw = String(raw).trim();
+        }
+        if (!raw || raw.length > 50 || raw.length < 2) return null;
+        // 악성 봇 / 스캐너 / 웹 공격 / URL 패턴 철저 차단
+        if (
+          raw.includes('http://') ||
+          raw.includes('https://') ||
+          raw.includes('site:') ||
+          raw.includes('<') ||
+          raw.includes('>') ||
+          raw.includes('"') ||
+          raw.includes("'") ||
+          raw.includes(';') ||
+          /^(wp-|wordpress|\.env|docker)/i.test(raw)
+        ) {
+          return null;
+        }
+        return raw;
+      };
+
+      // 1) 외부 포털 검색어 추출 (우선순위: 네이버 -> 다음 -> 구글)
+      let keyword: string | null = null;
+      if (referer) {
         try {
           const refUrl = new URL(referer);
           if (refUrl.hostname.includes('naver.com')) {
-            keyword = refUrl.searchParams.get('query');
+            keyword = sanitizeKeyword(refUrl.searchParams.get('query'));
           } else if (refUrl.hostname.includes('daum.net')) {
-            keyword = refUrl.searchParams.get('q');
-          } else if (refUrl.hostname.includes('google.com')) {
-            keyword = refUrl.searchParams.get('q');
+            keyword = sanitizeKeyword(refUrl.searchParams.get('q'));
+          } else if (refUrl.hostname.includes('google.com') && !refUrl.pathname.includes('/url')) {
+            // google.com/url 의 q는 목적지 링크 주소이므로 제외
+            keyword = sanitizeKeyword(refUrl.searchParams.get('q'));
           }
         } catch (e) {
           // invalid url, 무시
         }
+      }
+
+      // 2) 포털 검색어가 없으면 정상 페이지 내부 검색어 추출
+      if (!keyword && req.query.keyword) {
+        keyword = sanitizeKeyword(req.query.keyword);
+      } else if (!keyword && req.query.utm_term) {
+        keyword = sanitizeKeyword(req.query.utm_term);
       }
 
       try {
@@ -983,7 +1017,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // 검색어 랭킹 통계 조회 API
   app.get("/api/admin/stats/keywords", async (req, res) => {
     try {
-      if (!req.isAuthenticated() || req.user?.role !== "master") {
+      if (!req.isAuthenticated() || !['admin', 'master'].includes((req.user as any)?.role)) {
         return res.status(403).json({ message: "접근 권한이 없습니다." });
       }
 
@@ -999,6 +1033,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(stats);
     } catch (error) {
       console.error("키워드 통계 조회 오류:", error);
+      res.status(500).json({ message: "통계 데이터를 불러오는 중 오류가 발생했습니다." });
+    }
+  });
+
+  // 포털(네이버/구글/다음) 검색 유입 인기 매물 및 콘텐츠 통계 API
+  app.get("/api/admin/stats/portal-inflow", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !['admin', 'master'].includes((req.user as any)?.role)) {
+        return res.status(403).json({ message: "접근 권한이 없습니다." });
+      }
+
+      const skipCache = req.query.skipCache === 'true';
+      const limit = parseInt(req.query.limit as string) || 10;
+      const cacheKey = `admin_stats_portal_inflow_${limit}`;
+      if (!skipCache) {
+        const cached = memoryCache.get(cacheKey);
+        if (cached) return res.json(cached);
+      }
+      const stats = await storage.getPortalInflowStats(limit);
+      memoryCache.set(cacheKey, stats, 5 * 60 * 1000);
+      res.json(stats);
+    } catch (error) {
+      console.error("포털 유입 통계 조회 오류:", error);
       res.status(500).json({ message: "통계 데이터를 불러오는 중 오류가 발생했습니다." });
     }
   });

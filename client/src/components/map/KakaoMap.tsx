@@ -178,16 +178,62 @@ const KakaoMap = ({ zoom = 8, properties: externalProperties, singleProperty }: 
         }
 
         query = query.trim().replace(/\s+/g, ' ');
-        console.log(`KakaoMap: 주소 검색 시도 (좌표없음) [${prop.id}] -> ${query}`);
 
-        if (query.length > 2) {
-          geocoder.addressSearch(query, (result: any, status: any) => {
-            if (status === window.kakao.maps.services.Status.OK && isMounted) {
-              console.log(`KakaoMap: 주소 검색 성공 [${prop.id}]`);
+        // 경매/부동산 주소 정제 (외 N필지, 괄호 등 지오코더 방해 요소 제거)
+        const cleanAddressForSearch = (str: string) => {
+          return str
+            .replace(/\[[^\]]*\]/g, ' ')
+            .replace(/\([^)]*\)/g, ' ')
+            .replace(/외\s*\d+\s*필지/gi, ' ')
+            .replace(/외\s*일필지/gi, ' ')
+            .replace(/외\s*\d+/gi, ' ')
+            .replace(/일괄매각/gi, ' ')
+            .replace(/외\s*지상/gi, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+        };
+
+        const cleanQuery = cleanAddressForSearch(query);
+        console.log(`KakaoMap: 주소 검색 시도 [${prop.id}] -> 원본: "${query}", 정제: "${cleanQuery}"`);
+
+        // 1단계: 정제된 주소로 Geocoder 주소 검색
+        if (cleanQuery.length > 2) {
+          geocoder.addressSearch(cleanQuery, (result: any, status: any) => {
+            if (status === window.kakao.maps.services.Status.OK && isMounted && result && result.length > 0) {
+              console.log(`KakaoMap: 정제 주소 검색 성공 [${prop.id}]`);
               addMarker(new window.kakao.maps.LatLng(result[0].y, result[0].x));
             } else {
-              console.warn(`KakaoMap: 주소 검색 실패 [${prop.id}] status: ${status}, query: ${query}`);
-              processedCount++;
+              // 2단계: Places 키워드 검색 폴백 (지번/지명 복합 검색 지원)
+              try {
+                const places = new window.kakao.maps.services.Places();
+                places.keywordSearch(cleanQuery, (pResult: any, pStatus: any) => {
+                  if (pStatus === window.kakao.maps.services.Status.OK && isMounted && pResult && pResult.length > 0) {
+                    console.log(`KakaoMap: Places 키워드 검색 성공 [${prop.id}]`);
+                    addMarker(new window.kakao.maps.LatLng(pResult[0].y, pResult[0].x));
+                  } else {
+                    // 3단계: 읍/면/리 단위 추출 검색 폴백
+                    const areaMatch = cleanQuery.match(/(?:인천(?:광역시)?\s*)?(?:강화군\s*)?([가-힣]+[읍면동])(?:\s+([가-힣]+리))?/);
+                    if (areaMatch) {
+                      const fallbackQuery = `인천 강화군 ${areaMatch[1]} ${areaMatch[2] || ''}`.trim();
+                      console.log(`KakaoMap: 지역 단위 3차 검색 [${prop.id}] -> ${fallbackQuery}`);
+                      geocoder.addressSearch(fallbackQuery, (fResult: any, fStatus: any) => {
+                        if (fStatus === window.kakao.maps.services.Status.OK && isMounted && fResult && fResult.length > 0) {
+                          addMarker(new window.kakao.maps.LatLng(fResult[0].y, fResult[0].x));
+                        } else {
+                          console.warn(`KakaoMap: 최종 위치 검색 실패 [${prop.id}] query: ${query}`);
+                          processedCount++;
+                        }
+                      });
+                    } else {
+                      console.warn(`KakaoMap: 위치 검색 불가 [${prop.id}] query: ${query}`);
+                      processedCount++;
+                    }
+                  }
+                });
+              } catch (err) {
+                console.warn(`KakaoMap: Places 검색 예외 [${prop.id}]`, err);
+                processedCount++;
+              }
             }
           });
         } else {

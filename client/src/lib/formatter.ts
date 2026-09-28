@@ -160,3 +160,40 @@ export const calculateAuctionDiscountRate = (
 
     return 0;
 };
+
+/**
+ * 최저입찰가 대비 입찰보증금 비율(%)을 계산합니다.
+ * 일반 매물: 통상 최저입찰가의 10%
+ * 특별매각조건 / 재매각 매물: 20% (또는 드물게 30%)
+ */
+export const calculateAuctionDepositRate = (
+    minimumPrice: string | number | null | undefined,
+    deposit: string | number | null | undefined
+): { rate: number; isSpecial: boolean; label: string } => {
+    const minWon = Number(parseKoreanPriceToWon(minimumPrice));
+    const depWon = Number(parseKoreanPriceToWon(deposit));
+
+    if (minWon > 0 && depWon > 0) {
+        const rate = Math.round((depWon / minWon) * 100);
+        // 15% 이상인 경우 특별매각조건(20% 또는 30%)으로 분류
+        if (rate >= 15) {
+            return {
+                rate,
+                isSpecial: true,
+                label: `특별매각조건 (${rate}%)`
+            };
+        }
+        return {
+            rate: rate || 10,
+            isSpecial: false,
+            label: `일반 (${rate || 10}%)`
+        };
+    }
+
+    return {
+        rate: 10,
+        isSpecial: false,
+        label: "일반 (10%)"
+    };
+};
+

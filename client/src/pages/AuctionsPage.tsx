@@ -6,7 +6,7 @@ import { Gavel, ShieldCheck, Clock, Phone, ArrowRight, CheckCircle2, FileText, S
 import { Button } from "@/components/ui/button";
 import { Auction } from "@shared/schema";
 import { KAKAO_CHANNEL_URL } from "@/lib/constants";
-import { formatPriceDisplay, calculateAuctionDiscountRate } from "@/lib/formatter";
+import { formatPriceDisplay, calculateAuctionDiscountRate, calculateAuctionDepositRate } from "@/lib/formatter";
 
 export default function AuctionsPage() {
   const [filterType, setFilterType] = useState<string>("all");
@@ -183,6 +183,8 @@ export default function AuctionsPage() {
               const discount = calculateAuctionDiscountRate(auction.appraisalPrice, auction.minimumPrice, auction.discountRate);
               const appraisal = formatPriceDisplay(auction.appraisalPrice);
               const minimum = formatPriceDisplay(auction.minimumPrice);
+              const deposit = formatPriceDisplay(auction.deposit);
+              const depositInfo = calculateAuctionDepositRate(auction.minimumPrice, auction.deposit);
 
               return (
                 <div
@@ -256,10 +258,21 @@ export default function AuctionsPage() {
                             </span>
                           </div>
                           {minimum.won !== "-" && (
-                            <div className="text-right text-[11px] text-rose-400 font-medium font-mono">
+                            <div className="text-right text-[11px] text-rose-400 font-medium font-mono mb-1">
                               ({minimum.won})
                             </div>
                           )}
+                          <div className="flex justify-between items-center text-[11px] text-slate-500 pt-1.5 mt-1 border-t border-slate-200/60">
+                            <span>입찰보증금</span>
+                            <span className="font-bold flex items-center gap-1">
+                              {deposit.korean}
+                              {depositInfo.isSpecial ? (
+                                <span className="bg-rose-100 text-rose-700 text-[10px] px-1.5 py-0.2 rounded font-black">
+                                  특별 {depositInfo.rate}%
+                                </span>
+                              ) : null}
+                            </span>
+                          </div>
                         </div>
                       </Link>
 

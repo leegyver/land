@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Edit, Gavel, ShieldCheck, Clock, ExternalLink, Image, RefreshCw } from "lucide-react";
 import { Auction } from "@shared/schema";
+import { calculateAuctionDepositRate, parseKoreanPriceToWon } from "@/lib/formatter";
 
 export default function AdminAuctionsTab() {
   const { toast } = useToast();
@@ -31,6 +32,7 @@ export default function AdminAuctionsTab() {
   const [appraisalPrice, setAppraisalPrice] = useState("");
   const [minimumPrice, setMinimumPrice] = useState("");
   const [deposit, setDeposit] = useState("");
+  const [depositRatePercent, setDepositRatePercent] = useState<number>(10);
   const [discountRate, setDiscountRate] = useState<number>(0);
   const [auctionDate, setAuctionDate] = useState("");
   const [status, setStatus] = useState("진행중");
@@ -44,6 +46,32 @@ export default function AdminAuctionsTab() {
   const { data: auctions = [], isLoading, refetch } = useQuery<Auction[]>({
     queryKey: ["/api/auctions"],
   });
+
+  const formatWon = (num: number) => {
+    if (num >= 100000000) {
+      const eok = Math.floor(num / 100000000);
+      const man = Math.floor((num % 100000000) / 10000);
+      return man > 0 ? `${eok}억 ${man.toLocaleString()}만원` : `${eok}억원`;
+    }
+    return `${Math.floor(num / 10000).toLocaleString()}만원`;
+  };
+
+  // 보증금 요율(10%, 20%, 30%)에 따른 재계산 헬퍼
+  const calculateDepositByPercent = (percent: number, minPriceStr?: string) => {
+    setDepositRatePercent(percent);
+    const targetMin = minPriceStr || minimumPrice;
+    const minWon = Number(parseKoreanPriceToWon(targetMin));
+    if (minWon > 0) {
+      const depNum = Math.floor(minWon * (percent / 100));
+      setDeposit(formatWon(depNum));
+      toast({
+        title: "보증금 계산 완료",
+        description: percent === 10
+          ? "일반 입찰보증금 (10%)으로 설정되었습니다."
+          : `특별매각조건 입찰보증금 (${percent}%)으로 설정되었습니다.`
+      });
+    }
+  };
 
   // 유찰 차수에 따른 자동 계산 헬퍼 (0회~5회 유찰 지원)
   const handleCalculateDiscount = (round: string) => {
@@ -86,16 +114,7 @@ export default function AdminAuctionsTab() {
     }
 
     const minPriceNum = Math.floor(appraisalPriceRaw * factor);
-    const depositNum = Math.floor(minPriceNum * 0.1);
-
-    const formatWon = (num: number) => {
-      if (num >= 100000000) {
-        const eok = Math.floor(num / 100000000);
-        const man = Math.floor((num % 100000000) / 10000);
-        return man > 0 ? `${eok}억 ${man.toLocaleString()}만원` : `${eok}억원`;
-      }
-      return `${Math.floor(num / 10000).toLocaleString()}만원`;
-    };
+    const depositNum = Math.floor(minPriceNum * (depositRatePercent / 100));
 
     setDiscountRate(rate);
     setAppraisalPrice(formatWon(appraisalPriceRaw));
@@ -104,8 +123,8 @@ export default function AdminAuctionsTab() {
     toast({ 
       title: "자동 계산 완료", 
       description: round === "0" 
-        ? "신건(감정가 100%) 기준 최저입찰가와 보증금이 설정되었습니다." 
-        : `${round}회 유찰(${rate}% 할인) 최저입찰가와 보증금(10%)이 계산되었습니다.` 
+        ? `신건(감정가 100%) 기준 최저입찰가와 보증금(${depositRatePercent}%)이 설정되었습니다.` 
+        : `${round}회 유찰(${rate}% 할인) 최저입찰가와 보증금(${depositRatePercent}%)이 계산되었습니다.` 
     });
   };
 
@@ -124,6 +143,9 @@ export default function AdminAuctionsTab() {
       setAppraisalPrice(auction.appraisalPrice);
       setMinimumPrice(auction.minimumPrice);
       setDeposit(auction.deposit);
+      // 보증금 요율 자동 판별 (10%, 20%, 30% 등)
+      const depInfo = calculateAuctionDepositRate(auction.minimumPrice, auction.deposit);
+      setDepositRatePercent(depInfo.rate || 10);
       setDiscountRate(auction.discountRate ?? 0);
       setAuctionDate(auction.auctionDate);
       setStatus(auction.status || "진행중");
@@ -151,6 +173,7 @@ export default function AdminAuctionsTab() {
       setAppraisalPrice("");
       setMinimumPrice("");
       setDeposit("");
+      setDepositRatePercent(10);
       setDiscountRate(0);
       setAuctionDate(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] + " 10:00");
       setStatus("진행중");
@@ -629,12 +652,54 @@ export default function AdminAuctionsTab() {
                   />
                 </div>
                 <div>
-                  <Label className="text-[11px] font-bold text-slate-700">보증금 (10%)</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[11px] font-bold text-slate-700">
+                      보증금 ({depositRatePercent}%)
+                    </Label>
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => calculateDepositByPercent(10)}
+                        className={`px-1.5 py-0.5 text-[9px] font-black rounded transition-all ${
+                          depositRatePercent === 10
+                            ? "bg-amber-600 text-white shadow-sm"
+                            : "bg-slate-200 text-slate-600 hover:bg-slate-300"
+                        }`}
+                      >
+                        10%
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => calculateDepositByPercent(20)}
+                        className={`px-1.5 py-0.5 text-[9px] font-black rounded transition-all ${
+                          depositRatePercent === 20
+                            ? "bg-rose-600 text-white shadow-sm"
+                            : "bg-rose-100 text-rose-700 hover:bg-rose-200"
+                        }`}
+                        title="특별매각조건 / 재매각 시 20%"
+                      >
+                        특별 20%
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => calculateDepositByPercent(30)}
+                        className={`px-1.5 py-0.5 text-[9px] font-black rounded transition-all ${
+                          depositRatePercent === 30
+                            ? "bg-rose-800 text-white shadow-sm"
+                            : "bg-rose-100 text-rose-700 hover:bg-rose-200"
+                        }`}
+                      >
+                        30%
+                      </button>
+                    </div>
+                  </div>
                   <Input
                     value={deposit}
                     onChange={(e) => setDeposit(e.target.value)}
                     placeholder="예: 2,100만원"
-                    className="mt-0.5 rounded-lg bg-white text-xs"
+                    className={`mt-0.5 rounded-lg bg-white text-xs ${
+                      depositRatePercent >= 20 ? "border-rose-400 font-bold text-rose-700 bg-rose-50/30" : ""
+                    }`}
                     required
                   />
                 </div>

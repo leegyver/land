@@ -28,7 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { KAKAO_CHANNEL_URL } from "@/lib/constants";
-import { formatPriceDisplay, calculateAuctionDiscountRate, safeFormatDate } from "@/lib/formatter";
+import { formatPriceDisplay, calculateAuctionDiscountRate, calculateAuctionDepositRate, safeFormatDate } from "@/lib/formatter";
 import KakaoMap from "@/components/map/KakaoMap";
 
 export default function AuctionDetailPage() {
@@ -85,6 +85,20 @@ export default function AuctionDetailPage() {
     toast({ title: "주소 복사 완료", description: "소재지 주소가 복사되었습니다." });
   };
 
+  const cleanSearchAddress = (addr: string) => {
+    if (!addr) return "";
+    return addr
+      .replace(/\[[^\]]*\]/g, " ")
+      .replace(/\([^)]*\)/g, " ")
+      .replace(/외\s*\d+\s*필지/gi, " ")
+      .replace(/외\s*일필지/gi, " ")
+      .replace(/외\s*\d+/gi, " ")
+      .replace(/일괄매각/gi, " ")
+      .replace(/외\s*지상/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#F8F7F4] py-16">
@@ -119,6 +133,7 @@ export default function AuctionDetailPage() {
   const minimum = formatPriceDisplay(auction.minimumPrice);
   const deposit = formatPriceDisplay(auction.deposit);
   const discountRate = calculateAuctionDiscountRate(auction.appraisalPrice, auction.minimumPrice, auction.discountRate);
+  const depositInfo = calculateAuctionDepositRate(auction.minimumPrice, auction.deposit);
 
   // 절감액 계산
   const savedWon = appraisal.rawWon > 0 && minimum.rawWon > 0 && appraisal.rawWon > minimum.rawWon
@@ -352,26 +367,49 @@ export default function AuctionDetailPage() {
               )}
             </div>
 
-            {/* 3. 입찰보증금 (10%) */}
-            <div className="bg-amber-500/10 rounded-2xl p-5 border border-amber-500/30">
+            {/* 3. 입찰보증금 */}
+            <div className={`rounded-2xl p-5 border transition-all ${
+              depositInfo.isSpecial
+                ? "bg-gradient-to-br from-rose-950/60 to-red-950/40 border-2 border-rose-500 shadow-xl"
+                : "bg-amber-500/10 border-amber-500/30"
+            }`}>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-amber-300 font-bold">
-                  입찰 보증금 (최저가의 10%)
+                <span className={`text-xs font-black ${
+                  depositInfo.isSpecial ? "text-rose-300" : "text-amber-300"
+                }`}>
+                  입찰 보증금 ({depositInfo.isSpecial ? `특별매각조건 ${depositInfo.rate}%` : `최저가의 ${depositInfo.rate}%`})
                 </span>
-                <span className="text-[10px] bg-amber-400/20 text-amber-200 font-bold px-1.5 py-0.5 rounded">
-                  필수 지참
-                </span>
+                {depositInfo.isSpecial ? (
+                  <span className="text-[10px] bg-rose-500 text-white font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm animate-pulse">
+                    <AlertTriangle className="w-3 h-3" />
+                    특별매각조건 {depositInfo.rate}%
+                  </span>
+                ) : (
+                  <span className="text-[10px] bg-amber-400/20 text-amber-200 font-bold px-1.5 py-0.5 rounded">
+                    필수 지참
+                  </span>
+                )}
               </div>
-              <div className="text-xl sm:text-2xl font-black text-amber-400">
+              <div className={`text-xl sm:text-2xl font-black ${
+                depositInfo.isSpecial ? "text-rose-400" : "text-amber-400"
+              }`}>
                 {deposit.korean}
               </div>
               {deposit.won !== "-" && (
-                <div className="text-xs text-amber-200/80 mt-1 font-mono">
+                <div className={`text-xs mt-1 font-mono ${
+                  depositInfo.isSpecial ? "text-rose-200/90 font-bold" : "text-amber-200/80"
+                }`}>
                   {deposit.won}
                 </div>
               )}
-              <div className="mt-2 pt-2 border-t border-white/10 text-[11px] text-slate-300 font-medium">
-                * 입찰 당일 법원에 수표 1매로 지참
+              <div className={`mt-2 pt-2 border-t text-[11px] font-medium leading-relaxed ${
+                depositInfo.isSpecial
+                  ? "border-rose-500/30 text-rose-300 font-bold"
+                  : "border-white/10 text-slate-300"
+              }`}>
+                {depositInfo.isSpecial
+                  ? `⚠️ 재매각 등 특별매각조건으로 최저가의 ${depositInfo.rate}%를 당일 법원 수표 1매로 지참 필수`
+                  : `* 입찰 당일 법원에 수표 1매로 지참 (최저가의 ${depositInfo.rate}%)`}
               </div>
             </div>
           </div>
@@ -424,6 +462,24 @@ export default function AuctionDetailPage() {
               <div className="text-xs text-slate-400 font-medium">지역 / 행정구역</div>
               <div className="text-sm sm:text-base font-extrabold text-slate-900 mt-0.5">
                 인천광역시 강화군 {auction.district || ""}
+              </div>
+            </div>
+
+            <div className={`p-4 rounded-2xl border ${
+              depositInfo.isSpecial ? "bg-rose-50 border-rose-200" : "bg-slate-50 border-slate-100"
+            }`}>
+              <div className="text-xs text-slate-400 font-medium">입찰 보증금 (지참 요율)</div>
+              <div className="text-sm sm:text-base font-extrabold text-slate-900 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                <span className={depositInfo.isSpecial ? "text-rose-700" : ""}>{deposit.korean}</span>
+                {depositInfo.isSpecial ? (
+                  <span className="bg-rose-600 text-white text-[11px] px-2 py-0.5 rounded font-black">
+                    특별매각조건 {depositInfo.rate}%
+                  </span>
+                ) : (
+                  <span className="bg-amber-100 text-amber-800 text-[11px] px-2 py-0.5 rounded font-bold">
+                    일반 {depositInfo.rate}%
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -520,7 +576,7 @@ export default function AuctionDetailPage() {
               </h3>
               <p className="text-xs sm:text-sm text-slate-500 mt-0.5">{auction.address}</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -530,12 +586,21 @@ export default function AuctionDetailPage() {
                 주소 복사
               </Button>
               <a
-                href={`https://map.kakao.com/link/search/${encodeURIComponent(auction.address)}`}
+                href={`https://map.kakao.com/link/search/${encodeURIComponent(cleanSearchAddress(auction.address))}`}
                 target="_blank"
                 rel="noreferrer"
                 className="bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold px-3 py-1.5 rounded-xl inline-flex items-center gap-1 shadow-sm"
               >
-                <span>카카오맵 길찾기</span>
+                <span>카카오맵</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+              <a
+                href={`https://map.naver.com/v5/search/${encodeURIComponent(cleanSearchAddress(auction.address))}`}
+                target="_blank"
+                rel="noreferrer"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl inline-flex items-center gap-1 shadow-sm"
+              >
+                <span>네이버지도</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
             </div>
@@ -543,14 +608,27 @@ export default function AuctionDetailPage() {
 
           <div className="h-64 sm:h-80 rounded-2xl overflow-hidden border border-slate-200 relative">
             <KakaoMap
+              properties={[{
+                id: auction.id,
+                title: auction.title,
+                address: auction.address,
+                mapAddress: cleanSearchAddress(auction.address),
+                district: auction.district || "",
+                type: auction.propertyType,
+                price: auction.minimumPrice,
+                imageUrl: auction.imageUrl,
+              } as any]}
               singleProperty={{
                 id: auction.id,
                 title: auction.title,
                 address: auction.address,
+                mapAddress: cleanSearchAddress(auction.address),
+                district: auction.district || "",
                 type: auction.propertyType,
                 price: auction.minimumPrice,
                 imageUrl: auction.imageUrl,
               } as any}
+              zoom={4}
             />
           </div>
         </div>

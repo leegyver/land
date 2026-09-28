@@ -116,3 +116,47 @@ export const safeFormatDate = (dateStr: string | Date | null | undefined, includ
         return "-";
     }
 };
+
+/**
+ * 경매 및 부동산 가격을 한국어 단위 및 원화 콤마로 보기 쉽게 변환합니다.
+ * 예: "350000000" -> { korean: "3억 5,000만원", won: "350,000,000원", full: "3억 5,000만원 (350,000,000원)", rawWon: 350000000 }
+ */
+export const formatPriceDisplay = (price: string | number | null | undefined) => {
+    if (!price && price !== 0) return { korean: "-", won: "-", full: "-", rawWon: 0 };
+    const wonStr = parseKoreanPriceToWon(price);
+    const numWon = Number(wonStr);
+    if (isNaN(numWon) || numWon <= 0) {
+        const cleanStr = String(price).trim();
+        return { korean: cleanStr || "-", won: cleanStr || "-", full: cleanStr || "-", rawWon: 0 };
+    }
+    const korean = formatKoreanPrice(numWon);
+    const won = `${numWon.toLocaleString()}원`;
+    return {
+        korean,
+        won,
+        rawWon: numWon,
+        full: `${korean} (${won})`
+    };
+};
+
+/**
+ * 감정평가액 대비 최저입찰가 할인율(%)을 정확히 계산합니다.
+ */
+export const calculateAuctionDiscountRate = (
+    appraisalPrice: string | number | null | undefined,
+    minimumPrice: string | number | null | undefined,
+    fallbackRate?: number | null
+): number => {
+    const appWon = Number(parseKoreanPriceToWon(appraisalPrice));
+    const minWon = Number(parseKoreanPriceToWon(minimumPrice));
+
+    if (appWon > 0 && minWon > 0 && minWon < appWon) {
+        return Math.round(((appWon - minWon) / appWon) * 100);
+    }
+
+    if (typeof fallbackRate === "number" && fallbackRate > 0) {
+        return fallbackRate;
+    }
+
+    return 0;
+};

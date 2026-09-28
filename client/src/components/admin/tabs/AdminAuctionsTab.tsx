@@ -45,7 +45,7 @@ export default function AdminAuctionsTab() {
     queryKey: ["/api/auctions"],
   });
 
-  // 유찰 차수에 따른 자동 계산 헬퍼
+  // 유찰 차수에 따른 자동 계산 헬퍼 (0회~5회 유찰 지원)
   const handleCalculateDiscount = (round: string) => {
     if (!appraisalPriceRaw || appraisalPriceRaw <= 0) {
       toast({ variant: "destructive", title: "알림", description: "먼저 감정평가액(숫자)을 입력해주세요." });
@@ -55,18 +55,34 @@ export default function AdminAuctionsTab() {
     let rate = 0;
     let factor = 1.0;
 
-    if (round === "0") {
-      rate = 0;
-      factor = 1.0;
-    } else if (round === "1") {
-      rate = 30; // 1회 유찰시 30% 할인 (인천지방법원 기준 70%)
-      factor = 0.7;
-    } else if (round === "2") {
-      rate = 51; // 2회 유찰시 (0.7 * 0.7 = 0.49 -> 51% 할인)
-      factor = 0.49;
-    } else if (round === "3") {
-      rate = 66; // 3회 유찰시 (0.49 * 0.7 = 0.343 -> 66% 할인)
-      factor = 0.343;
+    switch (round) {
+      case "0":
+        rate = 0; // 신건 (100%)
+        factor = 1.0;
+        break;
+      case "1":
+        rate = 30; // 1회 유찰 (70% - 30% 저감)
+        factor = 0.7;
+        break;
+      case "2":
+        rate = 51; // 2회 유찰 (49% - 51% 저감)
+        factor = 0.49;
+        break;
+      case "3":
+        rate = 66; // 3회 유찰 (34.3% - 66% 저감)
+        factor = 0.343;
+        break;
+      case "4":
+        rate = 76; // 4회 유찰 (24.01% - 76% 저감)
+        factor = 0.2401;
+        break;
+      case "5":
+        rate = 83; // 5회 유찰 (16.81% - 83% 저감)
+        factor = 0.16807;
+        break;
+      default:
+        rate = 0;
+        factor = 1.0;
     }
 
     const minPriceNum = Math.floor(appraisalPriceRaw * factor);
@@ -85,7 +101,12 @@ export default function AdminAuctionsTab() {
     setAppraisalPrice(formatWon(appraisalPriceRaw));
     setMinimumPrice(formatWon(minPriceNum));
     setDeposit(formatWon(depositNum));
-    toast({ title: "자동 계산 완료", description: `최저입찰가(${rate}% 할인)와 보증금(10%)이 계산되었습니다.` });
+    toast({ 
+      title: "자동 계산 완료", 
+      description: round === "0" 
+        ? "신건(감정가 100%) 기준 최저입찰가와 보증금이 설정되었습니다." 
+        : `${round}회 유찰(${rate}% 할인) 최저입찰가와 보증금(10%)이 계산되었습니다.` 
+    });
   };
 
   // 등록/수정 모달 열기
@@ -103,7 +124,7 @@ export default function AdminAuctionsTab() {
       setAppraisalPrice(auction.appraisalPrice);
       setMinimumPrice(auction.minimumPrice);
       setDeposit(auction.deposit);
-      setDiscountRate(auction.discountRate || 0);
+      setDiscountRate(auction.discountRate ?? 0);
       setAuctionDate(auction.auctionDate);
       setStatus(auction.status || "진행중");
       setSafetyRating(auction.safetyRating || "안전");
@@ -111,6 +132,10 @@ export default function AdminAuctionsTab() {
       setImageUrl(auction.imageUrl);
       setYoutubeUrl(auction.youtubeUrl || "");
       setFeatured(auction.featured ?? true);
+      // 감정가 숫자 파싱
+      const rawMatch = auction.appraisalPrice.replace(/[^\d]/g, '');
+      const parsedRaw = parseInt(rawMatch, 10);
+      setAppraisalPriceRaw(isNaN(parsedRaw) ? 0 : parsedRaw);
     } else {
       setEditingAuction(null);
       setCaseNumber("");
@@ -121,11 +146,12 @@ export default function AdminAuctionsTab() {
       setDistrict("강화읍");
       setLandArea("");
       setBuildingArea("");
-      setAppraisalPriceRaw(300000000);
-      setAppraisalPrice("3억원");
-      setMinimumPrice("2억 1,000만원");
-      setDeposit("2,100만원");
-      setDiscountRate(30);
+      // 임의의 -30% 기본값 제거 -> 빈 값으로 초기화하여 정확한 입력 유도
+      setAppraisalPriceRaw(0);
+      setAppraisalPrice("");
+      setMinimumPrice("");
+      setDeposit("");
+      setDiscountRate(0);
       setAuctionDate(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] + " 10:00");
       setStatus("진행중");
       setSafetyRating("안전");
@@ -393,11 +419,21 @@ export default function AdminAuctionsTab() {
                       <span className={`inline-block w-2.5 h-2.5 rounded-full ${item.featured ? 'bg-emerald-500' : 'bg-slate-300'}`} />
                     </td>
                     <td className="p-4 text-right space-x-1">
+                      <a
+                        href={`/auctions/${item.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center justify-center h-8 w-8 rounded-lg hover:bg-slate-100 text-slate-600"
+                        title="상세페이지 새창 열기"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => openModal(item)}
                         className="h-8 w-8 p-0 rounded-lg hover:bg-slate-100 text-slate-600"
+                        title="수정"
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
@@ -529,9 +565,9 @@ export default function AdminAuctionsTab() {
             <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black text-amber-900 flex items-center gap-1">
-                  ⚡ 스마트 유찰 가격 계산기
+                  ⚡ 스마트 유찰 가격 계산기 (최대 5회 유찰 지원)
                 </span>
-                <span className="text-[11px] text-amber-700">인천지방법원 기준 (유찰시 30% 저감)</span>
+                <span className="text-[11px] text-amber-700">인천지방법원 기준 (매 유찰시 30% 저감)</span>
               </div>
 
               <div className="grid grid-cols-3 gap-2">
@@ -540,33 +576,44 @@ export default function AdminAuctionsTab() {
                   <Input
                     type="number"
                     value={appraisalPriceRaw || ""}
-                    onChange={(e) => setAppraisalPriceRaw(Number(e.target.value))}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setAppraisalPriceRaw(val);
+                      if (val > 0 && !appraisalPrice) {
+                        const eok = Math.floor(val / 100000000);
+                        const man = Math.floor((val % 100000000) / 10000);
+                        setAppraisalPrice(eok > 0 ? (man > 0 ? `${eok}억 ${man.toLocaleString()}만원` : `${eok}억원`) : `${man.toLocaleString()}만원`);
+                      }
+                    }}
                     placeholder="예: 300000000 (3억원)"
                     className="mt-1 rounded-xl bg-white"
                   />
                 </div>
                 <div>
-                  <Label className="text-[11px] font-bold text-slate-700">유찰 차수</Label>
+                  <Label className="text-[11px] font-bold text-slate-700">유찰 차수 선택</Label>
                   <Select onValueChange={handleCalculateDiscount}>
                     <SelectTrigger className="mt-1 rounded-xl bg-white">
-                      <SelectValue placeholder="차수 선택" />
+                      <SelectValue placeholder="차수 선택 (최대 5회)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="0">신건 (100%)</SelectItem>
-                      <SelectItem value="1">1회 유찰 (70%)</SelectItem>
-                      <SelectItem value="2">2회 유찰 (49%)</SelectItem>
-                      <SelectItem value="3">3회 유찰 (34%)</SelectItem>
+                      <SelectItem value="0">신건 (최초 감정가 100%)</SelectItem>
+                      <SelectItem value="1">1회 유찰 (-30% / 감정가의 70%)</SelectItem>
+                      <SelectItem value="2">2회 유찰 (-51% / 감정가의 49%)</SelectItem>
+                      <SelectItem value="3">3회 유찰 (-66% / 감정가의 34%)</SelectItem>
+                      <SelectItem value="4">4회 유찰 (-76% / 감정가의 24%)</SelectItem>
+                      <SelectItem value="5">5회 유찰 (-83% / 감정가의 17%)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 pt-1">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
                 <div>
                   <Label className="text-[11px] font-bold text-slate-700">표시 감정가</Label>
                   <Input
                     value={appraisalPrice}
                     onChange={(e) => setAppraisalPrice(e.target.value)}
+                    placeholder="예: 3억원"
                     className="mt-0.5 rounded-lg bg-white text-xs"
                     required
                   />
@@ -576,6 +623,7 @@ export default function AdminAuctionsTab() {
                   <Input
                     value={minimumPrice}
                     onChange={(e) => setMinimumPrice(e.target.value)}
+                    placeholder="예: 2억 1,000만원"
                     className="mt-0.5 rounded-lg bg-white text-xs font-bold text-rose-600"
                     required
                   />
@@ -585,9 +633,25 @@ export default function AdminAuctionsTab() {
                   <Input
                     value={deposit}
                     onChange={(e) => setDeposit(e.target.value)}
+                    placeholder="예: 2,100만원"
                     className="mt-0.5 rounded-lg bg-white text-xs"
                     required
                   />
+                </div>
+                <div>
+                  <Label className="text-[11px] font-bold text-slate-700">감정가대비 할인율(%)</Label>
+                  <div className="relative mt-0.5">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={99}
+                      value={discountRate}
+                      onChange={(e) => setDiscountRate(Number(e.target.value))}
+                      placeholder="0"
+                      className="rounded-lg bg-white text-xs font-bold text-amber-600 pr-7"
+                    />
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
+                  </div>
                 </div>
               </div>
             </div>

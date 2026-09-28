@@ -20,6 +20,7 @@ const AuthPage = lazy(() => import("@/pages/auth-page"));
 const PropertiesPage = lazy(() => import("@/pages/PropertiesPage"));
 const PropertyDetailPage = lazy(() => import("@/pages/PropertyDetailPage"));
 const AuctionsPage = lazy(() => import("@/pages/AuctionsPage"));
+const AuctionDetailPage = lazy(() => import("@/pages/AuctionDetailPage"));
 const NewsPage = lazy(() => import("@/pages/NewsPage"));
 const NewsDetailPage = lazy(() => import("@/pages/NewsDetailPage"));
 const ReviewsPage = lazy(() => import("@/pages/ReviewsPage"));
@@ -57,6 +58,7 @@ function Router({ user }: { user: any }) {
         <Route path="/properties" component={PropertiesPage} />
         <Route path="/properties/:id" component={PropertyDetailPage} />
         <Route path="/auctions" component={AuctionsPage} />
+        <Route path="/auctions/:id" component={AuctionDetailPage} />
         <Route path="/news" component={NewsPage} />
         <Route path="/news/:id" component={NewsDetailPage} />
         <Route path="/reviews" component={ReviewsPage} />

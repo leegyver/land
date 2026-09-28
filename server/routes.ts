@@ -43,6 +43,7 @@ import {
 } from "./youtube-fetcher";
 import { importPropertiesFromSheet, checkDuplicatesFromSheet } from "./sheet-importer";
 import { generateSitemapXml } from "./sitemap";
+import { getGa4Stats, getSearchConsoleStats, getNaverAdvisorStats, saveNaverAdvisorStats } from "./services/externalStats";
 import { naverBlogRouter } from "./naver-blog-routes";
 
 import { log } from "./vite";
@@ -1057,6 +1058,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("포털 유입 통계 조회 오류:", error);
       res.status(500).json({ message: "통계 데이터를 불러오는 중 오류가 발생했습니다." });
+    }
+  });
+
+  // Google Analytics 4 (GA4) 통계 조회 API
+  app.get("/api/admin/stats/ga4", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !['admin', 'master'].includes((req.user as any)?.role)) {
+        return res.status(403).json({ message: "접근 권한이 없습니다." });
+      }
+      const days = parseInt(req.query.days as string) || 14;
+      const stats = await getGa4Stats(days);
+      res.json(stats);
+    } catch (error) {
+      console.error("GA4 통계 조회 오류:", error);
+      res.status(500).json({ message: "GA4 통계를 불러오는 중 오류가 발생했습니다." });
+    }
+  });
+
+  // Google Search Console (구글 서치 콘솔) 검색어/노출/클릭 통계 API
+  app.get("/api/admin/stats/search-console", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !['admin', 'master'].includes((req.user as any)?.role)) {
+        return res.status(403).json({ message: "접근 권한이 없습니다." });
+      }
+      const days = parseInt(req.query.days as string) || 28;
+      const stats = await getSearchConsoleStats(days);
+      res.json(stats);
+    } catch (error) {
+      console.error("서치 콘솔 통계 조회 오류:", error);
+      res.status(500).json({ message: "구글 서치 콘솔 통계를 불러오는 중 오류가 발생했습니다." });
+    }
+  });
+
+  // 네이버 서치어드바이저 요약 통계 조회 API
+  app.get("/api/admin/stats/naver-advisor", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !['admin', 'master'].includes((req.user as any)?.role)) {
+        return res.status(403).json({ message: "접근 권한이 없습니다." });
+      }
+      const stats = await getNaverAdvisorStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("네이버 서치어드바이저 통계 조회 오류:", error);
+      res.status(500).json({ message: "네이버 서치어드바이저 데이터를 불러오는 중 오류가 발생했습니다." });
+    }
+  });
+
+  // 네이버 서치어드바이저 수치 수동/자동 업데이트 API
+  app.post("/api/admin/stats/naver-advisor", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !['admin', 'master'].includes((req.user as any)?.role)) {
+        return res.status(403).json({ message: "접근 권한이 없습니다." });
+      }
+      const updated = await saveNaverAdvisorStats(req.body);
+      res.json({ success: true, data: updated });
+    } catch (error) {
+      console.error("네이버 서치어드바이저 저장 오류:", error);
+      res.status(500).json({ message: "데이터 저장 중 오류가 발생했습니다." });
     }
   });
 

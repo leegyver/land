@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Edit, Gavel, ShieldCheck, Clock, ExternalLink, Image, RefreshCw } from "lucide-react";
 import { Auction } from "@shared/schema";
-import { calculateAuctionDepositRate, parseKoreanPriceToWon } from "@/lib/formatter";
+import { calculateAuctionDepositRate, parseKoreanPriceToWon, formatAreaDisplay } from "@/lib/formatter";
 
 export default function AdminAuctionsTab() {
   const { toast } = useToast();
@@ -569,18 +569,28 @@ export default function AdminAuctionsTab() {
                 <Input
                   value={landArea}
                   onChange={(e) => setLandArea(e.target.value)}
-                  placeholder="예: 495㎡ (150평)"
+                  placeholder="예: 7241 또는 495㎡ 또는 150평"
                   className="mt-1 rounded-xl"
                 />
+                {landArea && (
+                  <div className="text-[11px] text-amber-800 font-bold mt-1 bg-amber-50 px-2 py-0.5 rounded inline-block border border-amber-200/60">
+                    📐 {formatAreaDisplay(landArea).fullText}
+                  </div>
+                )}
               </div>
               <div>
                 <Label className="text-xs font-bold text-slate-700">건물면적</Label>
                 <Input
                   value={buildingArea}
                   onChange={(e) => setBuildingArea(e.target.value)}
-                  placeholder="예: 99㎡ (30평)"
+                  placeholder="예: 3511.19 또는 99㎡ 또는 30평"
                   className="mt-1 rounded-xl"
                 />
+                {buildingArea && (
+                  <div className="text-[11px] text-amber-800 font-bold mt-1 bg-amber-50 px-2 py-0.5 rounded inline-block border border-amber-200/60">
+                    📐 {formatAreaDisplay(buildingArea).fullText}
+                  </div>
+                )}
               </div>
             </div>
 

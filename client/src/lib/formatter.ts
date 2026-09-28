@@ -197,3 +197,97 @@ export const calculateAuctionDepositRate = (
     };
 };
 
+/**
+ * 토지/건물 면적을 ㎡와 평(pyeong) 단위로 모두 보기 쉽게 변환합니다.
+ * 1평 = 3.305785㎡ (1㎡ = 0.3025평)
+ */
+export interface FormattedArea {
+    sqmText: string;      // 예: "7,241㎡"
+    pyeongText: string;   // 예: "약 2,190.4평"
+    fullText: string;     // 예: "7,241㎡ (약 2,190.4평)"
+    rawText: string;
+}
+
+export const formatAreaDisplay = (rawArea: string | number | null | undefined): FormattedArea => {
+    if (rawArea === null || rawArea === undefined) {
+        return { sqmText: "", pyeongText: "", fullText: "상세 권리분석서 참조", rawText: "" };
+    }
+
+    const str = String(rawArea).trim();
+    if (!str || str === "-") {
+        return { sqmText: "", pyeongText: "", fullText: "상세 권리분석서 참조", rawText: str };
+    }
+
+    const hasPyeong = /평/.test(str);
+    const hasSqm = /㎡|m²|m2/i.test(str);
+
+    // 1. 이미 평과 ㎡가 모두 들어있는 경우 (예: "7,241㎡ (2,190평)", "450평 (1487㎡)")
+    if (hasPyeong && hasSqm) {
+        const sqmMatch = str.match(/([\d,.]+)\s*(?:㎡|m²|m2)/i);
+        const pyeongMatch = str.match(/([\d,.]+)\s*평/);
+
+        const sqmVal = sqmMatch ? parseFloat(sqmMatch[1].replace(/,/g, '')) : null;
+        const pyeongVal = pyeongMatch ? parseFloat(pyeongMatch[1].replace(/,/g, '')) : null;
+
+        const sqmText = sqmVal !== null && !isNaN(sqmVal)
+            ? `${sqmVal.toLocaleString()}㎡`
+            : (sqmMatch ? `${sqmMatch[1]}㎡` : "");
+
+        const pyeongText = pyeongVal !== null && !isNaN(pyeongVal)
+            ? `약 ${pyeongVal.toLocaleString()}평`
+            : (pyeongMatch ? `약 ${pyeongMatch[1]}평` : "");
+
+        return {
+            sqmText: sqmText || str,
+            pyeongText: pyeongText,
+            fullText: sqmText && pyeongText ? `${sqmText} (${pyeongText})` : str,
+            rawText: str
+        };
+    }
+
+    // 2. 평 단위만 있는 경우 (예: "450평", "150 평", "약 150평")
+    if (hasPyeong && !hasSqm) {
+        const pyeongMatch = str.match(/([\d,.]+)\s*평/);
+        if (pyeongMatch) {
+            const pyeongNum = parseFloat(pyeongMatch[1].replace(/,/g, ''));
+            if (!isNaN(pyeongNum) && pyeongNum > 0) {
+                // 1평 = 3.305785㎡
+                const calculatedSqm = Math.round(pyeongNum * 3.305785 * 10) / 10;
+                const sqmText = `${calculatedSqm.toLocaleString()}㎡`;
+                const pyeongText = `약 ${pyeongNum.toLocaleString()}평`;
+                return {
+                    sqmText,
+                    pyeongText,
+                    fullText: `${sqmText} (${pyeongText})`,
+                    rawText: str
+                };
+            }
+        }
+    }
+
+    // 3. ㎡ 단위이거나 순수 숫자인 경우 (예: "7241", "3511.19", "495.87㎡", "495.87m2")
+    const numMatch = str.match(/([\d,.]+)/);
+    if (numMatch) {
+        const sqmNum = parseFloat(numMatch[1].replace(/,/g, ''));
+        if (!isNaN(sqmNum) && sqmNum > 0) {
+            // 1㎡ = 0.3025평
+            const calculatedPyeong = Math.round(sqmNum * 0.3025 * 10) / 10;
+            const sqmText = `${sqmNum.toLocaleString()}㎡`;
+            const pyeongText = `약 ${calculatedPyeong.toLocaleString()}평`;
+            return {
+                sqmText,
+                pyeongText,
+                fullText: `${sqmText} (${pyeongText})`,
+                rawText: str
+            };
+        }
+    }
+
+    return {
+        sqmText: str,
+        pyeongText: "",
+        fullText: str,
+        rawText: str
+    };
+};
+

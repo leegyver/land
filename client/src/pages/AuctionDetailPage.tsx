@@ -28,7 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { KAKAO_CHANNEL_URL } from "@/lib/constants";
-import { formatPriceDisplay, calculateAuctionDiscountRate, calculateAuctionDepositRate, safeFormatDate } from "@/lib/formatter";
+import { formatPriceDisplay, calculateAuctionDiscountRate, calculateAuctionDepositRate, safeFormatDate, formatAreaDisplay } from "@/lib/formatter";
 import KakaoMap from "@/components/map/KakaoMap";
 
 export default function AuctionDetailPage() {
@@ -135,6 +135,10 @@ export default function AuctionDetailPage() {
   const discountRate = calculateAuctionDiscountRate(auction.appraisalPrice, auction.minimumPrice, auction.discountRate);
   const depositInfo = calculateAuctionDepositRate(auction.minimumPrice, auction.deposit);
 
+  // 면적 포맷팅 (㎡ 및 평 환산)
+  const landAreaInfo = formatAreaDisplay(auction.landArea);
+  const buildingAreaInfo = formatAreaDisplay(auction.buildingArea);
+
   // 절감액 계산
   const savedWon = appraisal.rawWon > 0 && minimum.rawWon > 0 && appraisal.rawWon > minimum.rawWon
     ? appraisal.rawWon - minimum.rawWon
@@ -220,6 +224,16 @@ export default function AuctionDetailPage() {
               <Badge variant="outline" className="text-emerald-700 bg-emerald-50 border-emerald-200 font-bold flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5" />
                 <span>권리분석 {auction.safetyRating}</span>
+              </Badge>
+            )}
+            {landAreaInfo.pyeongText && (
+              <Badge variant="outline" className="text-slate-800 bg-amber-50 border-amber-300 font-extrabold">
+                토지 {landAreaInfo.pyeongText}
+              </Badge>
+            )}
+            {buildingAreaInfo.pyeongText && (
+              <Badge variant="outline" className="text-slate-800 bg-amber-50 border-amber-300 font-extrabold">
+                건물 {buildingAreaInfo.pyeongText}
               </Badge>
             )}
             <Badge
@@ -446,15 +460,25 @@ export default function AuctionDetailPage() {
 
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
               <div className="text-xs text-slate-400 font-medium">토지 (대지) 면적</div>
-              <div className="text-sm sm:text-base font-extrabold text-slate-900 mt-0.5">
-                {auction.landArea || "상세 권리분석서 참조"}
+              <div className="text-sm sm:text-base font-extrabold text-slate-900 mt-0.5 flex items-center gap-2 flex-wrap">
+                <span>{landAreaInfo.sqmText || landAreaInfo.fullText}</span>
+                {landAreaInfo.pyeongText && (
+                  <span className="bg-amber-100 text-amber-900 text-xs px-2 py-0.5 rounded-md font-black shadow-xs">
+                    {landAreaInfo.pyeongText}
+                  </span>
+                )}
               </div>
             </div>
 
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
               <div className="text-xs text-slate-400 font-medium">건물 (전용) 면적</div>
-              <div className="text-sm sm:text-base font-extrabold text-slate-900 mt-0.5">
-                {auction.buildingArea || "상세 권리분석서 참조"}
+              <div className="text-sm sm:text-base font-extrabold text-slate-900 mt-0.5 flex items-center gap-2 flex-wrap">
+                <span>{buildingAreaInfo.sqmText || buildingAreaInfo.fullText}</span>
+                {buildingAreaInfo.pyeongText && (
+                  <span className="bg-amber-100 text-amber-900 text-xs px-2 py-0.5 rounded-md font-black shadow-xs">
+                    {buildingAreaInfo.pyeongText}
+                  </span>
+                )}
               </div>
             </div>
 

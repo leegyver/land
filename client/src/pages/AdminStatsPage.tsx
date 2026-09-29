@@ -1,20 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, BarChart3, RefreshCw } from 'lucide-react';
+import { ArrowLeft, BarChart3, RefreshCw, Settings, LineChart } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import AdminStatsTab from '@/components/admin/tabs/AdminStatsTab';
+import AdminConfigTab from '@/components/admin/tabs/AdminConfigTab';
 
 export default function AdminStatsPage() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [isRefreshing, setIsRefreshing] = React.useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'config'>('overview');
 
   // 관리자 권한 확인
   if (!user || (!['admin', 'master'].includes(user.role as string))) {
@@ -68,7 +71,7 @@ export default function AdminStatsPage() {
             </Button>
             <span className="text-gray-300">|</span>
             <Badge variant="outline" className="text-primary border-primary/20 bg-primary/5 px-2.5 py-0.5 text-xs">
-              Stats Center
+              Stats & Analytics Hub
             </Badge>
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 mb-2 flex items-center gap-2">
@@ -76,7 +79,7 @@ export default function AdminStatsPage() {
             방문자 및 사이트 통계 분석실
           </h1>
           <p className="text-slate-500 max-w-xl text-sm">
-            실시간 방문 트래픽, 인기 매물 열람 수치, 유입 키워드 및 뉴스레터 구독 현황을 종합 분석합니다.
+            실시간 방문 트래픽, 인기 매물 열람 수치, 유입 키워드 분석 및 구글·네이버 검색엔진 연동을 한곳에서 관리합니다.
           </p>
         </div>
 
@@ -101,10 +104,39 @@ export default function AdminStatsPage() {
         </div>
       </div>
 
-      {/* Main Stats Component */}
-      <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200 p-4 md:p-8">
-        <AdminStatsTab />
-      </div>
+      {/* Tabs Layout */}
+      <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as any)} className="space-y-6">
+        <TabsList className="bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200 shadow-inner h-14 w-full md:w-auto inline-flex items-center gap-1.5">
+          <TabsTrigger
+            value="overview"
+            className="rounded-xl px-5 h-full font-bold transition-all text-sm flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md"
+          >
+            <LineChart className="w-4 h-4 text-blue-600" />
+            <span>종합 통계 분석</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="config"
+            className="rounded-xl px-5 h-full font-bold transition-all text-sm flex items-center gap-2 data-[state=active]:bg-white data-[state=active]:shadow-md"
+          >
+            <Settings className="w-4 h-4 text-slate-600" />
+            <span>구글·네이버 통계 연동 설정</span>
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Tab 1: 통계 분석 리포트 */}
+        <TabsContent value="overview" className="mt-0">
+          <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200 p-4 md:p-8">
+            <AdminStatsTab />
+          </div>
+        </TabsContent>
+
+        {/* Tab 2: GA4 & 네이버 연동 설정 */}
+        <TabsContent value="config" className="mt-0">
+          <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200 p-4 md:p-8">
+            <AdminConfigTab />
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

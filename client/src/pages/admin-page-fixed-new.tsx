@@ -19,8 +19,6 @@ const AdminPropertyTab = lazy(() => import("@/components/admin/tabs/AdminPropert
 const AdminNewsTab = lazy(() => import("@/components/admin/tabs/AdminNewsTab"));
 const AdminUsersTab = lazy(() => import("@/components/admin/tabs/AdminUsersTab"));
 const AdminNewsletterTab = lazy(() => import("@/components/admin/tabs/AdminNewsletterTab"));
-const AdminStatsTab = lazy(() => import("@/components/admin/tabs/AdminStatsTab"));
-const AdminConfigTab = lazy(() => import("@/components/admin/tabs/AdminConfigTab"));
 const AdminBannerTab = lazy(() => import("@/components/admin/tabs/AdminBannerTab"));
 const AdminPopupTab = lazy(() => import("@/components/admin/tabs/AdminPopupTab"));
 const AdminAuctionsTab = lazy(() => import("@/components/admin/tabs/AdminAuctionsTab"));
@@ -230,9 +228,6 @@ export default function AdminPage() {
         <TabsList className="bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200 shadow-inner h-14 w-full md:w-auto flex justify-start items-center overflow-x-auto whitespace-nowrap scrollbar-none gap-1.5">
           <TabsTrigger value="properties" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-semibold transition-all text-sm">부동산 매물 관리</TabsTrigger>
           {(user?.role === "admin" || user?.role === "master") && (
-            <TabsTrigger value="stats" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-semibold transition-all text-sm">통계 요약</TabsTrigger>
-          )}
-          {(user?.role === "admin" || user?.role === "master") && (
             <>
               <TabsTrigger value="care" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-bold transition-all text-sm text-orange-950 bg-orange-100/80 data-[state=active]:bg-orange-500 data-[state=active]:text-white">🛠️ 토탈케어 접수</TabsTrigger>
               <TabsTrigger value="auctions" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-semibold transition-all text-sm text-amber-900 bg-amber-100/60 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">🔨 경매·공매 관리</TabsTrigger>
@@ -241,18 +236,11 @@ export default function AdminPage() {
               <TabsTrigger value="banners" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-semibold transition-all text-sm">배너 관리</TabsTrigger>
               <TabsTrigger value="popups" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-semibold transition-all text-sm">팝업 관리</TabsTrigger>
               <TabsTrigger value="users" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-semibold transition-all text-sm">사용자 권한</TabsTrigger>
-              <TabsTrigger value="config" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-semibold transition-all text-sm">사이트 설정</TabsTrigger>
             </>
           )}
         </TabsList>
 
         <Suspense fallback={<TabLoadingFallback />}>
-          {(user?.role === "admin" || user?.role === "master") && (
-            <TabsContent value="stats" className="mt-0">
-              <AdminStatsTab />
-            </TabsContent>
-          )}
-
           <TabsContent value="properties" className="mt-0 focus-visible:outline-none">
             <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200 overflow-hidden">
               <div className="p-4 md:p-8 border-b border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50/30">
@@ -300,10 +288,6 @@ export default function AdminPage() {
 
               <TabsContent value="users" className="mt-0">
                 <AdminUsersTab users={users} currentUser={user} isLoading={isLoadingUsers} isError={isErrorUsers} error={errorUsers} refetch={refetchUsers} />
-              </TabsContent>
-
-              <TabsContent value="config" className="mt-0">
-                <AdminConfigTab />
               </TabsContent>
             </>
           )}

@@ -26,6 +26,7 @@ export default function TotalCarePage() {
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
+    email: "",
     address: "",
     buildingType: "원룸·다가구",
     serviceCategory: "원룸 유지보수",
@@ -85,13 +86,18 @@ export default function TotalCarePage() {
 
     setIsSubmitting(true);
     try {
+      // 이미지 절대 URL 생성 (이메일 및 외부 연동에서도 정상 열람 가능)
+      const fullPhotoUrl = uploadedImageUrl
+        ? (uploadedImageUrl.startsWith("http") ? uploadedImageUrl : `https://leegyver.com${uploadedImageUrl}`)
+        : "첨부 없음";
+
       const fullMessage = `
 [부동산 토탈케어 접수]
 - 건물유형: ${formData.buildingType}
 - 신청서비스: ${formData.serviceCategory}
 - 현장주소: ${formData.address || "미입력"}
 - 희망방문일: ${formData.preferredDate || "조율 필요"}
-- 현장사진: ${uploadedImageUrl || "첨부 없음"}
+- 현장사진: ${fullPhotoUrl}
 ------------------------------------
 [상세 증상 및 문의]
 ${formData.message}
@@ -102,7 +108,7 @@ ${formData.message}
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: formData.name,
-          email: "care@leegyver.com", // 기본값
+          email: formData.email.trim() || "", // 고객이 실제 입력한 경우에만 전달
           phone: formData.phone,
           message: fullMessage,
           inquiryType: "토탈케어",
@@ -120,6 +126,7 @@ ${formData.message}
       setFormData({
         name: "",
         phone: "",
+        email: "",
         address: "",
         buildingType: "원룸·다가구",
         serviceCategory: "원룸 유지보수",
@@ -695,7 +702,7 @@ ${formData.message}
           <Card className="bg-slate-800/90 border-slate-700 backdrop-blur-md shadow-2xl">
             <CardContent className="p-6 sm:p-8">
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name" className="text-slate-200">성함 / 상호명 <span className="text-red-400">*</span></Label>
                     <Input
@@ -717,6 +724,18 @@ ${formData.message}
                       value={formData.phone}
                       onChange={handleInputChange}
                       placeholder="예: 010-1234-5678"
+                      className="bg-slate-900/80 border-slate-700 text-white placeholder:text-slate-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-slate-200">이메일 <span className="text-xs text-slate-400 font-normal">(선택)</span></Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      placeholder="확인메일 수신용"
                       className="bg-slate-900/80 border-slate-700 text-white placeholder:text-slate-500"
                     />
                   </div>

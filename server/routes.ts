@@ -1972,8 +1972,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: validatedData.message
         });
 
-        // 사용자에게 문의 접수 확인 메일 발송
-        if (validatedData.email) {
+        // 실제 고객의 개인 이메일인 경우에만 사용자에게 접수 확인 메일 발송 (내부 도메인 제외)
+        const isRealCustomerEmail = validatedData.email && 
+          !validatedData.email.includes("leegyver.com") && 
+          !validatedData.email.includes("noreply") && 
+          validatedData.email.includes("@");
+
+        if (isRealCustomerEmail) {
           sendEmail(
             validatedData.email,
             "[이가이버 부동산] 문의가 성공적으로 접수되었습니다",
@@ -1981,32 +1986,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ).catch(console.error);
         }
 
-        // 수신자 이메일 주소를 명시적으로 설정 
-        const recipientEmail = '9551304@naver.com'; // 여기에 원하는 수신자 이메일을 직접 입력
+        // 관리자 수신자 이메일 주소
+        const recipientEmail = '9551304@naver.com';
         console.log(`수신자 이메일 설정: ${recipientEmail}`);
 
-        // 이메일 발송
+        // 이메일 제목 분기 (토탈케어 여부)
+        const isCare = validatedData.inquiryType === "토탈케어" || validatedData.message.includes("토탈케어");
+        const mailSubject = isCare
+          ? `[이가이버 토탈케어 접수] ${validatedData.name}님의 새로운 수리/관리 요청`
+          : `[이가이버부동산 웹사이트] ${validatedData.name}님의 새로운 문의가 등록되었습니다`;
+
+        // 관리자에게 이메일 발송
         const emailSent = await sendEmail(
           recipientEmail,
-          `[이가이버부동산 웹사이트] ${validatedData.name}님의 새로운 문의가 등록되었습니다`,
+          mailSubject,
           emailTemplate
         );
 
         if (emailSent) {
           console.log(`문의 ID ${inquiry.id}에 대한 알림 이메일 전송 완료`);
-          // 관리자 통합 알림 생성
-          storage.createAdminNotification({
-            type: "inquiry",
-            relatedId: inquiry.id,
-            title: `새로운 일반 문의: ${validatedData.name}님`,
-            content: validatedData.message.length > 50 ? validatedData.message.substring(0, 50) + "..." : validatedData.message,
-            isRead: false
-          }).catch(console.error);
         } else {
           console.error(`문의 ID ${inquiry.id}에 대한 알림 이메일 전송 실패`);
         }
+
+        // 관리자 통합 알림 생성
+        storage.createAdminNotification({
+          type: "inquiry",
+          relatedId: inquiry.id,
+          title: isCare ? `[토탈케어 접수] ${validatedData.name}님 (${validatedData.phone})` : `새로운 문의: ${validatedData.name}님`,
+          content: validatedData.message.length > 80 ? validatedData.message.substring(0, 80) + "..." : validatedData.message,
+          isRead: false
+        }).catch(console.error);
       } catch (emailError) {
-        // 이메일 발송 실패 시 로그 기록만 하고 전체 요청은 실패로 처리하지 않음
         console.error('문의 알림 이메일 발송 중 오류 발생:', emailError);
       }
 
@@ -2016,6 +2027,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid inquiry data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to create inquiry" });
+    }
+  });
+
+  // 관리자용 문의 및 토탈케어 접수 목록 조회 API
+  app.get("/api/inquiries", async (req, res) => {
+    try {
+      const inquiries = await storage.getInquiries();
+      res.json(inquiries);
+    } catch (error) {
+      console.error("문의 목록 조회 오류:", error);
+      res.status(500).json({ message: "Failed to fetch inquiries" });
+    }
+  });
+
+  // 관리자용 문의 삭제 API
+  app.delete("/api/inquiries/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+      const success = await storage.deleteInquiry(id);
+      if (success) {
+        res.json({ success: true, message: "문의가 삭제되었습니다." });
+      } else {
+        res.status(404).json({ message: "Inquiry not found" });
+      }
+    } catch (error) {
+      console.error("문의 삭제 오류:", error);
+      res.status(500).json({ message: "Failed to delete inquiry" });
     }
   });
 

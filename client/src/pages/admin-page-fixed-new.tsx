@@ -24,6 +24,7 @@ const AdminConfigTab = lazy(() => import("@/components/admin/tabs/AdminConfigTab
 const AdminBannerTab = lazy(() => import("@/components/admin/tabs/AdminBannerTab"));
 const AdminPopupTab = lazy(() => import("@/components/admin/tabs/AdminPopupTab"));
 const AdminAuctionsTab = lazy(() => import("@/components/admin/tabs/AdminAuctionsTab"));
+const AdminCareTab = lazy(() => import("@/components/admin/AdminCareTab"));
 
 const TabLoadingFallback = () => (
   <div className="flex flex-col items-center justify-center py-20 text-slate-400">
@@ -233,6 +234,7 @@ export default function AdminPage() {
           )}
           {(user?.role === "admin" || user?.role === "master") && (
             <>
+              <TabsTrigger value="care" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-bold transition-all text-sm text-orange-950 bg-orange-100/80 data-[state=active]:bg-orange-500 data-[state=active]:text-white">🛠️ 토탈케어 접수</TabsTrigger>
               <TabsTrigger value="auctions" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-semibold transition-all text-sm text-amber-900 bg-amber-100/60 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">🔨 경매·공매 관리</TabsTrigger>
               <TabsTrigger value="news" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-semibold transition-all text-sm">뉴스 소식</TabsTrigger>
               <TabsTrigger value="newsletter" className="shrink-0 rounded-xl px-4 md:px-6 h-full font-semibold transition-all text-sm">구독자 관리</TabsTrigger>
@@ -272,6 +274,10 @@ export default function AdminPage() {
 
           {(user?.role === "admin" || user?.role === "master") && (
             <>
+              <TabsContent value="care" className="mt-0">
+                <AdminCareTab />
+              </TabsContent>
+
               <TabsContent value="auctions" className="mt-0">
                 <AdminAuctionsTab />
               </TabsContent>

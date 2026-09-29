@@ -86,29 +86,60 @@ export function createInquiryEmailTemplate(data: {
   phone: string;
   message: string;
 }): string {
+  // 메시지에서 첨부 이미지 URL 추출 (/uploads/xxx.jpg 또는 http...)
+  const imgMatch = data.message.match(/https?:\/\/[^\s<"']+\.(?:jpg|jpeg|png|webp|gif)|\/uploads\/[^\s<"']+\.(?:jpg|jpeg|png|webp|gif)/i);
+  let imageHtml = "";
+  if (imgMatch) {
+    const rawUrl = imgMatch[0];
+    const fullUrl = rawUrl.startsWith("http") ? rawUrl : `https://leegyver.com${rawUrl}`;
+    imageHtml = `
+      <div style="margin-top: 20px; padding: 15px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; text-align: center;">
+        <div style="font-weight: bold; color: #1e293b; margin-bottom: 8px; font-size: 14px;">📷 현장 첨부 사진</div>
+        <a href="${fullUrl}" target="_blank" style="display: inline-block;">
+          <img src="${fullUrl}" alt="현장 첨부 사진" style="max-width: 100%; max-height: 400px; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); border: 1px solid #cbd5e1;" />
+        </a>
+        <div style="margin-top: 6px; font-size: 12px; color: #64748b;">
+          ※ 사진을 클릭하시면 원본 크기로 크게 확인하실 수 있습니다.
+        </div>
+      </div>
+    `;
+  }
+
+  const formattedMessage = data.message.replace(/\n/g, '<br>');
+
   return `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e1e1e1; border-radius: 5px;">
-      <h2 style="color: #3b82f6; margin-bottom: 20px;">새로운 문의가 등록되었습니다</h2>
-      
-      <div style="margin-bottom: 15px;">
-        <strong>이름:</strong> ${data.name}
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Malgun Gothic', Dotum, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+      <div style="border-bottom: 2px solid #f97316; padding-bottom: 12px; margin-bottom: 20px;">
+        <span style="background-color: #fff7ed; color: #ea580c; font-size: 12px; font-weight: bold; padding: 3px 8px; rounded: 4px; border: 1px solid #ffedd5;">이가이버부동산 알림</span>
+        <h2 style="color: #0f172a; margin: 8px 0 0 0; font-size: 20px; font-weight: 800;">새로운 문의/토탈케어가 접수되었습니다</h2>
       </div>
       
-      <div style="margin-bottom: 15px;">
-        <strong>이메일:</strong> ${data.email}
-      </div>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; font-size: 14px; width: 90px; vertical-align: top;"><strong>신청자명</strong></td>
+          <td style="padding: 8px 0; color: #0f172a; font-size: 15px; font-weight: bold;">${data.name}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; font-size: 14px; vertical-align: top;"><strong>연락처</strong></td>
+          <td style="padding: 8px 0; color: #ea580c; font-size: 16px; font-weight: bold;"><a href="tel:${data.phone}" style="color: #ea580c; text-decoration: none;">${data.phone}</a></td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; font-size: 14px; vertical-align: top;"><strong>이메일</strong></td>
+          <td style="padding: 8px 0; color: #334155; font-size: 14px;">${data.email || '미입력 (전화 문의)'}</td>
+        </tr>
+      </table>
       
       <div style="margin-bottom: 15px;">
-        <strong>전화번호:</strong> ${data.phone}
+        <strong style="color: #334155; font-size: 14px; display: block; margin-bottom: 6px;">문의 및 접수 상세 내용:</strong>
+        <div style="background-color: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 14px; line-height: 1.6; color: #1e293b;">
+          ${formattedMessage}
+        </div>
       </div>
       
-      <div style="margin-bottom: 15px;">
-        <strong>문의내용:</strong>
-        <p style="background-color: #f9f9f9; padding: 10px; border-radius: 4px;">${data.message.replace(/\n/g, '<br>')}</p>
-      </div>
+      ${imageHtml}
       
-      <div style="font-size: 12px; color: #666; margin-top: 30px; padding-top: 10px; border-top: 1px solid #e1e1e1;">
-        <p>이 이메일은 이가이버부동산 웹사이트의 문의 폼에서 자동으로 전송되었습니다.</p>
+      <div style="font-size: 12px; color: #94a3b8; margin-top: 30px; padding-top: 14px; border-top: 1px solid #e2e8f0; text-align: center;">
+        <p style="margin: 0;">이 이메일은 이가이버부동산(leegyver.com) 시스템에서 자동 발송되었습니다.</p>
       </div>
     </div>
   `;

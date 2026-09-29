@@ -84,6 +84,7 @@ export interface IStorage {
   getInquiries(): Promise<Inquiry[]>;
   getInquiry(id: number): Promise<Inquiry | undefined>;
   createInquiry(inquiry: InsertInquiry): Promise<Inquiry>;
+  deleteInquiry(id: number): Promise<boolean>;
 
   // User methods
   getUser(id: number): Promise<User | undefined>;
@@ -1268,6 +1269,10 @@ export class SQLiteStorage implements IStorage {
       createdAt: new Date().toISOString()
     });
     return this.getInquiry(res.lastInsertRowid as number) as Promise<Inquiry>;
+  }
+  async deleteInquiry(id: number): Promise<boolean> {
+    const res = db.prepare('DELETE FROM inquiries WHERE id = ?').run(id);
+    return res.changes > 0;
   }
 
   // --- Users ---

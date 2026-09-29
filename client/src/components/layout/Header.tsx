@@ -26,8 +26,8 @@ const Header = () => {
     { name: "홈", path: "/" },
     { name: "강화도 매물", path: "/properties" },
     { name: "반값 경매·공매", path: "/auctions", isHot: true },
+    { name: "부동산 토탈케어", path: "/total-care", isNew: true },
     { name: "유튜브", path: "/youtube" },
-    { name: "왜 이가이버인가", path: "/about" },
   ];
 
   const handleLogout = () => {
@@ -59,6 +59,11 @@ const Header = () => {
                 {item.isHot && (
                   <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse shadow-sm">
                     HOT
+                  </span>
+                )}
+                {item.isNew && (
+                  <span className="bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow-sm animate-bounce">
+                    NEW
                   </span>
                 )}
               </Link>
@@ -143,11 +148,18 @@ const Header = () => {
                       }`}
                   >
                     <span>{item.name}</span>
-                    {item.isHot && (
-                      <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
-                        HOT
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1.5">
+                      {item.isHot && (
+                        <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
+                          HOT
+                        </span>
+                      )}
+                      {item.isNew && (
+                        <span className="bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-sm">
+                          NEW
+                        </span>
+                      )}
+                    </div>
                   </Link>
                 ))}
 

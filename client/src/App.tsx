@@ -25,6 +25,7 @@ const NewsPage = lazy(() => import("@/pages/NewsPage"));
 const NewsDetailPage = lazy(() => import("@/pages/NewsDetailPage"));
 const ReviewsPage = lazy(() => import("@/pages/ReviewsPage"));
 const AboutPage = lazy(() => import("@/pages/AboutPage"));
+const TotalCarePage = lazy(() => import("@/pages/TotalCarePage"));
 const YoutubePage = lazy(() => import("@/pages/YoutubePage"));
 const SajuPage = lazy(() => import("@/pages/SajuPage"));
 const ContactPage = lazy(() => import("@/pages/ContactPage"));
@@ -62,7 +63,8 @@ function Router({ user, isLoading }: { user: any; isLoading: boolean }) {
         <Route path="/news" component={NewsPage} />
         <Route path="/news/:id" component={NewsDetailPage} />
         <Route path="/reviews" component={ReviewsPage} />
-        <Route path="/about" component={AboutPage} />
+        <Route path="/total-care" component={TotalCarePage} />
+        <Route path="/about" component={TotalCarePage} />
         <Route path="/youtube" component={YoutubePage} />
         <Route path="/saju" component={SajuPage} />
         <Route path="/contact" component={ContactPage} />

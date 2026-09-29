@@ -4,6 +4,7 @@ import PropertyMap from "@/components/map/PropertyMap";
 import PropertySection from "@/components/home/PropertySection";
 import BannerSlider from "@/components/home/BannerSlider";
 import Hero from "@/components/home/Hero";
+import TotalCareSection from "@/components/home/TotalCareSection";
 import { useQuery } from "@tanstack/react-query";
 import { News, Auction } from "@shared/schema";
 import { Link, useLocation } from "wouter";
@@ -562,6 +563,9 @@ const HomePage = () => {
           </div>
         </div>
       </section>
+
+      {/* 이가이버 부동산 토탈케어 (원룸·건물유지보수·출장집수리·세컨하우스 케어) */}
+      <TotalCareSection />
 
       {/* Map Section */}
       <section className="py-2 bg-white">

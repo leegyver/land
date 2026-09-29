@@ -2392,12 +2392,13 @@ ${estimate.content.length > 180 ? estimate.content.substring(0, 180) + '...' : e
       if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
 
       const validated = answerCareEstimateSchema.parse(req.body);
+      const targetStatus = (!validated.status || validated.status === "pending") ? "answered" : validated.status;
       const updated = await storage.answerCareEstimate(id, {
         estimateLabor: validated.estimateLabor,
         estimateParts: validated.estimateParts,
         estimateSchedule: validated.estimateSchedule,
         estimateContent: validated.estimateContent,
-        status: validated.status || "answered",
+        status: targetStatus,
         adminNotes: validated.adminNotes,
       });
 

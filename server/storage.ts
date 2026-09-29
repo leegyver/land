@@ -2960,7 +2960,7 @@ export class SQLiteStorage implements IStorage {
           estimateParts = COALESCE(?, estimateParts),
           estimateSchedule = COALESCE(?, estimateSchedule),
           estimateContent = COALESCE(?, estimateContent),
-          status = COALESCE(?, status),
+          status = ?,
           adminNotes = COALESCE(?, adminNotes),
           answeredAt = ?,
           updatedAt = ?
@@ -2970,7 +2970,7 @@ export class SQLiteStorage implements IStorage {
       answer.estimateParts !== undefined ? answer.estimateParts : null,
       answer.estimateSchedule !== undefined ? answer.estimateSchedule : null,
       answer.estimateContent !== undefined ? answer.estimateContent : null,
-      answer.status !== undefined ? answer.status : 'answered',
+      (answer.status && answer.status !== 'pending') ? answer.status : 'answered',
       answer.adminNotes !== undefined ? answer.adminNotes : null,
       now,
       now,

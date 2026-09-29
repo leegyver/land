@@ -288,7 +288,7 @@ export default function CareEstimateBoard({ initialEstimateId }: CareEstimateBoa
           estimateParts: fullData.estimateParts || "",
           estimateSchedule: fullData.estimateSchedule || "",
           estimateContent: fullData.estimateContent || "",
-          status: fullData.status || "answered",
+          status: fullData.status === "completed" ? "completed" : "answered",
           sendKakaoNotice: true,
         });
         setIsEditingAnswer(false);
@@ -1178,6 +1178,22 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${selectedEstimate.id}`
                       className="bg-white rounded-xl text-sm"
                       required
                     />
+                  </div>
+
+                  {/* 진행 상태 선택 */}
+                  <div className="bg-white p-3 rounded-2xl border border-orange-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <Label className="text-xs font-bold text-slate-800 shrink-0">
+                      견적 진행 상태 설정:
+                    </Label>
+                    <select
+                      value={answerFormData.status}
+                      onChange={(e) => setAnswerFormData((prev) => ({ ...prev, status: e.target.value }))}
+                      className="text-xs font-bold border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    >
+                      <option value="answered">💬 견적답변 완료 (고객에게 맞춤 견적서 전달)</option>
+                      <option value="completed">✅ 시공 완료 (현장 수리/시공 작업 완료)</option>
+                      <option value="pending">⏳ 답변 대기중 (임시 보류)</option>
+                    </select>
                   </div>
 
                   {/* 카카오톡 나에게 보내기 자동 발송 체크박스 */}

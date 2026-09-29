@@ -30,6 +30,7 @@ import { memoryCache } from "./cache";
 import { setupAuth } from "./auth";
 import { fetchAndSaveNews, setupNewsScheduler } from "./news-fetcher";
 import { sendEmail, createInquiryEmailTemplate, createInquiryReceiptTemplate, createNewsletterWelcomeTemplate } from "./mailer";
+import { getKakaoAuthUrl, exchangeCodeForTokens, sendKakaoAlertToMe, getValidKakaoAccessToken } from "./kakao";
 import { getRecentTransactions } from "./real-estate-api";
 // import { testRealEstateAPI } from "./test-api";
 import { getLatestBlogPosts } from "./blog-fetcher";
@@ -2017,6 +2018,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           content: validatedData.message.length > 80 ? validatedData.message.substring(0, 80) + "..." : validatedData.message,
           isRead: false
         }).catch(console.error);
+
+        // 카카오톡 [나에게 보내기] 즉시 알림 발송 시도
+        sendKakaoAlertToMe({
+          title: isCare ? "🔔 [이가이버 토탈케어 신규 접수]" : "🔔 [이가이버 홈페이지 신규 문의]",
+          name: validatedData.name,
+          phone: validatedData.phone,
+          message: validatedData.message,
+          linkUrl: "https://leegyver.com/admin",
+        }).catch((kakaoErr) => {
+          console.error("카카오톡 알림 전송 에러:", kakaoErr);
+        });
       } catch (emailError) {
         console.error('문의 알림 이메일 발송 중 오류 발생:', emailError);
       }
@@ -2027,6 +2039,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid inquiry data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to create inquiry" });
+    }
+  });
+
+  // ==========================================
+  // 카카오톡 [나에게 보내기] 연동 관리 API
+  // ==========================================
+  // 1. 카카오 로그인 인증창으로 리다이렉트
+  app.get("/api/admin/kakao/auth", (req, res) => {
+    const authUrl = getKakaoAuthUrl();
+    res.redirect(authUrl);
+  });
+
+  // 2. 카카오 로그인 콜백 (토큰 수신 및 저장)
+  app.get("/api/admin/kakao/callback", async (req, res) => {
+    try {
+      const { code, error } = req.query;
+      if (error || !code) {
+        return res.redirect("/admin?kakao=error&msg=" + encodeURIComponent((error as string) || "인증 취소"));
+      }
+
+      const result = await exchangeCodeForTokens(code as string);
+      if (result.success) {
+        // 성공 시 관리자 페이지로 리다이렉트
+        res.redirect("/admin?kakao=connected");
+      } else {
+        res.redirect("/admin?kakao=error&msg=" + encodeURIComponent(result.error || "토큰 교환 실패"));
+      }
+    } catch (e: any) {
+      console.error("카카오 콜백 처리 오류:", e);
+      res.redirect("/admin?kakao=error&msg=" + encodeURIComponent(e.message));
+    }
+  });
+
+  // 3. 카카오톡 연동 상태 확인
+  app.get("/api/admin/kakao/status", async (req, res) => {
+    try {
+      const token = await getValidKakaoAccessToken();
+      res.json({ connected: !!token });
+    } catch (e) {
+      res.json({ connected: false });
+    }
+  });
+
+  // 4. 카카오톡 테스트 알림 발송
+  app.post("/api/admin/kakao/test", async (req, res) => {
+    try {
+      const success = await sendKakaoAlertToMe({
+        title: "🔔 [이가이버 카카오톡 알림 테스트]",
+        name: "테스트 사용자",
+        phone: "010-4787-3120",
+        message: "카카오톡 [나에게 보내기] 알림 연동이 성공적으로 완료되었습니다! 이제 홈페이지에서 문의나 토탈케어가 접수되면 즉시 이 카톡으로 알림이 옵니다.",
+        linkUrl: "https://leegyver.com/admin",
+      });
+
+      if (success) {
+        res.json({ success: true, message: "카카오톡 테스트 메시지가 성공적으로 발송되었습니다!" });
+      } else {
+        res.status(400).json({ success: false, message: "카카오톡 발송에 실패했습니다. 먼저 연동 버튼을 눌러 카카오 계정을 연결해 주세요." });
+      }
+    } catch (e: any) {
+      res.status(500).json({ success: false, message: e.message });
     }
   });
 

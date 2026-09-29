@@ -53,6 +53,33 @@ export default function AdminCareTab() {
     },
   });
 
+  // 카카오 연동 상태 조회
+  const { data: kakaoStatus, refetch: refetchKakao } = useQuery<{ connected: boolean }>({
+    queryKey: ["/api/admin/kakao/status"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/kakao/status");
+      return res.json();
+    },
+  });
+
+  const [isTestingKakao, setIsTestingKakao] = useState(false);
+  const handleTestKakao = async () => {
+    setIsTestingKakao(true);
+    try {
+      const res = await fetch("/api/admin/kakao/test", { method: "POST" });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast({ title: "카카오톡 발송 성공", description: data.message });
+      } else {
+        toast({ title: "발송 실패", description: data.message, variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "오류", description: e.message, variant: "destructive" });
+    } finally {
+      setIsTestingKakao(false);
+    }
+  };
+
   // 메시지에서 첨부 이미지 URL 추출 헬퍼
   const extractImageUrl = (message: string): string | null => {
     const match = message.match(/https?:\/\/[^\s<"']+\.(?:jpg|jpeg|png|webp|gif)|\/uploads\/[^\s<"']+\.(?:jpg|jpeg|png|webp|gif)/i);
@@ -101,6 +128,69 @@ export default function AdminCareTab() {
           </div>
         </CardHeader>
         <CardContent>
+          {/* 카카오톡 알림 연동 상태 바 */}
+          <div className="mb-6 p-4 rounded-2xl border bg-gradient-to-r from-amber-500/10 via-yellow-500/10 to-orange-500/10 border-amber-300/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#FEE500] text-[#3C1E1E] flex items-center justify-center font-black shrink-0 shadow-sm text-xs">
+                TALK
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-extrabold text-sm text-slate-900">
+                    카카오톡 실시간 알림 [나에게 보내기]
+                  </span>
+                  {kakaoStatus?.connected ? (
+                    <span className="bg-emerald-100 text-emerald-800 text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 border border-emerald-300">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      연동 활성화됨
+                    </span>
+                  ) : (
+                    <span className="bg-amber-100 text-amber-800 text-[11px] font-bold px-2 py-0.5 rounded-full border border-amber-300">
+                      미연동 (연결 필요)
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  {kakaoStatus?.connected
+                    ? "홈페이지에 새 문의/토탈케어가 접수되면 대표님 카카오톡 [나와의 채팅]으로 즉시 자동 전송됩니다."
+                    : "버튼을 눌러 카카오 계정을 연결하시면 문의 접수 즉시 카톡 [나와의 채팅]으로 바로 전달됩니다."}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+              {kakaoStatus?.connected ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleTestKakao}
+                    disabled={isTestingKakao}
+                    className="text-xs font-bold border-amber-300 hover:bg-amber-50"
+                  >
+                    {isTestingKakao ? "카톡 전송 중..." : "테스트 카톡 보내기"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    asChild
+                    className="text-xs text-slate-500 hover:text-slate-900"
+                  >
+                    <a href="/api/admin/kakao/auth">계정 재연결</a>
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  size="sm"
+                  asChild
+                  className="bg-[#FEE500] hover:bg-[#FADA0A] text-[#3C1E1E] font-extrabold text-xs shadow-sm"
+                >
+                  <a href="/api/admin/kakao/auth">카카오톡 알림 연결하기 (1클릭)</a>
+                </Button>
+              )}
+            </div>
+          </div>
+
           {/* 검색 바 */}
           <div className="flex items-center gap-3 mb-6">
             <div className="relative flex-1">

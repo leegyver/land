@@ -4691,13 +4691,17 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${updated.id}`;
   });
 
 
-  // 파일 업로드 API (초고속 스트림 저장: 클라이언트 Canvas 리사이징 활용)
-  app.post("/api/upload", upload.single("file"), async (req, res) => {
-    try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "로그인이 필요합니다." });
+  // 파일 업로드 API (견적 의뢰, 간편 문의, 게시판 등 - 이미지 및 문서 업로드 지원)
+  app.post("/api/upload", (req, res, next) => {
+    upload.single("file")(req, res, (err: any) => {
+      if (err) {
+        console.error("파일 업로드 미들웨어 오류:", err);
+        return res.status(400).json({ message: err.message || "파일 업로드 처리 중 오류가 발생했습니다." });
       }
-
+      next();
+    });
+  }, async (req, res) => {
+    try {
       if (!req.file) {
         return res.status(400).json({ message: "파일이 업로드되지 않았습니다." });
       }

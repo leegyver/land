@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { motion } from "framer-motion";
 import { 
@@ -23,10 +23,17 @@ export default function TotalCarePage() {
   
   // URL 쿼리 파라미터 확인 (?tab=estimates 또는 ?estimateId=...)
   const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
-  const initialMode = searchParams.get("tab") === "estimates" || searchParams.get("estimateId") ? "estimates" : "services";
   const initialEstimateId = searchParams.get("estimateId") ? parseInt(searchParams.get("estimateId")!) : null;
 
-  const [mainMode, setMainMode] = useState<"services" | "estimates">(initialMode);
+  // estimateId나 tab 파라미터가 있을 경우 상담실로 자동 스크롤
+  useEffect(() => {
+    if (initialEstimateId || searchParams.get("tab") === "estimates") {
+      setTimeout(() => {
+        document.getElementById("estimate-board")?.scrollIntoView({ behavior: "smooth" });
+      }, 300);
+    }
+  }, [initialEstimateId]);
+
   const [activeTab, setActiveTab] = useState("oneroom");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
@@ -149,10 +156,9 @@ ${formData.message || "방문 점검 및 견적 상담 희망"}
       });
       setUploadedImageUrl(null);
 
-      // 실시간 견적 상담실 탭으로 전환하여 방금 접수된 글을 바로 확인 가능하게 함
-      setMainMode("estimates");
+      // 상단 실시간 견적 상담실로 부드럽게 스크롤하여 방금 등록된 글을 바로 확인 가능하게 함
       setTimeout(() => {
-        document.getElementById("main-content")?.scrollIntoView({ behavior: "smooth" });
+        document.getElementById("estimate-board")?.scrollIntoView({ behavior: "smooth" });
       }, 100);
     } catch (error) {
       toast({
@@ -203,33 +209,40 @@ ${formData.message || "방문 점검 및 견적 상담 희망"}
             </motion.div>
 
             {/* Quick Actions */}
+            {/* Quick Actions */}
             <div className="flex flex-wrap items-center justify-center gap-3 pt-3">
               <button
                 type="button"
                 onClick={() => {
-                  setMainMode("estimates");
-                  document.getElementById("main-content")?.scrollIntoView({ behavior: "smooth" });
+                  document.getElementById("estimate-board")?.scrollIntoView({ behavior: "smooth" });
                 }}
                 className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black px-6 py-3.5 rounded-xl shadow-lg shadow-orange-500/30 transition-transform transform hover:-translate-y-0.5 text-sm sm:text-base cursor-pointer"
               >
                 <FileText className="w-4 h-4 text-amber-200" />
-                <span>실시간 견적 상담실 / 답변 확인</span>
+                <span>실시간 견적 상담실 보기</span>
                 <span className="bg-white text-orange-600 text-[10px] font-black px-1.5 py-0.2 rounded-full">
-                  NEW
+                  HOT
                 </span>
               </button>
               <button
                 type="button"
                 onClick={() => {
-                  setMainMode("services");
-                  setTimeout(() => {
-                    document.getElementById("apply-form")?.scrollIntoView({ behavior: "smooth" });
-                  }, 50);
+                  document.getElementById("price-table")?.scrollIntoView({ behavior: "smooth" });
                 }}
                 className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold px-6 py-3.5 rounded-xl backdrop-blur-sm transition-colors text-sm sm:text-base cursor-pointer"
               >
-                <Upload className="w-4 h-4 text-orange-400" />
-                <span>간편 견적 신청하기</span>
+                <Wrench className="w-4 h-4 text-orange-400" />
+                <span>서비스 & 단가표 확인</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  document.getElementById("apply-form")?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold px-6 py-3.5 rounded-xl backdrop-blur-sm transition-colors text-sm sm:text-base cursor-pointer"
+              >
+                <Upload className="w-4 h-4 text-amber-300" />
+                <span>온라인 견적 신청하기</span>
               </button>
               <a
                 href="tel:010-4787-3120"
@@ -286,57 +299,64 @@ ${formData.message || "방문 점검 및 견적 상담 희망"}
         </div>
       </section>
 
-      {/* Main Pricing & Service Sections / Estimate Board */}
-      <section id="main-content" className="py-10 sm:py-16">
-        <div className="container mx-auto px-4">
-          {/* Main Mode Switcher Tabs */}
-          <div className="flex justify-center max-w-md mx-auto mb-10">
-            <div className="grid grid-cols-2 p-1.5 bg-slate-200/90 rounded-2xl w-full border border-slate-300 shadow-inner">
-              <button
-                type="button"
-                onClick={() => setMainMode("services")}
-                className={`py-3 px-4 rounded-xl font-black text-sm sm:text-base transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                  mainMode === "services"
-                    ? "bg-white text-slate-900 shadow-md"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
+      {/* ────────────────────────────────────────────────────────── */}
+      {/* 1. 최상단: 실시간 견적 상담실 (신뢰도 최우선 증명) */}
+      {/* ────────────────────────────────────────────────────────── */}
+      <section id="estimate-board" className="py-10 sm:py-16 bg-slate-50/70 border-b border-slate-200">
+        <div className="container mx-auto px-4 max-w-5xl">
+          <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <Badge className="bg-orange-500 text-white font-bold text-xs mb-1.5 px-2.5 py-0.5">
+                STEP 1. 투명한 양방향 소통
+              </Badge>
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                실시간 수리·케어 견적 상담실
+              </h2>
+              <p className="text-slate-600 text-xs sm:text-sm mt-1">
+                실제 고객의 의뢰 질문과 이가이버 대표의 공식 맞춤 견적 답글이 실시간 등록되는 투명한 소통 공간입니다.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  document.getElementById("price-table")?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="rounded-xl text-xs font-bold"
               >
-                <Wrench className="w-4 h-4 text-orange-500" />
-                <span>서비스 & 단가표</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setMainMode("estimates")}
-                className={`py-3 px-4 rounded-xl font-black text-sm sm:text-base transition-all flex items-center justify-center gap-2 relative cursor-pointer ${
-                  mainMode === "estimates"
-                    ? "bg-slate-900 text-white shadow-md"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
+                단가표 바로보기 ↓
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  document.getElementById("apply-form")?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold shadow-sm"
               >
-                <FileText className="w-4 h-4 text-amber-400" />
-                <span>실시간 견적 상담실</span>
-                <span className="bg-orange-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full">
-                  NEW
-                </span>
-              </button>
+                온라인 접수 바로가기 ↓
+              </Button>
             </div>
           </div>
 
-          {mainMode === "estimates" ? (
-            <div className="max-w-5xl mx-auto">
-              <CareEstimateBoard initialEstimateId={initialEstimateId} />
-            </div>
-          ) : (
-            <div>
-              <div className="text-center max-w-2xl mx-auto mb-10">
-                <Badge className="bg-blue-600 text-white mb-2 px-3 py-1 text-xs">서비스 카테고리 & 표준 단가표</Badge>
-                <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-                  필요한 서비스를 선택하고<br />투명한 예상 금액을 확인하세요
-                </h2>
-                <p className="text-slate-600 text-sm sm:text-base mt-2">
-                  ※ 강화 관내 기본 출장·진단비는 3만~5만원이며, 현장 수리 진행 시 출장비는 시공비에서 공제해 드립니다.
-                </p>
-              </div>
+          <CareEstimateBoard initialEstimateId={initialEstimateId} />
+        </div>
+      </section>
+
+      {/* ────────────────────────────────────────────────────────── */}
+      {/* 2. 중간: 서비스 카테고리 & 표준 단가표 */}
+      {/* ────────────────────────────────────────────────────────── */}
+      <section id="price-table" className="py-12 sm:py-16 bg-white border-b border-slate-200">
+        <div className="container mx-auto px-4 max-w-5xl">
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <Badge className="bg-blue-600 text-white mb-2 px-3 py-1 text-xs">STEP 2. 투명한 사전 정찰제</Badge>
+            <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+              필요한 서비스를 선택하고<br />투명한 표준 단가표를 확인하세요
+            </h2>
+            <p className="text-slate-600 text-sm sm:text-base mt-2">
+              ※ 강화 관내 기본 출장·진단비는 3만~5만원이며, 현장 수리 진행 시 출장비는 시공비에서 전액 공제해 드립니다.
+            </p>
+          </div>
 
           <Tabs defaultValue="oneroom" className="max-w-5xl mx-auto" onValueChange={setActiveTab}>
             <TabsList className="grid grid-cols-2 md:grid-cols-4 h-auto p-1.5 bg-slate-200/80 rounded-2xl mb-8">
@@ -761,17 +781,16 @@ ${formData.message || "방문 점검 및 견적 상담 희망"}
             </TabsContent>
           </Tabs>
         </div>
-      )}
-    </div>
-  </section>
+      </section>
 
-  {mainMode === "services" && (
-    /* Online Application Form Section */
-    <section id="apply-form" className="py-16 bg-slate-900 text-white relative">
-      <div className="container mx-auto px-4 max-w-4xl">
+      {/* ────────────────────────────────────────────────────────── */}
+      {/* 3. 하단: 온라인 간편 견적 접수 폼 */}
+      {/* ────────────────────────────────────────────────────────── */}
+      <section id="apply-form" className="py-16 bg-slate-900 text-white relative">
+        <div className="container mx-auto px-4 max-w-4xl">
           <div className="text-center mb-10">
             <span className="text-xs font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-3 py-1 rounded-full">
-              빠르고 간편한 온라인 접수
+              STEP 3. 빠르고 간편한 온라인 접수
             </span>
             <h2 className="text-2xl sm:text-4xl font-extrabold text-white mt-2">
               현장 사진을 찍어 보내주시면<br />더욱 정확한 견적을 드립니다
@@ -942,7 +961,6 @@ ${formData.message || "방문 점검 및 견적 상담 희망"}
           </Card>
         </div>
       </section>
-      )}
 
       {/* Case Studies / Real Examples (신뢰도) */}
       <section className="py-16 bg-white">
@@ -1052,13 +1070,12 @@ ${formData.message || "방문 점검 및 견적 상담 희망"}
         <button
           type="button"
           onClick={() => {
-            setMainMode("estimates");
-            document.getElementById("main-content")?.scrollIntoView({ behavior: "smooth" });
+            document.getElementById("estimate-board")?.scrollIntoView({ behavior: "smooth" });
           }}
           className="flex-1 bg-orange-600 text-white text-center py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
         >
           <FileText className="w-3.5 h-3.5" />
-          <span>견적 상담실</span>
+          <span>실시간 견적실</span>
         </button>
       </div>
     </div>

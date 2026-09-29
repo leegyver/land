@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { CareEstimate } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
@@ -7,7 +7,7 @@ import {
   Lock, Unlock, Eye, Calendar, Clock, Phone, MapPin, 
   Wrench, Building, Plus, Search, CheckCircle2, AlertCircle, 
   FileText, Send, Copy, Check, Trash2, Edit3, Sparkles, 
-  Shield, ChevronRight, Upload, X, RefreshCw
+  Shield, ChevronRight, ChevronLeft, Upload, X, RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -347,6 +347,21 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${selectedEstimate.id}`
     );
   });
 
+  // 페이지네이션 상태 (한 페이지당 5개 표시 - 모바일 & PC 최적 황금 비율)
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
+
+  // 필터나 검색어가 바뀔 때마다 1페이지로 리셋
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [categoryFilter, statusFilter, searchQuery]);
+
+  const totalPages = Math.ceil(filteredList.length / ITEMS_PER_PAGE) || 1;
+  const paginatedList = filteredList.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   return (
     <div className="space-y-6">
       {/* 상단 안내 & 액션 헤더 */}
@@ -468,8 +483,9 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${selectedEstimate.id}`
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {filteredList.map((item) => {
+        <>
+          <div className="grid grid-cols-1 gap-4">
+          {paginatedList.map((item) => {
             const isAnswered = item.status === "answered" || item.status === "completed";
             return (
               <div
@@ -626,7 +642,60 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${selectedEstimate.id}`
             );
           })}
         </div>
-      )}
+
+        {/* 페이지네이션 컨트롤 바 (5개씩 분할 탐색) */}
+        {totalPages > 1 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 px-1">
+            <span className="text-xs text-slate-500 font-medium">
+              총 <strong>{filteredList.length}</strong>건 중{" "}
+              <strong>{(currentPage - 1) * ITEMS_PER_PAGE + 1}</strong> ~{" "}
+              <strong>{Math.min(currentPage * ITEMS_PER_PAGE, filteredList.length)}</strong>건 표시
+            </span>
+
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                className="rounded-xl h-8 px-2.5 text-xs font-bold"
+              >
+                <ChevronLeft className="w-3.5 h-3.5 mr-0.5" />
+                이전
+              </Button>
+
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`w-8 h-8 rounded-xl text-xs font-black transition-all ${
+                      currentPage === pageNum
+                        ? "bg-slate-900 text-white shadow-sm scale-105"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                ))}
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                className="rounded-xl h-8 px-2.5 text-xs font-bold"
+              >
+                다음
+                <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </>
+    )}
 
       {/* ======================================================== */}
       {/* 1. 신규 무료 견적 의뢰 작성 모달 */}

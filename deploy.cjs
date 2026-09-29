@@ -98,11 +98,11 @@ req.end();
     'echo "━━━ [1/6] DB 백업 ━━━"',
     'TIMESTAMP=$(date +%Y%m%d_%H%M%S)',
     'if [ -f database.sqlite ]; then ' +
+      'node -e "try { const db = require(\'better-sqlite3\')(\'database.sqlite\'); db.pragma(\'wal_checkpoint(TRUNCATE)\'); db.close(); } catch(e){}" 2>/dev/null; ' +
       'cp database.sqlite /tmp/database_backup.sqlite && ' +
-      'cp database.sqlite /root/db_backups/database_${TIMESTAMP}.sqlite 2>/dev/null; ' +
-      'mkdir -p /root/db_backups; ' +
+      'mkdir -p /root/db_backups && ' +
       'cp database.sqlite /root/db_backups/database_${TIMESTAMP}.sqlite; ' +
-      'echo "✅ DB 백업 완료: /tmp/database_backup.sqlite + /root/db_backups/database_${TIMESTAMP}.sqlite"; ' +
+      'echo "✅ DB 백업 완료 (WAL 체크포인트 포함): /tmp/database_backup.sqlite + /root/db_backups/database_${TIMESTAMP}.sqlite"; ' +
     'else echo "⚠️ database.sqlite 없음 (첫 배포)"; fi',
 
     // ── 단계 2: Git 강제 동기화 (깃허브 기준 덮어쓰기) ──

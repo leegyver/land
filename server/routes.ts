@@ -2261,7 +2261,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // 3. 비밀글 비밀번호 검증 (잠금 해제)
+  // 3. 비밀글 비밀번호 검증 (잠금 해제 - 4자리 PIN 또는 연락처 뒷자리 4자리로 열람 가능)
   app.post("/api/care-estimates/:id/verify", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -2273,7 +2273,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const isAdmin = req.isAuthenticated() && ["admin", "master"].includes((req.user as any)?.role);
 
-      if (isAdmin || (estimate.password && estimate.password === String(password).trim())) {
+      // 연락처 뒷자리 4자리 추출
+      const phoneDigits = (estimate.phone || "").replace(/[^0-9]/g, "");
+      const phoneLast4 = phoneDigits.length >= 4 ? phoneDigits.slice(-4) : "";
+      const inputPass = String(password || "").trim();
+
+      const isAuthorized = isAdmin || 
+        (estimate.password && estimate.password.trim() === inputPass) ||
+        (phoneLast4 && phoneLast4 === inputPass);
+
+      if (isAuthorized) {
         return res.json({
           success: true,
           estimate: {
@@ -2286,7 +2295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      return res.status(401).json({ success: false, message: "비밀번호가 일치하지 않습니다." });
+      return res.status(401).json({ success: false, message: "비밀번호(또는 연락처 뒷자리 4자리)가 일치하지 않습니다." });
     } catch (error) {
       console.error("비밀번호 검증 오류:", error);
       res.status(500).json({ message: "Failed to verify password" });
@@ -2297,6 +2306,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/care-estimates", async (req, res) => {
     try {
       const validatedData = insertCareEstimateSchema.parse(req.body);
+      
+      // 비밀번호 미입력 시 고객 편의를 위해 연락처 뒷자리 4자리 자동 설정
+      const phoneDigits = (validatedData.phone || "").replace(/[^0-9]/g, "");
+      const phoneLast4 = phoneDigits.length >= 4 ? phoneDigits.slice(-4) : "0000";
+      if (!validatedData.password || !validatedData.password.trim()) {
+        validatedData.password = phoneLast4;
+      }
+      
+      // 개인정보 및 맞춤 견적 보호를 위해 비밀글을 기본으로 적용
+      if (validatedData.isSecret === undefined) {
+        validatedData.isSecret = true;
+      }
+
       const estimate = await storage.createCareEstimate(validatedData);
 
       // 1) 관리자 통합 알림 DB 등록
@@ -2383,6 +2405,9 @@ ${estimate.content.length > 180 ? estimate.content.substring(0, 180) + '...' : e
         return res.status(404).json({ message: "견적 의뢰를 찾을 수 없습니다." });
       }
 
+      const phoneDigits = (updated.phone || "").replace(/[^0-9]/g, "");
+      const phoneLast4 = phoneDigits.length >= 4 ? phoneDigits.slice(-4) : "";
+
       // 고객 전달용 정갈한 카카오톡 포맷 텍스트 생성
       const forwardKakaoText = 
 `📋 [이가이버 토탈케어 맞춤 견적서]
@@ -2404,7 +2429,8 @@ ${updated.estimateContent}
 * 현장 노후 상태 및 추가 부속 발생 시 일부 변동될 수 있습니다.
 * 수리 확정 또는 일정 조율은 본 카톡으로 회신 주시거나 연락(010-4787-3120) 부탁드립니다!
 
-🔗 온라인 견적서 확인:
+🔒 온라인 견적서 열람: 휴대폰 뒷자리 4자리(${phoneLast4}) 입력
+🔗 온라인 견적서 카드 확인:
 https://leegyver.com/total-care?tab=estimates&estimateId=${updated.id}`;
 
       // 요청 옵션에 따라 관리자 본인 카카오톡으로 발송 (카톡에서 복사/전달 또는 보완용)

@@ -64,7 +64,7 @@ export default function CareEstimateBoard({ initialEstimateId }: CareEstimateBoa
   // 카피 완료 상태
   const [hasCopied, setHasCopied] = useState(false);
 
-  // 신규 견적 의뢰 폼 상태
+  // 신규 견적 의뢰 폼 상태 (개인정보 보호를 위해 비밀글 기본 ON)
   const [newEstimateData, setNewEstimateData] = useState({
     title: "",
     authorName: "",
@@ -73,7 +73,7 @@ export default function CareEstimateBoard({ initialEstimateId }: CareEstimateBoa
     category: "생활집수리",
     content: "",
     imageUrl: "",
-    isSecret: false,
+    isSecret: true,
     password: "",
   });
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
@@ -141,7 +141,7 @@ export default function CareEstimateBoard({ initialEstimateId }: CareEstimateBoa
         category: "생활집수리",
         content: "",
         imageUrl: "",
-        isSecret: false,
+        isSecret: true,
         password: "",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/care-estimates"] });
@@ -541,13 +541,32 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${selectedEstimate.id}`
                       {item.viewCount || 0}
                     </span>
                   </div>
+
+                  {/* 견적 답글 도착 안내 (계단식 답글 형태) */}
+                  {isAnswered && (
+                    <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between bg-slate-50/80 px-3 py-2 rounded-xl border border-slate-200/60">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-extrabold text-orange-600 bg-orange-100/80 border border-orange-200 px-2 py-0.5 rounded text-[11px] flex items-center gap-1">
+                          ↳ [답변] 이가이버 맞춤 견적서
+                        </span>
+                        <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                          <Lock className="w-3 h-3 text-amber-600" />
+                          작성 고객님과 관리자만 열람 가능
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-bold text-blue-600 shrink-0">
+                        견적서 열람 ➔
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* 오른쪽 상태 버튼 */}
                 <div className="flex items-center justify-end gap-2 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0">
                   {isAnswered ? (
-                    <div className="flex items-center gap-1 text-xs sm:text-sm font-bold text-blue-600 bg-blue-50 px-3 py-2 rounded-xl border border-blue-200">
-                      <span>견적서 확인</span>
+                    <div className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-blue-600 bg-blue-50 px-3.5 py-2 rounded-xl border border-blue-200 shadow-sm">
+                      <Lock className="w-3.5 h-3.5 text-amber-600" />
+                      <span>견적 답글 확인</span>
                       <ChevronRight className="w-4 h-4" />
                     </div>
                   ) : (
@@ -588,11 +607,14 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${selectedEstimate.id}`
                 toast({ title: "입력 확인", description: "제목, 성함, 연락처, 의뢰내용을 모두 입력해 주세요.", variant: "destructive" });
                 return;
               }
-              if (newEstimateData.isSecret && !newEstimateData.password.trim()) {
-                toast({ title: "비밀번호 입력", description: "비밀글 열람을 위한 4자리 비밀번호를 입력해 주세요.", variant: "destructive" });
-                return;
-              }
-              createMutation.mutate(newEstimateData);
+              const phoneDigits = newEstimateData.phone.replace(/[^0-9]/g, "");
+              const phoneLast4 = phoneDigits.length >= 4 ? phoneDigits.slice(-4) : "0000";
+              const finalPassword = newEstimateData.password.trim() || phoneLast4;
+
+              createMutation.mutate({
+                ...newEstimateData,
+                password: finalPassword,
+              });
             }}
             className="space-y-4 py-2"
           >
@@ -709,7 +731,7 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${selectedEstimate.id}`
             </div>
 
             {/* 비밀글 설정 */}
-            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-2">
+            <div className="bg-amber-50/80 p-4 rounded-2xl border border-amber-200 space-y-2.5">
               <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
@@ -717,24 +739,28 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${selectedEstimate.id}`
                   onChange={(e) => setNewEstimateData((prev) => ({ ...prev, isSecret: e.target.checked }))}
                   className="rounded text-orange-500 focus:ring-orange-500 w-4 h-4"
                 />
-                <span className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-amber-600" />
-                  비밀글로 등록하기 (작성자와 관리자만 확인 가능)
+                  비밀글로 등록하기 (작성 고객님과 관리자만 열람 가능)
                 </span>
               </label>
 
               {newEstimateData.isSecret && (
-                <div className="pt-1.5 flex items-center gap-2">
-                  <Label className="text-xs text-slate-600 shrink-0">비밀번호 (4자리):</Label>
-                  <Input
-                    type="password"
-                    maxLength={4}
-                    placeholder="숫자 4자리"
-                    value={newEstimateData.password}
-                    onChange={(e) => setNewEstimateData((prev) => ({ ...prev, password: e.target.value }))}
-                    className="w-32 h-8 text-xs rounded-lg"
-                  />
-                  <span className="text-[11px] text-slate-400">차후 본인 열람 시 필요합니다.</span>
+                <div className="pt-1 space-y-1.5 bg-white/70 p-3 rounded-xl border border-amber-200/60">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs text-slate-700 font-semibold shrink-0">열람 비밀번호 (선택):</Label>
+                    <Input
+                      type="password"
+                      maxLength={4}
+                      placeholder={newEstimateData.phone ? `${newEstimateData.phone.replace(/[^0-9]/g, "").slice(-4)} (휴대폰 뒷자리 자동)` : "숫자 4자리"}
+                      value={newEstimateData.password}
+                      onChange={(e) => setNewEstimateData((prev) => ({ ...prev, password: e.target.value }))}
+                      className="w-44 h-8 text-xs rounded-lg bg-white"
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-tight">
+                    * 비워두실 경우 <strong>고객님의 휴대폰 번호 뒷자리 4자리</strong>가 비밀번호로 자동 지정되어 차후 편리하게 열람하실 수 있습니다.
+                  </p>
                 </div>
               )}
             </div>
@@ -772,8 +798,9 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${selectedEstimate.id}`
             <DialogTitle className="text-center text-lg font-black text-slate-900">
               비밀글 열람 비밀번호 확인
             </DialogTitle>
-            <DialogDescription className="text-center text-xs text-slate-500">
-              이 견적 의뢰는 비공개로 등록되었습니다.<br />작성 시 입력하셨던 4자리 비밀번호를 입력해 주세요.
+            <DialogDescription className="text-center text-xs text-slate-600 leading-relaxed">
+              본 견적 의뢰와 이가이버의 맞춤 답변은 <strong>의뢰 고객과 관리자만 열람 가능한 비밀글</strong>입니다.<br />
+              접수 시 입력하셨던 <strong>휴대폰 번호 뒷자리 4자리</strong> (또는 설정하신 비밀번호)를 입력해 주세요.
             </DialogDescription>
           </DialogHeader>
 
@@ -782,13 +809,13 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${selectedEstimate.id}`
               <Input
                 type="password"
                 maxLength={8}
-                placeholder="비밀번호 입력"
+                placeholder="휴대폰 뒷자리 4자리 또는 비밀번호"
                 value={inputPassword}
                 onChange={(e) => {
                   setInputPassword(e.target.value);
                   setPasswordError("");
                 }}
-                className="text-center tracking-widest text-lg font-bold rounded-xl h-12"
+                className="text-center tracking-widest text-base font-bold rounded-xl h-12"
                 autoFocus
               />
               {passwordError && (
@@ -898,7 +925,23 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${selectedEstimate.id}`
               {/* 관리자 공식 견적서 카드 (견적완료 시 출력) */}
               {/* ======================================================== */}
               {(selectedEstimate.status === "answered" || selectedEstimate.status === "completed") && !isEditingAnswer && (
-                <div className="bg-gradient-to-br from-slate-900 via-slate-850 to-blue-950 text-white rounded-3xl p-5 sm:p-7 shadow-xl border border-blue-900/50 space-y-5">
+                <div className="space-y-2.5 pt-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-orange-500 text-white font-black text-xs px-2.5 py-0.5 shadow-sm">
+                        ↳ [답글] 이가이버 맞춤 견적서
+                      </Badge>
+                      <span className="text-[11px] text-slate-500 flex items-center gap-1 font-semibold">
+                        <Lock className="w-3 h-3 text-amber-600" />
+                        의뢰 고객님과 관리자만 확인 가능한 비공개 견적서
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      공식 검토 완료
+                    </span>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-slate-900 via-slate-850 to-blue-950 text-white rounded-3xl p-5 sm:p-7 shadow-xl border border-blue-900/50 space-y-5">
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
                     <div className="flex items-center gap-2.5">
                       <div className="w-10 h-10 rounded-2xl bg-orange-500 flex items-center justify-center text-white shadow-md">
@@ -966,6 +1009,7 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${selectedEstimate.id}`
                     </a>
                   </div>
                 </div>
+              </div>
               )}
 
               {/* 관리자: 견적 작성 / 수정 폼 (답변 대기 중이거나 수정 버튼 클릭 시) */}

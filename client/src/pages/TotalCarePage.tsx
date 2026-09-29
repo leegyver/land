@@ -14,10 +14,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import CareEstimateBoard from "@/components/care/CareEstimateBoard";
 
 export default function TotalCarePage() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   // URL 쿼리 파라미터 확인 (?tab=estimates 또는 ?estimateId=...)
   const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
@@ -94,40 +96,44 @@ export default function TotalCarePage() {
 
     setIsSubmitting(true);
     try {
-      // 이미지 절대 URL 생성 (이메일 및 외부 연동에서도 정상 열람 가능)
-      const fullPhotoUrl = uploadedImageUrl
-        ? (uploadedImageUrl.startsWith("http") ? uploadedImageUrl : `https://leegyver.com${uploadedImageUrl}`)
-        : "첨부 없음";
+      const cleanPhone = formData.phone.replace(/[^0-9]/g, "");
+      const phoneLast4 = cleanPhone.length >= 4 ? cleanPhone.slice(-4) : "0000";
 
-      const fullMessage = `
-[부동산 토탈케어 접수]
-- 건물유형: ${formData.buildingType}
-- 신청서비스: ${formData.serviceCategory}
-- 현장주소: ${formData.address || "미입력"}
-- 희망방문일: ${formData.preferredDate || "조율 필요"}
-- 현장사진: ${fullPhotoUrl}
-------------------------------------
-[상세 증상 및 문의]
-${formData.message}
+      const title = `[${formData.buildingType}] ${formData.serviceCategory} 견적 요청`;
+      const fullContent = `
+[신청 서비스]: ${formData.serviceCategory}
+[현장 주소]: ${formData.address || "미입력"}
+[희망 방문일]: ${formData.preferredDate || "일정 협의"}
+
+[상세 증상 및 문의 내용]:
+${formData.message || "방문 점검 및 견적 상담 희망"}
       `.trim();
 
-      const res = await fetch("/api/inquiries", {
+      // 실시간 견적 상담 게시판으로 직접 등록 (리스트에 즉시 반영)
+      const res = await fetch("/api/care-estimates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: formData.name,
-          email: formData.email.trim() || "", // 고객이 실제 입력한 경우에만 전달
+          title,
+          authorName: formData.name,
           phone: formData.phone,
-          message: fullMessage,
-          inquiryType: "토탈케어",
+          address: formData.address || null,
+          category: formData.buildingType,
+          content: fullContent,
+          imageUrl: uploadedImageUrl || null,
+          isSecret: true,
+          password: phoneLast4,
         }),
       });
 
       if (!res.ok) throw new Error("접수 실패");
 
+      // 실시간 견적 목록 쿼리 갱신
+      queryClient.invalidateQueries({ queryKey: ["/api/care-estimates"] });
+
       toast({
-        title: "접수가 완료되었습니다!",
-        description: "확인 후 이가이버 대표가 빠르게 전화 안내 드리겠습니다.",
+        title: "견적 신청이 완료되었습니다!",
+        description: `실시간 견적 상담실에 등록되었습니다. (열람 비밀번호: 휴대폰 뒷자리 ${phoneLast4})`,
       });
 
       // 폼 초기화
@@ -142,6 +148,12 @@ ${formData.message}
         message: "",
       });
       setUploadedImageUrl(null);
+
+      // 실시간 견적 상담실 탭으로 전환하여 방금 접수된 글을 바로 확인 가능하게 함
+      setMainMode("estimates");
+      setTimeout(() => {
+        document.getElementById("main-content")?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
     } catch (error) {
       toast({
         title: "접수 오류",

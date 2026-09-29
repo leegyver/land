@@ -468,113 +468,159 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${selectedEstimate.id}`
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3">
+        <div className="grid grid-cols-1 gap-4">
           {filteredList.map((item) => {
             const isAnswered = item.status === "answered" || item.status === "completed";
             return (
               <div
                 key={item.id}
-                onClick={() => handleItemClick(item)}
-                className="bg-white hover:bg-slate-50/80 border border-slate-200/90 rounded-2xl p-4 sm:p-5 transition-all shadow-sm hover:shadow-md cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+                className="bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md transition-all overflow-hidden"
               >
-                {/* 왼쪽 정보 */}
-                <div className="space-y-1.5 flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {/* 상태 배지 */}
-                    {item.status === "pending" && (
-                      <Badge className="bg-amber-500 text-white text-[11px] font-bold px-2 py-0.5">
-                        <Clock className="w-3 h-3 mr-1" />
-                        견적대기
-                      </Badge>
-                    )}
-                    {item.status === "answered" && (
-                      <Badge className="bg-blue-600 text-white text-[11px] font-bold px-2 py-0.5">
-                        <CheckCircle2 className="w-3 h-3 mr-1" />
-                        견적완료
-                      </Badge>
-                    )}
-                    {item.status === "completed" && (
-                      <Badge className="bg-emerald-600 text-white text-[11px] font-bold px-2 py-0.5">
-                        <Check className="w-3 h-3 mr-1" />
-                        시공완료
-                      </Badge>
-                    )}
+                {/* [1. Q. 의뢰 원글 영역] */}
+                <div
+                  onClick={() => handleItemClick(item)}
+                  className="p-4 sm:p-5 hover:bg-slate-50/70 cursor-pointer transition-colors"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                    <div className="space-y-1.5 flex-1 min-w-0">
+                      {/* 배지 행 */}
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        <Badge className="bg-slate-900 text-white text-[11px] font-black px-2.5 py-0.5 tracking-wide">
+                          Q. 견적의뢰
+                        </Badge>
+                        <Badge variant="outline" className="text-slate-600 text-[11px] border-slate-300 font-semibold">
+                          {item.category}
+                        </Badge>
+                        {item.isSecret && (
+                          <span className="flex items-center text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded font-bold">
+                            <Lock className="w-2.5 h-2.5 mr-1" />
+                            비밀글
+                          </span>
+                        )}
+                        {item.imageUrl && (
+                          <span className="text-[11px] text-slate-600 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded font-semibold">
+                            📷 사진첨부
+                          </span>
+                        )}
+                      </div>
 
-                    {/* 카테고리 배지 */}
-                    <Badge variant="outline" className="text-slate-600 text-[11px] border-slate-300">
-                      {item.category}
-                    </Badge>
+                      {/* 의뢰 제목 */}
+                      <h3 className="text-base sm:text-lg font-bold text-slate-900 hover:text-orange-600 transition-colors truncate">
+                        {item.title}
+                      </h3>
 
-                    {item.isSecret && (
-                      <span className="flex items-center text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded font-medium">
-                        <Lock className="w-2.5 h-2.5 mr-1" />
-                        비밀글
-                      </span>
-                    )}
-
-                    {item.imageUrl && (
-                      <span className="text-[11px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded font-medium">
-                        📷 사진첨부
-                      </span>
-                    )}
-                  </div>
-
-                  {/* 제목 */}
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-orange-600 transition-colors flex items-center gap-1.5 truncate">
-                    {item.title}
-                  </h3>
-
-                  {/* 부가 정보: 의뢰인, 지역, 작성일 */}
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                    <span className="font-semibold text-slate-700">{item.authorName} 고객님</span>
-                    {item.address && (
-                      <span className="flex items-center gap-0.5">
-                        <MapPin className="w-3 h-3 text-slate-400" />
-                        {item.address}
-                      </span>
-                    )}
-                    <span>
-                      {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ""}
-                    </span>
-                    <span className="flex items-center gap-0.5 text-slate-400">
-                      <Eye className="w-3 h-3" />
-                      {item.viewCount || 0}
-                    </span>
-                  </div>
-
-                  {/* 견적 답글 도착 안내 (계단식 답글 형태) */}
-                  {isAnswered && (
-                    <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between bg-slate-50/80 px-3 py-2 rounded-xl border border-slate-200/60">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-extrabold text-orange-600 bg-orange-100/80 border border-orange-200 px-2 py-0.5 rounded text-[11px] flex items-center gap-1">
-                          ↳ [답변] 이가이버 맞춤 견적서
+                      {/* 의뢰인 메타 정보 */}
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                        <span className="font-semibold text-slate-700">{item.authorName} 고객님</span>
+                        {item.address && (
+                          <span className="flex items-center gap-0.5 text-slate-500">
+                            <MapPin className="w-3 h-3 text-slate-400" />
+                            {item.address}
+                          </span>
+                        )}
+                        <span className="text-slate-400">
+                          {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ""}
                         </span>
-                        <span className="text-[11px] text-slate-500 flex items-center gap-1">
-                          <Lock className="w-3 h-3 text-amber-600" />
-                          작성 고객님과 관리자만 열람 가능
+                        <span className="flex items-center gap-0.5 text-slate-400">
+                          <Eye className="w-3 h-3" />
+                          {item.viewCount || 0}
                         </span>
                       </div>
-                      <span className="text-[11px] font-bold text-blue-600 shrink-0">
-                        견적서 열람 ➔
-                      </span>
                     </div>
-                  )}
+
+                    {/* 상태 배지 (원글 우측) */}
+                    <div className="shrink-0 flex items-center gap-2">
+                      {item.status === "pending" && (
+                        <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-2.5 py-1 shadow-sm">
+                          <Clock className="w-3.5 h-3.5 mr-1 animate-pulse" />
+                          답변 대기중
+                        </Badge>
+                      )}
+                      {item.status === "answered" && (
+                        <Badge className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-2.5 py-1 shadow-sm">
+                          <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                          견적답변 완료
+                        </Badge>
+                      )}
+                      {item.status === "completed" && (
+                        <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-2.5 py-1 shadow-sm">
+                          <Check className="w-3.5 h-3.5 mr-1" />
+                          시공 완료
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
-                {/* 오른쪽 상태 버튼 */}
-                <div className="flex items-center justify-end gap-2 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0">
-                  {isAnswered ? (
-                    <div className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-blue-600 bg-blue-50 px-3.5 py-2 rounded-xl border border-blue-200 shadow-sm">
-                      <Lock className="w-3.5 h-3.5 text-amber-600" />
-                      <span>견적 답글 확인</span>
-                      <ChevronRight className="w-4 h-4" />
+                {/* [2. ↳ A. 이가이버 답글 영역 - 확실한 계단식 들여쓰기 답글 구조] */}
+                <div
+                  onClick={() => handleItemClick(item)}
+                  className={`border-t p-3 sm:p-4 pl-4 sm:pl-8 cursor-pointer transition-colors flex items-center justify-between gap-3 ${
+                    isAnswered
+                      ? "bg-gradient-to-r from-orange-50/90 via-amber-50/50 to-white hover:bg-orange-100/60 border-orange-200/90 border-l-4 border-l-orange-500"
+                      : "bg-slate-50/90 hover:bg-slate-100/80 border-slate-200 border-l-4 border-l-slate-300"
+                  }`}
+                >
+                  {/* 답글 기호 및 요약 텍스트 */}
+                  <div className="flex items-start sm:items-center gap-2.5 min-w-0 flex-1">
+                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 font-black text-xs ${
+                      isAnswered ? "bg-orange-500 text-white shadow-sm" : "bg-slate-200 text-slate-600"
+                    }`}>
+                      ↳
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-1 text-xs sm:text-sm font-semibold text-slate-500 bg-slate-100 px-3 py-2 rounded-xl">
-                      <span>의뢰 내용 보기</span>
-                      <ChevronRight className="w-4 h-4" />
-                    </div>
-                  )}
+
+                    {isAnswered ? (
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                          <span className="text-xs font-black text-orange-600">
+                            [A. 견적답변] 이가이버 맞춤 견적서
+                          </span>
+                          <span className="text-[11px] text-amber-800 bg-amber-100/80 px-1.5 py-0.5 rounded font-bold flex items-center gap-1">
+                            <Lock className="w-2.5 h-2.5 text-amber-700" />
+                            비공개 (의뢰 고객 & 관리자 전용)
+                          </span>
+                          {item.answeredAt && (
+                            <span className="text-[11px] text-slate-400 hidden md:inline">
+                              • {new Date(item.answeredAt).toLocaleDateString()} 등록
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs sm:text-sm font-semibold text-slate-800 truncate">
+                          {item.title} 건에 대한 맞춤 수리 공임·자재비·방문 일정이 등록되었습니다.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-xs font-bold text-slate-700">
+                            [A. 답변 대기] 이가이버 현장 검토 중
+                          </span>
+                          <span className="text-[11px] text-amber-700 bg-amber-100/60 px-1.5 py-0.2 rounded font-medium">
+                            신속 산출 진행중
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 truncate">
+                          이가이버 대표가 현장 사진을 확인하고 맞춤 견적서를 작성 중입니다. (등록 시 카톡/문자 안내)
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 답글 우측 바로가기 버튼 */}
+                  <div className="shrink-0 flex items-center">
+                    {isAnswered ? (
+                      <span className="text-xs sm:text-sm font-bold text-orange-600 bg-white hover:bg-orange-50 px-3 py-1.5 rounded-xl border border-orange-200 shadow-sm flex items-center gap-1">
+                        <Lock className="w-3 h-3 text-amber-600" />
+                        <span>견적 답글 확인</span>
+                        <ChevronRight className="w-4 h-4 text-orange-500" />
+                      </span>
+                    ) : (
+                      <span className="text-xs font-semibold text-slate-600 bg-white px-2.5 py-1.5 rounded-xl border border-slate-200 flex items-center gap-1">
+                        <span>의뢰 내용 보기</span>
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -898,118 +944,176 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${selectedEstimate.id}`
                 </div>
               </div>
 
-              {/* 고객 의뢰 내용 & 사진 */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                  고객 수리 요청 내용
-                </h4>
-                <div className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200/80 text-sm sm:text-base text-slate-800 leading-relaxed whitespace-pre-wrap">
+              {/* ======================================================== */}
+              {/* 1. [Q. 고객 수리 요청 원문] 카드 */}
+              {/* ======================================================== */}
+              <div className="bg-slate-50/90 rounded-2xl p-4 sm:p-5 border border-slate-200/90 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/70 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-slate-900 text-white font-black text-xs px-2.5 py-0.5 tracking-wide">
+                      Q. 고객 수리 요청 원문
+                    </Badge>
+                    <span className="text-xs text-slate-500 font-medium">
+                      작성자: {selectedEstimate.authorName} 고객님
+                    </span>
+                  </div>
+                  <span className="text-xs text-slate-400">
+                    접수일시: {selectedEstimate.createdAt ? new Date(selectedEstimate.createdAt).toLocaleString() : ""}
+                  </span>
+                </div>
+
+                <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 text-sm sm:text-base text-slate-800 leading-relaxed whitespace-pre-wrap shadow-sm">
                   {selectedEstimate.content}
                 </div>
 
                 {selectedEstimate.imageUrl && (
-                  <div>
-                    <h5 className="text-xs font-bold text-slate-500 mb-2">현장 첨부 사진:</h5>
+                  <div className="pt-1">
+                    <h5 className="text-xs font-bold text-slate-600 mb-2 flex items-center gap-1.5">
+                      <span>📷 첨부된 현장 사진:</span>
+                      <span className="text-[11px] font-normal text-slate-400">(클릭 시 원본 확인)</span>
+                    </h5>
                     <div className="max-w-md rounded-2xl overflow-hidden border border-slate-200 shadow-sm bg-black/5">
-                      <img
-                        src={selectedEstimate.imageUrl}
-                        alt="현장 사진"
-                        className="w-full max-h-72 object-contain"
-                      />
+                      <a href={selectedEstimate.imageUrl} target="_blank" rel="noopener noreferrer">
+                        <img
+                          src={selectedEstimate.imageUrl}
+                          alt="현장 사진"
+                          className="w-full max-h-72 object-contain hover:scale-105 transition-transform cursor-zoom-in"
+                        />
+                      </a>
                     </div>
                   </div>
                 )}
               </div>
 
               {/* ======================================================== */}
-              {/* 관리자 공식 견적서 카드 (견적완료 시 출력) */}
+              {/* 2. 스레드 연결선 (Thread Connector) */}
+              {/* ======================================================== */}
+              <div className="relative py-2 flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t-2 border-dashed border-orange-300" />
+                </div>
+                <div className="relative bg-white px-4 py-1.5 rounded-full border-2 border-orange-400 text-xs font-black text-orange-600 flex items-center gap-2 shadow-sm">
+                  <span className="w-2 h-2 rounded-full bg-orange-500 animate-ping" />
+                  <span>↳ [A. 이가이버 공식 맞춤 견적 답글]</span>
+                </div>
+              </div>
+
+              {/* ======================================================== */}
+              {/* 3. [A. 이가이버 공식 견적서 카드] (답변완료 시) */}
               {/* ======================================================== */}
               {(selectedEstimate.status === "answered" || selectedEstimate.status === "completed") && !isEditingAnswer && (
-                <div className="space-y-2.5 pt-2">
+                <div className="space-y-2.5">
                   <div className="flex flex-wrap items-center justify-between gap-2 px-1">
                     <div className="flex items-center gap-2">
                       <Badge className="bg-orange-500 text-white font-black text-xs px-2.5 py-0.5 shadow-sm">
-                        ↳ [답글] 이가이버 맞춤 견적서
+                        ↳ [A. 답글] 이가이버 맞춤 견적서
                       </Badge>
-                      <span className="text-[11px] text-slate-500 flex items-center gap-1 font-semibold">
+                      <span className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded font-bold flex items-center gap-1">
                         <Lock className="w-3 h-3 text-amber-600" />
                         의뢰 고객님과 관리자만 확인 가능한 비공개 견적서
                       </span>
                     </div>
-                    <span className="text-[11px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                      공식 검토 완료
+                    <span className="text-[11px] text-emerald-600 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                      ● 공식 견적 산출 완료
                     </span>
                   </div>
 
                   <div className="bg-gradient-to-br from-slate-900 via-slate-850 to-blue-950 text-white rounded-3xl p-5 sm:p-7 shadow-xl border border-blue-900/50 space-y-5">
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-10 h-10 rounded-2xl bg-orange-500 flex items-center justify-center text-white shadow-md">
-                        <Wrench className="w-5 h-5" />
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-10 h-10 rounded-2xl bg-orange-500 flex items-center justify-center text-white shadow-md">
+                          <Wrench className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <span className="text-[11px] font-bold text-orange-400 tracking-wider">이가이버 공인 직영</span>
+                          <h3 className="text-lg sm:text-xl font-black">부동산 토탈케어 맞춤 견적서</h3>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-[11px] font-bold text-orange-400 tracking-wider">이가이버 공인</span>
-                        <h3 className="text-lg sm:text-xl font-black">부동산 토탈케어 맞춤 견적서</h3>
+
+                      <div className="text-right">
+                        <span className="text-[11px] text-slate-400 block">답변 등록일시</span>
+                        <span className="text-xs font-semibold text-slate-200">
+                          {selectedEstimate.answeredAt ? new Date(selectedEstimate.answeredAt).toLocaleString() : "최근"}
+                        </span>
                       </div>
                     </div>
 
-                    <div className="text-right">
-                      <span className="text-[11px] text-slate-400 block">견적 산출일시</span>
-                      <span className="text-xs font-semibold text-slate-200">
-                        {selectedEstimate.answeredAt ? new Date(selectedEstimate.answeredAt).toLocaleString() : "최근"}
-                      </span>
+                    {/* 금액 및 일정 3단 요약 카드 */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 text-center">
+                        <span className="text-xs text-slate-400 block mb-1">예상 공임비</span>
+                        <span className="text-base sm:text-lg font-black text-amber-400">
+                          {selectedEstimate.estimateLabor || "현장 확인 후 안내"}
+                        </span>
+                      </div>
+                      <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 text-center">
+                        <span className="text-xs text-slate-400 block mb-1">예상 자재/부품비</span>
+                        <span className="text-base sm:text-lg font-black text-sky-400">
+                          {selectedEstimate.estimateParts || "실비 정산 / 협의"}
+                        </span>
+                      </div>
+                      <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 text-center">
+                        <span className="text-xs text-slate-400 block mb-1">방문/시공 가능 예정일</span>
+                        <span className="text-sm sm:text-base font-bold text-emerald-400">
+                          {selectedEstimate.estimateSchedule || "일정 조율"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 상세 시공 설명 및 가이드 */}
+                    <div className="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 space-y-2">
+                      <h5 className="text-xs font-bold text-orange-400 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5" />
+                        작업 방법 및 상세 견적 안내
+                      </h5>
+                      <p className="text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">
+                        {selectedEstimate.estimateContent}
+                      </p>
+                    </div>
+
+                    {/* 안내 문구 및 상담 연결 */}
+                    <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400 border-t border-white/10">
+                      <p className="text-center sm:text-left">
+                        * 현장 상태 및 추가 부속에 따라 견적이 변동될 수 있습니다.<br />
+                        * 시공 확정 및 일정 조율은 전화 문의 주시면 가장 빠릅니다.
+                      </p>
+                      <a
+                        href="tel:010-4787-3120"
+                        className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md"
+                      >
+                        <Phone className="w-3.5 h-3.5" />
+                        <span>이가이버 바로 통화 (010-4787-3120)</span>
+                      </a>
                     </div>
                   </div>
+                </div>
+              )}
 
-                  {/* 금액 및 일정 3단 요약 카드 */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 text-center">
-                      <span className="text-xs text-slate-400 block mb-1">예상 공임비</span>
-                      <span className="text-base sm:text-lg font-black text-amber-400">
-                        {selectedEstimate.estimateLabor || "현장 확인 후 안내"}
-                      </span>
-                    </div>
-                    <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 text-center">
-                      <span className="text-xs text-slate-400 block mb-1">예상 자재/부품비</span>
-                      <span className="text-base sm:text-lg font-black text-sky-400">
-                        {selectedEstimate.estimateParts || "실비 정산 / 협의"}
-                      </span>
-                    </div>
-                    <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 text-center">
-                      <span className="text-xs text-slate-400 block mb-1">방문/시공 가능 예정일</span>
-                      <span className="text-sm sm:text-base font-bold text-emerald-400">
-                        {selectedEstimate.estimateSchedule || "일정 조율"}
-                      </span>
-                    </div>
+              {/* 고객용: 답변 대기중 상태 카드 (관리자가 아니고 pending일 때 명확한 답글 대기 표시) */}
+              {selectedEstimate.status === "pending" && !isAdmin && (
+                <div className="bg-gradient-to-br from-amber-50/90 to-orange-50/70 border-2 border-dashed border-amber-300 rounded-3xl p-6 sm:p-8 text-center space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto shadow-sm">
+                    <Clock className="w-6 h-6 animate-pulse" />
                   </div>
-
-                  {/* 상세 시공 설명 및 가이드 */}
-                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 sm:p-5 space-y-2">
-                    <h5 className="text-xs font-bold text-orange-400 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5" />
-                      작업 방법 및 상세 안내
-                    </h5>
-                    <p className="text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">
-                      {selectedEstimate.estimateContent}
+                  <div>
+                    <h4 className="font-black text-slate-900 text-base sm:text-lg">
+                      ↳ [A. 견적 답변 준비중] 이가이버 대표가 견적을 산출하고 있습니다
+                    </h4>
+                    <p className="text-xs sm:text-sm text-slate-600 max-w-lg mx-auto leading-relaxed mt-1.5">
+                      접수해 주신 현장 사진과 문의 내용을 면밀히 확인하여 불필요한 비용 없이 정직한 공임비와 자재비를 계산하고 있습니다.<br />
+                      답글이 등록되면 고객님의 휴대폰(<strong>{selectedEstimate.phone}</strong>)으로 카톡/문자 알림이 발송되며 본 게시글의 답글로 즉시 확인하실 수 있습니다.
                     </p>
                   </div>
-
-                  {/* 안내 문구 및 상담 연결 */}
-                  <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400 border-t border-white/10">
-                    <p className="text-center sm:text-left">
-                      * 현장 상태 및 추가 부속에 따라 견적이 변동될 수 있습니다.<br />
-                      * 시공 확정 및 일정 조율은 전화 문의 주시면 가장 빠릅니다.
-                    </p>
+                  <div className="pt-2">
                     <a
                       href="tel:010-4787-3120"
-                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-amber-300 text-xs font-bold text-slate-800 hover:bg-amber-100/50 shadow-sm"
                     >
-                      <Phone className="w-3.5 h-3.5" />
-                      <span>이가이버 바로 통화 (010-4787-3120)</span>
+                      <Phone className="w-3.5 h-3.5 text-orange-500" />
+                      <span>긴급 누수 및 당일 수리는 직통전화(010-4787-3120)로 문의주세요</span>
                     </a>
                   </div>
                 </div>
-              </div>
               )}
 
               {/* 관리자: 견적 작성 / 수정 폼 (답변 대기 중이거나 수정 버튼 클릭 시) */}

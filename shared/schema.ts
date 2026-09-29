@@ -694,3 +694,55 @@ export const insertAuctionSchema = z.object({
 export type Auction = typeof auctions.$inferSelect;
 export type InsertAuction = z.infer<typeof insertAuctionSchema>;
 
+// Care Estimates (부동산 토탈케어 실시간 견적 상담 게시판)
+export const careEstimates = sqliteTable("care_estimates", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  authorName: text("authorName").notNull(),
+  phone: text("phone").notNull(),
+  address: text("address"),
+  category: text("category").notNull().default("생활집수리"),
+  content: text("content").notNull(),
+  imageUrl: text("imageUrl"),
+  imageUrls: text("imageUrls"),
+  isSecret: integer("isSecret", { mode: 'boolean' }).default(false),
+  password: text("password"),
+  status: text("status").notNull().default("pending"),
+  estimateLabor: text("estimateLabor"),
+  estimateParts: text("estimateParts"),
+  estimateSchedule: text("estimateSchedule"),
+  estimateContent: text("estimateContent"),
+  answeredAt: text("answeredAt"),
+  adminNotes: text("adminNotes"),
+  viewCount: integer("viewCount").default(0),
+  createdAt: text("createdAt"),
+  updatedAt: text("updatedAt"),
+});
+
+export const insertCareEstimateSchema = z.object({
+  title: z.string().min(1, "제목을 입력해주세요"),
+  authorName: z.string().min(1, "성함을 입력해주세요"),
+  phone: z.string().min(1, "연락처를 입력해주세요"),
+  address: z.string().nullable().optional(),
+  category: z.string().default("생활집수리"),
+  content: z.string().min(1, "수리 요청 내용을 입력해주세요"),
+  imageUrl: z.string().nullable().optional(),
+  imageUrls: z.string().nullable().optional(),
+  isSecret: z.boolean().optional().default(false),
+  password: z.string().nullable().optional(),
+});
+
+export const answerCareEstimateSchema = z.object({
+  estimateLabor: z.string().nullable().optional(),
+  estimateParts: z.string().nullable().optional(),
+  estimateSchedule: z.string().nullable().optional(),
+  estimateContent: z.string().min(1, "견적 상세 내용을 입력해주세요"),
+  status: z.string().default("answered"),
+  adminNotes: z.string().nullable().optional(),
+  sendKakaoNotice: z.boolean().optional().default(true),
+});
+
+export type CareEstimate = typeof careEstimates.$inferSelect;
+export type InsertCareEstimate = z.infer<typeof insertCareEstimateSchema>;
+export type AnswerCareEstimate = z.infer<typeof answerCareEstimateSchema>;
+

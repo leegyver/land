@@ -18,7 +18,8 @@ import {
   type VisitLog, type InsertVisitLog,
   type SiteConfig, type InsertSiteConfig,
   type Popup, type InsertPopup,
-  type Auction, type InsertAuction
+  type Auction, type InsertAuction,
+  type CareEstimate, type InsertCareEstimate, type AnswerCareEstimate
 } from "@shared/schema";
 import { db } from "./db";
 import session from "express-session";
@@ -266,6 +267,14 @@ export interface IStorage {
   createAuction(auction: InsertAuction): Promise<Auction>;
   updateAuction(id: number, auction: Partial<InsertAuction>): Promise<Auction | undefined>;
   deleteAuction(id: number): Promise<boolean>;
+
+  // Care Estimate methods (부동산 토탈케어 실시간 견적 상담)
+  getCareEstimates(category?: string, status?: string): Promise<CareEstimate[]>;
+  getCareEstimate(id: number): Promise<CareEstimate | undefined>;
+  createCareEstimate(estimate: InsertCareEstimate): Promise<CareEstimate>;
+  answerCareEstimate(id: number, answer: Partial<CareEstimate>): Promise<CareEstimate | undefined>;
+  deleteCareEstimate(id: number): Promise<boolean>;
+  incrementCareEstimateViews(id: number): Promise<boolean>;
 }
 
 function extractKeywords(title: string): Set<string> {
@@ -818,6 +827,33 @@ export class SQLiteStorage implements IStorage {
         imageUrls TEXT,
         youtubeUrl TEXT,
         featured INTEGER DEFAULT 0,
+        viewCount INTEGER DEFAULT 0,
+        createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `).run();
+
+    // Care Estimates (부동산 토탈케어 실시간 견적 상담)
+    db.prepare(`
+      CREATE TABLE IF NOT EXISTS care_estimates (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        authorName TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        address TEXT,
+        category TEXT NOT NULL DEFAULT '생활집수리',
+        content TEXT NOT NULL,
+        imageUrl TEXT,
+        imageUrls TEXT,
+        isSecret INTEGER DEFAULT 0,
+        password TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
+        estimateLabor TEXT,
+        estimateParts TEXT,
+        estimateSchedule TEXT,
+        estimateContent TEXT,
+        answeredAt TEXT,
+        adminNotes TEXT,
         viewCount INTEGER DEFAULT 0,
         createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
         updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
@@ -2864,6 +2900,92 @@ export class SQLiteStorage implements IStorage {
 
   async deleteAuction(id: number): Promise<boolean> {
     const result = db.prepare('DELETE FROM auctions WHERE id = ?').run(id);
+    return result.changes > 0;
+  }
+
+  // Care Estimate methods (부동산 토탈케어 실시간 견적 상담)
+  async getCareEstimates(category?: string, status?: string): Promise<CareEstimate[]> {
+    let query = 'SELECT * FROM care_estimates WHERE 1=1';
+    const params: any[] = [];
+    if (category && category !== 'all') {
+      query += ' AND category = ?';
+      params.push(category);
+    }
+    if (status && status !== 'all') {
+      query += ' AND status = ?';
+      params.push(status);
+    }
+    query += ' ORDER BY id DESC';
+    const rows = db.prepare(query).all(...params) as any[];
+    return rows.map(r => ({ ...r, isSecret: this.toBoolean(r.isSecret) }));
+  }
+
+  async getCareEstimate(id: number): Promise<CareEstimate | undefined> {
+    const row = db.prepare('SELECT * FROM care_estimates WHERE id = ?').get(id) as any;
+    if (!row) return undefined;
+    return { ...row, isSecret: this.toBoolean(row.isSecret) };
+  }
+
+  async createCareEstimate(estimate: InsertCareEstimate): Promise<CareEstimate> {
+    const now = new Date().toISOString();
+    const result = db.prepare(`
+      INSERT INTO care_estimates (
+        title, authorName, phone, address, category, content, imageUrl, imageUrls,
+        isSecret, password, status, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+    `).run(
+      estimate.title,
+      estimate.authorName,
+      estimate.phone,
+      estimate.address || null,
+      estimate.category || '생활집수리',
+      estimate.content,
+      estimate.imageUrl || null,
+      estimate.imageUrls || null,
+      estimate.isSecret ? 1 : 0,
+      estimate.password || null,
+      now,
+      now
+    );
+
+    const created = await this.getCareEstimate(Number(result.lastInsertRowid));
+    return created!;
+  }
+
+  async answerCareEstimate(id: number, answer: Partial<CareEstimate>): Promise<CareEstimate | undefined> {
+    const now = new Date().toISOString();
+    db.prepare(`
+      UPDATE care_estimates
+      SET estimateLabor = COALESCE(?, estimateLabor),
+          estimateParts = COALESCE(?, estimateParts),
+          estimateSchedule = COALESCE(?, estimateSchedule),
+          estimateContent = COALESCE(?, estimateContent),
+          status = COALESCE(?, status),
+          adminNotes = COALESCE(?, adminNotes),
+          answeredAt = ?,
+          updatedAt = ?
+      WHERE id = ?
+    `).run(
+      answer.estimateLabor !== undefined ? answer.estimateLabor : null,
+      answer.estimateParts !== undefined ? answer.estimateParts : null,
+      answer.estimateSchedule !== undefined ? answer.estimateSchedule : null,
+      answer.estimateContent !== undefined ? answer.estimateContent : null,
+      answer.status !== undefined ? answer.status : 'answered',
+      answer.adminNotes !== undefined ? answer.adminNotes : null,
+      now,
+      now,
+      id
+    );
+    return this.getCareEstimate(id);
+  }
+
+  async deleteCareEstimate(id: number): Promise<boolean> {
+    const result = db.prepare('DELETE FROM care_estimates WHERE id = ?').run(id);
+    return result.changes > 0;
+  }
+
+  async incrementCareEstimateViews(id: number): Promise<boolean> {
+    const result = db.prepare('UPDATE care_estimates SET viewCount = COALESCE(viewCount, 0) + 1 WHERE id = ?').run(id);
     return result.changes > 0;
   }
 }

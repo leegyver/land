@@ -21,6 +21,8 @@ import {
   insertPostSchema,
   insertCommentSchema,
   insertAuctionSchema,
+  insertCareEstimateSchema,
+  answerCareEstimateSchema,
   realtorSubscriptions,
   users
 } from "@shared/schema";
@@ -2128,6 +2130,336 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("문의 삭제 오류:", error);
       res.status(500).json({ message: "Failed to delete inquiry" });
+    }
+  });
+
+  // ==========================================
+  // 부동산 토탈케어 실시간 견적 상담 게시판 API
+  // ==========================================
+
+  // 이름 마스킹 헬퍼 (홍*동)
+  const maskAuthorName = (name: string): string => {
+    if (!name) return "";
+    const clean = name.trim();
+    if (clean.length <= 1) return clean;
+    if (clean.length === 2) return clean[0] + "*";
+    return clean[0] + "*".repeat(clean.length - 2) + clean[clean.length - 1];
+  };
+
+  // 전화번호 마스킹 헬퍼 (010-****-1234)
+  const maskPhoneNumber = (phone: string): string => {
+    if (!phone) return "";
+    const parts = phone.trim().split("-");
+    if (parts.length === 3) {
+      return `${parts[0]}-****-${parts[2]}`;
+    }
+    if (phone.length >= 8) {
+      return phone.substring(0, 3) + "****" + phone.substring(phone.length - 4);
+    }
+    return "***-****-****";
+  };
+
+  // 1. 견적 상담 목록 조회 (비공개글 마스킹 처리)
+  app.get("/api/care-estimates", async (req, res) => {
+    try {
+      const { category, status } = req.query;
+      const isAdmin = req.isAuthenticated() && ["admin", "master"].includes((req.user as any)?.role);
+      const estimates = await storage.getCareEstimates(category as string, status as string);
+
+      const sanitized = estimates.map((item) => {
+        if (isAdmin) {
+          return item; // 관리자는 전체 정보 확인 가능
+        }
+
+        // 일반 사용자용 데이터 필터링
+        const maskedName = maskAuthorName(item.authorName);
+        const maskedPhone = maskPhoneNumber(item.phone);
+
+        if (item.isSecret) {
+          return {
+            id: item.id,
+            title: item.title,
+            authorName: maskedName,
+            phone: maskedPhone,
+            category: item.category,
+            address: item.address ? item.address.split(" ").slice(0, 2).join(" ") + " ***" : null,
+            content: "🔒 작성자와 관리자만 확인할 수 있는 비밀글입니다.",
+            imageUrl: null,
+            imageUrls: null,
+            isSecret: true,
+            status: item.status,
+            estimateLabor: null,
+            estimateParts: null,
+            estimateSchedule: null,
+            estimateContent: item.status === "answered" ? "🔒 견적 답변이 등록된 비밀글입니다." : null,
+            answeredAt: item.answeredAt,
+            viewCount: item.viewCount,
+            createdAt: item.createdAt,
+            updatedAt: item.updatedAt,
+          };
+        }
+
+        return {
+          ...item,
+          authorName: maskedName,
+          phone: maskedPhone,
+          password: undefined, // 비밀번호 필드 노출 방지
+          adminNotes: undefined, // 관리자 메모 숨김
+        };
+      });
+
+      res.json(sanitized);
+    } catch (error) {
+      console.error("견적 상담 목록 조회 오류:", error);
+      res.status(500).json({ message: "Failed to fetch care estimates" });
+    }
+  });
+
+  // 2. 견적 상담 단건 상세 조회
+  app.get("/api/care-estimates/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+
+      const estimate = await storage.getCareEstimate(id);
+      if (!estimate) return res.status(404).json({ message: "견적 의뢰를 찾을 수 없습니다." });
+
+      const isAdmin = req.isAuthenticated() && ["admin", "master"].includes((req.user as any)?.role);
+
+      // 조회수 증가
+      storage.incrementCareEstimateViews(id).catch(console.error);
+
+      if (isAdmin) {
+        return res.json(estimate);
+      }
+
+      if (estimate.isSecret) {
+        // 비밀글인 경우 잠김 상태 안내 (비밀번호 확인 필요)
+        return res.json({
+          id: estimate.id,
+          title: estimate.title,
+          authorName: maskAuthorName(estimate.authorName),
+          category: estimate.category,
+          isSecret: true,
+          isLocked: true,
+          status: estimate.status,
+          createdAt: estimate.createdAt,
+        });
+      }
+
+      // 공개글
+      res.json({
+        ...estimate,
+        authorName: maskAuthorName(estimate.authorName),
+        phone: maskPhoneNumber(estimate.phone),
+        password: undefined,
+        adminNotes: undefined,
+      });
+    } catch (error) {
+      console.error("견적 상담 상세 조회 오류:", error);
+      res.status(500).json({ message: "Failed to fetch care estimate" });
+    }
+  });
+
+  // 3. 비밀글 비밀번호 검증 (잠금 해제)
+  app.post("/api/care-estimates/:id/verify", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+
+      const { password } = req.body;
+      const estimate = await storage.getCareEstimate(id);
+      if (!estimate) return res.status(404).json({ message: "견적 의뢰를 찾을 수 없습니다." });
+
+      const isAdmin = req.isAuthenticated() && ["admin", "master"].includes((req.user as any)?.role);
+
+      if (isAdmin || (estimate.password && estimate.password === String(password).trim())) {
+        return res.json({
+          success: true,
+          estimate: {
+            ...estimate,
+            authorName: maskAuthorName(estimate.authorName),
+            phone: maskPhoneNumber(estimate.phone),
+            password: undefined,
+            adminNotes: isAdmin ? estimate.adminNotes : undefined,
+          },
+        });
+      }
+
+      return res.status(401).json({ success: false, message: "비밀번호가 일치하지 않습니다." });
+    } catch (error) {
+      console.error("비밀번호 검증 오류:", error);
+      res.status(500).json({ message: "Failed to verify password" });
+    }
+  });
+
+  // 4. 신규 견적 의뢰 등록 (고객) -> 관리자에게 카톡 "나에게 보내기" 즉시 알림!
+  app.post("/api/care-estimates", async (req, res) => {
+    try {
+      const validatedData = insertCareEstimateSchema.parse(req.body);
+      const estimate = await storage.createCareEstimate(validatedData);
+
+      // 1) 관리자 통합 알림 DB 등록
+      storage.createAdminNotification({
+        type: "care_estimate",
+        relatedId: estimate.id,
+        title: `[토탈케어 견적의뢰] ${estimate.title} (${estimate.authorName}님)`,
+        content: `연락처: ${estimate.phone} / 분야: ${estimate.category} / 내용: ${estimate.content.substring(0, 60)}...`,
+        isRead: false,
+      }).catch(console.error);
+
+      // 2) 카카오톡 [나에게 보내기] 즉시 발송
+      const kakaoMessage = 
+`🛠️ [토탈케어 신규 견적의뢰 접수]
+
+• 번호: #${estimate.id}
+• 의뢰명: ${estimate.title}
+• 고객명: ${estimate.authorName} (${estimate.phone})
+• 분야/위치: [${estimate.category}] ${estimate.address || "위치 미입력"}
+
+📝 의뢰내용:
+${estimate.content.length > 180 ? estimate.content.substring(0, 180) + '...' : estimate.content}
+
+👉 클릭하여 홈페이지에서 바로 견적서 답글 작성하기:`;
+
+      sendKakaoAlertToMe({
+        title: `🔔 [토탈케어 견적의뢰 #${estimate.id}]`,
+        name: estimate.authorName,
+        phone: estimate.phone,
+        message: kakaoMessage,
+        linkUrl: `https://leegyver.com/total-care?tab=estimates&estimateId=${estimate.id}`,
+      }).catch((err) => console.error("견적의뢰 카카오톡 알림 실패:", err));
+
+      // 3) 관리자 네이버 이메일 발송
+      try {
+        const mailContent = `
+          <h2>🛠️ 부동산 토탈케어 실시간 견적의뢰가 등록되었습니다.</h2>
+          <p><strong>의뢰번호:</strong> #${estimate.id}</p>
+          <p><strong>의뢰제목:</strong> ${estimate.title}</p>
+          <p><strong>고객명:</strong> ${estimate.authorName} (${estimate.phone})</p>
+          <p><strong>현장주소:</strong> ${estimate.address || "미입력"}</p>
+          <p><strong>서비스분야:</strong> ${estimate.category}</p>
+          <p><strong>의뢰내용:</strong><br/>${estimate.content.replace(/\n/g, '<br/>')}</p>
+          ${estimate.imageUrl ? `<p><strong>현장사진:</strong><br/><img src="https://leegyver.com${estimate.imageUrl}" style="max-width:500px; border-radius:8px;" /></p>` : ''}
+          <hr/>
+          <p><a href="https://leegyver.com/total-care?tab=estimates&estimateId=${estimate.id}" style="display:inline-block; padding:10px 20px; background:#f97316; color:#fff; text-decoration:none; border-radius:6px; font-weight:bold;">홈페이지에서 견적 답글 작성하기</a></p>
+        `;
+        sendEmail('9551304@naver.com', `[이가이버 토탈케어] ${estimate.authorName}님의 새로운 수리견적 의뢰`, mailContent).catch(console.error);
+      } catch (mailErr) {
+        console.error("견적 이메일 발송 오류:", mailErr);
+      }
+
+      res.status(201).json(estimate);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid estimate data", errors: error.errors });
+      }
+      console.error("견적 등록 오류:", error);
+      res.status(500).json({ message: "Failed to create care estimate" });
+    }
+  });
+
+  // 5. 관리자 견적 답글 작성/수정 API -> 카카오톡 [나에게 보내기]로 고객 전달용 양식 자동 전송!
+  app.post("/api/care-estimates/:id/answer", async (req, res) => {
+    try {
+      if (!req.isAuthenticated() || !["admin", "master"].includes((req.user as any)?.role)) {
+        return res.status(403).json({ message: "관리자 권한이 필요합니다." });
+      }
+
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+
+      const validated = answerCareEstimateSchema.parse(req.body);
+      const updated = await storage.answerCareEstimate(id, {
+        estimateLabor: validated.estimateLabor,
+        estimateParts: validated.estimateParts,
+        estimateSchedule: validated.estimateSchedule,
+        estimateContent: validated.estimateContent,
+        status: validated.status || "answered",
+        adminNotes: validated.adminNotes,
+      });
+
+      if (!updated) {
+        return res.status(404).json({ message: "견적 의뢰를 찾을 수 없습니다." });
+      }
+
+      // 고객 전달용 정갈한 카카오톡 포맷 텍스트 생성
+      const forwardKakaoText = 
+`📋 [이가이버 토탈케어 맞춤 견적서]
+
+안녕하세요, ${updated.authorName} 고객님!
+이가이버 부동산 토탈케어팀입니다.
+문의주신 의뢰건에 대한 수리 견적 안내드립니다.
+
+📌 의뢰건: ${updated.title}
+📍 현장위치: ${updated.address || "강화 관내"}
+━━━━━━━━━━━━━━━━━━
+💰 예상 공임비: ${updated.estimateLabor || "현장 점검 후 확정"}
+🔧 예상 자재비: ${updated.estimateParts || "실비 정산/별도"}
+📅 방문 가능일: ${updated.estimateSchedule || "일정 협의"}
+━━━━━━━━━━━━━━━━━━
+📝 상세 견적 및 시공 안내:
+${updated.estimateContent}
+
+* 현장 노후 상태 및 추가 부속 발생 시 일부 변동될 수 있습니다.
+* 수리 확정 또는 일정 조율은 본 카톡으로 회신 주시거나 연락(010-4787-3120) 부탁드립니다!
+
+🔗 온라인 견적서 확인:
+https://leegyver.com/total-care?tab=estimates&estimateId=${updated.id}`;
+
+      // 요청 옵션에 따라 관리자 본인 카카오톡으로 발송 (카톡에서 복사/전달 또는 보완용)
+      if (validated.sendKakaoNotice !== false) {
+        sendKakaoAlertToMe({
+          title: `📋 [토탈케어 견적서: ${updated.authorName}님]`,
+          name: updated.authorName,
+          phone: updated.phone,
+          message: forwardKakaoText,
+          linkUrl: `https://leegyver.com/total-care?tab=estimates&estimateId=${updated.id}`,
+        }).catch((err) => console.error("카카오 견적 알림 발송 실패:", err));
+      }
+
+      res.json({
+        success: true,
+        estimate: updated,
+        forwardText: forwardKakaoText,
+        message: "견적 답변이 성공적으로 등록되었습니다!",
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid answer data", errors: error.errors });
+      }
+      console.error("견적 답변 등록 오류:", error);
+      res.status(500).json({ message: "Failed to answer care estimate" });
+    }
+  });
+
+  // 6. 견적 상담 삭제 API (관리자 또는 본인 비밀번호 일치 시)
+  app.delete("/api/care-estimates/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
+
+      const estimate = await storage.getCareEstimate(id);
+      if (!estimate) return res.status(404).json({ message: "견적 의뢰를 찾을 수 없습니다." });
+
+      const isAdmin = req.isAuthenticated() && ["admin", "master"].includes((req.user as any)?.role);
+      const { password } = req.body || {};
+
+      if (!isAdmin) {
+        if (!estimate.password || estimate.password !== String(password).trim()) {
+          return res.status(403).json({ message: "삭제 권한이 없습니다. (비밀번호 불일치)" });
+        }
+      }
+
+      const success = await storage.deleteCareEstimate(id);
+      if (success) {
+        res.json({ success: true, message: "견적 의뢰가 성공적으로 삭제되었습니다." });
+      } else {
+        res.status(500).json({ message: "삭제 실패" });
+      }
+    } catch (error) {
+      console.error("견적 삭제 오류:", error);
+      res.status(500).json({ message: "Failed to delete care estimate" });
     }
   });
 

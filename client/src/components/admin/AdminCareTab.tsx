@@ -4,7 +4,7 @@ import { Inquiry } from "@shared/schema";
 import { format } from "date-fns";
 import { 
   Phone, Mail, Calendar, Image as ImageIcon, Trash2, 
-  ExternalLink, Wrench, Building, Search, RefreshCw, Eye
+  ExternalLink, Wrench, Building, Search, RefreshCw, Eye, FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,10 +18,12 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import CareEstimateBoard from "@/components/care/CareEstimateBoard";
 
 export default function AdminCareTab() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [subTab, setSubTab] = useState<"estimates" | "inquiries">("estimates");
   const [searchKeyword, setSearchKeyword] = useState("");
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
@@ -191,21 +193,51 @@ export default function AdminCareTab() {
             </div>
           </div>
 
-          {/* 검색 바 */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <Input
-                placeholder="신청자명, 연락처, 증상 내용 검색..."
-                value={searchKeyword}
-                onChange={(e) => setSearchKeyword(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <div className="text-sm font-semibold text-slate-500 shrink-0">
-              총 {filteredInquiries.length}건
-            </div>
+          {/* 하위 탭 전환: 실시간 견적 상담 관리 vs 간편 접수 내역 */}
+          <div className="flex flex-wrap gap-2 mb-6 border-b border-slate-200 pb-3">
+            <button
+              onClick={() => setSubTab("estimates")}
+              className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                subTab === "estimates"
+                  ? "bg-slate-900 text-white shadow-sm"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              <FileText className="w-4 h-4 text-amber-400" />
+              <span>실시간 견적 상담실 관리 (답변 작성 & 카톡 발송)</span>
+            </button>
+            <button
+              onClick={() => setSubTab("inquiries")}
+              className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                subTab === "inquiries"
+                  ? "bg-slate-900 text-white shadow-sm"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              <Wrench className="w-4 h-4 text-orange-500" />
+              <span>간편 문의 접수 내역 ({filteredInquiries.length})</span>
+            </button>
           </div>
+
+          {subTab === "estimates" ? (
+            <CareEstimateBoard />
+          ) : (
+            <div>
+              {/* 검색 바 */}
+              <div className="flex items-center gap-3 mb-6">
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    placeholder="신청자명, 연락처, 증상 내용 검색..."
+                    value={searchKeyword}
+                    onChange={(e) => setSearchKeyword(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <div className="text-sm font-semibold text-slate-500 shrink-0">
+                  총 {filteredInquiries.length}건
+                </div>
+              </div>
 
           {/* 목록 테이블 / 카드 */}
           {isLoading ? (
@@ -316,6 +348,8 @@ export default function AdminCareTab() {
               })}
             </div>
           )}
+          </div>
+        )}
         </CardContent>
       </Card>
 

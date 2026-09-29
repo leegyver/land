@@ -14,9 +14,17 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import CareEstimateBoard from "@/components/care/CareEstimateBoard";
 
 export default function TotalCarePage() {
   const { toast } = useToast();
+  
+  // URL 쿼리 파라미터 확인 (?tab=estimates 또는 ?estimateId=...)
+  const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const initialMode = searchParams.get("tab") === "estimates" || searchParams.get("estimateId") ? "estimates" : "services";
+  const initialEstimateId = searchParams.get("estimateId") ? parseInt(searchParams.get("estimateId")!) : null;
+
+  const [mainMode, setMainMode] = useState<"services" | "estimates">(initialMode);
   const [activeTab, setActiveTab] = useState("oneroom");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
@@ -184,13 +192,33 @@ ${formData.message}
 
             {/* Quick Actions */}
             <div className="flex flex-wrap items-center justify-center gap-3 pt-3">
-              <a
-                href="#apply-form"
-                className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold px-6 py-3.5 rounded-xl shadow-lg shadow-orange-500/30 transition-transform transform hover:-translate-y-0.5 text-sm sm:text-base"
+              <button
+                type="button"
+                onClick={() => {
+                  setMainMode("estimates");
+                  document.getElementById("main-content")?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-black px-6 py-3.5 rounded-xl shadow-lg shadow-orange-500/30 transition-transform transform hover:-translate-y-0.5 text-sm sm:text-base cursor-pointer"
               >
-                <FileText className="w-4 h-4" />
-                <span>사진 찍어 간편 견적 접수</span>
-              </a>
+                <FileText className="w-4 h-4 text-amber-200" />
+                <span>실시간 견적 상담실 / 답변 확인</span>
+                <span className="bg-white text-orange-600 text-[10px] font-black px-1.5 py-0.2 rounded-full">
+                  NEW
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMainMode("services");
+                  setTimeout(() => {
+                    document.getElementById("apply-form")?.scrollIntoView({ behavior: "smooth" });
+                  }, 50);
+                }}
+                className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold px-6 py-3.5 rounded-xl backdrop-blur-sm transition-colors text-sm sm:text-base cursor-pointer"
+              >
+                <Upload className="w-4 h-4 text-orange-400" />
+                <span>간편 견적 신청하기</span>
+              </button>
               <a
                 href="tel:010-4787-3120"
                 className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold px-6 py-3.5 rounded-xl backdrop-blur-sm transition-colors text-sm sm:text-base"
@@ -246,18 +274,57 @@ ${formData.message}
         </div>
       </section>
 
-      {/* Main Pricing & Service Sections */}
-      <section className="py-14 sm:py-20">
+      {/* Main Pricing & Service Sections / Estimate Board */}
+      <section id="main-content" className="py-10 sm:py-16">
         <div className="container mx-auto px-4">
-          <div className="text-center max-w-2xl mx-auto mb-10">
-            <Badge className="bg-blue-600 text-white mb-2 px-3 py-1 text-xs">서비스 카테고리 & 표준 단가표</Badge>
-            <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-              필요한 서비스를 선택하고<br />투명한 예상 금액을 확인하세요
-            </h2>
-            <p className="text-slate-600 text-sm sm:text-base mt-2">
-              ※ 강화 관내 기본 출장·진단비는 3만~5만원이며, 현장 수리 진행 시 출장비는 시공비에서 공제해 드립니다.
-            </p>
+          {/* Main Mode Switcher Tabs */}
+          <div className="flex justify-center max-w-md mx-auto mb-10">
+            <div className="grid grid-cols-2 p-1.5 bg-slate-200/90 rounded-2xl w-full border border-slate-300 shadow-inner">
+              <button
+                type="button"
+                onClick={() => setMainMode("services")}
+                className={`py-3 px-4 rounded-xl font-black text-sm sm:text-base transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  mainMode === "services"
+                    ? "bg-white text-slate-900 shadow-md"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <Wrench className="w-4 h-4 text-orange-500" />
+                <span>서비스 & 단가표</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMainMode("estimates")}
+                className={`py-3 px-4 rounded-xl font-black text-sm sm:text-base transition-all flex items-center justify-center gap-2 relative cursor-pointer ${
+                  mainMode === "estimates"
+                    ? "bg-slate-900 text-white shadow-md"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <FileText className="w-4 h-4 text-amber-400" />
+                <span>실시간 견적 상담실</span>
+                <span className="bg-orange-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full">
+                  NEW
+                </span>
+              </button>
+            </div>
           </div>
+
+          {mainMode === "estimates" ? (
+            <div className="max-w-5xl mx-auto">
+              <CareEstimateBoard initialEstimateId={initialEstimateId} />
+            </div>
+          ) : (
+            <div>
+              <div className="text-center max-w-2xl mx-auto mb-10">
+                <Badge className="bg-blue-600 text-white mb-2 px-3 py-1 text-xs">서비스 카테고리 & 표준 단가표</Badge>
+                <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+                  필요한 서비스를 선택하고<br />투명한 예상 금액을 확인하세요
+                </h2>
+                <p className="text-slate-600 text-sm sm:text-base mt-2">
+                  ※ 강화 관내 기본 출장·진단비는 3만~5만원이며, 현장 수리 진행 시 출장비는 시공비에서 공제해 드립니다.
+                </p>
+              </div>
 
           <Tabs defaultValue="oneroom" className="max-w-5xl mx-auto" onValueChange={setActiveTab}>
             <TabsList className="grid grid-cols-2 md:grid-cols-4 h-auto p-1.5 bg-slate-200/80 rounded-2xl mb-8">
@@ -682,11 +749,14 @@ ${formData.message}
             </TabsContent>
           </Tabs>
         </div>
-      </section>
+      )}
+    </div>
+  </section>
 
-      {/* Online Application Form Section */}
-      <section id="apply-form" className="py-16 bg-slate-900 text-white relative">
-        <div className="container mx-auto px-4 max-w-4xl">
+  {mainMode === "services" && (
+    /* Online Application Form Section */
+    <section id="apply-form" className="py-16 bg-slate-900 text-white relative">
+      <div className="container mx-auto px-4 max-w-4xl">
           <div className="text-center mb-10">
             <span className="text-xs font-bold text-orange-400 bg-orange-500/10 border border-orange-500/20 px-3 py-1 rounded-full">
               빠르고 간편한 온라인 접수
@@ -860,6 +930,7 @@ ${formData.message}
           </Card>
         </div>
       </section>
+      )}
 
       {/* Case Studies / Real Examples (신뢰도) */}
       <section className="py-16 bg-white">
@@ -966,13 +1037,17 @@ ${formData.message}
           <Phone className="w-3.5 h-3.5 text-amber-400" />
           <span>전화 상담</span>
         </a>
-        <a
-          href="#apply-form"
-          className="flex-1 bg-orange-600 text-white text-center py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5"
+        <button
+          type="button"
+          onClick={() => {
+            setMainMode("estimates");
+            document.getElementById("main-content")?.scrollIntoView({ behavior: "smooth" });
+          }}
+          className="flex-1 bg-orange-600 text-white text-center py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
         >
           <FileText className="w-3.5 h-3.5" />
-          <span>온라인 견적접수</span>
-        </a>
+          <span>견적 상담실</span>
+        </button>
       </div>
     </div>
   );

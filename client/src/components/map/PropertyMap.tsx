@@ -13,6 +13,7 @@ import SajuFormModal from '@/components/saju/SajuFormModal';
 import TarotModal from '@/components/tarot/TarotModal';
 import { Sparkles, HelpCircle, Layers, Eye, MapPin } from 'lucide-react';
 import { formatKoreanPrice } from '@/lib/formatter';
+import { buildGeocodeQuery } from '@/lib/map-utils';
 
 declare global {
   interface Window {
@@ -359,19 +360,55 @@ const PropertyMap = ({ properties: passedProperties, showCrawled = false }: Prop
         // Geocode for properties without coordinates
         const district = property.district || "";
         const detailAddress = property.address || "";
-        const query = (district.includes("강화") || district.includes("서울")
-          ? `${district} ${detailAddress}`
-          : `인천광역시 ${district} ${detailAddress}`).trim().replace(/\s+/g, ' ');
+        const cleanQuery = buildGeocodeQuery(district, detailAddress, property.mapAddress);
 
-        if (query.length > 2) {
-          geocoder.addressSearch(query, (result: any, status: any) => {
+        if (cleanQuery.length > 2) {
+          geocoder.addressSearch(cleanQuery, (result: any, status: any) => {
             if (!isMounted || !mapInstanceRef.current) return;
-            processedCount++;
 
-            if (status === window.kakao.maps.services.Status.OK) {
+            if (status === window.kakao.maps.services.Status.OK && result && result.length > 0) {
               const position = new window.kakao.maps.LatLng(result[0].y, result[0].x);
               addMarker(position, property, isNaver);
+              processedCount++;
               checkBounds();
+            } else {
+              // 2단계: Places 키워드 검색 폴백
+              try {
+                const places = new window.kakao.maps.services.Places();
+                places.keywordSearch(cleanQuery, (pResult: any, pStatus: any) => {
+                  if (!isMounted || !mapInstanceRef.current) return;
+                  if (pStatus === window.kakao.maps.services.Status.OK && pResult && pResult.length > 0) {
+                    const position = new window.kakao.maps.LatLng(pResult[0].y, pResult[0].x);
+                    addMarker(position, property, isNaver);
+                    processedCount++;
+                    checkBounds();
+                  } else {
+                    // 3단계: 지역 단위(읍/면/리) 검색 폴백
+                    const areaMatch = cleanQuery.match(/(?:인천(?:광역시)?\s*)?(?:강화군\s*)?([가-힣]+[읍면동])(?:\s+([가-힣]+리))?/);
+                    if (areaMatch) {
+                      const fallbackQuery = `인천 강화군 ${areaMatch[1]} ${areaMatch[2] || ''}`.trim();
+                      geocoder.addressSearch(fallbackQuery, (fResult: any, fStatus: any) => {
+                        if (!isMounted || !mapInstanceRef.current) return;
+                        if (fStatus === window.kakao.maps.services.Status.OK && fResult && fResult.length > 0) {
+                          const position = new window.kakao.maps.LatLng(fResult[0].y, fResult[0].x);
+                          addMarker(position, property, isNaver);
+                        } else {
+                          console.warn(`PropertyMap: 최종 위치 검색 실패 [${property.id}] query: ${cleanQuery}`);
+                        }
+                        processedCount++;
+                        checkBounds();
+                      });
+                    } else {
+                      processedCount++;
+                      checkBounds();
+                    }
+                  }
+                });
+              } catch (err) {
+                console.warn(`PropertyMap: Places 검색 예외 [${property.id}]`, err);
+                processedCount++;
+                checkBounds();
+              }
             }
           });
         } else {

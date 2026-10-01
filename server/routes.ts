@@ -28,6 +28,7 @@ import {
 } from "@shared/schema";
 import rateLimit from "express-rate-limit";
 import { eq, desc } from "drizzle-orm";
+import { geocodePropertyAddress } from "./geocoder";
 import { memoryCache } from "./cache";
 import { setupAuth } from "./auth";
 import { fetchAndSaveNews, setupNewsScheduler } from "./news-fetcher";
@@ -2907,6 +2908,19 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${updated.id}`;
           processedData.agentName = user.businessName;
         }
 
+        // 주소가 있을 때 자동 지오코딩으로 위도/경도 채우기
+        if (!processedData.latitude || !processedData.longitude) {
+          try {
+            const coords = await geocodePropertyAddress(processedData.district, processedData.address);
+            if (coords) {
+              processedData.latitude = coords.latitude;
+              processedData.longitude = coords.longitude;
+            }
+          } catch (geoErr) {
+            console.warn('자동 지오코딩 실패:', geoErr);
+          }
+        }
+
         console.log('처리된 데이터:', JSON.stringify(processedData, null, 2));
 
         const validatedData = insertPropertySchema.parse(processedData);
@@ -3049,6 +3063,25 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${updated.id}`;
           ? "이가이버"
           : (req.body.agentName !== undefined ? req.body.agentName : existingProperty.agentName)
       };
+
+      // 주소가 변경되었거나 기존 좌표가 없으면 자동 지오코딩 수행
+      const addressChanged = (req.body.address !== undefined && req.body.address !== existingProperty.address) ||
+                             (req.body.district !== undefined && req.body.district !== existingProperty.district);
+      const missingCoords = !existingProperty.latitude || !existingProperty.longitude;
+
+      if ((addressChanged || missingCoords) && !req.body.latitude) {
+        try {
+          const targetDistrict = processedData.district || existingProperty.district;
+          const targetAddress = processedData.address || existingProperty.address;
+          const coords = await geocodePropertyAddress(targetDistrict, targetAddress);
+          if (coords) {
+            processedData.latitude = coords.latitude;
+            processedData.longitude = coords.longitude;
+          }
+        } catch (geoErr) {
+          console.warn(`[API] Property ${id} 자동 지오코딩 실패:`, geoErr);
+        }
+      }
 
       console.log(`[API] Processed Update Data for ID ${id}:`, JSON.stringify(processedData, null, 2));
 

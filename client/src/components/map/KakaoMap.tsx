@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Property } from '@shared/schema';
 import { useQuery } from '@tanstack/react-query';
+import { buildGeocodeQuery } from '@/lib/map-utils';
 
 interface KakaoMapProps {
   zoom?: number;
@@ -140,61 +141,12 @@ const KakaoMap = ({ zoom = 8, properties: externalProperties, singleProperty }: 
         addMarker(new window.kakao.maps.LatLng(lat, lng));
       } else {
         // 좌표가 없으면 주소 기반으로 지오코딩
-        // mapAddress(원본 주소)를 우선 사용, 없으면 district + address 조합
         const mapAddr = (prop as any).mapAddress || "";
         const district = prop.district || "";
         const address = prop.address || "";
 
-        // 지오코딩용 주소 결정: mapAddress > district+address > district만
-        let rawAddress = "";
-        if (mapAddr) {
-          rawAddress = mapAddr;
-        } else if (address && address !== "***") {
-          rawAddress = address;
-        }
-
-        // 주소 정규화 로직
-        let query = "";
-        if (rawAddress) {
-          // 원본 주소가 있으면 district와 결합
-          if (rawAddress.includes("강화") || rawAddress.includes("인천")) {
-            query = rawAddress;
-          } else if (district.includes("강화") || district.includes("인천")) {
-            query = `${district} ${rawAddress}`;
-          } else {
-            query = `인천광역시 강화군 ${district} ${rawAddress}`;
-          }
-        } else {
-          // 원본 주소가 없으면 district만 사용
-          if (!district.includes("강화") && !district.includes("서울") && !district.includes("인천")) {
-            query = `인천광역시 강화군 ${district}`;
-          } else if (district.includes("강화") && !district.includes("군")) {
-            query = district.replace(/강화\s*/, "인천광역시 강화군 ");
-          } else if (district.includes("강화군") && !district.includes("인천")) {
-            query = `인천광역시 ${district}`;
-          } else {
-            query = district;
-          }
-        }
-
-        query = query.trim().replace(/\s+/g, ' ');
-
-        // 경매/부동산 주소 정제 (외 N필지, 괄호 등 지오코더 방해 요소 제거)
-        const cleanAddressForSearch = (str: string) => {
-          return str
-            .replace(/\[[^\]]*\]/g, ' ')
-            .replace(/\([^)]*\)/g, ' ')
-            .replace(/외\s*\d+\s*필지/gi, ' ')
-            .replace(/외\s*일필지/gi, ' ')
-            .replace(/외\s*\d+/gi, ' ')
-            .replace(/일괄매각/gi, ' ')
-            .replace(/외\s*지상/gi, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
-        };
-
-        const cleanQuery = cleanAddressForSearch(query);
-        console.log(`KakaoMap: 주소 검색 시도 [${prop.id}] -> 원본: "${query}", 정제: "${cleanQuery}"`);
+        const cleanQuery = buildGeocodeQuery(district, address, mapAddr);
+        console.log(`KakaoMap: 주소 검색 시도 [${prop.id}] -> 정제 검색어: "${cleanQuery}"`);
 
         // 1단계: 정제된 주소로 Geocoder 주소 검색
         if (cleanQuery.length > 2) {
@@ -220,12 +172,12 @@ const KakaoMap = ({ zoom = 8, properties: externalProperties, singleProperty }: 
                         if (fStatus === window.kakao.maps.services.Status.OK && isMounted && fResult && fResult.length > 0) {
                           addMarker(new window.kakao.maps.LatLng(fResult[0].y, fResult[0].x));
                         } else {
-                          console.warn(`KakaoMap: 최종 위치 검색 실패 [${prop.id}] query: ${query}`);
+                          console.warn(`KakaoMap: 최종 위치 검색 실패 [${prop.id}] query: ${cleanQuery}`);
                           processedCount++;
                         }
                       });
                     } else {
-                      console.warn(`KakaoMap: 위치 검색 불가 [${prop.id}] query: ${query}`);
+                      console.warn(`KakaoMap: 위치 검색 불가 [${prop.id}] query: ${cleanQuery}`);
                       processedCount++;
                     }
                   }

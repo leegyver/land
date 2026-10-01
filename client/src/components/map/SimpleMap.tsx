@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Property } from '@shared/schema';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'wouter';
+import { buildGeocodeQuery } from '@/lib/map-utils';
 
 // 전역 타입 선언
 declare global {
@@ -76,39 +77,40 @@ export default function SimpleMap() {
 
       // 각 매물의 주소를 좌표로 변환하여 마커 생성
       properties.forEach((property, index) => {
-        // 주소 구성 (정확도 향상을 위한 방식)
-        let address = '';
-        let region = '';
-
-        // 지역별 정확한 주소 형식 구성
-        if (property.district && property.district.includes('강화')) {
-          // 강화군 지역 주소 최적화
-          region = '인천광역시 강화군';
-
-          // 상세 주소에서 읍/면 정보 추출 또는 기본 읍 설정
-          if (property.address && (property.address.includes('읍') || property.address.includes('면'))) {
-            // 주소에서 읍/면 정보 포함된 경우 그대로 사용
-            // 이미 region에 '강화군'이 있으므로 추가 작업 불필요
-          } else {
-            // 읍/면이 포함되지 않은 경우 강화읍으로 기본 설정
-            region += ' 강화읍';
+        // 좌표가 이미 존재하는 경우 바로 마커 생성
+        const lat = Number(property.latitude);
+        const lng = Number(property.longitude);
+        if (lat && lng && !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+          const coords = new window.kakao.maps.LatLng(lat, lng);
+          const marker = new window.kakao.maps.Marker({
+            map: map,
+            position: coords,
+            title: property.title
+          });
+          markers.push(marker);
+          bounds.extend(coords);
+          window.kakao.maps.event.addListener(marker, 'click', () => {
+            setSelectedProperty(property);
+            const content = `
+              <div style="padding:8px;font-size:12px;max-width:250px;">
+                <div style="font-weight:bold;margin-bottom:4px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${property.title}</div>
+                <div style="color:#666;font-size:12px;margin-bottom:4px;">${property.type} · ${property.dealType ? property.dealType[0] : '매매'}</div>
+                <div style="color:#2563eb;font-weight:bold;font-size:13px;">${formatPrice(Number(property.price) || 0)}</div>
+              </div>
+            `;
+            infoWindow.setContent(content);
+            infoWindow.open(map, marker);
+            map.setCenter(coords);
+            map.setLevel(3);
+          });
+          if (index === properties.length - 1) {
+            map.setBounds(bounds);
           }
-
-          // 상세 주소 구성
-          if (property.address) {
-            address = `${region} ${property.address}`;
-          } else {
-            address = region;
-          }
-        } else if (property.district && property.district.includes('서울')) {
-          // 서울 지역 주소 최적화
-          // 중복 구 이름 제거
-          const district = property.district.replace(/서울특별시|서울시|서울/g, '').trim();
-          address = `서울특별시 ${district} ${property.address || ''}`.trim();
-        } else {
-          // 기타 지역 주소 최적화
-          address = `인천광역시 ${property.district || ''} ${property.address || ''}`.trim();
+          return;
         }
+
+        // 주소 정제 및 검색어 생성
+        const address = buildGeocodeQuery(property.district, property.address);
 
         console.log(`주소 검색 시도 (최적화): ${address}`);
 

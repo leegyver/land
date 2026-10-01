@@ -25,6 +25,7 @@ tmp_backup/
 archives/
 tmp_tar/
 old_homepage_backup/
+scratch/
 
 # Test and Dev scripts
 test-*.js

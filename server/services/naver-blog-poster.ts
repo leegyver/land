@@ -277,8 +277,9 @@ function cleanAndFormatContent(text: string): string {
   let cleaned = text.replace(/\*\*/g, "");
   cleaned = cleaned.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 
-  // 불렛포인트(•, ·, ▪, ■, ▶)가 줄 중간에 붙어있으면 줄바꿈 분리 (단, 앞에 이모지나 불렛이 있으면 분리하지 않음)
-  cleaned = cleaned.replace(/([^\n\s\uD800-\uDFFF📸📍🏡✨💡■💬📞☎🌿👉•·▪▶✔])\s*([•·▪■▶✔]\s*)/g, "$1\n$2");
+  // 불렛포인트(•, ▪, ■, ▶)가 줄 중간에 붙어있으면 줄바꿈 분리
+  // (가운뎃점 '·'는 '경매·공매', '토지·건물' 등 단어 연결 문장부호이므로 줄바꿈 대상에서 제외)
+  cleaned = cleaned.replace(/([^\n\s\uD800-\uDFFF📸📍🏡✨💡■💬📞☎🌿👉•·▪▶✔])\s*([•▪■▶✔]\s+)/g, "$1\n$2");
 
   // 섹션 제목 ([입지 및 환경], [공간 및 구조], [전문가 제언], [현장 사진 안내] 등) 앞뒤 여백 확보 (단, 앞에 이모지나 불렛이 있으면 분리하지 않음)
   cleaned = cleaned.replace(/([^\n\s\uD800-\uDFFF📸📍🏡✨💡■💬📞☎🌿👉•·▪▶✔])\s*(\[[^\]]+\])/g, "$1\n\n$2\n");

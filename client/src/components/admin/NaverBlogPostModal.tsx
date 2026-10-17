@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Sparkles, Send, CheckCircle2, ExternalLink, AlertCircle, RefreshCw, 
   Settings, Key, Image as ImageIcon, LogIn, Loader2, X, Globe, Lock,
-  MessageCircle, PhoneCall, Home, ClipboardCheck
+  MessageCircle, PhoneCall, Home, ClipboardCheck, Gavel
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -531,7 +531,7 @@ export function NaverBlogPostModal({
                       <span>✔ 매물 사실정보 일치</span>
                       <span>✔ 대표: 이민호</span>
                       <span>✔ 직통: 010-4787-3120</span>
-                      <span>✔ 상단 2단 배너(홈페이지/토탈케어)</span>
+                      <span>✔ 상단 3단 배너(홈페이지/토탈케어/경매공매)</span>
                       <span>✔ 카카오/전화 배너 링크 포함</span>
                       <span>✔ 볼드(**) 기호 100% 제거</span>
                     </div>
@@ -622,29 +622,30 @@ export function NaverBlogPostModal({
 
               {/* 본문 자동 삽입 배너 이미지 미리보기 */}
               <div className="space-y-3 p-3 bg-slate-50 border rounded-lg">
-                {/* 1. 최상단 가로 2단 배너 */}
+                {/* 1. 최상단 가로 3단 배너 */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <Label className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                      🌟 [최상단 자동 등록] 가로 2단 배너 (홈페이지 & 부동산 토탈케어)
+                      🌟 [최상단 자동 등록] 가로 3단 배너 (홈페이지 & 부동산 관리 & 경매/공매)
                     </Label>
                     <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-[10px] py-0 px-1.5 font-bold">
-                      가로 나란히(콜라주) 자동 주입
+                      가로 나란히(콜라주 3분할) 자동 주입
                     </Badge>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    <div className="border rounded-lg overflow-hidden bg-white p-2 shadow-xs space-y-1.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {/* 배너 1: 홈페이지 */}
+                    <div className="border rounded-lg overflow-hidden bg-white p-2 shadow-xs space-y-1">
                       <div className="flex items-center justify-between text-xs font-medium text-slate-700">
-                        <span className="flex items-center gap-1 font-semibold text-blue-900">
-                          <Home className="w-3.5 h-3.5 text-blue-600" />
-                          홈페이지 바로가기 배너
+                        <span className="flex items-center gap-1 font-semibold text-blue-900 text-[11px]">
+                          <Home className="w-3 h-3 text-blue-600" />
+                          홈페이지 바로가기
                         </span>
                         <a
                           href="https://leegyver.com"
                           target="_blank"
                           rel="noreferrer"
-                          className="text-[10px] bg-blue-100 hover:bg-blue-200 text-blue-900 px-1.5 py-0.5 rounded font-mono transition-colors"
+                          className="text-[10px] bg-blue-100 hover:bg-blue-200 text-blue-900 px-1 py-0.5 rounded font-mono transition-colors"
                         >
                           leegyver.com ↗
                         </a>
@@ -652,28 +653,56 @@ export function NaverBlogPostModal({
                       <img
                         src="/images/banner_home.png"
                         alt="홈페이지 바로가기 배너"
-                        className="w-full h-auto rounded border object-contain"
+                        className="w-full h-auto rounded border object-contain bg-white"
                       />
                     </div>
-                    <div className="border rounded-lg overflow-hidden bg-white p-2 shadow-xs space-y-1.5">
+
+                    {/* 배너 2: 토탈케어 관리신청 */}
+                    <div className="border rounded-lg overflow-hidden bg-white p-2 shadow-xs space-y-1">
                       <div className="flex items-center justify-between text-xs font-medium text-slate-700">
-                        <span className="flex items-center gap-1 font-semibold text-emerald-900">
-                          <ClipboardCheck className="w-3.5 h-3.5 text-emerald-600" />
-                          부동산 관리신청 배너
+                        <span className="flex items-center gap-1 font-semibold text-emerald-900 text-[11px]">
+                          <ClipboardCheck className="w-3 h-3 text-emerald-600" />
+                          부동산 관리신청
                         </span>
                         <a
                           href="https://leegyver.com/total-care"
                           target="_blank"
                           rel="noreferrer"
-                          className="text-[10px] bg-emerald-100 hover:bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded font-mono transition-colors"
+                          className="text-[10px] bg-emerald-100 hover:bg-emerald-200 text-emerald-900 px-1 py-0.5 rounded font-mono transition-colors"
                         >
-                          leegyver.com/total-care ↗
+                          care ↗
                         </a>
                       </div>
                       <img
                         src="/images/banner_care.png"
                         alt="부동산 관리신청 배너"
-                        className="w-full h-auto rounded border object-contain"
+                        className="w-full h-auto rounded border object-contain bg-white"
+                      />
+                    </div>
+
+                    {/* 배너 3: 경매/공매 */}
+                    <div className="border rounded-lg overflow-hidden bg-white p-2 shadow-xs space-y-1">
+                      <div className="flex items-center justify-between text-xs font-medium text-slate-700">
+                        <span className="flex items-center gap-1 font-semibold text-purple-900 text-[11px]">
+                          <Gavel className="w-3 h-3 text-purple-600" />
+                          강화도 경매/공매
+                        </span>
+                        <a
+                          href="https://leegyver.com/auctions"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[10px] bg-purple-100 hover:bg-purple-200 text-purple-900 px-1 py-0.5 rounded font-mono transition-colors"
+                        >
+                          auctions ↗
+                        </a>
+                      </div>
+                      <img
+                        src="/images/banner_auction.png"
+                        alt="강화도 경매/공매 배너"
+                        className="w-full h-auto rounded border object-contain bg-white"
+                        onError={(e: any) => {
+                          e.target.src = "/images/banner_home.png"; // 첨부 전 임시 폴백
+                        }}
                       />
                     </div>
                   </div>

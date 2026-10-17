@@ -26,17 +26,19 @@ export const MANDATORY_TAGS = ["강화도부동산", "강화군부동산", "이�
 
 export const TOP_BANNER_IMAGES = [
   "/images/banner_home.png",
-  "/images/banner_care.png"
+  "/images/banner_care.png",
+  "/images/banner_auction.png"
 ];
 
 export const BANNER_IMAGES = [
   "/images/banner_home.png",
   "/images/banner_care.png",
+  "/images/banner_auction.png",
   "/images/banner_kakao.png",
   "/images/banner_call.png"
 ];
 
-export const TOP_BANNER_BLOCK = `[홈페이지 바로가기 배너] [부동산 관리신청 배너]`;
+export const TOP_BANNER_BLOCK = `[홈페이지 바로가기 배너] [부동산 관리신청 배너] [경매/공매 바로가기 배너]`;
 
 export const OFFICE_INFO_BLOCK = `
 ■ 중개사무소 안내
@@ -149,7 +151,7 @@ export function verifyAndSanitizeBlogPost(
     greetingVerified: content.includes(MANDATORY_GREETING),
     noMarkdownBold: !content.includes("**") && !title.includes("**"),
     contactLinksVerified: content.includes("010-4787-3120") && (content.includes("[카카오톡 실시간 상담 배너]") || content.includes("카카오톡")),
-    topBannersVerified: content.includes("[홈페이지 바로가기 배너]") && content.includes("[부동산 관리신청 배너]")
+    topBannersVerified: content.includes("[홈페이지 바로가기 배너]") && content.includes("[부동산 관리신청 배너]") && content.includes("[경매/공매 바로가기 배너]")
   };
 
   if (property) {
@@ -163,8 +165,8 @@ export function verifyAndSanitizeBlogPost(
 
   const passed = Object.values(checks).every(Boolean);
   const summary = passed
-    ? `할루시네이션 검증 통과 (매물번호 No.${property?.id || ''}, 가격/면적 일치, 대표 이민호 / 010-4787-3120, 상단 배너 2종 및 상담 링크 100% 일치)`
-    : `팩트체크 완료 및 필수 정보(대표자, 연락처, 상단 배너, 볼드 기호 제거) 자동 보정 적용`;
+    ? `할루시네이션 검증 통과 (매물번호 No.${property?.id || ''}, 가격/면적 일치, 대표 이민호 / 010-4787-3120, 상단 3단 배너 및 상담 링크 100% 일치)`
+    : `팩트체크 완료 및 필수 정보(대표자, 연락처, 상단 배너 3종, 볼드 기호 제거) 자동 보정 적용`;
 
   return {
     title,

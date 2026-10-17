@@ -442,18 +442,20 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     }
 
     // 이미지 및 배너 파일 사전 준비
-    const BANNER_NAMES = ["banner_kakao", "banner_call", "banner_home", "banner_care"];
+    const BANNER_NAMES = ["banner_kakao", "banner_call", "banner_home", "banner_care", "banner_auction"];
     const allImages = options.imageUrls || [];
     const propertyImageUrls = allImages.filter(img => !BANNER_NAMES.some(b => img.includes(b)));
     const localPropertyImages = await resolveImageFiles(propertyImageUrls);
     const bannerFiles = await resolveImageFiles([
       "/images/banner_home.png",
       "/images/banner_care.png",
+      "/images/banner_auction.png",
       "/images/banner_kakao.png",
       "/images/banner_call.png"
     ]);
     const homeBannerFile = bannerFiles.find(f => f.includes("banner_home"));
     const careBannerFile = bannerFiles.find(f => f.includes("banner_care"));
+    const auctionBannerFile = bannerFiles.find(f => f.includes("banner_auction"));
     const kakaoBannerFile = bannerFiles.find(f => f.includes("banner_kakao"));
     const callBannerFile = bannerFiles.find(f => f.includes("banner_call"));
 
@@ -474,15 +476,15 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
       await page.waitForTimeout(500);
     };
 
-    // 최상단 2단 가로 배너 (홈페이지 바로가기 & 부동산 관리신청) 삽입 및 하이퍼링크 연결
+    // 최상단 3단 가로 배너 (홈페이지 바로가기 & 부동산 관리신청 & 경매/공매) 삽입 및 하이퍼링크 연결
     const insertDualTopBanners = async () => {
       if (topBannersInserted) return;
-      const topFiles = [homeBannerFile, careBannerFile].filter(Boolean) as string[];
+      const topFiles = [homeBannerFile, careBannerFile, auctionBannerFile].filter(Boolean) as string[];
       if (topFiles.length === 0) return;
 
       topBannersInserted = true;
       try {
-        console.log(`[NaverPoster] 최상단 2단 배너(홈페이지 & 부동산 토탈케어) 업로드 시작... (${topFiles.length}개 파일)`);
+        console.log(`[NaverPoster] 최상단 3단 배너(홈페이지 & 부동산 토탈케어 & 경매/공매) 업로드 시작... (${topFiles.length}개 파일)`);
         await dismissPopups();
         await page.waitForTimeout(500);
 
@@ -492,17 +494,17 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
           photoBtn.click({ force: true })
         ]);
         await fileChooser.setFiles(topFiles);
-        console.log("[NaverPoster] 최상단 배너 2개 파일 주입 완료. 레이아웃 옵션 대기...");
+        console.log(`[NaverPoster] 최상단 배너 ${topFiles.length}개 파일 주입 완료. 레이아웃 옵션 대기...`);
         await page.waitForTimeout(1500);
 
-        // 2개 이미지를 가로로 나란히 배치하기 위해 '콜라주' 레이아웃 버튼 클릭
+        // 3개 이미지를 가로로 나란히 배치하기 위해 '콜라주' 레이아웃 버튼 클릭
         try {
           const collageBtn = page.locator(
             'label[for="image-type-collage"], button#image-type-collage, .se-image-type-option-collage, [data-log="limgatt.col"], button:has-text("콜라주")'
           ).first();
           if (await collageBtn.isVisible({ timeout: 2500 }).catch(() => false)) {
             await collageBtn.click({ force: true });
-            console.log("[NaverPoster] ✅ 최상단 배너 2개 가로 나란히(콜라주) 레이아웃 적용 완료");
+            console.log(`[NaverPoster] ✅ 최상단 배너 ${topFiles.length}개 가로 나란히(콜라주) 레이아웃 적용 완료`);
             await page.waitForTimeout(600);
           }
         } catch (layoutErr) {
@@ -562,6 +564,14 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
           const secondImg = imgCount > 1 ? bannerImgs.nth(1) : page.locator('.se-component img').nth(1);
           if (await secondImg.isVisible({ timeout: 2000 }).catch(() => false)) {
             await setLinkForElement(secondImg, 'https://leegyver.com/total-care', '최상단 배너 2 (부동산 관리신청)');
+          }
+        }
+
+        // 상단 배너 3: 강화도 경매/공매 (https://leegyver.com/auctions) 하이퍼링크 설정
+        if (imgCount > 2 || topFiles.length > 2) {
+          const thirdImg = imgCount > 2 ? bannerImgs.nth(2) : page.locator('.se-component img').nth(2);
+          if (await thirdImg.isVisible({ timeout: 2000 }).catch(() => false)) {
+            await setLinkForElement(thirdImg, 'https://leegyver.com/auctions', '최상단 배너 3 (강화도 경매/공매)');
           }
         }
 
@@ -750,6 +760,7 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
       if (
         line.includes('[홈페이지 바로가기 배너]') || 
         line.includes('[부동산 관리신청 배너]') ||
+        line.includes('[경매/공매 바로가기 배너]') ||
         (line.includes('leegyver.com') && i < 8) ||
         (line.includes('이가이버 공식 홈페이지') && i < 8) ||
         (line.includes('부동산 안심 토탈케어') && i < 8) ||

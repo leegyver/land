@@ -5,10 +5,11 @@ import path from "path";
 async function generateBanners() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({
-    viewport: { width: 800, height: 500 },
-    deviceScaleFactor: 2 // 고해상도 레티나 2배수 렌더링 (1600x1000)
+    viewport: { width: 800, height: 480 },
+    deviceScaleFactor: 2 // 초고해상도 레티나 2배수 렌더링 (1600x960)
   });
 
+  // 배너 1: 홈페이지 바로가기
   const bannerHomeHtml = `
   <!DOCTYPE html>
   <html>
@@ -19,45 +20,45 @@ async function generateBanners() {
       * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; }
       body {
         width: 800px;
-        height: 500px;
+        height: 480px;
         overflow: hidden;
-        background: linear-gradient(135deg, #0b1528 0%, #172a4e 50%, #1e3a8a 100%);
+        background: linear-gradient(145deg, #070d1e 0%, #0f1d3a 45%, #193264 100%);
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        padding: 44px 48px;
+        padding: 38px 42px;
         position: relative;
         color: #ffffff;
       }
-      /* 장식 배경 효과 */
-      .bg-circle1 {
+      .glow-blob1 {
         position: absolute;
-        width: 380px;
-        height: 380px;
+        width: 420px;
+        height: 420px;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, rgba(59, 130, 246, 0) 70%);
-        top: -80px;
-        right: -60px;
-        filter: blur(20px);
+        background: radial-gradient(circle, rgba(59, 130, 246, 0.35) 0%, rgba(59, 130, 246, 0) 70%);
+        top: -120px;
+        right: -80px;
+        filter: blur(25px);
       }
-      .bg-circle2 {
+      .glow-blob2 {
         position: absolute;
-        width: 300px;
-        height: 300px;
+        width: 320px;
+        height: 320px;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0) 70%);
-        bottom: -60px;
-        left: -40px;
-        filter: blur(30px);
+        background: radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, rgba(245, 158, 11, 0) 70%);
+        bottom: -90px;
+        left: -60px;
+        filter: blur(35px);
       }
-      .grid-pattern {
+      .grid-lines {
         position: absolute;
         inset: 0;
-        background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                          linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-        background-size: 32px 32px;
+        background-image: 
+          linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+        background-size: 36px 36px;
       }
-      .header {
+      .top-row {
         position: relative;
         z-index: 10;
         display: flex;
@@ -68,135 +69,146 @@ async function generateBanners() {
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        background: rgba(245, 158, 11, 0.18);
-        border: 1.5px solid #f59e0b;
-        color: #fbbf24;
-        padding: 7px 18px;
+        background: rgba(245, 158, 11, 0.22);
+        border: 2px solid #f59e0b;
+        color: #fde047;
+        padding: 8px 20px;
         border-radius: 9999px;
-        font-size: 16px;
-        font-weight: 700;
+        font-size: 17px;
+        font-weight: 800;
         letter-spacing: -0.3px;
-        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+        box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
       }
       .badge-dot {
-        width: 8px;
-        height: 8px;
+        width: 10px;
+        height: 10px;
         border-radius: 50%;
-        background: #fbbf24;
-        box-shadow: 0 0 10px #fbbf24;
+        background: #fde047;
+        box-shadow: 0 0 12px #fde047;
       }
-      .brand-tag {
-        font-size: 17px;
-        font-weight: 600;
-        color: #94a3b8;
-        letter-spacing: -0.5px;
-      }
-      .content {
-        position: relative;
-        z-index: 10;
-        margin-top: 10px;
-      }
-      .title-sub {
-        font-size: 21px;
-        font-weight: 600;
+      .brand-name {
+        font-size: 18px;
+        font-weight: 700;
         color: #93c5fd;
-        margin-bottom: 8px;
         letter-spacing: -0.5px;
-      }
-      .title-main {
-        font-size: 40px;
-        font-weight: 800;
-        line-height: 1.25;
-        letter-spacing: -1.2px;
-        color: #ffffff;
-        text-shadow: 0 4px 16px rgba(0,0,0,0.4);
-      }
-      .title-highlight {
-        color: #fde047;
-      }
-      .features {
-        display: flex;
-        gap: 16px;
-        margin-top: 14px;
-      }
-      .feature-item {
-        font-size: 15px;
-        color: #cbd5e1;
-        font-weight: 500;
         display: flex;
         align-items: center;
         gap: 6px;
       }
-      .footer {
+      .center-content {
+        position: relative;
+        z-index: 10;
+        margin-top: 4px;
+      }
+      .sub-title {
+        font-size: 22px;
+        font-weight: 700;
+        color: #93c5fd;
+        margin-bottom: 6px;
+        letter-spacing: -0.5px;
+      }
+      .main-title {
+        font-size: 46px;
+        font-weight: 900;
+        line-height: 1.18;
+        letter-spacing: -1.8px;
+        color: #ffffff;
+        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      }
+      .highlight-text {
+        color: #fde047;
+        text-shadow: 0 0 30px rgba(253, 224, 71, 0.4);
+      }
+      .tags-row {
+        display: flex;
+        gap: 12px;
+        margin-top: 12px;
+      }
+      .tag-chip {
+        font-size: 15px;
+        color: #cbd5e1;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.08);
+        padding: 4px 12px;
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+      }
+      .bottom-row {
         position: relative;
         z-index: 10;
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        padding-top: 18px;
-        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        gap: 16px;
       }
-      .url-text {
-        font-size: 17px;
-        font-weight: 600;
-        color: #60a5fa;
-        letter-spacing: 0.2px;
-      }
-      .cta-btn {
-        display: inline-flex;
+      .cta-button {
+        flex: 1;
+        display: flex;
         align-items: center;
-        gap: 10px;
-        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        justify-content: center;
+        gap: 12px;
+        background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
         color: #ffffff;
-        padding: 13px 28px;
-        border-radius: 12px;
-        font-size: 18px;
-        font-weight: 800;
+        padding: 16px 28px;
+        border-radius: 14px;
+        font-size: 22px;
+        font-weight: 900;
         letter-spacing: -0.5px;
-        box-shadow: 0 8px 20px rgba(217, 119, 6, 0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+        box-shadow: 0 10px 25px rgba(234, 88, 12, 0.45), inset 0 2px 0 rgba(255,255,255,0.35);
+        border: 1px solid rgba(255, 255, 255, 0.25);
       }
-      .cta-btn svg {
-        transition: transform 0.2s ease;
+      .cta-button svg {
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+      }
+      .url-label {
+        font-size: 16px;
+        font-weight: 700;
+        color: #60a5fa;
+        white-space: nowrap;
+        background: rgba(15, 23, 42, 0.6);
+        padding: 16px 20px;
+        border-radius: 14px;
+        border: 1px solid rgba(96, 165, 250, 0.3);
       }
     </style>
   </head>
   <body>
-    <div class="bg-circle1"></div>
-    <div class="bg-circle2"></div>
-    <div class="grid-pattern"></div>
-    
-    <div class="header">
+    <div class="glow-blob1"></div>
+    <div class="glow-blob2"></div>
+    <div class="grid-lines"></div>
+
+    <div class="top-row">
       <div class="badge">
         <span class="badge-dot"></span>
-        <span>공식 홈페이지 바로가기</span>
+        <span>공식 홈페이지</span>
       </div>
-      <div class="brand-tag">이가이버 공인중개사</div>
+      <div class="brand-name">이가이버 공인중개사 🌐</div>
     </div>
 
-    <div class="content">
-      <div class="title-sub">인천 · 강화도 전 지역 추천 매물</div>
-      <div class="title-main">
-        실매물 정보와 현장 영상을<br>
-        <span class="title-highlight">홈페이지에서 바로 확인하세요</span>
+    <div class="center-content">
+      <div class="sub-title">인천 · 강화도 전지역 추천 매물</div>
+      <div class="main-title">
+        강화도 실매물 검색<br>
+        <span class="highlight-text">홈페이지 바로가기</span>
       </div>
-      <div class="features">
-        <span class="feature-item">✔ 실시간 매물 검색</span>
-        <span class="feature-item">✔ 지도/항공VR 뷰</span>
-        <span class="feature-item">✔ 강화도 토지·주택 시세</span>
+      <div class="tags-row">
+        <span class="tag-chip">✔ 실시간 매물</span>
+        <span class="tag-chip">✔ 항공VR 현장뷰</span>
+        <span class="tag-chip">✔ 토지·주택 시세</span>
       </div>
     </div>
 
-    <div class="footer">
-      <div class="url-text">🌐 leegyver.com</div>
-      <div class="cta-btn">
-        <span>홈페이지 바로가기</span>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+    <div class="bottom-row">
+      <div class="cta-button">
+        <span>홈페이지 바로가기 (터치/클릭)</span>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
       </div>
+      <div class="url-label">leegyver.com ↗</div>
     </div>
   </body>
   </html>
   `;
 
+  // 배너 2: 부동산 관리신청
   const bannerCareHtml = `
   <!DOCTYPE html>
   <html>
@@ -207,44 +219,45 @@ async function generateBanners() {
       * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; }
       body {
         width: 800px;
-        height: 500px;
+        height: 480px;
         overflow: hidden;
-        background: linear-gradient(135deg, #063c2c 0%, #064e3b 50%, #065f46 100%);
+        background: linear-gradient(145deg, #032b1f 0%, #064e3b 45%, #0d6e53 100%);
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        padding: 44px 48px;
+        padding: 38px 42px;
         position: relative;
         color: #ffffff;
       }
-      .bg-circle1 {
+      .glow-blob1 {
         position: absolute;
-        width: 380px;
-        height: 380px;
+        width: 420px;
+        height: 420px;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(16, 185, 129, 0.3) 0%, rgba(16, 185, 129, 0) 70%);
-        top: -80px;
-        right: -60px;
-        filter: blur(20px);
+        background: radial-gradient(circle, rgba(16, 185, 129, 0.35) 0%, rgba(16, 185, 129, 0) 70%);
+        top: -120px;
+        right: -80px;
+        filter: blur(25px);
       }
-      .bg-circle2 {
+      .glow-blob2 {
         position: absolute;
         width: 320px;
         height: 320px;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(251, 146, 60, 0.2) 0%, rgba(251, 146, 60, 0) 70%);
-        bottom: -70px;
-        left: -40px;
-        filter: blur(30px);
+        background: radial-gradient(circle, rgba(251, 146, 60, 0.3) 0%, rgba(251, 146, 60, 0) 70%);
+        bottom: -90px;
+        left: -60px;
+        filter: blur(35px);
       }
-      .grid-pattern {
+      .grid-lines {
         position: absolute;
         inset: 0;
-        background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                          linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-        background-size: 32px 32px;
+        background-image: 
+          linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+        background-size: 36px 36px;
       }
-      .header {
+      .top-row {
         position: relative;
         z-index: 10;
         display: flex;
@@ -255,127 +268,140 @@ async function generateBanners() {
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        background: rgba(52, 211, 153, 0.18);
-        border: 1.5px solid #34d399;
-        color: #6ee7b7;
-        padding: 7px 18px;
+        background: rgba(52, 211, 153, 0.22);
+        border: 2px solid #34d399;
+        color: #a7f3d0;
+        padding: 8px 20px;
         border-radius: 9999px;
-        font-size: 16px;
-        font-weight: 700;
+        font-size: 17px;
+        font-weight: 800;
         letter-spacing: -0.3px;
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+        box-shadow: 0 4px 16px rgba(52, 211, 153, 0.3);
       }
       .badge-dot {
-        width: 8px;
-        height: 8px;
+        width: 10px;
+        height: 10px;
         border-radius: 50%;
         background: #34d399;
-        box-shadow: 0 0 10px #34d399;
+        box-shadow: 0 0 12px #34d399;
       }
-      .brand-tag {
-        font-size: 17px;
-        font-weight: 600;
+      .brand-name {
+        font-size: 18px;
+        font-weight: 700;
         color: #a7f3d0;
         letter-spacing: -0.5px;
-      }
-      .content {
-        position: relative;
-        z-index: 10;
-        margin-top: 10px;
-      }
-      .title-sub {
-        font-size: 21px;
-        font-weight: 600;
-        color: #6ee7b7;
-        margin-bottom: 8px;
-        letter-spacing: -0.5px;
-      }
-      .title-main {
-        font-size: 40px;
-        font-weight: 800;
-        line-height: 1.25;
-        letter-spacing: -1.2px;
-        color: #ffffff;
-        text-shadow: 0 4px 16px rgba(0,0,0,0.4);
-      }
-      .title-highlight {
-        color: #fde047;
-      }
-      .features {
-        display: flex;
-        gap: 16px;
-        margin-top: 14px;
-      }
-      .feature-item {
-        font-size: 15px;
-        color: #d1fae5;
-        font-weight: 500;
         display: flex;
         align-items: center;
         gap: 6px;
       }
-      .footer {
+      .center-content {
+        position: relative;
+        z-index: 10;
+        margin-top: 4px;
+      }
+      .sub-title {
+        font-size: 22px;
+        font-weight: 700;
+        color: #a7f3d0;
+        margin-bottom: 6px;
+        letter-spacing: -0.5px;
+      }
+      .main-title {
+        font-size: 46px;
+        font-weight: 900;
+        line-height: 1.18;
+        letter-spacing: -1.8px;
+        color: #ffffff;
+        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      }
+      .highlight-text {
+        color: #fde047;
+        text-shadow: 0 0 30px rgba(253, 224, 71, 0.4);
+      }
+      .tags-row {
+        display: flex;
+        gap: 12px;
+        margin-top: 12px;
+      }
+      .tag-chip {
+        font-size: 15px;
+        color: #d1fae5;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.08);
+        padding: 4px 12px;
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+      }
+      .bottom-row {
         position: relative;
         z-index: 10;
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        padding-top: 18px;
-        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        gap: 16px;
       }
-      .url-text {
-        font-size: 17px;
-        font-weight: 600;
-        color: #6ee7b7;
-        letter-spacing: 0.2px;
-      }
-      .cta-btn {
-        display: inline-flex;
+      .cta-button {
+        flex: 1;
+        display: flex;
         align-items: center;
-        gap: 10px;
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        justify-content: center;
+        gap: 12px;
+        background: linear-gradient(135deg, #10b981 0%, #047857 100%);
         color: #ffffff;
-        padding: 13px 28px;
-        border-radius: 12px;
-        font-size: 18px;
-        font-weight: 800;
+        padding: 16px 28px;
+        border-radius: 14px;
+        font-size: 22px;
+        font-weight: 900;
         letter-spacing: -0.5px;
-        box-shadow: 0 8px 20px rgba(5, 150, 105, 0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.45), inset 0 2px 0 rgba(255,255,255,0.35);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+      }
+      .cta-button svg {
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+      }
+      .url-label {
+        font-size: 16px;
+        font-weight: 700;
+        color: #a7f3d0;
+        white-space: nowrap;
+        background: rgba(3, 43, 31, 0.6);
+        padding: 16px 20px;
+        border-radius: 14px;
+        border: 1px solid rgba(167, 243, 208, 0.3);
       }
     </style>
   </head>
   <body>
-    <div class="bg-circle1"></div>
-    <div class="bg-circle2"></div>
-    <div class="grid-pattern"></div>
-    
-    <div class="header">
+    <div class="glow-blob1"></div>
+    <div class="glow-blob2"></div>
+    <div class="grid-lines"></div>
+
+    <div class="top-row">
       <div class="badge">
         <span class="badge-dot"></span>
-        <span>부동산 토탈케어 솔루션</span>
+        <span>부동산 토탈케어</span>
       </div>
-      <div class="brand-tag">이가이버 토탈케어</div>
+      <div class="brand-name">이가이버 안심관리 🛠️</div>
     </div>
 
-    <div class="content">
-      <div class="title-sub">전원주택 · 토지 · 별장 안심 위탁 관리</div>
-      <div class="title-main">
-        소중한 내 부동산 관리,<br>
-        <span class="title-highlight">전문가에게 안심하고 맡기세요</span>
+    <div class="center-content">
+      <div class="sub-title">전원주택 · 토지 · 별장 안심 위탁관리</div>
+      <div class="main-title">
+        내 부동산 안심 케어<br>
+        <span class="highlight-text">온라인 관리신청</span>
       </div>
-      <div class="features">
-        <span class="feature-item">✔ 예초·벌초·환경정비</span>
-        <span class="feature-item">✔ 정기 현장점검 & 리포트</span>
-        <span class="feature-item">✔ 건물 누수·동파 방지</span>
+      <div class="tags-row">
+        <span class="tag-chip">✔ 예초·벌초·환경정비</span>
+        <span class="tag-chip">✔ 정기 현장점검 리포트</span>
+        <span class="tag-chip">✔ 건물 동파·누수 점검</span>
       </div>
     </div>
 
-    <div class="footer">
-      <div class="url-text">🛠️ leegyver.com/total-care</div>
-      <div class="cta-btn">
-        <span>부동산 관리신청</span>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+    <div class="bottom-row">
+      <div class="cta-button">
+        <span>부동산 관리신청 (터치/클릭)</span>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
       </div>
+      <div class="url-label">leegyver.com/total-care ↗</div>
     </div>
   </body>
   </html>
@@ -383,7 +409,8 @@ async function generateBanners() {
 
   const outDirs = [
     path.resolve(process.cwd(), "public/images"),
-    path.resolve(process.cwd(), "client/public/images")
+    path.resolve(process.cwd(), "client/public/images"),
+    path.resolve(process.cwd(), "dist/public/images")
   ];
 
   for (const dir of outDirs) {
@@ -407,7 +434,7 @@ async function generateBanners() {
   }
 
   await browser.close();
-  console.log("All banners generated successfully!");
+  console.log("Ultra-high quality banners generated successfully!");
 }
 
 generateBanners().catch(console.error);

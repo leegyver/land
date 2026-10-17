@@ -36,13 +36,7 @@ export const BANNER_IMAGES = [
   "/images/banner_call.png"
 ];
 
-export const TOP_BANNER_BLOCK = `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[홈페이지 바로가기 배너] [부동산 관리신청 배너]
-👉 강화도 이가이버 공식 홈페이지: https://leegyver.com
-👉 부동산 안심 토탈케어 신청: https://leegyver.com/total-care
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-`.trim();
+export const TOP_BANNER_BLOCK = `[홈페이지 바로가기 배너] [부동산 관리신청 배너]`;
 
 export const OFFICE_INFO_BLOCK = `
 ■ 중개사무소 안내
@@ -108,6 +102,12 @@ export function verifyAndSanitizeBlogPost(
 ): GeneratedBlogPost {
   let content = (post.content || "").replace(/\*\*/g, "").replace(/\s*\(GEO\s*&\s*SEO\)/gi, "");
   let title = (post.title || "").replace(/\*\*/g, "").replace(/\s*\(GEO\s*&\s*SEO\)/gi, "");
+
+  // 상단 배너 관련 불필요한 텍스트 링크 및 구분선 완전 제거 (사용자 요청: 배너 클릭만으로 이동)
+  content = content.replace(/👉\s*강화도\s*이가이버\s*공식\s*홈페이지[^\n]*\n*/gi, "");
+  content = content.replace(/👉\s*부동산\s*안심\s*토탈케어\s*신청[^\n]*\n*/gi, "");
+  content = content.replace(/🌐\s*\[강화도\s*이가이버\s*공식\s*홈페이지\][^\n]*\n*/gi, "");
+  content = content.replace(/🛠️\s*\[부동산\s*안심\s*토탈케어\s*신청\][^\n]*\n*/gi, "");
 
   // 1. 최상단 배너 블록(홈페이지 바로가기 & 부동산 관리신청) 엄격 검증 및 보정
   if (!content.includes("[홈페이지 바로가기 배너]") && !content.includes("[부동산 관리신청 배너]")) {

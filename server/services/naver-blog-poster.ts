@@ -525,84 +525,55 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
         const imgCount = await bannerImgs.count();
         console.log(`[NaverPoster] 감지된 상단 배너 엘리먼트 수: ${imgCount}`);
 
-        // 상단 배너 1: 홈페이지 바로가기 (https://leegyver.com) 하이퍼링크 설정
-        try {
-          const firstImg = imgCount > 0 ? bannerImgs.nth(0) : page.locator('.se-component img').first();
-          if (await firstImg.isVisible({ timeout: 2000 }).catch(() => false)) {
-            await firstImg.click({ force: true });
+        // 이미지 링크 설정 헬퍼 함수 (툴바 버튼 및 Ctrl+K 단축키 병행 지원)
+        const setLinkForElement = async (targetLocator: any, targetUrl: string, label: string) => {
+          try {
+            await targetLocator.click({ force: true });
             await page.waitForTimeout(400);
 
             const linkBtn = page.locator('button.se-link-toolbar-button[data-name="image-link"], button[data-name="image-link"]').first();
-            if (await linkBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+            if (await linkBtn.isVisible({ timeout: 1500 }).catch(() => false)) {
               await linkBtn.click({ force: true });
-              await page.waitForTimeout(400);
-
-              const urlInput = page.locator('input.se-custom-layer-link-input').first();
-              if (await urlInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-                await urlInput.fill('https://leegyver.com');
-                await page.keyboard.press('Enter');
-                await page.waitForTimeout(400);
-                console.log("[NaverPoster] ✅ 최상단 배너 1 (홈페이지 바로가기) 하이퍼링크 연결 완료 (https://leegyver.com)");
-              }
+            } else {
+              await page.keyboard.press('Control+k');
             }
+            await page.waitForTimeout(400);
+
+            const urlInput = page.locator('input.se-custom-layer-link-input, input.se-link-input, input[placeholder*="http"]').first();
+            if (await urlInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+              await urlInput.fill(targetUrl);
+              await page.keyboard.press('Enter');
+              await page.waitForTimeout(400);
+              console.log(`[NaverPoster] ✅ ${label} 하이퍼링크 연결 성공 (${targetUrl})`);
+            }
+          } catch (e) {
+            console.warn(`[NaverPoster] ${label} 링크 연결 중 경고:`, e);
           }
-        } catch (hLinkErr) {
-          console.warn("[NaverPoster] 상단 배너 1 링크 연결 중 경고:", hLinkErr);
+        };
+
+        // 상단 배너 1: 홈페이지 바로가기 (https://leegyver.com) 하이퍼링크 설정
+        const firstImg = imgCount > 0 ? bannerImgs.nth(0) : page.locator('.se-component img').first();
+        if (await firstImg.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await setLinkForElement(firstImg, 'https://leegyver.com', '최상단 배너 1 (홈페이지 바로가기)');
         }
 
         // 상단 배너 2: 부동산 관리신청 (https://leegyver.com/total-care) 하이퍼링크 설정
-        try {
-          if (imgCount > 1 || topFiles.length > 1) {
-            const secondImg = imgCount > 1 ? bannerImgs.nth(1) : page.locator('.se-component img').nth(1);
-            if (await secondImg.isVisible({ timeout: 2000 }).catch(() => false)) {
-              await secondImg.click({ force: true });
-              await page.waitForTimeout(400);
-
-              const linkBtn = page.locator('button.se-link-toolbar-button[data-name="image-link"], button[data-name="image-link"]').first();
-              if (await linkBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-                await linkBtn.click({ force: true });
-                await page.waitForTimeout(400);
-
-                const urlInput = page.locator('input.se-custom-layer-link-input').first();
-                if (await urlInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-                  await urlInput.fill('https://leegyver.com/total-care');
-                  await page.keyboard.press('Enter');
-                  await page.waitForTimeout(400);
-                  console.log("[NaverPoster] ✅ 최상단 배너 2 (부동산 관리신청) 하이퍼링크 연결 완료 (https://leegyver.com/total-care)");
-                }
-              }
-            }
+        if (imgCount > 1 || topFiles.length > 1) {
+          const secondImg = imgCount > 1 ? bannerImgs.nth(1) : page.locator('.se-component img').nth(1);
+          if (await secondImg.isVisible({ timeout: 2000 }).catch(() => false)) {
+            await setLinkForElement(secondImg, 'https://leegyver.com/total-care', '최상단 배너 2 (부동산 관리신청)');
           }
-        } catch (cLinkErr) {
-          console.warn("[NaverPoster] 상단 배너 2 링크 연결 중 경고:", cLinkErr);
         }
 
-        // 링크 팝업 닫기 및 커서를 배너 아래 새 단락으로 이동
+        // 링크 팝업 닫기 및 커서를 배너 아래 새 단락으로 이동 (사용자 요청: 배너 아래 텍스트 링크 및 글씨 일체 제거)
         await page.keyboard.press('Escape').catch(() => {});
         await page.waitForTimeout(200);
         await page.keyboard.press('ArrowDown').catch(() => {});
         await page.waitForTimeout(100);
         await page.keyboard.press('Enter').catch(() => {});
-        await page.waitForTimeout(200);
-
-        // 모바일/PC 100% 터치 접근성을 위해 배너 바로 아래에 터치 가능한 텍스트 링크 배치
-        await page.keyboard.type(`👉 강화도 이가이버 공식 홈페이지 : https://leegyver.com`);
-        await page.keyboard.press('Enter');
-        await page.waitForTimeout(200);
-        await page.keyboard.type(`👉 부동산 안심 토탈케어 신청 : https://leegyver.com/total-care`);
-        await page.keyboard.press('Enter');
         await page.waitForTimeout(300);
-        await page.keyboard.press('Enter').catch(() => {});
-        await page.waitForTimeout(200);
       } catch (topErr) {
-        console.warn("[NaverPoster] 최상단 2단 배너 삽입 실패, 텍스트 링크로 폴백:", topErr);
-        try {
-          await page.keyboard.type(`🌐 [강화도 이가이버 공식 홈페이지]: https://leegyver.com`);
-          await page.keyboard.press('Enter');
-          await page.keyboard.type(`🛠️ [부동산 안심 토탈케어 신청]: https://leegyver.com/total-care`);
-          await page.keyboard.press('Enter');
-          await page.waitForTimeout(300);
-        } catch (fbErr) {}
+        console.warn("[NaverPoster] 최상단 2단 배너 삽입 중 경고:", topErr);
       }
     };
 
@@ -775,12 +746,14 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     for (let i = 0; i < normalizedLines.length; i++) {
       const line = normalizedLines[i];
 
-      // 최상단 배너 태그 라인 건너뛰기 (이미 최상단에 주입 완료됨)
+      // 최상단 배너 태그 라인 및 관련 텍스트 건너뛰기 (이미 최상단에 주입 완료됨, 배너 아래 글씨 일체 미입력)
       if (
         line.includes('[홈페이지 바로가기 배너]') || 
         line.includes('[부동산 관리신청 배너]') ||
-        (line.includes('leegyver.com/total-care') && i < 6) ||
-        (line.includes('강화도 이가이버 공식 홈페이지') && i < 6)
+        (line.includes('leegyver.com') && i < 8) ||
+        (line.includes('이가이버 공식 홈페이지') && i < 8) ||
+        (line.includes('부동산 안심 토탈케어') && i < 8) ||
+        (line.includes('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━') && i < 5)
       ) {
         continue;
       }

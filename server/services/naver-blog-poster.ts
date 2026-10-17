@@ -494,24 +494,21 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
         await dismissPopups();
         await page.waitForTimeout(400);
 
-        // 1. 1줄 3칸(1행 3열) 테이블 HTML 붙여넣기를 통해 정확한 1행 3열 se-table 컴포넌트 생성
-        const tableHtml = '<table><tbody><tr><td>칸1</td><td>칸2</td><td>칸3</td></tr></tbody></table>';
-        await page.evaluate((html: string) => {
-          const dt = new DataTransfer();
-          dt.setData('text/html', html);
-          dt.setData('text/plain', 'table');
-          const ev = new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: dt });
-          const target = document.querySelector('.se-content, [contenteditable="true"]') || document.body;
-          target.dispatchEvent(ev);
-        }, tableHtml);
-        await page.waitForTimeout(1000);
+        // 1. 에디터 상단 툴바의 [표] 버튼을 클릭하여 안정적으로 표 컴포넌트 삽입
+        const tableToolbarBtn = page.locator(
+          'button.se-table-toolbar-button, button[data-name="table"], button[title*="표"], button[aria-label*="표"], button:has-text("표")'
+        ).first();
+
+        if (await tableToolbarBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
+          await tableToolbarBtn.click({ force: true });
+          console.log("[NaverPoster] 📊 스마트에디터 상단 [표] 버튼 클릭 완료");
+          await page.waitForTimeout(1000);
+        }
 
         // 본문 표 컴포넌트 감지 대기
         const tableComp = page.locator('.se-component.se-table').first();
         const hasTable = await tableComp.isVisible({ timeout: 5000 }).catch(() => false);
-        const rowsCount = await page.locator('.se-component.se-table tr').count();
-        const cellsCount = await page.locator('.se-component.se-table td').count();
-        console.log(`[NaverPoster] 표 생성 완료: rows=${rowsCount}, cells=${cellsCount}, hasTable=${hasTable}`);
+        console.log(`[NaverPoster] 본문 표 컴포넌트 감지 여부: ${hasTable}`);
 
         if (hasTable) {
           // 2. 1행의 각 셀(0, 1, 2)에 배너 이미지 1장씩 순차 업로드 및 하이퍼링크 연결
@@ -578,7 +575,7 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
             }
           }
 
-          // 3. 표 스타일 정리: 무테, 백색 배경, 각 셀 33.3% 균등 가로 1줄 핏
+          // 3. 사진 주입 완료 후: 2번째 및 3번째 행 완벽 제거, 표 스타일 무테/백색/33.3% 적용, 본문 단락 분리
           try {
             await page.evaluate(() => {
               const tableComp = document.querySelector('.se-component.se-table');
@@ -586,6 +583,15 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
 
               const tbl = tableComp.querySelector('table');
               if (tbl) {
+                // 잉여 2번째, 3번째 줄(행) 완벽 제거 -> 오직 1줄(1행)만 남김
+                const rows = tbl.querySelectorAll('tr');
+                if (rows.length > 1) {
+                  rows[1].remove();
+                }
+                if (rows.length > 2) {
+                  rows[2].remove();
+                }
+
                 tbl.style.width = '100%';
                 tbl.style.tableLayout = 'fixed';
                 tbl.style.borderCollapse = 'collapse';
@@ -612,6 +618,9 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
                   (img as HTMLElement).style.borderRadius = '4px';
                   (img as HTMLElement).style.cursor = 'pointer';
                 });
+
+                tbl.dispatchEvent(new Event('input', { bubbles: true }));
+                tbl.dispatchEvent(new Event('change', { bubbles: true }));
               }
 
               // 표 바로 뒤에 본문 전용 단락 컴포넌트(se-text) 명시적 생성 (표 밖 분리 보장)
@@ -619,11 +628,11 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
               if (!nextComp || !nextComp.classList.contains('se-text')) {
                 const pComp = document.createElement('div');
                 pComp.className = 'se-component se-text se-l-default';
-                pComp.innerHTML = '<div class="se-component-content"><div class="se-section-text se-l-default"><div class="se-module se-module-text"><p class="se-text-paragraph se-text-paragraph-align-left" id="body-start-paragraph"><span class="se-ff-system">&nbsp;</span></p></div></div></div>';
+                pComp.innerHTML = '<div class="se-component-content"><div class="se-section-text se-l-default"><div class="se-module se-module-text"><p class="se-text-paragraph se-text-paragraph-align-left" id="body-start-paragraph"><span class="se-ff-system">&#8203;</span></p></div></div></div>';
                 tableComp.after(pComp);
               }
             });
-            console.log("[NaverPoster] ✅ 1줄 3칸 배너 표 스타일 최적화 및 본문 단락 분리 완료");
+            console.log("[NaverPoster] ✅ 1줄 3칸 배너 표 완성(잉여 행 제거 완료) 및 본문 단락 분리 완료");
           } catch (styleErr) {
             console.warn("[NaverPoster] 표 스타일 최적화 중 경고:", styleErr);
           }

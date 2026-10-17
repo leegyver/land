@@ -505,7 +505,97 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
           if (await collageBtn.isVisible({ timeout: 2500 }).catch(() => false)) {
             await collageBtn.click({ force: true });
             console.log(`[NaverPoster] ✅ 최상단 배너 ${topFiles.length}개 가로 나란히(콜라주) 레이아웃 적용 완료`);
-            await page.waitForTimeout(600);
+            await page.waitForTimeout(800);
+
+            // 3개 배너일 경우 기본 2+1 레이아웃(2줄) 대신 '가로 3열 1줄 나란히(1:1:1)' 템플릿으로 변경!
+            if (topFiles.length === 3) {
+              try {
+                // 1단계: 콜라주 컴포넌트 클릭하여 툴바 활성화
+                const collageComp = page.locator('.se-component.se-collage, .se-component.se-imageGroup.se-collage, .se-collage').first();
+                if (await collageComp.isVisible({ timeout: 2000 }).catch(() => false)) {
+                  await collageComp.click({ force: true });
+                  await page.waitForTimeout(400);
+
+                  // 2단계: 콜라주 툴바의 '레이아웃 변경' 버튼 클릭
+                  const layoutBtn = page.locator(
+                    'button.se-collage-layout-button, button[data-name="layout"], button[data-name="collage-layout"], button[data-name="image-group-layout"], button:has-text("배치"), button[title*="배치"], button[title*="레이아웃"]'
+                  ).first();
+
+                  if (await layoutBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+                    await layoutBtn.click({ force: true });
+                    console.log("[NaverPoster] 🎨 콜라주 레이아웃 선택 레이어 오픈");
+                    await page.waitForTimeout(400);
+
+                    // 3단계: 가로 3열 나란히(1행 3열) 템플릿 옵션 버튼 클릭
+                    const layoutOptions = page.locator(
+                      '.se-custom-layer-collage-layout button, .se-custom-layer-layout button, [class*="collage-layout"] button, .se-popup-collage-layout button, .se-layer-collage-layout button, [data-group="collageLayout"] button'
+                    );
+                    const optCount = await layoutOptions.count();
+                    console.log(`[NaverPoster] 감지된 콜라주 레이아웃 옵션 수: ${optCount}`);
+
+                    let templateSelected = false;
+                    for (let o = 0; o < optCount; o++) {
+                      const opt = layoutOptions.nth(o);
+                      const optHtml = await opt.innerHTML().catch(() => "");
+                      const optClass = await opt.getAttribute("class").catch(() => "") || "";
+                      const optTitle = await opt.getAttribute("title").catch(() => "") || "";
+
+                      // 가로 3분할 관련 키워드 탐색
+                      if (optHtml.includes("col3") || optHtml.includes("row") || optClass.includes("horizontal") || optTitle.includes("3") || optTitle.includes("가로")) {
+                        await opt.click({ force: true });
+                        templateSelected = true;
+                        console.log(`[NaverPoster] ✅ 가로 3열 1줄 나란히 템플릿 선택 (${o}번째)`);
+                        break;
+                      }
+                    }
+
+                    // 키워드로 못 찾았을 경우: 네이버 에디터 3장 콜라주의 마지막 또는 3번째 옵션이 가로 3열 나란히임
+                    if (!templateSelected && optCount >= 3) {
+                      await layoutOptions.nth(optCount - 1).click({ force: true });
+                      console.log(`[NaverPoster] ✅ 콜라주 가로 3분할 템플릿 선택 (마지막 옵션 ${optCount - 1}번째)`);
+                    }
+                    await page.waitForTimeout(500);
+                  }
+                }
+              } catch (layoutChangeErr) {
+                console.warn("[NaverPoster] 콜라주 3열 레이아웃 템플릿 변경 중 경고:", layoutChangeErr);
+              }
+
+              // 4단계: 3개 배너가 확실하게 가로 1줄에 33.3%씩 균등하게 들어가도록 DOM 인라인 스타일 보강
+              try {
+                await page.evaluate(() => {
+                  const collageEl = document.querySelector('.se-component.se-collage, .se-component.se-imageGroup.se-collage, .se-collage') as HTMLElement;
+                  if (collageEl) {
+                    // 콜라주 컨테이너를 가로 flex 1줄로 강제
+                    const container = collageEl.querySelector('.se-collage-container, .se-component-content, [class*="content"]') as HTMLElement;
+                    if (container) {
+                      container.style.display = 'flex';
+                      container.style.flexDirection = 'row';
+                      container.style.flexWrap = 'nowrap';
+                      container.style.gap = '4px';
+                      container.style.justifyContent = 'space-between';
+                    }
+                    // 내부 이미지 셀 3개를 각각 가로 33% 씩 균등 분할
+                    const cells = collageEl.querySelectorAll('.se-collage-cell, .se-collage-item, [class*="collage-cell"], [class*="item"], .se-module-image');
+                    cells.forEach((cell: any) => {
+                      cell.style.width = '33.333%';
+                      cell.style.flex = '1 1 33.333%';
+                      cell.style.maxWidth = '33.333%';
+                      cell.style.height = 'auto';
+                    });
+                    const imgs = collageEl.querySelectorAll('img');
+                    imgs.forEach((img: any) => {
+                      img.style.width = '100%';
+                      img.style.height = 'auto';
+                      img.style.objectFit = 'contain';
+                    });
+                  }
+                });
+                console.log("[NaverPoster] ✅ 상단 3개 배너 가로 1줄 33.3% 균등 정렬 스타일 인젝션 완료");
+              } catch (styleErr) {
+                console.warn("[NaverPoster] 스타일 인젝션 중 경고:", styleErr);
+              }
+            }
           }
         } catch (layoutErr) {
           console.warn("[NaverPoster] 콜라주 버튼 선택 실패 또는 미노출 (기본 레이아웃 유지):", layoutErr);

@@ -476,7 +476,7 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
       await page.waitForTimeout(500);
     };
 
-    // 최상단 3단 가로 배너 (1행 3열 표/테이블 방식 - 가로 1줄 33.3% 고정 & 개별 하이퍼링크)
+    // 최상단 3단 가로 배너 (정확한 1줄 3칸 테이블 방식 - 1행 3열 고정 & 개별 하이퍼링크 & 본문 분리)
     const insertDualTopBanners = async () => {
       if (topBannersInserted) return;
 
@@ -490,25 +490,28 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
       topBannersInserted = true;
 
       try {
-        console.log(`[NaverPoster] 최상단 3단 배너 [테이블 3분할 모드] 삽입 시작 (${topBannerConfigs.length}개)...`);
+        console.log(`[NaverPoster] 최상단 3단 배너 [1줄 3칸(1행 3열) 테이블 모드] 생성 시작 (${topBannerConfigs.length}개)...`);
         await dismissPopups();
         await page.waitForTimeout(400);
 
-        // 1. 에디터 상단 툴바의 [표] 버튼 클릭하여 표 컴포넌트 삽입
-        const tableToolbarBtn = page.locator(
-          'button.se-table-toolbar-button, button[data-name="table"], button[title*="표"], button[aria-label*="표"], button:has-text("표")'
-        ).first();
-
-        if (await tableToolbarBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
-          await tableToolbarBtn.click({ force: true });
-          console.log("[NaverPoster] 📊 스마트에디터 상단 [표] 버튼 클릭 완료");
-          await page.waitForTimeout(1000);
-        }
+        // 1. 1줄 3칸(1행 3열) 테이블 HTML 붙여넣기를 통해 정확한 1행 3열 se-table 컴포넌트 생성
+        const tableHtml = '<table><tbody><tr><td>칸1</td><td>칸2</td><td>칸3</td></tr></tbody></table>';
+        await page.evaluate((html: string) => {
+          const dt = new DataTransfer();
+          dt.setData('text/html', html);
+          dt.setData('text/plain', 'table');
+          const ev = new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: dt });
+          const target = document.querySelector('.se-content, [contenteditable="true"]') || document.body;
+          target.dispatchEvent(ev);
+        }, tableHtml);
+        await page.waitForTimeout(1000);
 
         // 본문 표 컴포넌트 감지 대기
         const tableComp = page.locator('.se-component.se-table').first();
         const hasTable = await tableComp.isVisible({ timeout: 5000 }).catch(() => false);
-        console.log(`[NaverPoster] 본문 표 컴포넌트 감지 여부: ${hasTable}`);
+        const rowsCount = await page.locator('.se-component.se-table tr').count();
+        const cellsCount = await page.locator('.se-component.se-table td').count();
+        console.log(`[NaverPoster] 표 생성 완료: rows=${rowsCount}, cells=${cellsCount}, hasTable=${hasTable}`);
 
         if (hasTable) {
           // 2. 1행의 각 셀(0, 1, 2)에 배너 이미지 1장씩 순차 업로드 및 하이퍼링크 연결
@@ -516,7 +519,7 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
 
           for (let idx = 0; idx < topBannerConfigs.length; idx++) {
             const config = topBannerConfigs[idx];
-            console.log(`[NaverPoster] 🖼 표 셀 ${idx + 1}/${topBannerConfigs.length} [${config.label}] 업로드 시작...`);
+            console.log(`[NaverPoster] 🖼 표 1줄 ${idx + 1}번째 칸 [${config.label}] 업로드 시작...`);
 
             const cell = firstRowCells.nth(idx);
             await cell.scrollIntoViewIfNeeded().catch(() => {});
@@ -527,7 +530,7 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
             const photoBtn = page.locator('button.se-image-toolbar-button').first();
             try {
               const [fileChooser] = await Promise.all([
-                page.waitForEvent("filechooser", { timeout: 10000 }),
+                page.waitForEvent('filechooser', { timeout: 10000 }),
                 photoBtn.click({ force: true })
               ]);
               await fileChooser.setFiles([config.file]);
@@ -544,7 +547,7 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
 
               // 해당 셀 내부 이미지 업로드 완료 대기
               const cellImg = cell.locator('img').first();
-              await cellImg.waitFor({ state: "visible", timeout: 12000 }).catch(() => {});
+              await cellImg.waitFor({ state: 'visible', timeout: 12000 }).catch(() => {});
               await waitEditorIdle(5);
 
               // 해당 셀 안의 이미지 클릭 후 하이퍼링크 연결
@@ -575,77 +578,74 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
             }
           }
 
-          // 3. 표 스타일 완벽 최적화: 무테 백색 바탕, 33.3% 균등 3분할, 2~3행 완벽 숨김(높이 0)
+          // 3. 표 스타일 정리: 무테, 백색 배경, 각 셀 33.3% 균등 가로 1줄 핏
           try {
             await page.evaluate(() => {
-              const tableEl = document.querySelector('.se-component.se-table table') as HTMLTableElement;
-              if (tableEl) {
-                tableEl.style.width = '100%';
-                tableEl.style.tableLayout = 'fixed';
-                tableEl.style.borderCollapse = 'collapse';
-                tableEl.style.border = 'none';
-                tableEl.style.backgroundColor = '#ffffff';
+              const tableComp = document.querySelector('.se-component.se-table');
+              if (!tableComp) return;
 
-                const allTds = tableEl.querySelectorAll('td');
+              const tbl = tableComp.querySelector('table');
+              if (tbl) {
+                tbl.style.width = '100%';
+                tbl.style.tableLayout = 'fixed';
+                tbl.style.borderCollapse = 'collapse';
+                tbl.style.border = 'none';
+                tbl.style.backgroundColor = '#ffffff';
+
+                const allTds = tbl.querySelectorAll('td');
                 allTds.forEach(td => {
-                  td.style.border = 'none';
-                  td.style.backgroundColor = '#ffffff';
-                });
-
-                // 2번째 및 3번째 행은 display: none 및 height: 0으로 완벽 숨김
-                const rows = tableEl.querySelectorAll('tr');
-                for (let r = 1; r < rows.length; r++) {
-                  (rows[r] as HTMLElement).style.display = 'none';
-                  (rows[r] as HTMLElement).style.height = '0';
-                }
-
-                // 1행 3개 셀: 균등 33.3% 너비 및 무테 적용
-                const row1Tds = rows[0]?.querySelectorAll('td') || [];
-                row1Tds.forEach(td => {
                   (td as HTMLElement).style.width = '33.333%';
                   (td as HTMLElement).style.maxWidth = '33.333%';
                   (td as HTMLElement).style.padding = '2px';
                   (td as HTMLElement).style.border = 'none';
                   (td as HTMLElement).style.verticalAlign = 'middle';
                   (td as HTMLElement).style.textAlign = 'center';
+                  (td as HTMLElement).style.backgroundColor = '#ffffff';
                 });
 
-                // 이미지 100% 핏
-                const imgs = tableEl.querySelectorAll('img');
+                const imgs = tbl.querySelectorAll('img');
                 imgs.forEach(img => {
-                  img.style.width = '100%';
-                  img.style.height = 'auto';
-                  img.style.display = 'block';
-                  img.style.margin = '0 auto';
-                  img.style.borderRadius = '4px';
-                  img.style.cursor = 'pointer';
+                  (img as HTMLElement).style.width = '100%';
+                  (img as HTMLElement).style.height = 'auto';
+                  (img as HTMLElement).style.display = 'block';
+                  (img as HTMLElement).style.margin = '0 auto';
+                  (img as HTMLElement).style.borderRadius = '4px';
+                  (img as HTMLElement).style.cursor = 'pointer';
                 });
               }
+
+              // 표 바로 뒤에 본문 전용 단락 컴포넌트(se-text) 명시적 생성 (표 밖 분리 보장)
+              let nextComp = tableComp.nextElementSibling;
+              if (!nextComp || !nextComp.classList.contains('se-text')) {
+                const pComp = document.createElement('div');
+                pComp.className = 'se-component se-text se-l-default';
+                pComp.innerHTML = '<div class="se-component-content"><div class="se-section-text se-l-default"><div class="se-module se-module-text"><p class="se-text-paragraph se-text-paragraph-align-left" id="body-start-paragraph"><span class="se-ff-system">&nbsp;</span></p></div></div></div>';
+                tableComp.after(pComp);
+              }
             });
-            console.log("[NaverPoster] ✅ 상단 3단 배너 표 33.3% 무테 백색 바탕 스타일 최적화 완료");
+            console.log("[NaverPoster] ✅ 1줄 3칸 배너 표 스타일 최적화 및 본문 단락 분리 완료");
           } catch (styleErr) {
             console.warn("[NaverPoster] 표 스타일 최적화 중 경고:", styleErr);
           }
 
-          // 4. 커서를 표 아래 새 단락으로 이동 및 본문 영역 포커스 100% 복원
-          await page.keyboard.press('Escape').catch(() => {});
-          await page.waitForTimeout(200);
-          await page.keyboard.press('ArrowDown').catch(() => {});
-          await page.waitForTimeout(100);
-          await page.keyboard.press('ArrowDown').catch(() => {});
-          await page.waitForTimeout(100);
-          await page.keyboard.press('Enter').catch(() => {});
+          // 4. 표를 완전히 빠져나와 표 아래 생성된 본문 단락 클릭하여 포커스 안착 (본문 내용이 표 안에 들어가는 문제 100% 원천 차단)
           await page.waitForTimeout(300);
-
-          // 본문 단락 명시적 포커스 클릭 (본문 글 타이핑 누락 방지 핵심)
-          const nextPara = page.locator('.se-content .se-component:not(.se-table) .se-text-paragraph, .se-component-content .se-text-paragraph').last();
-          if (await nextPara.isVisible({ timeout: 2000 }).catch(() => false)) {
-            await nextPara.click({ force: true });
+          const bodyStartP = page.locator('#body-start-paragraph, .se-component.se-text .se-text-paragraph').first();
+          if (await bodyStartP.isVisible({ timeout: 2000 }).catch(() => false)) {
+            await bodyStartP.click({ force: true });
             await page.waitForTimeout(200);
+            await page.keyboard.press('Enter');
+            await page.waitForTimeout(200);
+            console.log("[NaverPoster] 🎯 표 외부 본문 단락 포커스 안착 완료!");
+          } else {
+            await page.keyboard.press('Escape').catch(() => {});
+            await page.keyboard.press('PageDown').catch(() => {});
+            await page.keyboard.press('ArrowDown').catch(() => {});
+            await page.keyboard.press('Enter').catch(() => {});
           }
         }
       } catch (topErr) {
-        console.warn("[NaverPoster] 최상단 3단 배너(테이블 방식) 삽입 중 경고:", topErr);
+        console.warn("[NaverPoster] 최상단 3단 배너(1줄 3칸) 삽입 중 경고:", topErr);
       }
     };
 

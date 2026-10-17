@@ -25,8 +25,7 @@ export interface GeneratedBlogPost {
 export const MANDATORY_TAGS = ["강화도부동산", "강화군부동산", "이가이버", "부동산전문"];
 
 export const TOP_BANNER_IMAGES = [
-  "/images/banner_home.png",
-  "/images/banner_care.png"
+  "/images/banner_home.png"
 ];
 
 export const BANNER_IMAGES = [
@@ -37,7 +36,7 @@ export const BANNER_IMAGES = [
   "/images/banner_call.png"
 ];
 
-export const TOP_BANNER_BLOCK = `[홈페이지 바로가기 배너] [부동산 관리신청 배너]`;
+export const TOP_BANNER_BLOCK = `[홈페이지 바로가기 배너]`;
 
 export const OFFICE_INFO_BLOCK = `
 🔨 [강화도 법원 경매·공매 추천 및 맞춤 권리분석]
@@ -114,9 +113,20 @@ export function verifyAndSanitizeBlogPost(
   content = content.replace(/🌐\s*\[강화도\s*이가이버\s*공식\s*홈페이지\][^\n]*\n*/gi, "");
   content = content.replace(/🛠️\s*\[부동산\s*안심\s*토탈케어\s*신청\][^\n]*\n*/gi, "");
 
-  // 1. 최상단 배너 블록(홈페이지 바로가기 & 부동산 관리신청) 엄격 검증 및 보정
-  if (!content.includes("[홈페이지 바로가기 배너]") && !content.includes("[부동산 관리신청 배너]")) {
+  // 1. 최상단 배너 블록(홈페이지 바로가기) 엄격 검증 및 보정
+  if (!content.includes("[홈페이지 바로가기 배너]")) {
     content = `${TOP_BANNER_BLOCK}\n\n` + content.trim();
+  }
+
+  // 1-2. 본문 중간: [부동산 관리신청 배너] 보정 (매물 요약 직후 / 상세 설명 직전)
+  if (!content.includes("[부동산 관리신청 배너]")) {
+    if (content.includes("🏡 [매물 상세 설명")) {
+      content = content.replace("🏡 [매물 상세 설명", "[부동산 관리신청 배너]\n\n🏡 [매물 상세 설명");
+    } else if (content.includes("✨ [이 매물의 핵심 포인트")) {
+      content = content.replace("✨ [이 매물의 핵심 포인트", "[부동산 관리신청 배너]\n\n✨ [이 매물의 핵심 포인트");
+    } else if (content.includes("■ 중개사무소 안내")) {
+      content = content.replace("■ 중개사무소 안내", "[부동산 관리신청 배너]\n\n■ 중개사무소 안내");
+    }
   }
 
   // 2. 첫 줄 인사말 엄격 검증 및 보정
@@ -302,6 +312,8 @@ export async function generateBlogPostFromProperty(
   const propertyDetails = `
 [공개 매물 기본 정보]
 ${specLines.join("\n")}
+
+[부동산 관리신청 배너]
 
 [상세 설명 및 현장 브리핑]
 ${formattedDesc || "특이사항 및 주변 개발 호재 다수 보유 알짜 실매물"}
@@ -575,6 +587,8 @@ function generateTemplateBlogPostFromProperty(property: Property, images: string
 
 📍 [매물 상세 정보 안내]
 ${specTableText}
+
+[부동산 관리신청 배너]
 
 ${formattedDesc ? `🏡 [매물 상세 설명 및 현장 브리핑]
 ${formattedDesc}

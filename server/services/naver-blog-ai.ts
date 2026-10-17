@@ -24,10 +24,25 @@ export interface GeneratedBlogPost {
 
 export const MANDATORY_TAGS = ["강화도부동산", "강화군부동산", "이가이버", "부동산전문"];
 
+export const TOP_BANNER_IMAGES = [
+  "/images/banner_home.png",
+  "/images/banner_care.png"
+];
+
 export const BANNER_IMAGES = [
+  "/images/banner_home.png",
+  "/images/banner_care.png",
   "/images/banner_kakao.png",
   "/images/banner_call.png"
 ];
+
+export const TOP_BANNER_BLOCK = `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[홈페이지 바로가기 배너] [부동산 관리신청 배너]
+👉 강화도 이가이버 공식 홈페이지: https://leegyver.com
+👉 부동산 안심 토탈케어 신청: https://leegyver.com/total-care
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`.trim();
 
 export const OFFICE_INFO_BLOCK = `
 ■ 중개사무소 안내
@@ -94,19 +109,30 @@ export function verifyAndSanitizeBlogPost(
   let content = (post.content || "").replace(/\*\*/g, "").replace(/\s*\(GEO\s*&\s*SEO\)/gi, "");
   let title = (post.title || "").replace(/\*\*/g, "").replace(/\s*\(GEO\s*&\s*SEO\)/gi, "");
 
-  // 1. 첫 줄 인사말 엄격 검증 및 보정
-  const MANDATORY_GREETING = "안녕하세요! 여러분의 든든한 부동산 파트너 강화도 이가이버 공인중개사의 이민호 대표입니다.";
-  if (!content.startsWith(MANDATORY_GREETING)) {
-    content = `${MANDATORY_GREETING} 😊\n\n` + content.replace(/^안녕하세요[^\n]*\n+/g, "").trim();
+  // 1. 최상단 배너 블록(홈페이지 바로가기 & 부동산 관리신청) 엄격 검증 및 보정
+  if (!content.includes("[홈페이지 바로가기 배너]") && !content.includes("[부동산 관리신청 배너]")) {
+    content = `${TOP_BANNER_BLOCK}\n\n` + content.trim();
   }
 
-  // 2. 중개사무소 정보 및 카카오/전화 바로연결 배너 블록 엄격 검증 및 보정
+  // 2. 첫 줄 인사말 엄격 검증 및 보정
+  const MANDATORY_GREETING = "안녕하세요! 여러분의 든든한 부동산 파트너 강화도 이가이버 공인중개사의 이민호 대표입니다.";
+  if (!content.includes(MANDATORY_GREETING)) {
+    // 최상단 배너 블록 바로 뒤에 인사말 배치
+    if (content.startsWith(TOP_BANNER_BLOCK)) {
+      const remaining = content.slice(TOP_BANNER_BLOCK.length).trim();
+      content = `${TOP_BANNER_BLOCK}\n\n${MANDATORY_GREETING} 😊\n\n` + remaining.replace(/^안녕하세요[^\n]*\n+/g, "").trim();
+    } else {
+      content = `${MANDATORY_GREETING} 😊\n\n` + content.replace(/^안녕하세요[^\n]*\n+/g, "").trim();
+    }
+  }
+
+  // 3. 중개사무소 정보 및 카카오/전화 바로연결 배너 블록 엄격 검증 및 보정
   if (!content.includes("010-4787-3120") || !content.includes("대표 : 이민호") || !content.includes("카카오톡") || !content.includes("[카카오톡 실시간 상담 배너]")) {
     content = content.replace(/■\s*중개사무소\s*안내[\s\S]*$/g, "").trim();
     content += `\n\n${OFFICE_INFO_BLOCK}\n\n감사합니다! 🏠✨`;
   }
 
-  // 3. 이미지 목록에 배너 이미지 포함 보장
+  // 4. 이미지 목록에 배너 이미지 포함 보장
   const finalImages = [...post.images];
   for (const bImg of BANNER_IMAGES) {
     if (!finalImages.includes(bImg)) {
@@ -114,15 +140,16 @@ export function verifyAndSanitizeBlogPost(
     }
   }
 
-  // 4. 사실(Fact) 대조 검증
+  // 5. 사실(Fact) 대조 검증
   const checks = {
     priceVerified: true,
     areaVerified: true,
     idVerified: true,
     agentVerified: content.includes("이민호") && content.includes("010-4787-3120"),
-    greetingVerified: content.startsWith(MANDATORY_GREETING),
+    greetingVerified: content.includes(MANDATORY_GREETING),
     noMarkdownBold: !content.includes("**") && !title.includes("**"),
-    contactLinksVerified: content.includes("010-4787-3120") && (content.includes("[카카오톡 실시간 상담 배너]") || content.includes("카카오톡"))
+    contactLinksVerified: content.includes("010-4787-3120") && (content.includes("[카카오톡 실시간 상담 배너]") || content.includes("카카오톡")),
+    topBannersVerified: content.includes("[홈페이지 바로가기 배너]") && content.includes("[부동산 관리신청 배너]")
   };
 
   if (property) {
@@ -136,8 +163,8 @@ export function verifyAndSanitizeBlogPost(
 
   const passed = Object.values(checks).every(Boolean);
   const summary = passed
-    ? `할루시네이션 검증 통과 (매물번호 No.${property?.id || ''}, 가격/면적 일치, 대표 이민호 / 010-4787-3120 및 상담 링크 100% 일치)`
-    : `팩트체크 완료 및 필수 정보(대표자, 연락처, 볼드 기호 제거) 자동 보정 적용`;
+    ? `할루시네이션 검증 통과 (매물번호 No.${property?.id || ''}, 가격/면적 일치, 대표 이민호 / 010-4787-3120, 상단 배너 2종 및 상담 링크 100% 일치)`
+    : `팩트체크 완료 및 필수 정보(대표자, 연락처, 상단 배너, 볼드 기호 제거) 자동 보정 적용`;
 
   return {
     title,

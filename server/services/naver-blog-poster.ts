@@ -442,15 +442,22 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     }
 
     // 이미지 및 배너 파일 사전 준비
-    const BANNER_NAMES = ["banner_kakao", "banner_call"];
+    const BANNER_NAMES = ["banner_kakao", "banner_call", "banner_home", "banner_care"];
     const allImages = options.imageUrls || [];
     const propertyImageUrls = allImages.filter(img => !BANNER_NAMES.some(b => img.includes(b)));
     const localPropertyImages = await resolveImageFiles(propertyImageUrls);
-    const bannerFiles = await resolveImageFiles(["/images/banner_kakao.png", "/images/banner_call.png"]);
+    const bannerFiles = await resolveImageFiles([
+      "/images/banner_home.png",
+      "/images/banner_care.png",
+      "/images/banner_kakao.png",
+      "/images/banner_call.png"
+    ]);
+    const homeBannerFile = bannerFiles.find(f => f.includes("banner_home"));
+    const careBannerFile = bannerFiles.find(f => f.includes("banner_care"));
     const kakaoBannerFile = bannerFiles.find(f => f.includes("banner_kakao"));
     const callBannerFile = bannerFiles.find(f => f.includes("banner_call"));
 
-
+    let topBannersInserted = false;
     let kakaoBannerInserted = false;
     let callBannerInserted = false;
     let propertyPhotosInserted = false;
@@ -465,6 +472,138 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
         await page.waitForTimeout(500);
       }
       await page.waitForTimeout(500);
+    };
+
+    // 최상단 2단 가로 배너 (홈페이지 바로가기 & 부동산 관리신청) 삽입 및 하이퍼링크 연결
+    const insertDualTopBanners = async () => {
+      if (topBannersInserted) return;
+      const topFiles = [homeBannerFile, careBannerFile].filter(Boolean) as string[];
+      if (topFiles.length === 0) return;
+
+      topBannersInserted = true;
+      try {
+        console.log(`[NaverPoster] 최상단 2단 배너(홈페이지 & 부동산 토탈케어) 업로드 시작... (${topFiles.length}개 파일)`);
+        await dismissPopups();
+        await page.waitForTimeout(500);
+
+        const photoBtn = page.locator('button.se-image-toolbar-button').first();
+        const [fileChooser] = await Promise.all([
+          page.waitForEvent("filechooser", { timeout: 12000 }),
+          photoBtn.click({ force: true })
+        ]);
+        await fileChooser.setFiles(topFiles);
+        console.log("[NaverPoster] 최상단 배너 2개 파일 주입 완료. 레이아웃 옵션 대기...");
+        await page.waitForTimeout(1500);
+
+        // 2개 이미지를 가로로 나란히 배치하기 위해 '콜라주' 레이아웃 버튼 클릭
+        try {
+          const collageBtn = page.locator(
+            'label[for="image-type-collage"], button#image-type-collage, .se-image-type-option-collage, [data-log="limgatt.col"], button:has-text("콜라주")'
+          ).first();
+          if (await collageBtn.isVisible({ timeout: 2500 }).catch(() => false)) {
+            await collageBtn.click({ force: true });
+            console.log("[NaverPoster] ✅ 최상단 배너 2개 가로 나란히(콜라주) 레이아웃 적용 완료");
+            await page.waitForTimeout(600);
+          }
+        } catch (layoutErr) {
+          console.warn("[NaverPoster] 콜라주 버튼 선택 실패 또는 미노출 (기본 레이아웃 유지):", layoutErr);
+        }
+
+        // 사이드 패널 닫기
+        try {
+          const sideClose = page.locator('button.se-sidebar-close-button, button.se-side-panel-close-button, button.se-help-panel-close-button').first();
+          if (await sideClose.isVisible({ timeout: 1000 }).catch(() => false)) {
+            await sideClose.click({ force: true });
+            await page.waitForTimeout(300);
+          }
+        } catch (e) {}
+
+        await waitEditorIdle(12);
+
+        // 상단 배너 이미지 목록 조회
+        const bannerImgs = page.locator('.se-component.se-image img, .se-component.se-collage img, .se-collage-image, .se-image-resource');
+        const imgCount = await bannerImgs.count();
+        console.log(`[NaverPoster] 감지된 상단 배너 엘리먼트 수: ${imgCount}`);
+
+        // 상단 배너 1: 홈페이지 바로가기 (https://leegyver.com) 하이퍼링크 설정
+        try {
+          const firstImg = imgCount > 0 ? bannerImgs.nth(0) : page.locator('.se-component img').first();
+          if (await firstImg.isVisible({ timeout: 2000 }).catch(() => false)) {
+            await firstImg.click({ force: true });
+            await page.waitForTimeout(400);
+
+            const linkBtn = page.locator('button.se-link-toolbar-button[data-name="image-link"], button[data-name="image-link"]').first();
+            if (await linkBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+              await linkBtn.click({ force: true });
+              await page.waitForTimeout(400);
+
+              const urlInput = page.locator('input.se-custom-layer-link-input').first();
+              if (await urlInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+                await urlInput.fill('https://leegyver.com');
+                await page.keyboard.press('Enter');
+                await page.waitForTimeout(400);
+                console.log("[NaverPoster] ✅ 최상단 배너 1 (홈페이지 바로가기) 하이퍼링크 연결 완료 (https://leegyver.com)");
+              }
+            }
+          }
+        } catch (hLinkErr) {
+          console.warn("[NaverPoster] 상단 배너 1 링크 연결 중 경고:", hLinkErr);
+        }
+
+        // 상단 배너 2: 부동산 관리신청 (https://leegyver.com/total-care) 하이퍼링크 설정
+        try {
+          if (imgCount > 1 || topFiles.length > 1) {
+            const secondImg = imgCount > 1 ? bannerImgs.nth(1) : page.locator('.se-component img').nth(1);
+            if (await secondImg.isVisible({ timeout: 2000 }).catch(() => false)) {
+              await secondImg.click({ force: true });
+              await page.waitForTimeout(400);
+
+              const linkBtn = page.locator('button.se-link-toolbar-button[data-name="image-link"], button[data-name="image-link"]').first();
+              if (await linkBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+                await linkBtn.click({ force: true });
+                await page.waitForTimeout(400);
+
+                const urlInput = page.locator('input.se-custom-layer-link-input').first();
+                if (await urlInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+                  await urlInput.fill('https://leegyver.com/total-care');
+                  await page.keyboard.press('Enter');
+                  await page.waitForTimeout(400);
+                  console.log("[NaverPoster] ✅ 최상단 배너 2 (부동산 관리신청) 하이퍼링크 연결 완료 (https://leegyver.com/total-care)");
+                }
+              }
+            }
+          }
+        } catch (cLinkErr) {
+          console.warn("[NaverPoster] 상단 배너 2 링크 연결 중 경고:", cLinkErr);
+        }
+
+        // 링크 팝업 닫기 및 커서를 배너 아래 새 단락으로 이동
+        await page.keyboard.press('Escape').catch(() => {});
+        await page.waitForTimeout(200);
+        await page.keyboard.press('ArrowDown').catch(() => {});
+        await page.waitForTimeout(100);
+        await page.keyboard.press('Enter').catch(() => {});
+        await page.waitForTimeout(200);
+
+        // 모바일/PC 100% 터치 접근성을 위해 배너 바로 아래에 터치 가능한 텍스트 링크 배치
+        await page.keyboard.type(`👉 강화도 이가이버 공식 홈페이지 : https://leegyver.com`);
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(200);
+        await page.keyboard.type(`👉 부동산 안심 토탈케어 신청 : https://leegyver.com/total-care`);
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(300);
+        await page.keyboard.press('Enter').catch(() => {});
+        await page.waitForTimeout(200);
+      } catch (topErr) {
+        console.warn("[NaverPoster] 최상단 2단 배너 삽입 실패, 텍스트 링크로 폴백:", topErr);
+        try {
+          await page.keyboard.type(`🌐 [강화도 이가이버 공식 홈페이지]: https://leegyver.com`);
+          await page.keyboard.press('Enter');
+          await page.keyboard.type(`🛠️ [부동산 안심 토탈케어 신청]: https://leegyver.com/total-care`);
+          await page.keyboard.press('Enter');
+          await page.waitForTimeout(300);
+        } catch (fbErr) {}
+      }
     };
 
     // 단일 배너 이미지 삽입 및 하이퍼링크 연결 헬퍼 함수
@@ -628,8 +767,23 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
 
     console.log(`[NaverPoster] 총 ${normalizedLines.length}개 라인 본문 입력 시작`);
 
+    // 최상단 배너 자동 주입 (인사말이나 첫 본문 시작 전 100% 최상단 보장)
+    if (!topBannersInserted && (homeBannerFile || careBannerFile)) {
+      await insertDualTopBanners();
+    }
+
     for (let i = 0; i < normalizedLines.length; i++) {
       const line = normalizedLines[i];
+
+      // 최상단 배너 태그 라인 건너뛰기 (이미 최상단에 주입 완료됨)
+      if (
+        line.includes('[홈페이지 바로가기 배너]') || 
+        line.includes('[부동산 관리신청 배너]') ||
+        (line.includes('leegyver.com/total-care') && i < 6) ||
+        (line.includes('강화도 이가이버 공식 홈페이지') && i < 6)
+      ) {
+        continue;
+      }
 
       // 카카오톡 상담 배너 삽입 위치 감지
       if (line.includes('[카카오톡 실시간 상담 배너]') || line.includes('pf.kakao.com/_xaxbxlxfs/chat')) {

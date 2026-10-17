@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Sparkles, Send, CheckCircle2, ExternalLink, AlertCircle, RefreshCw, 
   Settings, Key, Image as ImageIcon, LogIn, Loader2, X, Globe, Lock,
-  MessageCircle, PhoneCall
+  MessageCircle, PhoneCall, Home, ClipboardCheck
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -531,6 +531,7 @@ export function NaverBlogPostModal({
                       <span>✔ 매물 사실정보 일치</span>
                       <span>✔ 대표: 이민호</span>
                       <span>✔ 직통: 010-4787-3120</span>
+                      <span>✔ 상단 2단 배너(홈페이지/토탈케어)</span>
                       <span>✔ 카카오/전화 배너 링크 포함</span>
                       <span>✔ 볼드(**) 기호 100% 제거</span>
                     </div>
@@ -620,55 +621,116 @@ export function NaverBlogPostModal({
               </div>
 
               {/* 본문 자동 삽입 배너 이미지 미리보기 */}
-              <div className="space-y-2 p-3 bg-slate-50 border rounded-lg">
-                <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                  <ExternalLink className="w-3.5 h-3.5 text-primary" />
-                  본문 자동 삽입 배너 이미지 및 하이퍼링크 (교차 배치)
-                </Label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                  <div className="border rounded-lg overflow-hidden bg-white p-2 shadow-xs space-y-1.5">
-                    <div className="flex items-center justify-between text-xs font-medium text-slate-700">
-                      <span className="flex items-center gap-1 font-semibold text-slate-800">
-                        <MessageCircle className="w-3.5 h-3.5 text-amber-500" />
-                        카카오톡 1:1 상담 배너
-                      </span>
-                      <a
-                        href="https://pf.kakao.com/_xaxbxlxfs/chat"
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[10px] bg-amber-100 hover:bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-mono transition-colors"
-                      >
-                        pf.kakao.com ↗
-                      </a>
-                    </div>
-                    <img
-                      src="/images/banner_kakao.png"
-                      alt="카카오톡 실시간 상담 배너"
-                      className="w-full h-auto rounded border object-contain"
-                    />
+              <div className="space-y-3 p-3 bg-slate-50 border rounded-lg">
+                {/* 1. 최상단 가로 2단 배너 */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <Label className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      🌟 [최상단 자동 등록] 가로 2단 배너 (홈페이지 & 부동산 토탈케어)
+                    </Label>
+                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-[10px] py-0 px-1.5 font-bold">
+                      가로 나란히(콜라주) 자동 주입
+                    </Badge>
                   </div>
-                  <div className="border rounded-lg overflow-hidden bg-white p-2 shadow-xs space-y-1.5">
-                    <div className="flex items-center justify-between text-xs font-medium text-slate-700">
-                      <span className="flex items-center gap-1 font-semibold text-slate-800">
-                        <PhoneCall className="w-3.5 h-3.5 text-emerald-600" />
-                        전화 상담 바로연결 배너
-                      </span>
-                      <a
-                        href="tel:010-4787-3120"
-                        className="text-[10px] bg-emerald-100 hover:bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded font-mono transition-colors"
-                      >
-                        010-4787-3120 📞
-                      </a>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="border rounded-lg overflow-hidden bg-white p-2 shadow-xs space-y-1.5">
+                      <div className="flex items-center justify-between text-xs font-medium text-slate-700">
+                        <span className="flex items-center gap-1 font-semibold text-blue-900">
+                          <Home className="w-3.5 h-3.5 text-blue-600" />
+                          홈페이지 바로가기 배너
+                        </span>
+                        <a
+                          href="https://leegyver.com"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[10px] bg-blue-100 hover:bg-blue-200 text-blue-900 px-1.5 py-0.5 rounded font-mono transition-colors"
+                        >
+                          leegyver.com ↗
+                        </a>
+                      </div>
+                      <img
+                        src="/images/banner_home.png"
+                        alt="홈페이지 바로가기 배너"
+                        className="w-full h-auto rounded border object-contain"
+                      />
                     </div>
-                    <img
-                      src="/images/banner_call.png"
-                      alt="전화 상담 바로연결 배너"
-                      className="w-full h-auto rounded border object-contain"
-                    />
+                    <div className="border rounded-lg overflow-hidden bg-white p-2 shadow-xs space-y-1.5">
+                      <div className="flex items-center justify-between text-xs font-medium text-slate-700">
+                        <span className="flex items-center gap-1 font-semibold text-emerald-900">
+                          <ClipboardCheck className="w-3.5 h-3.5 text-emerald-600" />
+                          부동산 관리신청 배너
+                        </span>
+                        <a
+                          href="https://leegyver.com/total-care"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[10px] bg-emerald-100 hover:bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded font-mono transition-colors"
+                        >
+                          leegyver.com/total-care ↗
+                        </a>
+                      </div>
+                      <img
+                        src="/images/banner_care.png"
+                        alt="부동산 관리신청 배너"
+                        className="w-full h-auto rounded border object-contain"
+                      />
+                    </div>
                   </div>
                 </div>
+
+                {/* 2. 하단 상담 배너 */}
+                <div className="pt-2 border-t border-slate-200">
+                  <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5 mb-1.5">
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
+                    📞 [글 하단 안내] 실시간 상담 & 유선 전화 연결 배너
+                  </Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="border rounded-lg overflow-hidden bg-white p-2 shadow-xs space-y-1.5">
+                      <div className="flex items-center justify-between text-xs font-medium text-slate-700">
+                        <span className="flex items-center gap-1 font-semibold text-slate-800">
+                          <MessageCircle className="w-3.5 h-3.5 text-amber-500" />
+                          카카오톡 1:1 상담 배너
+                        </span>
+                        <a
+                          href="https://pf.kakao.com/_xaxbxlxfs/chat"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[10px] bg-amber-100 hover:bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-mono transition-colors"
+                        >
+                          pf.kakao.com ↗
+                        </a>
+                      </div>
+                      <img
+                        src="/images/banner_kakao.png"
+                        alt="카카오톡 실시간 상담 배너"
+                        className="w-full h-auto rounded border object-contain"
+                      />
+                    </div>
+                    <div className="border rounded-lg overflow-hidden bg-white p-2 shadow-xs space-y-1.5">
+                      <div className="flex items-center justify-between text-xs font-medium text-slate-700">
+                        <span className="flex items-center gap-1 font-semibold text-slate-800">
+                          <PhoneCall className="w-3.5 h-3.5 text-emerald-600" />
+                          전화 상담 바로연결 배너
+                        </span>
+                        <a
+                          href="tel:010-4787-3120"
+                          className="text-[10px] bg-emerald-100 hover:bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded font-mono transition-colors"
+                        >
+                          010-4787-3120 📞
+                        </a>
+                      </div>
+                      <img
+                        src="/images/banner_call.png"
+                        alt="전화 상담 바로연결 배너"
+                        className="w-full h-auto rounded border object-contain"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <p className="text-[11px] text-slate-500 mt-1">
-                  * 본문 안내문 아래에 각 배너 이미지가 정밀하게 삽입되며, 터치 시 카카오톡 상담창 및 전화 연결로 이동하도록 하이퍼링크가 자동 설정됩니다.
+                  * 포스팅 시 본문 최상단에 홈페이지 및 부동산 관리신청 배너 2개가 가로 나란히 등록되며, 각각의 랜딩 페이지 링크가 자동으로 연결됩니다.
                 </p>
               </div>
 

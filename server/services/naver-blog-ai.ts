@@ -26,8 +26,7 @@ export const MANDATORY_TAGS = ["강화도부동산", "강화군부동산", "이�
 
 export const TOP_BANNER_IMAGES = [
   "/images/banner_home.png",
-  "/images/banner_care.png",
-  "/images/banner_auction.png"
+  "/images/banner_care.png"
 ];
 
 export const BANNER_IMAGES = [
@@ -38,9 +37,13 @@ export const BANNER_IMAGES = [
   "/images/banner_call.png"
 ];
 
-export const TOP_BANNER_BLOCK = `[홈페이지 바로가기 배너] [부동산 관리신청 배너] [경매/공매 바로가기 배너]`;
+export const TOP_BANNER_BLOCK = `[홈페이지 바로가기 배너] [부동산 관리신청 배너]`;
 
 export const OFFICE_INFO_BLOCK = `
+🔨 [강화도 법원 경매·공매 추천 및 맞춤 권리분석]
+👉 맞춤 물건 발굴부터 법원 대리입찰, 명도 및 소유권 이전까지 안전하게 진행해 드립니다.
+[경매/공매 바로가기 배너]
+
 ■ 중개사무소 안내
 • 상호 : 이가이버 공인중개사사무소
 • 대표 : 이민호

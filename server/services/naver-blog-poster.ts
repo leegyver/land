@@ -460,6 +460,7 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     const callBannerFile = bannerFiles.find(f => f.includes("banner_call"));
 
     let topBannersInserted = false;
+    let auctionBannerInserted = false;
     let kakaoBannerInserted = false;
     let callBannerInserted = false;
     let propertyPhotosInserted = false;
@@ -476,185 +477,119 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
       await page.waitForTimeout(500);
     };
 
-    // 최상단 3단 가로 배너 (정확한 1줄 3칸 테이블 방식 - 1행 3열 고정 & 개별 하이퍼링크 & 본문 분리)
+    // 최상단 2단 가로 배너 (콜라주 50:50 나란히 배치 & 각각 개별 링크 & 표 미사용)
     const insertDualTopBanners = async () => {
       if (topBannersInserted) return;
 
-      const topBannerConfigs = [
-        { file: homeBannerFile, url: 'https://leegyver.com', label: '홈페이지 바로가기' },
-        { file: careBannerFile, url: 'https://leegyver.com/total-care', label: '부동산 토탈케어' },
-        { file: auctionBannerFile, url: 'https://leegyver.com/auctions', label: '강화도 경매·공매' }
-      ].filter(c => !!c.file) as { file: string; url: string; label: string }[];
-
-      if (topBannerConfigs.length === 0) return;
+      const topFiles = [homeBannerFile, careBannerFile].filter(Boolean) as string[];
+      if (topFiles.length === 0) return;
       topBannersInserted = true;
 
       try {
-        console.log(`[NaverPoster] 최상단 3단 배너 [1줄 3칸(1행 3열) 테이블 모드] 생성 시작 (${topBannerConfigs.length}개)...`);
+        console.log(`[NaverPoster] 최상단 2단 배너(콜라주 50:50) 주입 시작 (${topFiles.length}개)...`);
         await dismissPopups();
-        await page.waitForTimeout(400);
+        await page.waitForTimeout(500);
 
-        // 1. 에디터 상단 툴바의 [표] 버튼을 클릭하여 안정적으로 표 컴포넌트 삽입
-        const tableToolbarBtn = page.locator(
-          'button.se-table-toolbar-button, button[data-name="table"], button[title*="표"], button[aria-label*="표"], button:has-text("표")'
-        ).first();
+        const photoBtn = page.locator('button.se-image-toolbar-button').first();
+        const [fileChooser] = await Promise.all([
+          page.waitForEvent("filechooser", { timeout: 12000 }),
+          photoBtn.click({ force: true })
+        ]);
+        await fileChooser.setFiles(topFiles);
+        console.log("[NaverPoster] 최상단 배너 2개 파일 주입 완료. 레이아웃 옵션 대기...");
+        await page.waitForTimeout(1500);
 
-        if (await tableToolbarBtn.isVisible({ timeout: 4000 }).catch(() => false)) {
-          await tableToolbarBtn.click({ force: true });
-          console.log("[NaverPoster] 📊 스마트에디터 상단 [표] 버튼 클릭 완료");
-          await page.waitForTimeout(1000);
+        // 2개 이미지를 가로로 나란히 배치하기 위해 '콜라주' 레이아웃 버튼 클릭 (네이버는 2장일 때 50:50 1줄 고정)
+        try {
+          const collageBtn = page.locator(
+            'label[for="image-type-collage"], button#image-type-collage, .se-image-type-option-collage, [data-log="limgatt.col"], button:has-text("콜라주")'
+          ).first();
+          if (await collageBtn.isVisible({ timeout: 2500 }).catch(() => false)) {
+            await collageBtn.click({ force: true });
+            console.log("[NaverPoster] ✅ 최상단 배너 2개 가로 나란히(콜라주) 레이아웃 적용 완료");
+            await page.waitForTimeout(600);
+          }
+        } catch (layoutErr) {
+          console.warn("[NaverPoster] 콜라주 버튼 선택 실패 또는 미노출 (기본 레이아웃 유지):", layoutErr);
         }
 
-        // 본문 표 컴포넌트 감지 대기
-        const tableComp = page.locator('.se-component.se-table').first();
-        const hasTable = await tableComp.isVisible({ timeout: 5000 }).catch(() => false);
-        console.log(`[NaverPoster] 본문 표 컴포넌트 감지 여부: ${hasTable}`);
-
-        if (hasTable) {
-          // 2. 1행의 각 셀(0, 1, 2)에 배너 이미지 1장씩 순차 업로드 및 하이퍼링크 연결
-          const firstRowCells = page.locator('.se-component.se-table tr:first-child td');
-
-          for (let idx = 0; idx < topBannerConfigs.length; idx++) {
-            const config = topBannerConfigs[idx];
-            console.log(`[NaverPoster] 🖼 표 1줄 ${idx + 1}번째 칸 [${config.label}] 업로드 시작...`);
-
-            const cell = firstRowCells.nth(idx);
-            await cell.scrollIntoViewIfNeeded().catch(() => {});
-            await cell.click({ force: true });
+        // 사이드 패널 닫기
+        try {
+          const sideClose = page.locator('button.se-sidebar-close-button, button.se-side-panel-close-button, button.se-help-panel-close-button').first();
+          if (await sideClose.isVisible({ timeout: 1000 }).catch(() => false)) {
+            await sideClose.click({ force: true });
             await page.waitForTimeout(300);
+          }
+        } catch (e) {}
 
-            // 상단 사진 툴바 버튼으로 이미지 주입
-            const photoBtn = page.locator('button.se-image-toolbar-button').first();
-            try {
-              const [fileChooser] = await Promise.all([
-                page.waitForEvent('filechooser', { timeout: 10000 }),
-                photoBtn.click({ force: true })
-              ]);
-              await fileChooser.setFiles([config.file]);
-              console.log(`[NaverPoster] 표 셀 ${idx + 1} 파일 주입 완료. 네이버 업로드 대기...`);
-              await page.waitForTimeout(1500);
+        await waitEditorIdle(12);
 
-              // 사이드 패널 닫기
-              try {
-                const sideClose = page.locator('button.se-sidebar-close-button, button.se-side-panel-close-button, button.se-help-panel-close-button').first();
-                if (await sideClose.isVisible({ timeout: 500 }).catch(() => false)) {
-                  await sideClose.click({ force: true });
-                }
-              } catch (e) {}
+        // 상단 배너 이미지 목록 조회
+        const bannerImgs = page.locator('.se-component.se-image img, .se-component.se-collage img, .se-collage-image, .se-image-resource');
+        const imgCount = await bannerImgs.count();
+        console.log(`[NaverPoster] 감지된 상단 배너 엘리먼트 수: ${imgCount}`);
 
-              // 해당 셀 내부 이미지 업로드 완료 대기
-              const cellImg = cell.locator('img').first();
-              await cellImg.waitFor({ state: 'visible', timeout: 12000 }).catch(() => {});
-              await waitEditorIdle(5);
+        // 상단 배너 1: 홈페이지 바로가기 (https://leegyver.com) 하이퍼링크 설정
+        try {
+          const firstImg = imgCount > 0 ? bannerImgs.nth(0) : page.locator('.se-component img').first();
+          if (await firstImg.isVisible({ timeout: 2000 }).catch(() => false)) {
+            await firstImg.click({ force: true });
+            await page.waitForTimeout(400);
 
-              // 해당 셀 안의 이미지 클릭 후 하이퍼링크 연결
-              if (await cellImg.isVisible({ timeout: 3000 }).catch(() => false)) {
-                await cellImg.click({ force: true });
-                await page.waitForTimeout(300);
+            const linkBtn = page.locator('button.se-link-toolbar-button[data-name="image-link"], button[data-name="image-link"]').first();
+            if (await linkBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+              await linkBtn.click({ force: true });
+              await page.waitForTimeout(400);
 
-                const linkBtn = page.locator('button.se-link-toolbar-button[data-name="image-link"], button.se-link-toolbar-button').first();
-                if (await linkBtn.isVisible({ timeout: 1500 }).catch(() => false)) {
-                  await linkBtn.click({ force: true });
-                } else {
-                  await page.keyboard.press('Control+k');
-                }
+              const urlInput = page.locator('input.se-custom-layer-link-input').first();
+              if (await urlInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+                await urlInput.fill('https://leegyver.com');
+                await page.keyboard.press('Enter');
                 await page.waitForTimeout(400);
-
-                const urlInput = page.locator('input.se-custom-layer-link-input, input.se-link-input, input[placeholder*="http"]').first();
-                if (await urlInput.isVisible({ timeout: 2000 }).catch(() => false)) {
-                  await urlInput.fill(config.url);
-                  await page.keyboard.press('Enter');
-                  await page.waitForTimeout(300);
-                  console.log(`[NaverPoster] ✅ 표 셀 ${idx + 1} [${config.label}] 하이퍼링크 연결 완료: ${config.url}`);
-                }
-                await page.keyboard.press('Escape').catch(() => {});
-                await page.waitForTimeout(200);
+                console.log("[NaverPoster] ✅ 최상단 배너 1 (홈페이지 바로가기) 하이퍼링크 연결 완료 (https://leegyver.com)");
               }
-            } catch (cellErr) {
-              console.warn(`[NaverPoster] 표 셀 ${idx + 1} 업로드/링크 중 경고:`, cellErr);
             }
           }
-
-          // 3. 사진 주입 완료 후: 2번째 및 3번째 행 완벽 제거, 표 스타일 무테/백색/33.3% 적용, 본문 단락 분리
-          try {
-            await page.evaluate(() => {
-              const tableComp = document.querySelector('.se-component.se-table');
-              if (!tableComp) return;
-
-              const tbl = tableComp.querySelector('table');
-              if (tbl) {
-                // 잉여 2번째, 3번째 줄(행) 완벽 제거 -> 오직 1줄(1행)만 남김
-                const rows = tbl.querySelectorAll('tr');
-                if (rows.length > 1) {
-                  rows[1].remove();
-                }
-                if (rows.length > 2) {
-                  rows[2].remove();
-                }
-
-                tbl.style.width = '100%';
-                tbl.style.tableLayout = 'fixed';
-                tbl.style.borderCollapse = 'collapse';
-                tbl.style.border = 'none';
-                tbl.style.backgroundColor = '#ffffff';
-
-                const allTds = tbl.querySelectorAll('td');
-                allTds.forEach(td => {
-                  (td as HTMLElement).style.width = '33.333%';
-                  (td as HTMLElement).style.maxWidth = '33.333%';
-                  (td as HTMLElement).style.padding = '2px';
-                  (td as HTMLElement).style.border = 'none';
-                  (td as HTMLElement).style.verticalAlign = 'middle';
-                  (td as HTMLElement).style.textAlign = 'center';
-                  (td as HTMLElement).style.backgroundColor = '#ffffff';
-                });
-
-                const imgs = tbl.querySelectorAll('img');
-                imgs.forEach(img => {
-                  (img as HTMLElement).style.width = '100%';
-                  (img as HTMLElement).style.height = 'auto';
-                  (img as HTMLElement).style.display = 'block';
-                  (img as HTMLElement).style.margin = '0 auto';
-                  (img as HTMLElement).style.borderRadius = '4px';
-                  (img as HTMLElement).style.cursor = 'pointer';
-                });
-
-                tbl.dispatchEvent(new Event('input', { bubbles: true }));
-                tbl.dispatchEvent(new Event('change', { bubbles: true }));
-              }
-
-              // 표 바로 뒤에 본문 전용 단락 컴포넌트(se-text) 명시적 생성 (표 밖 분리 보장)
-              let nextComp = tableComp.nextElementSibling;
-              if (!nextComp || !nextComp.classList.contains('se-text')) {
-                const pComp = document.createElement('div');
-                pComp.className = 'se-component se-text se-l-default';
-                pComp.innerHTML = '<div class="se-component-content"><div class="se-section-text se-l-default"><div class="se-module se-module-text"><p class="se-text-paragraph se-text-paragraph-align-left" id="body-start-paragraph"><span class="se-ff-system">&#8203;</span></p></div></div></div>';
-                tableComp.after(pComp);
-              }
-            });
-            console.log("[NaverPoster] ✅ 1줄 3칸 배너 표 완성(잉여 행 제거 완료) 및 본문 단락 분리 완료");
-          } catch (styleErr) {
-            console.warn("[NaverPoster] 표 스타일 최적화 중 경고:", styleErr);
-          }
-
-          // 4. 표를 완전히 빠져나와 표 아래 생성된 본문 단락 클릭하여 포커스 안착 (본문 내용이 표 안에 들어가는 문제 100% 원천 차단)
-          await page.waitForTimeout(300);
-          const bodyStartP = page.locator('#body-start-paragraph, .se-component.se-text .se-text-paragraph').first();
-          if (await bodyStartP.isVisible({ timeout: 2000 }).catch(() => false)) {
-            await bodyStartP.click({ force: true });
-            await page.waitForTimeout(200);
-            await page.keyboard.press('Enter');
-            await page.waitForTimeout(200);
-            console.log("[NaverPoster] 🎯 표 외부 본문 단락 포커스 안착 완료!");
-          } else {
-            await page.keyboard.press('Escape').catch(() => {});
-            await page.keyboard.press('PageDown').catch(() => {});
-            await page.keyboard.press('ArrowDown').catch(() => {});
-            await page.keyboard.press('Enter').catch(() => {});
-          }
+        } catch (hLinkErr) {
+          console.warn("[NaverPoster] 상단 배너 1 링크 연결 중 경고:", hLinkErr);
         }
+
+        // 상단 배너 2: 부동산 관리신청 (https://leegyver.com/total-care) 하이퍼링크 설정
+        try {
+          if (imgCount > 1 || topFiles.length > 1) {
+            const secondImg = imgCount > 1 ? bannerImgs.nth(1) : page.locator('.se-component img').nth(1);
+            if (await secondImg.isVisible({ timeout: 2000 }).catch(() => false)) {
+              await secondImg.click({ force: true });
+              await page.waitForTimeout(400);
+
+              const linkBtn = page.locator('button.se-link-toolbar-button[data-name="image-link"], button[data-name="image-link"]').first();
+              if (await linkBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+                await linkBtn.click({ force: true });
+                await page.waitForTimeout(400);
+
+                const urlInput = page.locator('input.se-custom-layer-link-input').first();
+                if (await urlInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+                  await urlInput.fill('https://leegyver.com/total-care');
+                  await page.keyboard.press('Enter');
+                  await page.waitForTimeout(400);
+                  console.log("[NaverPoster] ✅ 최상단 배너 2 (부동산 관리신청) 하이퍼링크 연결 완료 (https://leegyver.com/total-care)");
+                }
+              }
+            }
+          }
+        } catch (cLinkErr) {
+          console.warn("[NaverPoster] 상단 배너 2 링크 연결 중 경고:", cLinkErr);
+        }
+
+        // 링크 팝업 닫기 및 커서를 배너 아래 새 단락으로 이동
+        await page.keyboard.press('Escape').catch(() => {});
+        await page.waitForTimeout(200);
+        await page.keyboard.press('ArrowDown').catch(() => {});
+        await page.waitForTimeout(100);
+        await page.keyboard.press('Enter').catch(() => {});
+        await page.waitForTimeout(200);
       } catch (topErr) {
-        console.warn("[NaverPoster] 최상단 3단 배너(1줄 3칸) 삽입 중 경고:", topErr);
+        console.warn("[NaverPoster] 최상단 2단 배너(콜라주 50:50) 삽입 중 경고:", topErr);
       }
     };
 
@@ -820,7 +755,7 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     console.log(`[NaverPoster] 총 ${normalizedLines.length}개 라인 본문 입력 시작`);
 
     // 최상단 배너 자동 주입 (인사말이나 첫 본문 시작 전 100% 최상단 보장)
-    if (!topBannersInserted && (homeBannerFile || careBannerFile || auctionBannerFile)) {
+    if (!topBannersInserted && (homeBannerFile || careBannerFile)) {
       await insertDualTopBanners();
     }
 
@@ -831,12 +766,20 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
       if (
         line.includes('[홈페이지 바로가기 배너]') || 
         line.includes('[부동산 관리신청 배너]') ||
-        line.includes('[경매/공매 바로가기 배너]') ||
-        (line.includes('leegyver.com') && i < 8) ||
+        (line.includes('leegyver.com') && !line.includes('auctions') && !line.includes('tel') && i < 8) ||
         (line.includes('이가이버 공식 홈페이지') && i < 8) ||
         (line.includes('부동산 안심 토탈케어') && i < 8) ||
         (line.includes('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━') && i < 5)
       ) {
+        continue;
+      }
+
+      // 강화도 경매·공매 배너 삽입 위치 감지 (본문 중하단 권리분석 블록 직후)
+      if (line.includes('[경매/공매 바로가기 배너]') || line.includes('leegyver.com/auctions')) {
+        if (!auctionBannerInserted && auctionBannerFile) {
+          await insertBannerWithLink(auctionBannerFile, 'https://leegyver.com/auctions', '강화도 경매·공매 배너');
+          auctionBannerInserted = true;
+        }
         continue;
       }
 
@@ -859,7 +802,7 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
       }
 
       // 중개사무소 안내 블록 직전에 매물 사진 삽입 (본문 중간 또는 하단 전)
-      if (line.includes('■ 중개사무소 안내') && !propertyPhotosInserted && localPropertyImages.length > 0) {
+      if ((line.includes('🔨 [강화도 법원 경매·공매') || line.includes('■ 중개사무소 안내')) && !propertyPhotosInserted && localPropertyImages.length > 0) {
         await insertPropertyImages();
       }
 
@@ -876,6 +819,9 @@ export async function publishToNaverBlog(options: PublishOptions): Promise<Publi
     // 사진이나 배너가 루프 내에서 처리되지 않은 경우 폴백(Fallback) 삽입
     if (!propertyPhotosInserted && localPropertyImages.length > 0) {
       await insertPropertyImages();
+    }
+    if (!auctionBannerInserted && auctionBannerFile) {
+      await insertBannerWithLink(auctionBannerFile, 'https://leegyver.com/auctions', '강화도 경매·공매 배너(하단)');
     }
     if (!kakaoBannerInserted && kakaoBannerFile) {
       await insertBannerWithLink(kakaoBannerFile, 'https://pf.kakao.com/_xaxbxlxfs/chat', '카카오톡 상담 배너(하단)');

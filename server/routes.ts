@@ -47,6 +47,7 @@ import {
 } from "./youtube-fetcher";
 import { importPropertiesFromSheet, checkDuplicatesFromSheet } from "./sheet-importer";
 import { generateSitemapXml } from "./sitemap";
+import { generateRssXml } from "./rss";
 import { getGa4Stats, getSearchConsoleStats, getNaverAdvisorStats, saveNaverAdvisorStats } from "./services/externalStats";
 import { naverBlogRouter } from "./naver-blog-routes";
 
@@ -323,6 +324,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).send('Error generating sitemap');
     }
   });
+
+  // Dynamic RSS Feed for Naver Search Advisor / Google SEO
+  const handleRss = async (_req: express.Request, res: express.Response) => {
+    try {
+      const rss = await generateRssXml(storage);
+      res.setHeader('Content-Type', 'application/rss+xml; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=1800');
+      res.send(rss);
+    } catch (e) {
+      console.error('[RSS Error]', e);
+      res.status(500).send('Error generating RSS feed');
+    }
+  };
+  app.get('/rss', handleRss);
+  app.get('/rss.xml', handleRss);
 
   const uploadStorage = multer.diskStorage({
     destination: function (req, file, cb) {

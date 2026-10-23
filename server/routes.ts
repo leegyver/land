@@ -224,11 +224,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                        req.url.startsWith('/favicon') ||
                        req.url.startsWith('/@');
 
-    // 악성 취약점 스캐너 파일 요청 제외
+    // 악성 취약점 스캐너 파일 요청 즉시 차단
     const isBotScan = req.url.match(/\.(env|yml|yaml|sql|bak|config|php|asp|aspx|jsp|cgi|sh|bash|git)$/i) ||
-                      req.url.match(/\/(wp-|\.git|\.env|Dockerfile|phpmyadmin)/i);
+                      req.url.match(/\/(wp-|\.git|\.env|Dockerfile|phpmyadmin|phpunit)/i);
 
-    if (req.method === 'GET' && !isStatic && !isExcluded && !isBotScan) {
+    if (isBotScan) {
+      return res.status(404).type('text/plain').send('Not Found');
+    }
+
+    if (req.method === 'GET' && !isStatic && !isExcluded) {
       const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
       const userAgent = req.headers['user-agent'];
       const path = req.url;

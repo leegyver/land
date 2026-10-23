@@ -8,6 +8,19 @@ import { setupNewsletterScheduler } from "./newsletter";
 
 
 const app = express();
+app.disable('x-powered-by');
+
+// 악성 취약점 스캐너 즉시 차단 미들웨어 (PHP, ASP, 환경설정 파일, 웹 쉘 등 스캔 차단)
+app.use((req, res, next) => {
+  const isMaliciousScan = req.path.match(/\.(php|asp|aspx|jsp|cgi|env|sql|bak|yml|yaml|ini|conf|sh|bash|git)$/i) ||
+                          req.path.match(/\/(wp-admin|wp-includes|wp-content|wp-login|phpmyadmin|pma|\.git|\.env|Dockerfile|phpunit)/i);
+  if (isMaliciousScan) {
+    res.status(404).type('text/plain').send('Not Found');
+    return;
+  }
+  next();
+});
+
 console.log("SERVER_STARTUP_ENV:", app.get("env"), "PROCESS_ENV:", process.env.NODE_ENV);
 
 // 자동 DB 스키마 업데이트 (배포 시 적용)

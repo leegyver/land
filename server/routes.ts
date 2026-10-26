@@ -547,6 +547,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // 지역명 목록
         const districtNames = ["강화읍", "교동면", "길상면", "내가면", "불은면", "삼산면", "서도면", "선원면", "송해면", "양도면", "양사면", "하점면", "화도면"];
+        const broadRegions = ["강화도", "강화군", "인천광역시", "인천시", "강화"];
 
         // 유형 매핑 데이터
         const typeMapping: Record<string, string> = {
@@ -557,6 +558,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
 
         const filteredTokens = tokens.filter(token => {
+          if (broadRegions.some(br => token === br)) {
+            return false;
+          }
           const foundDistrict = districtNames.find(d => token.includes(d));
           if (foundDistrict && !detectedDistrict) {
             detectedDistrict = foundDistrict;
@@ -652,10 +656,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (targetPrice < min || targetPrice > max) return false;
           }
           if (searchKeyword) {
-            const k = searchKeyword.toLowerCase();
-            return p.title.toLowerCase().includes(k) ||
-              (p.description && p.description.toLowerCase().includes(k)) ||
-              (p.address && p.address.toLowerCase().includes(k));
+            const searchTokens = searchKeyword.toLowerCase().trim().split(/\s+/).filter(Boolean);
+            const matches = searchTokens.every(token => {
+              return (p.title && p.title.toLowerCase().includes(token)) ||
+                (p.district && p.district.toLowerCase().includes(token)) ||
+                (p.address && p.address.toLowerCase().includes(token)) ||
+                (p.buildingName && p.buildingName.toLowerCase().includes(token)) ||
+                (p.description && p.description.toLowerCase().includes(token));
+            });
+            if (!matches) return false;
           }
           return true;
         })
@@ -718,8 +727,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (price < min || price > max) return false;
           }
           if (searchKeyword) {
-            const k = searchKeyword.toLowerCase();
-            return p.atclNm.toLowerCase().includes(k);
+            const searchTokens = searchKeyword.toLowerCase().trim().split(/\s+/).filter(Boolean);
+            const matches = searchTokens.every(token => {
+              return (p.atclNm && p.atclNm.toLowerCase().includes(token)) ||
+                (p.flrInfo && p.flrInfo.toLowerCase().includes(token)) ||
+                (p.rletTpNm && p.rletTpNm.toLowerCase().includes(token));
+            });
+            if (!matches) return false;
           }
           return true;
         })

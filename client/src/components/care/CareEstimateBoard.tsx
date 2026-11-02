@@ -24,6 +24,69 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 
+// 이름 마스킹 헬퍼 (최*섭)
+function maskAuthorName(name?: string | null): string {
+  if (!name) return "";
+  const clean = name.trim();
+  if (clean.length <= 1) return clean;
+  if (clean.length === 2) return clean[0] + "*";
+  return clean[0] + "*".repeat(clean.length - 2) + clean[clean.length - 1];
+}
+
+// 전화번호 마스킹 헬퍼 (010-****-1234)
+function maskPhoneNumber(phone?: string | null): string {
+  if (!phone) return "";
+  const parts = phone.trim().split("-");
+  if (parts.length === 3) {
+    return `${parts[0]}-****-${parts[2]}`;
+  }
+  if (phone.length >= 8) {
+    return phone.substring(0, 3) + "****" + phone.substring(phone.length - 4);
+  }
+  return "***-****-****";
+}
+
+// 상세주소 마스킹 헬퍼 (행정단위 읍/면/리/동 까지만 노출, 상세주소/번지수/동호수 차단)
+function maskAddress(address?: string | null): string | null {
+  if (!address) return null;
+  const clean = address.trim();
+  if (!clean) return null;
+
+  const parts = clean.split(/\s+/);
+  const safeParts: string[] = [];
+
+  for (const part of parts) {
+    if (/^\d/.test(part)) break;
+    if (/(아파트|빌라|오피스텔|주택|원룸|타운하우스|상가|맨션|하이츠|마을|번지|[0-9]층|[0-9]호)$/.test(part)) {
+      break;
+    }
+    if (/[시도군구읍면동리]$/.test(part) || ["서울", "인천", "경기", "강화"].includes(part)) {
+      safeParts.push(part);
+    } else if (safeParts.length === 0) {
+      safeParts.push(part);
+    } else {
+      if (/[로길]$/.test(part)) {
+        safeParts.push(part);
+      }
+      break;
+    }
+  }
+
+  if (safeParts.length > 0) {
+    return safeParts.join(" ");
+  }
+  return parts.slice(0, Math.min(2, parts.length)).join(" ");
+}
+
+// 본문 상세주소 마스킹 헬퍼 ([현장 주소]: ... 마스킹)
+function maskCareContent(content?: string | null): string {
+  if (!content) return "";
+  return content.replace(/(\[현장\s*주소\]:\s*)([^\n\r]+)/g, (_match, prefix, addr) => {
+    const masked = maskAddress(addr);
+    return `${prefix}${masked ? masked + " (상세주소 비공개)" : "강화 관내 (상세주소 비공개)"}`;
+  });
+}
+
 interface CareEstimateBoardProps {
   initialEstimateId?: number | null;
 }
@@ -527,11 +590,13 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${selectedEstimate.id}`
 
                       {/* 의뢰인 메타 정보 */}
                       <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                        <span className="font-semibold text-slate-700">{item.authorName} 고객님</span>
+                        <span className="font-semibold text-slate-700">
+                          {isAdmin ? item.authorName : maskAuthorName(item.authorName)} 고객님
+                        </span>
                         {item.address && (
                           <span className="flex items-center gap-0.5 text-slate-500">
                             <MapPin className="w-3 h-3 text-slate-400" />
-                            {item.address}
+                            {isAdmin ? item.address : maskAddress(item.address)}
                           </span>
                         )}
                         <span className="text-slate-400">
@@ -794,6 +859,7 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${selectedEstimate.id}`
                   onChange={(e) => setNewEstimateData((prev) => ({ ...prev, address: e.target.value }))}
                   className="rounded-xl"
                 />
+                <p className="text-[11px] text-slate-500 mt-0.5">🔒 상세주소는 관리자에게만 비공개 전송되며 게시판에는 공개되지 않습니다.</p>
               </div>
             </div>
 
@@ -1000,14 +1066,15 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${selectedEstimate.id}`
                 </h2>
 
                 <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-slate-600 mt-2 font-medium">
-                  <span>의뢰인: <strong>{selectedEstimate.authorName}</strong></span>
+                  <span>의뢰인: <strong>{isAdmin ? selectedEstimate.authorName : maskAuthorName(selectedEstimate.authorName)}</strong></span>
                   {selectedEstimate.phone && (
-                    <span>연락처: <strong className="text-orange-600">{selectedEstimate.phone}</strong></span>
+                    <span>연락처: <strong className="text-orange-600">{isAdmin ? selectedEstimate.phone : maskPhoneNumber(selectedEstimate.phone)}</strong></span>
                   )}
                   {selectedEstimate.address && (
                     <span className="flex items-center gap-1">
                       <MapPin className="w-3 h-3 text-slate-400" />
-                      {selectedEstimate.address}
+                      {isAdmin ? selectedEstimate.address : maskAddress(selectedEstimate.address)}
+                      {!isAdmin && <span className="text-[10px] text-slate-400 ml-0.5">(상세주소 비공개)</span>}
                     </span>
                   )}
                 </div>
@@ -1023,7 +1090,7 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${selectedEstimate.id}`
                       Q. 고객 수리 요청 원문
                     </Badge>
                     <span className="text-xs text-slate-500 font-medium">
-                      작성자: {selectedEstimate.authorName} 고객님
+                      작성자: {isAdmin ? selectedEstimate.authorName : maskAuthorName(selectedEstimate.authorName)} 고객님
                     </span>
                   </div>
                   <span className="text-xs text-slate-400">
@@ -1032,7 +1099,7 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${selectedEstimate.id}`
                 </div>
 
                 <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 text-sm sm:text-base text-slate-800 leading-relaxed whitespace-pre-wrap shadow-sm">
-                  {selectedEstimate.content}
+                  {isAdmin ? selectedEstimate.content : maskCareContent(selectedEstimate.content)}
                 </div>
 
                 {selectedEstimate.imageUrl && (

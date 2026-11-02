@@ -109,7 +109,7 @@ export default function TotalCarePage() {
       const title = `[${formData.buildingType}] ${formData.serviceCategory} 견적 요청`;
       const fullContent = `
 [신청 서비스]: ${formData.serviceCategory}
-[현장 주소]: ${formData.address || "미입력"}
+[현장 주소]: (상세주소는 관리자에게만 비공개 전송됩니다)
 [희망 방문일]: ${formData.preferredDate || "일정 협의"}
 
 [상세 증상 및 문의 내용]:
@@ -890,6 +890,7 @@ ${formData.message || "방문 점검 및 견적 상담 희망"}
                       placeholder="예: 강화읍 관청리 000-0번지"
                       className="bg-slate-900/80 border-slate-700 text-white placeholder:text-slate-500"
                     />
+                    <p className="text-[11px] text-slate-400 mt-1">🔒 상세주소는 관리자에게만 비공개 전송되며 홈페이지에 절대 노출되지 않습니다.</p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="preferredDate" className="text-slate-200">희망 방문 일시</Label>

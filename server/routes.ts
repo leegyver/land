@@ -2172,7 +2172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // 부동산 토탈케어 실시간 견적 상담 게시판 API
   // ==========================================
 
-  // 이름 마스킹 헬퍼 (홍*동)
+  // 이름 마스킹 헬퍼 (최*섭)
   const maskAuthorName = (name: string): string => {
     if (!name) return "";
     const clean = name.trim();
@@ -2194,6 +2194,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return "***-****-****";
   };
 
+  // 주소 마스킹 헬퍼 (상세주소 노출 차단: 시/군/구 읍/면/동/리 등 기본 행정구역만 표시)
+  const maskAddress = (address?: string | null): string | null => {
+    if (!address) return null;
+    const clean = address.trim();
+    if (!clean) return null;
+
+    const parts = clean.split(/\s+/);
+    const safeParts: string[] = [];
+
+    for (const part of parts) {
+      // 1) 숫자로 시작하는 번지수, 건물번호, 동호수(예: 123, 123-4, 101동, 202호 등) 즉시 차단
+      if (/^\d/.test(part)) break;
+
+      // 2) 아파트, 빌라, 원룸, 상가, 오피스텔, 주택, 번지, 층, 호 등 상세주소 키워드 즉시 차단
+      if (/(아파트|빌라|오피스텔|주택|원룸|타운하우스|상가|맨션|하이츠|마을|번지|[0-9]층|[0-9]호)$/.test(part)) {
+        break;
+      }
+
+      // 3) 행정구역 단위 (시/도/군/구/읍/면/동/리) 및 대표 지명 허용
+      if (/[시도군구읍면동리]$/.test(part) || ["서울", "인천", "경기", "강화"].includes(part)) {
+        safeParts.push(part);
+      } else if (safeParts.length === 0) {
+        safeParts.push(part);
+      } else {
+        // 도로명(OO로, OO길)은 허용하되 그 뒤의 건물번호는 루프 다음 턴에서 차단됨
+        if (/[로길]$/.test(part)) {
+          safeParts.push(part);
+        }
+        break;
+      }
+    }
+
+    if (safeParts.length > 0) {
+      return safeParts.join(" ");
+    }
+    return parts.slice(0, Math.min(2, parts.length)).join(" ");
+  };
+
+  // 본문 상세주소 마스킹 헬퍼 (content 내부의 [현장 주소]: ... 등 상세주소 차단)
+  const maskCareContent = (content?: string | null): string => {
+    if (!content) return "";
+    return content.replace(/(\[현장\s*주소\]:\s*)([^\n\r]+)/g, (_match, prefix, addr) => {
+      const masked = maskAddress(addr);
+      return `${prefix}${masked ? masked + " (상세주소 비공개)" : "강화 관내 (상세주소 비공개)"}`;
+    });
+  };
+
   // 1. 견적 상담 목록 조회 (비공개글 마스킹 처리)
   app.get("/api/care-estimates", async (req, res) => {
     try {
@@ -2206,9 +2253,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return item; // 관리자는 전체 정보 확인 가능
         }
 
-        // 일반 사용자용 데이터 필터링
+        // 일반 사용자용 데이터 필터링 (고객 실명 최*섭 형태 및 상세주소 완전 차단)
         const maskedName = maskAuthorName(item.authorName);
         const maskedPhone = maskPhoneNumber(item.phone);
+        const safeAddress = maskAddress(item.address);
 
         if (item.isSecret) {
           return {
@@ -2217,7 +2265,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             authorName: maskedName,
             phone: maskedPhone,
             category: item.category,
-            address: item.address ? item.address.split(" ").slice(0, 2).join(" ") + " ***" : null,
+            address: safeAddress,
             content: "🔒 작성자와 관리자만 확인할 수 있는 비밀글입니다.",
             imageUrl: null,
             imageUrls: null,
@@ -2238,6 +2286,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...item,
           authorName: maskedName,
           phone: maskedPhone,
+          address: safeAddress,
+          content: maskCareContent(item.content),
           password: undefined, // 비밀번호 필드 노출 방지
           adminNotes: undefined, // 관리자 메모 숨김
         };
@@ -2287,6 +2337,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...estimate,
         authorName: maskAuthorName(estimate.authorName),
         phone: maskPhoneNumber(estimate.phone),
+        address: maskAddress(estimate.address),
+        content: maskCareContent(estimate.content),
         password: undefined,
         adminNotes: undefined,
       });
@@ -2322,8 +2374,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           success: true,
           estimate: {
             ...estimate,
-            authorName: maskAuthorName(estimate.authorName),
-            phone: maskPhoneNumber(estimate.phone),
+            authorName: isAdmin ? estimate.authorName : maskAuthorName(estimate.authorName),
+            phone: isAdmin ? estimate.phone : maskPhoneNumber(estimate.phone),
+            address: isAdmin ? estimate.address : maskAddress(estimate.address),
+            content: isAdmin ? estimate.content : maskCareContent(estimate.content),
             password: undefined,
             adminNotes: isAdmin ? estimate.adminNotes : undefined,
           },
@@ -2406,7 +2460,17 @@ ${estimate.content.length > 180 ? estimate.content.substring(0, 180) + '...' : e
         console.error("견적 이메일 발송 오류:", mailErr);
       }
 
-      res.status(201).json(estimate);
+      const isAdmin = req.isAuthenticated() && ["admin", "master"].includes((req.user as any)?.role);
+      const clientEstimate = isAdmin ? estimate : {
+        ...estimate,
+        authorName: maskAuthorName(estimate.authorName),
+        phone: maskPhoneNumber(estimate.phone),
+        address: maskAddress(estimate.address),
+        content: maskCareContent(estimate.content),
+        password: undefined,
+      };
+
+      res.status(201).json(clientEstimate);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Invalid estimate data", errors: error.errors });

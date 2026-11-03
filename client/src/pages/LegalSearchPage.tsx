@@ -17,7 +17,10 @@ import {
   Calendar,
   AlertCircle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  Lightbulb
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -132,6 +135,20 @@ function getSafeDetailUrl(item: LawItem): string {
   return item.detailUrl || `https://www.law.go.kr/LSW/precSearchP.do?q=${encodeURIComponent(item.caseNumber || item.title)}`;
 }
 
+// 모바일/데스크톱 반응형 5개 페이지 번호 윈도우 계산
+function getPageNumbers(current: number, total: number): number[] {
+  if (total <= 5) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  if (current <= 3) {
+    return [1, 2, 3, 4, 5];
+  }
+  if (current >= total - 2) {
+    return [total - 4, total - 3, total - 2, total - 1, total];
+  }
+  return [current - 2, current - 1, current, current + 1, current + 2];
+}
+
 export default function LegalSearchPage() {
   const [, setLocation] = useLocation();
   const [matchDetail, detailParams] = useRoute("/legal/:type/:id");
@@ -224,6 +241,30 @@ export default function LegalSearchPage() {
       return numB - numA;
     });
   }, [searchData?.items, activeTab, sortBy, activeQuery]);
+
+  // 페이지당 10건 분할 페이지네이션
+  const ITEMS_PER_PAGE = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // 검색어, 탭, 정렬 변경 시 1페이지로 자동 리셋
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeQuery, activeTab, sortBy]);
+
+  const totalPages = Math.ceil(displayedItems.length / ITEMS_PER_PAGE) || 1;
+
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return displayedItems.slice(start, start + ITEMS_PER_PAGE);
+  }, [displayedItems, currentPage]);
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    const el = document.getElementById("search-results-section");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -378,7 +419,7 @@ export default function LegalSearchPage() {
         </section>
 
         {/* 2. 검색 필터 & 결과 리스트 */}
-        <section className="space-y-6">
+        <section id="search-results-section" className="space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
             <div className="flex items-center gap-3">
               <h2 className="text-lg md:text-xl font-bold text-slate-900 flex items-center gap-2">
@@ -430,6 +471,67 @@ export default function LegalSearchPage() {
             </div>
           </div>
 
+          {/* 50건 이상 검색 시 상세 검색 유도 안내 배너 */}
+          {displayedItems.length >= 50 && (
+            <div className="bg-gradient-to-r from-amber-50/95 via-orange-50/80 to-amber-50/95 border border-amber-200/90 rounded-xl p-4 sm:p-5 shadow-xs text-slate-800">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-amber-500 text-white rounded-lg shrink-0 mt-0.5 shadow-xs">
+                  <Lightbulb className="w-5 h-5" />
+                </div>
+                <div className="space-y-2 flex-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h4 className="font-bold text-sm sm:text-base text-amber-950 flex items-center gap-1.5">
+                      정확한 검색을 위해서 필요한 단어들을 추가하세요
+                    </h4>
+                    <span className="text-[11px] sm:text-xs font-semibold bg-amber-200/70 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full">
+                      검색결과 {displayedItems.length}건 이상
+                    </span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                    검색된 판례가 많아 원하시는 내용을 한눈에 찾기 어려우실 수 있습니다.<br className="hidden sm:inline" />
+                    찾으시는 <strong>핵심 단어나 구체적 상황(2단어 이상)</strong> 또는 <strong>사건번호</strong>를 검색창에 덧붙여 입력해 보세요.
+                  </p>
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1 text-xs">
+                    <span className="text-slate-500 font-semibold text-[11px] sm:text-xs">추천 검색 팁:</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newQ = `${activeQuery || '상가 권리금'} 10년`.trim();
+                        setSearchQuery(newQ);
+                        setActiveQuery(newQ);
+                      }}
+                      className="bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors shadow-2xs"
+                    >
+                      + "10년" 추가
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newQ = `${activeQuery || '대항력'} 전입 익일 0시`.trim();
+                        setSearchQuery(newQ);
+                        setActiveQuery(newQ);
+                      }}
+                      className="bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors shadow-2xs"
+                    >
+                      + "전입 익일 0시"
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newQ = `${activeQuery || '경매'} 압류 유치권 배제`.trim();
+                        setSearchQuery(newQ);
+                        setActiveQuery(newQ);
+                      }}
+                      className="bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors shadow-2xs"
+                    >
+                      + "압류 유치권 배제"
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Results List */}
           {isLoading ? (
             <div className="py-20 text-center space-y-3">
@@ -438,7 +540,7 @@ export default function LegalSearchPage() {
             </div>
           ) : displayedItems.length > 0 ? (
             <div className="space-y-4">
-              {displayedItems.map((item) => (
+              {paginatedItems.map((item) => (
                 <Card 
                   key={item.id} 
                   className="bg-white border-slate-200 hover:border-slate-300 hover:shadow-md transition-shadow"
@@ -548,6 +650,59 @@ export default function LegalSearchPage() {
                   </CardFooter>
                 </Card>
               ))}
+
+              {/* 페이지네이션 (10건 단위 분할 탐색) */}
+              {totalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-200">
+                  <span className="text-xs text-slate-500 font-medium">
+                    총 <strong className="text-slate-800">{displayedItems.length}</strong>건 중{" "}
+                    <strong className="text-slate-800">
+                      {(currentPage - 1) * ITEMS_PER_PAGE + 1} ~ {Math.min(currentPage * ITEMS_PER_PAGE, displayedItems.length)}
+                    </strong>
+                    건 표시 (페이지 {currentPage} / {totalPages})
+                  </span>
+
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="h-8 px-2.5 text-xs gap-1 border-slate-200 cursor-pointer disabled:opacity-40"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" /> 이전
+                    </Button>
+
+                    <div className="flex items-center gap-1">
+                      {getPageNumbers(currentPage, totalPages).map((pageNum) => (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handlePageChange(pageNum)}
+                          className={`h-8 w-8 p-0 text-xs font-bold cursor-pointer touch-manipulation ${
+                            currentPage === pageNum
+                              ? "bg-orange-600 text-white hover:bg-orange-700 border-orange-600 shadow-xs"
+                              : "text-slate-600 hover:text-slate-900 border-slate-200"
+                          }`}
+                        >
+                          {pageNum}
+                        </Button>
+                      ))}
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                      className="h-8 px-2.5 text-xs gap-1 border-slate-200 cursor-pointer disabled:opacity-40"
+                    >
+                      다음 <ChevronRight className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center py-16 bg-white rounded-xl border border-slate-200 space-y-3">

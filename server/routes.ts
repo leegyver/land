@@ -328,8 +328,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const query = String(req.query.q || req.query.query || "");
       const type = (req.query.type as "all" | "law" | "prec") || "all";
       const page = parseInt(String(req.query.page || "1"), 10) || 1;
+      const sort = (req.query.sort as "latest" | "accuracy") || "latest";
 
-      const result = await searchLawsAndPrecedents(query, type, page);
+      const result = await searchLawsAndPrecedents(query, type, page, sort);
       res.json({ success: true, ...result });
     } catch (err: any) {
       console.error("[API /api/law/search] Error:", err);

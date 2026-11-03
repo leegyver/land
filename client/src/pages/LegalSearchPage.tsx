@@ -58,6 +58,65 @@ interface CurationTheme {
   sampleCases: string[];
 }
 
+// 클라이언트 즉시 반응형 관련도 점수 계산기 (제목/판시사항/요지/사건번호 가중치)
+function calculateClientRelevanceScore(item: LawItem, query: string): number {
+  if (!query || !query.trim()) {
+    const curatedPriority: Record<string, number> = {
+      "prec-2018다252441": 100, // 상가 권리금 10년 초과 보호
+      "prec-2011다44788": 95,   // 경매 압류 후 유치권 대항력 배제
+      "prec-2001다76427": 90,   // 대항력 전입 익일 0시 vs 근저당권
+      "prec-2022다238141": 85,  // 공인중개사 선순위 보증금 확인설명의무
+      "prec-2007다63074": 80,   // 소액임차인 배당요구종기
+      "prec-2016다18797": 75,   // 맹지 주위토지통행권
+      "prec-2025다210305": 70,  // 전세임대주택 대항력 소멸
+      "law-276291": 100,        // 주택임대차보호법
+      "law-263401": 95,         // 상가건물 임대차보호법
+      "law-254129": 90,         // 민사집행법
+      "law-258902": 85,         // 공인중개사법
+      "law-287183": 80,         // 주택임대차보호법 시행령
+      "law-245100": 75,         // 민법
+    };
+    return curatedPriority[item.id] || 10;
+  }
+
+  const cleanQ = query.trim().toLowerCase();
+  const tokens = cleanQ.split(/\s+/).filter((w) => w.length >= 2);
+  let score = 0;
+
+  const title = (item.title || "").toLowerCase();
+  const issue = (item.issue || "").toLowerCase();
+  const summary = (item.summary || "").toLowerCase();
+  const caseNumber = (item.caseNumber || "").toLowerCase();
+
+  if (title === cleanQ) {
+    score += 1000;
+  } else if (title.startsWith(cleanQ)) {
+    score += 600;
+  } else if (title.includes(cleanQ)) {
+    score += 400;
+  }
+
+  if (caseNumber && caseNumber.includes(cleanQ)) {
+    score += 800;
+  }
+
+  if (issue.includes(cleanQ)) {
+    score += 200;
+  }
+
+  if (summary.includes(cleanQ)) {
+    score += 100;
+  }
+
+  tokens.forEach((tok) => {
+    if (title.includes(tok)) score += 120;
+    if (issue.includes(tok)) score += 50;
+    if (summary.includes(tok)) score += 25;
+  });
+
+  return score;
+}
+
 export default function LegalSearchPage() {
   const [, setLocation] = useLocation();
   const [matchDetail, detailParams] = useRoute("/legal/:type/:id");
@@ -96,11 +155,12 @@ export default function LegalSearchPage() {
     items: LawItem[];
     source: "api" | "fallback";
   }>({
-    queryKey: ["/api/law/search", activeQuery, activeTab],
+    queryKey: ["/api/law/search", activeQuery, activeTab, sortBy],
     queryFn: async () => {
       const params = new URLSearchParams({
         q: activeQuery,
         type: activeTab,
+        sort: sortBy,
       });
       const res = await fetch(`/api/law/search?${params.toString()}`);
       return res.json();
@@ -122,7 +182,7 @@ export default function LegalSearchPage() {
     }
   }, [matchDetail, detailParams]);
 
-  // 탭에 따른 엄격한 2차 필터링 및 최신 선고순(기본값) 정렬
+  // 탭에 따른 엄격한 2차 필터링 및 정렬 (최신 선고순 vs 관련도순)
   const displayedItems = useMemo(() => {
     const list = (searchData?.items || []).filter((item) => {
       if (activeTab === "prec") return item.type === "prec";
@@ -130,16 +190,25 @@ export default function LegalSearchPage() {
       return true;
     });
 
-    if (sortBy === "latest") {
+    if (sortBy === "accuracy") {
       return [...list].sort((a, b) => {
+        const scoreA = calculateClientRelevanceScore(a, activeQuery);
+        const scoreB = calculateClientRelevanceScore(b, activeQuery);
+        if (scoreB !== scoreA) {
+          return scoreB - scoreA;
+        }
         const numA = parseInt((a.date || "").replace(/\D/g, ""), 10) || 0;
         const numB = parseInt((b.date || "").replace(/\D/g, ""), 10) || 0;
         return numB - numA;
       });
     }
 
-    return list;
-  }, [searchData?.items, activeTab, sortBy]);
+    return [...list].sort((a, b) => {
+      const numA = parseInt((a.date || "").replace(/\D/g, ""), 10) || 0;
+      const numB = parseInt((b.date || "").replace(/\D/g, ""), 10) || 0;
+      return numB - numA;
+    });
+  }, [searchData?.items, activeTab, sortBy, activeQuery]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -321,10 +390,10 @@ export default function LegalSearchPage() {
                 <button
                   type="button"
                   onClick={() => setSortBy("latest")}
-                  className={`px-2.5 py-1 rounded-md font-semibold transition-all flex items-center gap-1 whitespace-nowrap ${
+                  className={`px-2.5 py-1 rounded-md transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer touch-manipulation ${
                     sortBy === "latest"
-                      ? "bg-white text-orange-600 shadow-sm"
-                      : "text-slate-500 hover:text-slate-800"
+                      ? "bg-white text-orange-600 shadow-sm font-bold"
+                      : "text-slate-500 hover:text-slate-800 font-medium"
                   }`}
                 >
                   <Calendar className="w-3.5 h-3.5" />
@@ -333,12 +402,13 @@ export default function LegalSearchPage() {
                 <button
                   type="button"
                   onClick={() => setSortBy("accuracy")}
-                  className={`px-2.5 py-1 rounded-md font-semibold transition-all whitespace-nowrap ${
+                  className={`px-2.5 py-1 rounded-md transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer touch-manipulation ${
                     sortBy === "accuracy"
-                      ? "bg-white text-orange-600 shadow-sm"
-                      : "text-slate-500 hover:text-slate-800"
+                      ? "bg-white text-orange-600 shadow-sm font-bold"
+                      : "text-slate-500 hover:text-slate-800 font-medium"
                   }`}
                 >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                   관련도순
                 </button>
               </div>
@@ -494,17 +564,17 @@ export default function LegalSearchPage() {
             <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0">
               <Button
                 size="lg"
-                className="bg-white text-orange-700 hover:bg-orange-50 font-bold shadow-lg"
+                className="bg-white text-orange-600 hover:bg-orange-50 font-bold shadow-lg"
                 onClick={() => setLocation("/total-care")}
               >
                 부동산 토탈케어 신청 <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
               <Button
                 size="lg"
-                className="bg-white text-slate-900 hover:text-orange-600 hover:bg-orange-50 font-bold shadow-lg border-none"
+                className="bg-slate-900 text-white hover:bg-slate-800 font-bold shadow-lg border border-slate-700/50"
                 onClick={() => setLocation("/auctions")}
               >
-                법원 경매 매물 보기
+                <Gavel className="w-4 h-4 mr-1.5 text-amber-400" /> 법원 경매 매물 보기
               </Button>
             </div>
           </div>

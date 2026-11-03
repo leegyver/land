@@ -296,6 +296,94 @@ function sortByDateDesc(items: LawSearchResult[]): LawSearchResult[] {
   return [...items].sort((a, b) => parseDateNum(b.date) - parseDateNum(a.date));
 }
 
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// 검색어 관련도 점수 계산기 (제목/판시사항/요지/사건번호 가중치)
+export function calculateRelevanceScore(item: LawSearchResult, query: string): number {
+  if (!query || !query.trim()) {
+    // 검색어가 없을 때는 실무 중요도(랜드마크 리딩판례) 우선순위 점수
+    const curatedPriority: Record<string, number> = {
+      "prec-2018다252441": 100, // 상가 권리금 10년 초과 보호
+      "prec-2011다44788": 95,   // 경매 압류 후 유치권 대항력 배제
+      "prec-2001다76427": 90,   // 대항력 전입 익일 0시 vs 근저당권
+      "prec-2022다238141": 85,  // 공인중개사 선순위 보증금 확인설명의무
+      "prec-2007다63074": 80,   // 소액임차인 배당요구종기
+      "prec-2016다18797": 75,   // 맹지 주위토지통행권
+      "prec-2025다210305": 70,  // 전세임대주택 대항력 소멸
+      "law-276291": 100,        // 주택임대차보호법
+      "law-263401": 95,         // 상가건물 임대차보호법
+      "law-254129": 90,         // 민사집행법
+      "law-258902": 85,         // 공인중개사법
+      "law-287183": 80,         // 주택임대차보호법 시행령
+      "law-245100": 75,         // 민법
+    };
+    return curatedPriority[item.id] || 10;
+  }
+
+  const cleanQ = query.trim().toLowerCase();
+  const tokens = cleanQ.split(/\s+/).filter(w => w.length >= 2);
+  let score = 0;
+
+  const title = (item.title || "").toLowerCase();
+  const issue = (item.issue || "").toLowerCase();
+  const summary = (item.summary || "").toLowerCase();
+  const caseNumber = (item.caseNumber || "").toLowerCase();
+
+  // 1. 사건명/법령명 완전 또는 부분 일치 (가장 높은 가중치)
+  if (title === cleanQ) {
+    score += 1000;
+  } else if (title.startsWith(cleanQ)) {
+    score += 600;
+  } else if (title.includes(cleanQ)) {
+    score += 400;
+  }
+
+  // 2. 사건번호 검색 매칭
+  if (caseNumber && caseNumber.includes(cleanQ)) {
+    score += 800;
+  }
+
+  // 3. 판시사항(핵심 쟁점) 포함
+  if (issue.includes(cleanQ)) {
+    score += 200;
+  }
+
+  // 4. 판결요지(이유 요약) 포함
+  if (summary.includes(cleanQ)) {
+    score += 100;
+  }
+
+  // 5. 검색어 개별 토큰 일치 가중치
+  tokens.forEach(tok => {
+    if (title.includes(tok)) score += 120;
+    if (issue.includes(tok)) score += 50;
+    if (summary.includes(tok)) score += 25;
+  });
+
+  // 6. 제목 내 출현 횟수 추가 가산
+  try {
+    const reg = new RegExp(escapeRegex(cleanQ), "gi");
+    const matches = title.match(reg);
+    if (matches) score += matches.length * 50;
+  } catch (e) {}
+
+  return score;
+}
+
+// 관련도순 정렬 (동점일 경우 최신 선고순)
+function sortByRelevance(items: LawSearchResult[], query: string): LawSearchResult[] {
+  return [...items].sort((a, b) => {
+    const scoreA = calculateRelevanceScore(a, query);
+    const scoreB = calculateRelevanceScore(b, query);
+    if (scoreB !== scoreA) {
+      return scoreB - scoreA;
+    }
+    return parseDateNum(b.date) - parseDateNum(a.date);
+  });
+}
+
 // 메모리 캐시 (1시간 유지)
 const searchCache = new Map<string, { data: LawSearchResult[]; timestamp: number }>();
 const CACHE_TTL = 1000 * 60 * 60; // 1시간
@@ -303,14 +391,15 @@ const CACHE_TTL = 1000 * 60 * 60; // 1시간
 export async function searchLawsAndPrecedents(
   query: string, 
   targetType: "all" | "law" | "prec" = "all", 
-  page: number = 1
+  page: number = 1,
+  sort: "latest" | "accuracy" = "latest"
 ): Promise<{
   totalCount: number;
   items: LawSearchResult[];
   source: "api" | "fallback";
 }> {
   const cleanQuery = query.trim();
-  const cacheKey = `${cleanQuery}_${targetType}_${page}`;
+  const cacheKey = `${cleanQuery}_${targetType}_${page}_${sort}`;
 
   const cached = searchCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
@@ -321,7 +410,7 @@ export async function searchLawsAndPrecedents(
     };
   }
 
-  // 1. 검색어가 없을 때 기본 추천 데이터 반환 (최신순 정렬 및 탭별 엄격 분리!)
+  // 1. 검색어가 없을 때 기본 추천 데이터 반환 (탭별 엄격 분리 및 정렬 옵션 반영!)
   if (!cleanQuery) {
     let list: LawSearchResult[] = [];
     if (targetType === "prec") {
@@ -331,7 +420,7 @@ export async function searchLawsAndPrecedents(
     } else {
       list = [...CURATED_PRECEDENTS, ...CURATED_LAWS];
     }
-    const sortedList = sortByDateDesc(list);
+    const sortedList = sort === "accuracy" ? sortByRelevance(list, "") : sortByDateDesc(list);
     return {
       totalCount: sortedList.length,
       items: sortedList,
@@ -480,7 +569,8 @@ export async function searchLawsAndPrecedents(
           return tokens.some(tok => targetText.includes(tok));
         });
 
-        const sortedLaws = sortByDateDesc(filteredLaws.length > 0 ? filteredLaws : CURATED_LAWS);
+        const targetList = filteredLaws.length > 0 ? filteredLaws : CURATED_LAWS;
+        const sortedLaws = sort === "accuracy" ? sortByRelevance(targetList, cleanQuery) : sortByDateDesc(targetList);
         return {
           totalCount: sortedLaws.length,
           items: sortedLaws,
@@ -501,7 +591,8 @@ export async function searchLawsAndPrecedents(
           return tokens.some(tok => targetText.includes(tok));
         });
 
-        const sortedPrecs = sortByDateDesc(filteredPrecs.length > 0 ? filteredPrecs : CURATED_PRECEDENTS);
+        const targetList = filteredPrecs.length > 0 ? filteredPrecs : CURATED_PRECEDENTS;
+        const sortedPrecs = sort === "accuracy" ? sortByRelevance(targetList, cleanQuery) : sortByDateDesc(targetList);
         return {
           totalCount: sortedPrecs.length,
           items: sortedPrecs,
@@ -509,7 +600,7 @@ export async function searchLawsAndPrecedents(
         };
       }
 
-      // 전체 탭인 경우 둘 다 매칭 후 최신순 정렬
+      // 전체 탭인 경우 둘 다 매칭 후 정렬
       const allFallback = [...CURATED_PRECEDENTS, ...CURATED_LAWS];
       const filteredAll = allFallback.filter(item => {
         const targetText = [
@@ -523,7 +614,8 @@ export async function searchLawsAndPrecedents(
         return tokens.some(tok => targetText.includes(tok));
       });
 
-      const sortedAll = sortByDateDesc(filteredAll.length > 0 ? filteredAll : allFallback);
+      const targetList = filteredAll.length > 0 ? filteredAll : allFallback;
+      const sortedAll = sort === "accuracy" ? sortByRelevance(targetList, cleanQuery) : sortByDateDesc(targetList);
       return {
         totalCount: sortedAll.length,
         items: sortedAll,
@@ -539,8 +631,12 @@ export async function searchLawsAndPrecedents(
       finalItems = results.filter(r => r.type === "law");
     }
 
-    // ★ 대법원 판례 및 법령: 최신 선고일자/시행일자 내림차순(최신순) 정렬 보장!
-    finalItems = sortByDateDesc(finalItems);
+    // ★ 정렬 적용: 관련도순(accuracy) 또는 최신 선고일자/시행일자순(latest)
+    if (sort === "accuracy") {
+      finalItems = sortByRelevance(finalItems, cleanQuery);
+    } else {
+      finalItems = sortByDateDesc(finalItems);
+    }
 
     if (finalItems.length > 0) {
       searchCache.set(cacheKey, { data: finalItems, timestamp: Date.now() });

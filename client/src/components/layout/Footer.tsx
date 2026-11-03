@@ -12,10 +12,10 @@ const Footer = () => {
         <div className="mb-0">
           <div>
             <div className="flex space-x-3 mt-1">
-              <a href="https://www.youtube.com/@강화도부동산이야기" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity bg-white/10 p-2 rounded-full touch-manipulation">
+              <a href="https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity bg-white/10 p-2 rounded-full touch-manipulation" title="유튜브">
                 <img src="/youtube.png" alt="YouTube" width="20" height="20" className="w-5 h-5" />
               </a>
-              <a href="https://www.instagram.com/leegyverceo/" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity bg-white/10 p-2 rounded-full touch-manipulation">
+              <a href="https://www.instagram.com/leegyver.leeminho/" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity bg-white/10 p-2 rounded-full touch-manipulation" title="인스타그램">
                 <img src="/instagram.png" alt="Instagram" width="20" height="20" className="w-5 h-5" />
               </a>
               <a href="https://blog.naver.com/9551304" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity bg-white/10 p-2 rounded-full touch-manipulation">

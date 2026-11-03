@@ -289,58 +289,57 @@ const HomePage = () => {
               </h2>
             </div>
 
-            {/* Tab Buttons (Horizontal scrollable on mobile, crisp & fast) */}
-            <div className="flex gap-1.5 overflow-x-auto no-scrollbar py-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap shrink-0">
+            {/* Tab Buttons: No horizontal scroll, fits 100% of screen width */}
+            <div className="grid grid-cols-5 gap-1 w-full sm:flex sm:w-auto sm:gap-1.5 bg-slate-200/90 p-1 rounded-xl shrink-0">
               <button
                 onClick={() => setSelectedThemeTab('latest')}
-                className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all touch-manipulation ${
+                className={`px-1 py-2 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-black text-center whitespace-nowrap transition-all touch-manipulation ${
                   selectedThemeTab === 'latest'
                     ? 'bg-slate-900 text-white shadow-md'
-                    : 'bg-white/80 text-slate-700 hover:text-slate-900 hover:bg-white'
+                    : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
                 }`}
               >
-                ✨ 최근매물
+                최근매물
               </button>
               <button
                 onClick={() => setSelectedThemeTab('urgent')}
-                className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all touch-manipulation ${
+                className={`px-1 py-2 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-black text-center whitespace-nowrap transition-all touch-manipulation ${
                   selectedThemeTab === 'urgent'
                     ? 'bg-red-600 text-white shadow-md'
-                    : 'bg-white/80 text-slate-700 hover:text-slate-900 hover:bg-white'
+                    : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
                 }`}
               >
-                🔥 초급매물
+                초급매
               </button>
               <button
                 onClick={() => setSelectedThemeTab('auction')}
-                className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all flex items-center gap-1 touch-manipulation ${
+                className={`px-1 py-2 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-black text-center whitespace-nowrap transition-all touch-manipulation ${
                   selectedThemeTab === 'auction'
-                    ? 'bg-amber-500 text-slate-950 shadow-md ring-2 ring-amber-400/50'
-                    : 'bg-white/80 text-slate-700 hover:text-slate-900 hover:bg-white'
+                    ? 'bg-amber-500 text-slate-950 shadow-md ring-1 ring-amber-400'
+                    : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
                 }`}
               >
-                <span>🔨 반값경매</span>
-                <span className="bg-red-600 text-white text-[9px] font-black px-1 rounded-full">HOT</span>
+                반값경매
               </button>
               <button
                 onClick={() => setSelectedThemeTab('land')}
-                className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all touch-manipulation ${
+                className={`px-1 py-2 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-black text-center whitespace-nowrap transition-all touch-manipulation ${
                   selectedThemeTab === 'land'
                     ? 'bg-emerald-600 text-white shadow-md'
-                    : 'bg-white/80 text-slate-700 hover:text-slate-900 hover:bg-white'
+                    : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
                 }`}
               >
-                🌲 토지
+                토지
               </button>
               <button
                 onClick={() => setSelectedThemeTab('house_comm')}
-                className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all touch-manipulation ${
+                className={`px-1 py-2 sm:px-3.5 sm:py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-sm font-black text-center whitespace-nowrap transition-all touch-manipulation ${
                   selectedThemeTab === 'house_comm'
                     ? 'bg-blue-600 text-white shadow-md'
-                    : 'bg-white/80 text-slate-700 hover:text-slate-900 hover:bg-white'
+                    : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
                 }`}
               >
-                🏡 주택·상가
+                주택·상가
               </button>
             </div>
           </div>
@@ -745,25 +744,36 @@ const CombinedYouTubeSection = ({ channels }: {
 }) => {
   const [activeIdx, setActiveIdx] = useState(0);
   const current = channels[activeIdx] || channels[0];
+  const displayVideos = (current.videos || []).slice(0, 4);
 
   return (
     <section className="py-4 sm:py-6 bg-slate-900 text-white">
       <div className="container mx-auto px-4 max-w-6xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-          <div className="flex items-center gap-2">
-            <Youtube className="h-6 w-6 text-red-500 shrink-0" />
-            <h2 className="text-base sm:text-xl font-black text-white tracking-tight">
-              실시간 현장 영상
-            </h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Youtube className="h-5 w-5 sm:h-6 sm:w-6 text-red-500 shrink-0" />
+              <h2 className="text-sm sm:text-lg font-black text-white tracking-tight">
+                유튜브 현장 매물 영상
+              </h2>
+            </div>
+            <a
+              href={current.channelUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="sm:hidden text-xs text-slate-300 hover:text-white flex items-center font-bold"
+            >
+              채널보기 <ArrowRight className="ml-1 h-3 w-3" />
+            </a>
           </div>
 
-          {/* Channel Select Tabs */}
-          <div className="flex gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+          {/* 3 Channel Tabs: Fits 100% width, No horizontal scroll */}
+          <div className="grid grid-cols-3 gap-1.5 w-full sm:w-auto sm:flex">
             {channels.map((ch, idx) => (
               <button
                 key={ch.title}
                 onClick={() => setActiveIdx(idx)}
-                className={`px-3 py-1 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all touch-manipulation ${
+                className={`px-2 py-1.5 rounded-xl text-xs sm:text-sm font-bold text-center transition-all touch-manipulation ${
                   activeIdx === idx
                     ? "bg-red-600 text-white shadow-md"
                     : "bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700"
@@ -772,80 +782,68 @@ const CombinedYouTubeSection = ({ channels }: {
                 {ch.title}
               </button>
             ))}
-            <a
-              href={current.channelUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ml-auto text-xs text-slate-400 hover:text-white flex items-center shrink-0 self-center pl-2"
-            >
-              채널 <ArrowRight className="ml-0.5 h-3 w-3" />
-            </a>
           </div>
         </div>
 
+        {/* Video Grid: 2 columns on mobile, 4 on desktop (No scroll required) */}
         {current.isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-slate-800 h-36 rounded-xl animate-pulse" />
+              <div key={i} className="bg-slate-800 aspect-video rounded-xl animate-pulse" />
+            ))}
+          </div>
+        ) : displayVideos.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
+            {displayVideos.map((video) => (
+              <a
+                key={video.id}
+                href={video.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group block bg-slate-800 rounded-xl overflow-hidden shadow-md border border-slate-700/80 hover:border-red-500/50 transition-all touch-manipulation"
+              >
+                <div className="relative aspect-video overflow-hidden">
+                  <img
+                    src={video.thumbnail || `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`}
+                    alt={video.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                    loading="lazy"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.onerror = null;
+                      target.src = `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`;
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div className="bg-red-600 p-2 rounded-full text-white shadow-lg">
+                      <Play className="h-4 w-4 fill-current" />
+                    </div>
+                  </div>
+                </div>
+                <div className="p-2 sm:p-2.5 bg-slate-800">
+                  <h3 className="font-bold line-clamp-1 text-slate-100 group-hover:text-red-400 transition-colors text-xs sm:text-sm">
+                    {video.title}
+                  </h3>
+                </div>
+              </a>
             ))}
           </div>
         ) : (
-          <Carousel
-            opts={{
-              align: "start",
-              loop: true,
-            }}
-            plugins={[
-              Autoplay({
-                delay: 4000,
-                stopOnInteraction: false,
-              }),
-            ]}
-            className="w-full relative"
-          >
-            <CarouselContent className="-ml-2 md:-ml-4">
-              {current.videos?.map((video) => (
-                <CarouselItem key={video.id} className="pl-2 md:pl-4 basis-[75%] sm:basis-[45%] lg:basis-1/4">
-                  <a
-                    href={video.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group h-full block touch-manipulation"
-                  >
-                    <div className="bg-slate-800 rounded-xl overflow-hidden shadow-md border border-slate-700/80 h-full flex flex-col">
-                      <div className="relative aspect-video overflow-hidden shrink-0">
-                        <img
-                          src={video.thumbnail || `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`}
-                          alt={video.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.onerror = null;
-                            target.src = `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`;
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <div className="bg-red-600 p-2 rounded-full text-white">
-                            <Play className="h-4 w-4 fill-current" />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="p-2.5 flex-grow bg-slate-800">
-                        <h3 className="font-bold line-clamp-1 text-slate-100 group-hover:text-red-400 transition-colors text-xs sm:text-sm">
-                          {video.title}
-                        </h3>
-                      </div>
-                    </div>
-                  </a>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <div className="hidden md:block">
-              <CarouselPrevious className="absolute -left-10 top-1/2 -translate-y-1/2 bg-white/10 border-white/20 text-white hover:bg-white/20" />
-              <CarouselNext className="absolute -right-10 top-1/2 -translate-y-1/2 bg-white/10 border-white/20 text-white hover:bg-white/20" />
-            </div>
-          </Carousel>
+          <div className="text-center py-6 text-xs text-slate-400">
+            등록된 영상이 없습니다.
+          </div>
         )}
+
+        <div className="hidden sm:flex justify-end mt-2">
+          <a
+            href={current.channelUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-slate-400 hover:text-white flex items-center font-bold"
+          >
+            {current.title} 채널 바로가기 <ArrowRight className="ml-1 h-3 w-3" />
+          </a>
+        </div>
       </div>
     </section>
   );

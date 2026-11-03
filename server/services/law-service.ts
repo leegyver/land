@@ -158,6 +158,71 @@ export const CURATED_PRECEDENTS: LawSearchResult[] = [
     issue: "[1] 토지의 용도와 주위 환경에 따른 통행로의 폭과 위치 산정 기준",
     summary: "어느 토지와 공로 사이에 그 토지의 용도에 필요한 통로가 없는 경우 그 토지 소유자는 주위의 토지를 통행하거나 통로를 개설할 수 있다. 통행로의 폭과 위치는 피통행지 소유자에게 가장 손해가 적은 장소와 방법으로 결정되어야 한다.",
     articles: ["민법 제219조", "건축법 제44조"],
+  },
+  {
+    id: "prec-2007다63074",
+    type: "prec",
+    title: "소액임차인의 최우선변제권 및 대항력 요건 존속 시기",
+    subtitle: "대법원 2008. 6. 26. 선고 2007다63074 판결",
+    date: "2008.06.26",
+    court: "대법원",
+    caseNumber: "2007다63074",
+    caseType: "배당이의",
+    issue: "[1] 주택임대차보호법상 소액임차인이 우선변제를 받기 위하여 대항요건을 유지하여야 하는 종기(=배당요구의 종기)",
+    summary: "주택임대차보호법 제8조에서 정한 소액임차인의 최우선변제권은 경매신청등기 전까지 대항요건을 갖추어야 할 뿐만 아니라, 배당요구 종기까지 대항요건을 계속 유지하고 있어야 한다.",
+    articles: ["주택임대차보호법 제8조", "민사집행법 제84조"],
+  },
+  {
+    id: "prec-2013다23387",
+    type: "prec",
+    title: "토지와 건물의 동일인 소유 여부와 관습법상 법정지상권 성립",
+    subtitle: "대법원 2013. 4. 11. 선고 2013다23387 판결",
+    date: "2013.04.11",
+    court: "대법원",
+    caseNumber: "2013다23387",
+    caseType: "건물철거 및 토지인도",
+    issue: "[1] 강제경매로 인하여 관습법상 법정지상권이 성립하기 위한 토지와 건물의 동일인 소유 판단 기준 시점(=압류의 효력 발생 시)",
+    summary: "부동산 강제경매절차에서 토지와 지상 건물이 동일인의 소유에 속하였는지 여부는 매각대금 완납 시가 아니라 '압류의 효력이 발생한 때(경매개시결정 기입등기 시)'를 기준으로 판단하여야 한다.",
+    articles: ["민법 제366조", "민사집행법 제83조"],
+  },
+  {
+    id: "prec-2020다286102",
+    type: "prec",
+    title: "상가임대인의 신규임차인 주선 거절과 손해배상 산정 기준",
+    subtitle: "대법원 2021. 7. 8. 선고 2020다286102 판결",
+    date: "2021.07.08",
+    court: "대법원",
+    caseNumber: "2020다286102",
+    caseType: "손해배상(기)",
+    issue: "[1] 임대인이 상가를 직접 사용할 계획이라는 이유로 신규임차인과의 임대차계약 체결을 거절한 경우 상가임대차법 위반 여부(적극)",
+    summary: "임대인이 '자신이 상가를 직접 운영할 계획'이라는 이유로 임차인이 주선한 신규임차인과의 계약 체결을 명시적으로 거절한 것은 상가임대차법 제10조의4 제1항 제4호의 정당한 사유 없는 거절에 해당하므로, 임대인은 임차인에게 권리금 상당의 손해를 배상할 책임이 있다.",
+    articles: ["상가건물 임대차보호법 제10조의4"],
+  },
+  {
+    id: "prec-2005다16942",
+    type: "prec",
+    title: "경매 낙찰자의 인도명령과 점유자의 점유이전금지가처분 효력",
+    subtitle: "대법원 2005. 5. 27. 선고 2005다16942 판결",
+    date: "2005.05.27",
+    court: "대법원",
+    caseNumber: "2005다16942",
+    caseType: "건물명도",
+    issue: "[1] 점유이전금지가처분 집행 후 제3자가 점유를 승계한 경우 승계집행문 부여 여부",
+    summary: "점유이전금지가처분이 집행된 후 당사자로부터 점유를 승계한 제3자에 대하여는 본안판결의 승계집행문을 부여받아 인도집행을 할 수 있다.",
+    articles: ["민사집행법 제31조", "민사집행법 제136조"],
+  },
+  {
+    id: "prec-2025다210305",
+    type: "prec",
+    title: "전세임대주택 입주자가 주택 소유권 취득 시 대항력 소멸 여부",
+    subtitle: "대법원 2026. 2. 26. 선고 2025다210305 판결",
+    date: "2026.02.26",
+    court: "대법원",
+    caseNumber: "2025다210305",
+    caseType: "배당이의",
+    issue: "[1] 주택임대차보호법 제3조 제2항에 따라 법인 임차인이 대항력을 갖춘 후 입주자가 해당 주택을 양수하여 소유자가 된 경우 대항력 소멸 여부(적극)",
+    summary: "주택임대차보호법 제3조 제2항에 따라 입주자가 주택을 인도받고 주민등록을 마침으로써 법인 임차인이 대항력을 취득하였더라도, 이후 입주자가 해당 주택의 소유권을 취득하면 입주자의 주민등록은 소유권에 기한 점유가 되므로 임차권 공시방법으로서의 기능을 상실하여 법인의 대항력은 소멸한다.",
+    articles: ["주택임대차보호법 제3조", "주택임대차보호법 제3조의2"],
   }
 ];
 
@@ -272,15 +337,24 @@ export async function searchLawsAndPrecedents(query: string, targetType: "all" |
 
     // API 응답이 없거나 키가 유효하지 않을 때 Fallback 검색 매칭
     if (results.length === 0) {
-      const filtered = CURATED_PRECEDENTS.filter(item => 
-        item.title.includes(cleanQuery) || 
-        (item.summary && item.summary.includes(cleanQuery)) ||
-        (item.issue && item.issue.includes(cleanQuery)) ||
-        (item.caseNumber && item.caseNumber.includes(cleanQuery))
-      );
+      const tokens = cleanQuery.toLowerCase().split(/\s+/).filter(Boolean);
+      const filtered = CURATED_PRECEDENTS.filter(item => {
+        const targetText = [
+          item.title,
+          item.summary || "",
+          item.issue || "",
+          item.caseNumber || "",
+          item.court || "",
+          item.caseType || "",
+          ...(item.articles || [])
+        ].join(" ").toLowerCase();
+        
+        return tokens.some(tok => targetText.includes(tok));
+      });
+
       return {
         totalCount: filtered.length,
-        items: filtered,
+        items: filtered.length > 0 ? filtered : CURATED_PRECEDENTS,
         source: "fallback"
       };
     }

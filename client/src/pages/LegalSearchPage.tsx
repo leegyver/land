@@ -64,9 +64,20 @@ export default function LegalSearchPage() {
   const { toast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeQuery, setActiveQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "prec" | "law">("all");
   const [selectedItem, setSelectedItem] = useState<LawItem | null>(null);
   const [showFullContent, setShowFullContent] = useState(false);
+
+  // URL에서 쿼리스트링 q 읽어오기 (메인 화면 검색창 등에서 유입 시)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const qParam = urlParams.get("q");
+    if (qParam) {
+      setSearchQuery(qParam);
+      setActiveQuery(qParam);
+    }
+  }, []);
 
   // 1. 테마 큐레이션 데이터 조회
   const { data: curationsData } = useQuery<{ success: boolean; themes: CurationTheme[] }>({
@@ -84,10 +95,10 @@ export default function LegalSearchPage() {
     items: LawItem[];
     source: "api" | "fallback";
   }>({
-    queryKey: ["/api/law/search", searchQuery, activeTab],
+    queryKey: ["/api/law/search", activeQuery, activeTab],
     queryFn: async () => {
       const params = new URLSearchParams({
-        q: searchQuery,
+        q: activeQuery,
         type: activeTab,
       });
       const res = await fetch(`/api/law/search?${params.toString()}`);
@@ -112,11 +123,12 @@ export default function LegalSearchPage() {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    refetch();
+    setActiveQuery(searchQuery.trim());
   };
 
   const handleTagClick = (tag: string) => {
     setSearchQuery(tag);
+    setActiveQuery(tag);
   };
 
   const handleOpenDetail = async (item: LawItem) => {
@@ -267,7 +279,7 @@ export default function LegalSearchPage() {
             <div className="flex items-center gap-3">
               <h2 className="text-lg md:text-xl font-bold text-slate-900 flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-blue-600" />
-                {searchQuery ? `'${searchQuery}' 검색 결과` : "실무 추천 판례"}
+                {activeQuery ? `'${activeQuery}' 검색 결과` : "실무 추천 판례"}
               </h2>
               <span className="text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full">
                 총 {searchData?.totalCount || 0}건

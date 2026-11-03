@@ -274,13 +274,26 @@ function cleanHtml(text?: string): string {
     .trim();
 }
 
+// 20260701 -> 2026.07.01 표준화 포맷터
+function formatDateString(val: any): string {
+  if (!val) return "";
+  const s = String(val).trim();
+  if (/^\d{8}$/.test(s)) {
+    return `${s.slice(0, 4)}.${s.slice(4, 6)}.${s.slice(6, 8)}`;
+  }
+  return s;
+}
+
+// 날짜 문자열/숫자를 안전하게 정수(YYYYMMDD)로 변환
+function parseDateNum(val: any): number {
+  if (typeof val === "number") return val;
+  if (!val) return 0;
+  return parseInt(String(val).replace(/\D/g, ""), 10) || 0;
+}
+
 // 날짜(선고일자 / 시행일자 / 공포일자) 기준 최신순(내림차순) 정렬 헬퍼
 function sortByDateDesc(items: LawSearchResult[]): LawSearchResult[] {
-  return [...items].sort((a, b) => {
-    const numA = parseInt((a.date || "").replace(/\D/g, ""), 10) || 0;
-    const numB = parseInt((b.date || "").replace(/\D/g, ""), 10) || 0;
-    return numB - numA;
-  });
+  return [...items].sort((a, b) => parseDateNum(b.date) - parseDateNum(a.date));
 }
 
 // 메모리 캐시 (1시간 유지)
@@ -381,12 +394,14 @@ export async function searchLawsAndPrecedents(
                 ? `https://www.law.go.kr/LSW/precInfoP.do?precSeq=${precSeq}`
                 : `https://www.law.go.kr/LSW/precSearchP.do?q=${encodeURIComponent(caseNum || caseTitle)}`;
 
+              const precDate = formatDateString(item["선고일자"] || item.선고일자);
+
               results.push({
                 id: `prec-${precSeq || Math.random()}`,
                 type: "prec", // 명확하게 판례 타입 지정
                 title: caseTitle,
-                subtitle: `대법원 ${item["선고일자"] || item.선고일자 || ""} ${caseNum}`.trim(),
-                date: item["선고일자"] || item.선고일자,
+                subtitle: `대법원 ${precDate} ${caseNum}`.trim(),
+                date: precDate,
                 court: "대법원",
                 caseNumber: caseNum,
                 caseType: item["사건종류명"] || item.사건종류명 || "민사",
@@ -424,15 +439,18 @@ export async function searchLawsAndPrecedents(
                   ? `https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=${lawSeq}`
                   : `https://www.law.go.kr/법령/${encodeURIComponent(lawTitle)}`;
 
+                const lawDate = formatDateString(item["시행일자"] || item.시행일자 || item["공포일자"]);
+                const pubDate = formatDateString(item["공포일자"] || item.공포일자);
+
                 results.push({
                   id: `law-${lawSeq || Math.random()}`,
                   type: "law", // 명확하게 법령 타입 지정
                   title: lawTitle,
-                  subtitle: `${item["소관부처명"] || item.소관부처명 || ""} | 공포 ${item["공포일자"] || item.공포일자 || ""}`,
-                  date: item["시행일자"] || item.시행일자 || item["공포일자"],
+                  subtitle: `${item["소관부처명"] || item.소관부처명 || ""} | 공포 ${pubDate}`.trim(),
+                  date: lawDate,
                   court: item["소관부처명"] || item.소관부처명 || "정부부처",
                   caseType: item["법령구분명"] || item.법령구분명 || "법령",
-                  summary: item["제개정구분명"] ? `[${item["제개정구분명"]}] 시행일자: ${item["시행일자"] || "공포 즉시"}` : undefined,
+                  summary: item["제개정구분명"] ? `[${item["제개정구분명"]}] 시행일자: ${lawDate || "공포 즉시"}` : undefined,
                   detailUrl: officialLawUrl,
                 });
               });
@@ -524,7 +542,9 @@ export async function searchLawsAndPrecedents(
     // ★ 대법원 판례 및 법령: 최신 선고일자/시행일자 내림차순(최신순) 정렬 보장!
     finalItems = sortByDateDesc(finalItems);
 
-    searchCache.set(cacheKey, { data: finalItems, timestamp: Date.now() });
+    if (finalItems.length > 0) {
+      searchCache.set(cacheKey, { data: finalItems, timestamp: Date.now() });
+    }
     return {
       totalCount: finalItems.length,
       items: finalItems,

@@ -78,10 +78,14 @@ const PropertySection = ({ title, queryKey, bgColor = "bg-white", limit = 12 }: 
                     </div>
                 )}
 
-                {/* Carousel & Controls Header */}
-                <div className="flex justify-between items-center mb-2 px-1 text-xs text-slate-500 font-medium">
-                    <span>총 <strong className="text-slate-900 font-bold">{displayProperties.length}</strong>개의 엄선 매물</span>
-                    <span className="text-[11px] text-slate-400">👉 좌우로 스크롤하여 더 많은 매물을 확인하세요</span>
+                {/* Carousel & Controls Header: 절대 줄바꿈 없는 1줄 컴팩트 헤더 */}
+                <div className="flex justify-between items-center mb-2 px-1 text-xs text-slate-500 font-medium whitespace-nowrap gap-2">
+                    <span className="shrink-0">
+                        총 <strong className="text-slate-900 font-bold">{displayProperties.length}</strong>개 매물
+                    </span>
+                    <span className="text-[11px] text-slate-400 shrink-0">
+                        👉 <span className="hidden sm:inline">좌우로 스크롤하여 더 많은 매물 확인</span><span className="sm:hidden">좌우 넘겨보기</span>
+                    </span>
                 </div>
 
                 <div className="relative px-0 md:px-2">

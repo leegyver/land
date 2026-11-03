@@ -35,35 +35,40 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-white/95 backdrop-blur-sm shadow-sm sticky top-0 w-full z-50 border-b border-slate-200 pt-safe pl-safe pr-safe">
-      <div className="container mx-auto px-4 py-2 md:py-3 landscape:py-1.5">
-        <div className="flex justify-between items-center">
-          <Link href="/" className="flex items-center touch-manipulation">
-            <Building className="text-blue-600 w-6 h-6 sm:w-7 sm:h-7 mr-2 shrink-0" />
+    <header className="bg-white/95 backdrop-blur-sm shadow-sm sticky top-0 w-full z-50 border-b border-slate-200 pt-safe overflow-x-hidden">
+      <div className="container mx-auto px-2 sm:px-4 py-1.5 md:py-2 landscape:py-1 max-w-7xl">
+        <div className="flex justify-between items-center gap-1 sm:gap-2 min-w-0">
+          {/* Logo Section - Compact & beautifully balanced in landscape */}
+          <Link href="/" className="flex items-center touch-manipulation shrink-0">
+            <Building className="text-blue-600 w-5 h-5 sm:w-6 sm:h-6 md:w-6 md:h-6 landscape:w-4.5 landscape:h-4.5 mr-1.5 sm:mr-2 shrink-0" />
             <div className="flex items-center">
-              <span className="text-base sm:text-xl md:text-2xl font-black text-slate-900 tracking-tight whitespace-nowrap">강화도부동산-이가이버</span>
-              <span className="hidden lg:inline-block ml-2 text-[10px] font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200 whitespace-nowrap">법원등록 경매·공매</span>
+              <span className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl landscape:text-xs sm:landscape:text-sm lg:landscape:text-lg font-black text-slate-900 tracking-tight whitespace-nowrap">
+                강화도부동산-이가이버
+              </span>
+              <span className="hidden xl:inline-block ml-2 text-[10px] font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200 whitespace-nowrap">
+                법원등록 경매·공매
+              </span>
             </div>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-3.5 lg:space-x-6 xl:space-x-8">
+          {/* Desktop & Landscape Navigation */}
+          <nav className="hidden md:flex items-center space-x-1.5 md:space-x-2.5 lg:space-x-5 xl:space-x-7 landscape:space-x-1.5 lg:landscape:space-x-3.5 shrink-0">
             {navItems.map((item) => (
               <Link
                 key={item.path}
                 href={item.path}
-                className={`font-bold text-xs lg:text-sm xl:text-base whitespace-nowrap hover:text-orange-600 transition-colors flex items-center gap-1.5 py-1 ${
+                className={`font-bold text-xs lg:text-sm xl:text-base landscape:text-[11px] lg:landscape:text-sm whitespace-nowrap hover:text-orange-600 transition-colors flex items-center gap-1 lg:gap-1.5 py-1 ${
                   location === item.path ? "text-orange-600 font-black border-b-2 border-orange-500" : "text-neutral-700 hover:text-neutral-900"
                 }`}
               >
                 <span>{item.name}</span>
                 {item.isHot && (
-                  <span className="bg-red-500 text-white text-[9px] lg:text-[10px] font-black px-1.5 py-0.5 rounded-full animate-pulse shadow-sm">
+                  <span className="bg-red-500 text-white text-[8px] lg:text-[10px] font-black px-1 lg:px-1.5 py-0.2 rounded-full animate-pulse shadow-sm">
                     HOT
                   </span>
                 )}
                 {item.isNew && (
-                  <span className="bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[9px] lg:text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-sm animate-bounce">
+                  <span className="bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[8px] lg:text-[10px] font-black px-1 lg:px-1.5 py-0.2 rounded-full shadow-sm animate-bounce">
                     NEW
                   </span>
                 )}
@@ -71,27 +76,31 @@ const Header = () => {
             ))}
           </nav>
 
-          {/* Desktop Quick Call & Auth */}
-          <div className="hidden md:flex items-center space-x-3">
+          {/* Desktop & Landscape Quick Call & Auth (Zero overflow) */}
+          <div className="hidden md:flex items-center space-x-1.5 sm:space-x-2 lg:space-x-3 shrink-0">
+            {/* Phone button: Slim icon on mobile landscape/tablet, full pill on wide desktop */}
             <a
               href="tel:010-4787-3120"
-              className="flex items-center gap-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs lg:text-sm font-bold px-3.5 py-2 rounded-full shadow-md shadow-orange-500/20 transition-all transform hover:scale-105"
+              className="flex xl:hidden landscape:flex xl:landscape:hidden w-7 h-7 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white items-center justify-center shadow-sm shrink-0 touch-manipulation"
+              title="전화상담 010-4787-3120"
+            >
+              <Phone className="w-3.5 h-3.5 fill-white" />
+            </a>
+            <a
+              href="tel:010-4787-3120"
+              className="hidden xl:flex landscape:hidden xl:landscape:flex items-center gap-1.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md shadow-orange-500/20 transition-all shrink-0"
             >
               <Phone className="w-3.5 h-3.5 fill-white" />
               <span>010-4787-3120</span>
             </a>
+
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2">
-                    <User size={18} />
-                    <span className="font-medium">
+                  <Button variant="ghost" size="sm" className="h-7 px-1.5 sm:px-2 md:h-8 md:px-2.5 flex items-center gap-1 text-xs shrink-0 font-bold">
+                    <User size={14} className="shrink-0" />
+                    <span className="max-w-[50px] sm:max-w-[80px] truncate">
                       {user.nickname || user.username}
-                      {user.provider && (
-                        <span className="ml-1 text-xs text-slate-400">
-                          ({user.provider === 'naver' ? '네이버' : user.provider === 'kakao' ? '카카오' : user.provider})
-                        </span>
-                      )}
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
@@ -122,10 +131,15 @@ const Header = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button variant="default" asChild>
-                <Link href="/auth" className="flex items-center">
-                  <LogIn className="mr-2 h-4 w-4" />
-                  로그인
+              <Button
+                variant="default"
+                size="sm"
+                className="h-7 px-2 sm:h-8 sm:px-3 text-xs font-bold shrink-0 whitespace-nowrap shadow-sm touch-manipulation"
+                asChild
+              >
+                <Link href="/auth" className="flex items-center gap-1">
+                  <LogIn className="h-3.5 w-3.5 shrink-0" />
+                  <span>로그인</span>
                 </Link>
               </Button>
             )}

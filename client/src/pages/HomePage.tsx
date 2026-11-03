@@ -278,22 +278,22 @@ const HomePage = () => {
       </section>
 
       {/* Theme Tab Property Showcase */}
-      <section id="auction-section" className="pt-6 pb-8 sm:pt-8 sm:pb-10 landscape:pt-4 landscape:pb-6 bg-[#F7F5F0]">
-        <div className="container mx-auto px-4 max-w-6xl">
+      <section id="auction-section" className="overflow-hidden pt-5 pb-8 sm:pt-8 sm:pb-10 landscape:pt-3 landscape:pb-5 bg-[#F7F5F0]">
+        <div className="container mx-auto px-3 sm:px-4 max-w-6xl">
           {/* Header & Tabs */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6 landscape:mb-3">
+          <div className="flex flex-col landscape:flex-row landscape:items-center lg:flex-row lg:items-center justify-between gap-2.5 sm:gap-4 mb-4 sm:mb-6 landscape:mb-2.5">
             <div className="shrink-0">
               <span className="text-[10px] sm:text-xs font-bold text-orange-600 tracking-wider uppercase block">HOT & FEATURED</span>
-              <h2 className="text-lg sm:text-2xl md:text-3xl landscape:text-base md:landscape:text-lg font-black text-slate-900 tracking-tight flex items-center gap-1.5 whitespace-nowrap">
+              <h2 className="text-base sm:text-lg md:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-1.5 whitespace-nowrap">
                 <span>🔥 이가이버 추천 매물 & 경매관</span>
               </h2>
             </div>
 
-            {/* Tab Buttons: No horizontal scroll, fits width nicely */}
-            <div className="grid grid-cols-5 gap-1 w-full sm:flex sm:w-auto sm:gap-1.5 landscape:gap-1 bg-slate-200/90 p-1 rounded-xl shrink-0">
+            {/* Tab Buttons: No horizontal scroll, fits width cleanly */}
+            <div className="grid grid-cols-5 gap-1 w-full landscape:flex landscape:w-auto lg:flex lg:w-auto landscape:gap-1 lg:gap-1.5 bg-slate-200/90 p-1 rounded-xl shrink-0 max-w-full">
               <button
                 onClick={() => setSelectedThemeTab('latest')}
-                className={`px-1 py-1.5 sm:px-3.5 sm:py-2 landscape:px-2.5 landscape:py-1 rounded-lg sm:rounded-xl text-[11px] sm:text-sm landscape:text-xs font-black text-center whitespace-nowrap transition-all touch-manipulation ${
+                className={`px-1 py-1.5 landscape:px-2 landscape:py-1 lg:px-3.5 lg:py-2 rounded-lg lg:rounded-xl text-[11px] landscape:text-xs lg:text-sm font-black text-center whitespace-nowrap transition-all touch-manipulation ${
                   selectedThemeTab === 'latest'
                     ? 'bg-slate-900 text-white shadow-md'
                     : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
@@ -303,7 +303,7 @@ const HomePage = () => {
               </button>
               <button
                 onClick={() => setSelectedThemeTab('urgent')}
-                className={`px-1 py-1.5 sm:px-3.5 sm:py-2 landscape:px-2.5 landscape:py-1 rounded-lg sm:rounded-xl text-[11px] sm:text-sm landscape:text-xs font-black text-center whitespace-nowrap transition-all touch-manipulation ${
+                className={`px-1 py-1.5 landscape:px-2 landscape:py-1 lg:px-3.5 lg:py-2 rounded-lg lg:rounded-xl text-[11px] landscape:text-xs lg:text-sm font-black text-center whitespace-nowrap transition-all touch-manipulation ${
                   selectedThemeTab === 'urgent'
                     ? 'bg-red-600 text-white shadow-md'
                     : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
@@ -313,7 +313,7 @@ const HomePage = () => {
               </button>
               <button
                 onClick={() => setSelectedThemeTab('auction')}
-                className={`px-1 py-1.5 sm:px-3.5 sm:py-2 landscape:px-2.5 landscape:py-1 rounded-lg sm:rounded-xl text-[11px] sm:text-sm landscape:text-xs font-black text-center whitespace-nowrap transition-all touch-manipulation ${
+                className={`px-1 py-1.5 landscape:px-2 landscape:py-1 lg:px-3.5 lg:py-2 rounded-lg lg:rounded-xl text-[11px] landscape:text-xs lg:text-sm font-black text-center whitespace-nowrap transition-all touch-manipulation ${
                   selectedThemeTab === 'auction'
                     ? 'bg-amber-500 text-slate-950 shadow-md ring-1 ring-amber-400'
                     : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
@@ -323,7 +323,7 @@ const HomePage = () => {
               </button>
               <button
                 onClick={() => setSelectedThemeTab('land')}
-                className={`px-1 py-1.5 sm:px-3.5 sm:py-2 landscape:px-2.5 landscape:py-1 rounded-lg sm:rounded-xl text-[11px] sm:text-sm landscape:text-xs font-black text-center whitespace-nowrap transition-all touch-manipulation ${
+                className={`px-1 py-1.5 landscape:px-2 landscape:py-1 lg:px-3.5 lg:py-2 rounded-lg lg:rounded-xl text-[11px] landscape:text-xs lg:text-sm font-black text-center whitespace-nowrap transition-all touch-manipulation ${
                   selectedThemeTab === 'land'
                     ? 'bg-emerald-600 text-white shadow-md'
                     : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
@@ -333,7 +333,7 @@ const HomePage = () => {
               </button>
               <button
                 onClick={() => setSelectedThemeTab('house_comm')}
-                className={`px-1 py-1.5 sm:px-3.5 sm:py-2 landscape:px-2.5 landscape:py-1 rounded-lg sm:rounded-xl text-[11px] sm:text-sm landscape:text-xs font-black text-center whitespace-nowrap transition-all touch-manipulation ${
+                className={`px-1 py-1.5 landscape:px-2 landscape:py-1 lg:px-3.5 lg:py-2 rounded-lg lg:rounded-xl text-[11px] landscape:text-xs lg:text-sm font-black text-center whitespace-nowrap transition-all touch-manipulation ${
                   selectedThemeTab === 'house_comm'
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'

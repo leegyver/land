@@ -243,46 +243,36 @@ const HomePage = () => {
 
 
 
-      {/* 강화군 유일 법원등록 경매·공매 신뢰 배너 */}
-      <section className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white py-4 md:py-5 border-y-2 border-amber-500/40 shadow-xl">
+      {/* 강화군 유일 법원등록 경매·공매 신뢰 배너 - 모바일 컴팩트 압축 */}
+      <section className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 text-white py-2 sm:py-3.5 border-y border-amber-500/40 shadow-md">
         <div className="container mx-auto px-4 max-w-6xl">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5 text-center md:text-left">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-slate-950 shadow-lg shrink-0">
-                <Gavel className="w-6 h-6" />
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-slate-950 shadow-md shrink-0">
+                <Gavel className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <div>
-                <div className="flex items-center gap-2 justify-center md:justify-start">
-                  <span className="bg-amber-400/20 text-amber-300 text-xs font-black px-2.5 py-0.5 rounded-md border border-amber-400/40">
-                    강화군 유일
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="bg-amber-400/20 text-amber-300 text-[10px] sm:text-xs font-black px-1.5 py-0.2 rounded border border-amber-400/40 shrink-0">
+                    법원등록
                   </span>
-                  <span className="text-xs text-slate-400 font-medium">인천지방법원 등록 공제 4억원 보증</span>
+                  <span className="text-xs sm:text-sm text-slate-200 font-bold truncate">
+                    강화군 유일 법원등록 경매·공매 입찰대리
+                  </span>
                 </div>
-                <h2 className="text-base sm:text-xl font-extrabold text-white mt-0.5 tracking-tight">
-                  법원 정식 등록 경매·공매 입찰대리 중개사
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-300">
-                  권리분석부터 현장 답사, 법원 입찰, 명도까지 100% 안전하게 이가이버가 직접 책임집니다.
+                <p className="hidden md:block text-xs text-slate-400 mt-0.5">
+                  인천지방법원 등록 공제 4억원 보증 · 권리분석부터 법원 입찰, 명도까지 100% 안전 책임
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5 shrink-0">
-              <button
-                onClick={() => setSelectedThemeTab('auction')}
-                className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5"
-              >
-                <span>🔨 이번 주 추천 경매 보기</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-              <a
-                href="tel:010-4787-3120"
-                className="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs sm:text-sm px-3.5 py-2.5 rounded-xl transition-all flex items-center gap-1"
-              >
-                <Phone className="w-3.5 h-3.5 fill-white" />
-                <span>010-4787-3120</span>
-              </a>
-            </div>
+            <button
+              onClick={() => setSelectedThemeTab('auction')}
+              className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1 shrink-0 touch-manipulation"
+            >
+              <span>추천 경매</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </section>
@@ -299,58 +289,58 @@ const HomePage = () => {
               </h2>
             </div>
 
-            {/* Tab Buttons (5개 테마) */}
-            <div className="flex flex-wrap gap-1.5 bg-slate-200/80 p-1.5 rounded-2xl">
+            {/* Tab Buttons (Horizontal scrollable on mobile, crisp & fast) */}
+            <div className="flex gap-1.5 overflow-x-auto no-scrollbar py-1 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap shrink-0">
               <button
                 onClick={() => setSelectedThemeTab('latest')}
-                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all touch-manipulation ${
                   selectedThemeTab === 'latest'
                     ? 'bg-slate-900 text-white shadow-md'
-                    : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'
+                    : 'bg-white/80 text-slate-700 hover:text-slate-900 hover:bg-white'
                 }`}
               >
                 ✨ 최근매물
               </button>
               <button
                 onClick={() => setSelectedThemeTab('urgent')}
-                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all touch-manipulation ${
                   selectedThemeTab === 'urgent'
                     ? 'bg-red-600 text-white shadow-md'
-                    : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'
+                    : 'bg-white/80 text-slate-700 hover:text-slate-900 hover:bg-white'
                 }`}
               >
                 🔥 초급매물
               </button>
               <button
                 onClick={() => setSelectedThemeTab('auction')}
-                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1 ${
+                className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all flex items-center gap-1 touch-manipulation ${
                   selectedThemeTab === 'auction'
                     ? 'bg-amber-500 text-slate-950 shadow-md ring-2 ring-amber-400/50'
-                    : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'
+                    : 'bg-white/80 text-slate-700 hover:text-slate-900 hover:bg-white'
                 }`}
               >
-                <span>🔨 반값경매공매</span>
-                <span className="bg-red-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full">HOT</span>
+                <span>🔨 반값경매</span>
+                <span className="bg-red-600 text-white text-[9px] font-black px-1 rounded-full">HOT</span>
               </button>
               <button
                 onClick={() => setSelectedThemeTab('land')}
-                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all touch-manipulation ${
                   selectedThemeTab === 'land'
                     ? 'bg-emerald-600 text-white shadow-md'
-                    : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'
+                    : 'bg-white/80 text-slate-700 hover:text-slate-900 hover:bg-white'
                 }`}
               >
-                🌲 토지추천
+                🌲 토지
               </button>
               <button
                 onClick={() => setSelectedThemeTab('house_comm')}
-                className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                className={`px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all touch-manipulation ${
                   selectedThemeTab === 'house_comm'
                     ? 'bg-blue-600 text-white shadow-md'
-                    : 'text-slate-700 hover:text-slate-900 hover:bg-white/50'
+                    : 'bg-white/80 text-slate-700 hover:text-slate-900 hover:bg-white'
                 }`}
               >
-                🏡 주택상가추천
+                🏡 주택·상가
               </button>
             </div>
           </div>
@@ -581,7 +571,7 @@ const HomePage = () => {
               <div>
                 <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-1">지도로 한눈에 보기</h2>
 
-                <ul className="space-y-1 mb-2">
+                <ul className="hidden md:block space-y-1 mb-2">
                   <li className="flex items-start">
                     <div className="bg-primary/10 p-2 rounded-full mr-4 text-primary">
                       <Map className="h-5 w-5" />
@@ -625,22 +615,13 @@ const HomePage = () => {
         </div>
       </section >
 
-      {/* YouTube Section 1: 이가이버 유튜브 */}
-      <YouTubeSliderSection
-        title="이가이버 유튜브"
-        videos={latestVideos} isLoading={isVideosLoading} channelUrl="https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA" isLive={channel1Live?.isLive} liveVideoId={channel1Live?.videoId}
-      />
-
-      {/* YouTube Section 2: 강화도 부동산이야기 */}
-      <YouTubeSliderSection
-        title="강화도 부동산이야기"
-        videos={secondChannelVideos} isLoading={isSecondVideosLoading} channelUrl="https://youtube.com/channel/UChvA8_nrczWDBYdHUum7Amw?si=K45xaU3foR1mSPFE" isLive={channel2Live?.isLive} liveVideoId={channel2Live?.videoId}
-      />
-
-      {/* YouTube Section 3: 강화114부동산TV */}
-      <YouTubeSliderSection
-        title="강화114부동산TV"
-        videos={thirdChannelVideos} isLoading={isThirdVideosLoading} channelUrl="https://youtube.com/channel/UCRicoETqTmWVJ8_o34OxwFg" isLive={channel3Live?.isLive} liveVideoId={channel3Live?.videoId}
+      {/* 모바일 최적화 통합 유튜브 채널관 (3단 나열 -> 직관적 탭 통합) */}
+      <CombinedYouTubeSection
+        channels={[
+          { title: "이가이버TV", videos: latestVideos, isLoading: isVideosLoading, channelUrl: "https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA", isLive: channel1Live?.isLive, liveVideoId: channel1Live?.videoId },
+          { title: "강화도 부동산이야기", videos: secondChannelVideos, isLoading: isSecondVideosLoading, channelUrl: "https://youtube.com/channel/UChvA8_nrczWDBYdHUum7Amw?si=K45xaU3foR1mSPFE", isLive: channel2Live?.isLive, liveVideoId: channel2Live?.videoId },
+          { title: "강화114부동산TV", videos: thirdChannelVideos, isLoading: isThirdVideosLoading, channelUrl: "https://youtube.com/channel/UCRicoETqTmWVJ8_o34OxwFg", isLive: channel3Live?.isLive, liveVideoId: channel3Live?.videoId },
+        ]}
       />
 
       <section className="pt-4 pb-12 bg-white">
@@ -752,6 +733,124 @@ const HomePage = () => {
 };
 
 // 유튜브 슬라이더 섹션 컴포넌트
+const CombinedYouTubeSection = ({ channels }: {
+  channels: Array<{
+    title: string;
+    videos: YouTubeVideo[] | undefined;
+    isLoading: boolean;
+    channelUrl: string;
+    isLive?: boolean;
+    liveVideoId?: string;
+  }>;
+}) => {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const current = channels[activeIdx] || channels[0];
+
+  return (
+    <section className="py-4 sm:py-6 bg-slate-900 text-white">
+      <div className="container mx-auto px-4 max-w-6xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2">
+            <Youtube className="h-6 w-6 text-red-500 shrink-0" />
+            <h2 className="text-base sm:text-xl font-black text-white tracking-tight">
+              실시간 현장 영상
+            </h2>
+          </div>
+
+          {/* Channel Select Tabs */}
+          <div className="flex gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+            {channels.map((ch, idx) => (
+              <button
+                key={ch.title}
+                onClick={() => setActiveIdx(idx)}
+                className={`px-3 py-1 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all touch-manipulation ${
+                  activeIdx === idx
+                    ? "bg-red-600 text-white shadow-md"
+                    : "bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700"
+                }`}
+              >
+                {ch.title}
+              </button>
+            ))}
+            <a
+              href={current.channelUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-auto text-xs text-slate-400 hover:text-white flex items-center shrink-0 self-center pl-2"
+            >
+              채널 <ArrowRight className="ml-0.5 h-3 w-3" />
+            </a>
+          </div>
+        </div>
+
+        {current.isLoading ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-slate-800 h-36 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <Carousel
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            plugins={[
+              Autoplay({
+                delay: 4000,
+                stopOnInteraction: false,
+              }),
+            ]}
+            className="w-full relative"
+          >
+            <CarouselContent className="-ml-2 md:-ml-4">
+              {current.videos?.map((video) => (
+                <CarouselItem key={video.id} className="pl-2 md:pl-4 basis-[75%] sm:basis-[45%] lg:basis-1/4">
+                  <a
+                    href={video.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group h-full block touch-manipulation"
+                  >
+                    <div className="bg-slate-800 rounded-xl overflow-hidden shadow-md border border-slate-700/80 h-full flex flex-col">
+                      <div className="relative aspect-video overflow-hidden shrink-0">
+                        <img
+                          src={video.thumbnail || `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`}
+                          alt={video.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.onerror = null;
+                            target.src = `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`;
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <div className="bg-red-600 p-2 rounded-full text-white">
+                            <Play className="h-4 w-4 fill-current" />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-2.5 flex-grow bg-slate-800">
+                        <h3 className="font-bold line-clamp-1 text-slate-100 group-hover:text-red-400 transition-colors text-xs sm:text-sm">
+                          {video.title}
+                        </h3>
+                      </div>
+                    </div>
+                  </a>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <div className="hidden md:block">
+              <CarouselPrevious className="absolute -left-10 top-1/2 -translate-y-1/2 bg-white/10 border-white/20 text-white hover:bg-white/20" />
+              <CarouselNext className="absolute -right-10 top-1/2 -translate-y-1/2 bg-white/10 border-white/20 text-white hover:bg-white/20" />
+            </div>
+          </Carousel>
+        )}
+      </div>
+    </section>
+  );
+};
+
 const YouTubeSliderSection = ({ title, videos, isLoading, channelUrl, isLive, liveVideoId }: {
   title: string,
   videos: YouTubeVideo[] | undefined,

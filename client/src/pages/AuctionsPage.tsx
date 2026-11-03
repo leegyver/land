@@ -43,75 +43,74 @@ export default function AuctionsPage() {
         <meta name="description" content="강화군 유일 법원 정식 등록 공인중개사 이가이버. 시세 반값 찬스! 권리분석부터 법원 입찰대리, 명도까지 100% 안전하게 책임집니다." />
       </Helmet>
 
-      {/* Hero Header */}
-      <div className="bg-gradient-to-b from-slate-950 via-slate-900 to-indigo-950 text-white py-12 md:py-20 border-b-2 border-amber-500/40">
+      {/* Hero Header - 모바일 컴팩트 최적화 */}
+      <div className="bg-gradient-to-b from-slate-950 via-slate-900 to-indigo-950 text-white py-6 sm:py-16 border-b border-amber-500/40">
         <div className="container mx-auto px-4 max-w-5xl text-center">
-          <div className="inline-flex items-center gap-2 bg-amber-400/20 text-amber-300 text-xs md:text-sm font-black px-4 py-1.5 rounded-full border border-amber-400/40 mb-4">
-            <Gavel className="w-4 h-4" />
+          <div className="inline-flex items-center gap-1.5 bg-amber-400/20 text-amber-300 text-[11px] sm:text-sm font-black px-3 py-1 rounded-full border border-amber-400/40 mb-2 sm:mb-4">
+            <Gavel className="w-3.5 h-3.5" />
             <span>강화군 유일 법원 정식 등록 공인중개사</span>
           </div>
 
-          <h1 className="text-3xl md:text-5xl font-black tracking-tight mb-4 leading-tight">
-            강화도 법원 경매·공매,<br />
+          <h1 className="text-xl sm:text-4xl md:text-5xl font-black tracking-tight mb-2 sm:mb-4 leading-tight">
+            강화도 법원 경매·공매{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-300">
-              이가이버가 100% 안전하게
-            </span>{" "}
-            낙찰받아 드립니다
+              안전 대리입찰
+            </span>
           </h1>
 
-          <p className="text-slate-300 text-sm md:text-base max-w-2xl mx-auto mb-8 font-medium">
-            시세보다 30%~50% 저렴한 강화도 알짜 경매 물건! 복잡한 권리분석, 현장 임장, 법원 동행 및 입찰대리, 명도까지 원스톱으로 책임집니다.
+          <p className="hidden sm:block text-slate-300 text-sm md:text-base max-w-2xl mx-auto mb-6 font-medium">
+            시세보다 30%~50% 저렴한 강화도 알짜 경매 물건! 복잡한 권리분석, 현장 임장, 법원 입찰대리, 명도까지 원스톱으로 책임집니다.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-4">
+          <div className="flex items-center justify-center gap-2.5 sm:gap-4 mt-3">
             <a
               href="tel:010-4787-3120"
-              className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-sm md:text-base px-6 py-3.5 rounded-2xl shadow-xl shadow-amber-500/30 flex items-center gap-2 transition-transform active:scale-95"
+              className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs sm:text-base px-4 sm:px-6 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl shadow-lg flex items-center gap-1.5 transition-transform active:scale-95 touch-manipulation"
             >
-              <Phone className="w-4 h-4 fill-slate-950" />
-              <span>010-4787-3120 경매 의뢰 상담</span>
+              <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-slate-950" />
+              <span>010-4787-3120 경매상담</span>
             </a>
             <Button
               onClick={() => window.open(KAKAO_CHANNEL_URL, '_blank')}
               variant="outline"
-              className="bg-white/10 hover:bg-white/20 border-white/20 text-white font-bold text-sm md:text-base h-12 px-6 rounded-2xl"
+              className="bg-white/10 hover:bg-white/20 border-white/20 text-white font-bold text-xs sm:text-base h-10 sm:h-12 px-4 sm:px-6 rounded-xl sm:rounded-2xl touch-manipulation"
             >
-              카톡 1:1 맞춤물건 문의
+              카톡 1:1 문의
             </Button>
           </div>
         </div>
       </div>
 
-      {/* 4-Step Safety Process */}
-      <div className="container mx-auto px-4 max-w-5xl -mt-8 relative z-20">
-        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-200 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-          <div className="space-y-1 text-center md:text-left">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 font-black flex items-center justify-center mx-auto md:mx-0 mb-2">
+      {/* 4-Step Safety Process (모바일 2x2 컴팩트 그리드) */}
+      <div className="container mx-auto px-4 max-w-5xl -mt-4 sm:-mt-8 relative z-20">
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-3.5 sm:p-8 shadow-xl border border-slate-200 grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-6">
+          <div className="space-y-0.5 sm:space-y-1 text-center md:text-left">
+            <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-amber-50 text-amber-600 text-xs sm:text-base font-black flex items-center justify-center mx-auto md:mx-0 mb-1 sm:mb-2">
               1
             </div>
-            <h4 className="font-extrabold text-sm sm:text-base text-slate-900">맞춤 물건 발굴</h4>
-            <p className="text-xs text-slate-500">예산과 용도에 딱 맞는 강화군 법원 경매물건 추천</p>
+            <h4 className="font-extrabold text-xs sm:text-base text-slate-900">맞춤 물건 발굴</h4>
+            <p className="hidden sm:block text-xs text-slate-500">예산과 용도에 딱 맞는 경매물건 추천</p>
           </div>
-          <div className="space-y-1 text-center md:text-left">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 font-black flex items-center justify-center mx-auto md:mx-0 mb-2">
+          <div className="space-y-0.5 sm:space-y-1 text-center md:text-left">
+            <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-blue-50 text-blue-600 text-xs sm:text-base font-black flex items-center justify-center mx-auto md:mx-0 mb-1 sm:mb-2">
               2
             </div>
-            <h4 className="font-extrabold text-sm sm:text-base text-slate-900">철저한 권리분석</h4>
-            <p className="text-xs text-slate-500">등기부·임대차·현장답사로 숨은 리스크 100% 차단</p>
+            <h4 className="font-extrabold text-xs sm:text-base text-slate-900">철저한 권리분석</h4>
+            <p className="hidden sm:block text-xs text-slate-500">등기부·임대차 등 숨은 리스크 차단</p>
           </div>
-          <div className="space-y-1 text-center md:text-left">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 font-black flex items-center justify-center mx-auto md:mx-0 mb-2">
+          <div className="space-y-0.5 sm:space-y-1 text-center md:text-left">
+            <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-emerald-50 text-emerald-600 text-xs sm:text-base font-black flex items-center justify-center mx-auto md:mx-0 mb-1 sm:mb-2">
               3
             </div>
-            <h4 className="font-extrabold text-sm sm:text-base text-slate-900">법원 대리 입찰</h4>
-            <p className="text-xs text-slate-500">인천지방법원 현장에서 적정 낙찰가로 안전 대리입찰</p>
+            <h4 className="font-extrabold text-xs sm:text-base text-slate-900">법원 대리 입찰</h4>
+            <p className="hidden sm:block text-xs text-slate-500">인천지법 현장에서 안전 대리입찰</p>
           </div>
-          <div className="space-y-1 text-center md:text-left">
-            <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 font-black flex items-center justify-center mx-auto md:mx-0 mb-2">
+          <div className="space-y-0.5 sm:space-y-1 text-center md:text-left">
+            <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-rose-50 text-rose-600 text-xs sm:text-base font-black flex items-center justify-center mx-auto md:mx-0 mb-1 sm:mb-2">
               4
             </div>
-            <h4 className="font-extrabold text-sm sm:text-base text-slate-900">명도 & 소유권 이전</h4>
-            <p className="text-xs text-slate-500">낙찰 후 입주 협의부터 등기 완료까지 올인원 케어</p>
+            <h4 className="font-extrabold text-xs sm:text-base text-slate-900">명도 & 소유권 이전</h4>
+            <p className="hidden sm:block text-xs text-slate-500">입주 협의부터 등기 완료까지 케어</p>
           </div>
         </div>
       </div>

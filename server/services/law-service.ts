@@ -271,42 +271,67 @@ export async function searchLawsAndPrecedents(query: string, targetType: "all" |
   try {
     const promises: Promise<void>[] = [];
 
-    // 1. 판례 검색
+    // 1. 판례 검색 (대법원 판례 전용 + 본문/판시사항/판결요지 전체 검색 search=2)
     if (targetType === "all" || targetType === "prec") {
       promises.push((async () => {
         try {
-          const precUrl = `http://www.law.go.kr/DRF/lawSearch.do?OC=${LAW_API_OC}&target=prec&type=XML&query=${encodeURIComponent(cleanQuery)}&page=${page}&display=20`;
-          const res = await fetch(precUrl, { signal: AbortSignal.timeout(4000) });
-          if (res.ok) {
-            const xmlText = await res.text();
-            const parsed = parser.parse(xmlText);
-            const precSearch = parsed.PrecSearch;
-            if (precSearch && precSearch.prec) {
-              const precArray = Array.isArray(precSearch.prec) ? precSearch.prec : [precSearch.prec];
-              precArray.forEach((item: any) => {
-                const precId = String(item["판례일련번호"] || item.판례일련번호 || Math.random());
-                const caseNum = item["사건번호"] || item.사건번호 || "";
-                const caseTitle = cleanHtml(item["사건명"] || item.사건명 || "판례");
-                
-                // 외부 원문 포털 링크: 대국민 법제처 포털 검색 또는 대법원 종합법률정보 링크 (DRF API 경로 대신 대국민 열람 경로 사용)
-                const searchKeyword = caseNum || caseTitle;
-                const portalUrl = `https://www.law.go.kr/precSc.do?menuId=7&subMenuId=47&tabMenuId=213&query=${encodeURIComponent(searchKeyword)}`;
+          // search=2: 판례 본문(판시사항, 판결요지, 주문, 이유) 전체 검색
+          // curt=대법원: 오직 대법원 판례만 필터링
+          // display=50: 한 번에 50건씩 풍부하게 조회
+          const precUrl = `http://www.law.go.kr/DRF/lawSearch.do?OC=${LAW_API_OC}&target=prec&type=XML&query=${encodeURIComponent(cleanQuery)}&search=2&curt=${encodeURIComponent("대법원")}&page=${page}&display=50`;
+          let res = await fetch(precUrl, { signal: AbortSignal.timeout(4500) });
+          
+          let xmlText = res.ok ? await res.text() : "";
+          let parsed = parser.parse(xmlText);
+          let precSearch = parsed.PrecSearch;
 
-                results.push({
-                  id: `prec-${precId}`,
-                  type: "prec",
-                  title: caseTitle,
-                  subtitle: `${item["법원명"] || item.법원명 || ""} ${item["선고일자"] || item.선고일자 || ""} ${caseNum}`.trim(),
-                  date: item["선고일자"] || item.선고일자,
-                  court: item["법원명"] || item.법원명,
-                  caseNumber: caseNum,
-                  caseType: item["사건종류명"] || item.사건종류명,
-                  issue: cleanHtml(item["판시사항"] || item.판시사항),
-                  summary: cleanHtml(item["판결요지"] || item.판결요지),
-                  detailUrl: portalUrl,
-                });
-              });
+          // 만약 본문 검색(search=2)으로 0건인데 긴 문장인 경우, 핵심 단어로 지능형 재검색 시도
+          if ((!precSearch || !precSearch.prec) && cleanQuery.includes(" ")) {
+            const firstKeywords = cleanQuery.split(/\s+/).filter(w => w.length >= 2).slice(0, 2).join(" ");
+            if (firstKeywords && firstKeywords !== cleanQuery) {
+              const retryUrl = `http://www.law.go.kr/DRF/lawSearch.do?OC=${LAW_API_OC}&target=prec&type=XML&query=${encodeURIComponent(firstKeywords)}&search=2&curt=${encodeURIComponent("대법원")}&page=${page}&display=50`;
+              const retryRes = await fetch(retryUrl, { signal: AbortSignal.timeout(4500) });
+              if (retryRes.ok) {
+                const retryXml = await retryRes.text();
+                const retryParsed = parser.parse(retryXml);
+                if (retryParsed.PrecSearch && retryParsed.PrecSearch.prec) {
+                  precSearch = retryParsed.PrecSearch;
+                }
+              }
             }
+          }
+
+          if (precSearch && precSearch.prec) {
+            const precArray = Array.isArray(precSearch.prec) ? precSearch.prec : [precSearch.prec];
+            precArray.forEach((item: any) => {
+              const courtName = item["법원명"] || item.법원명 || "";
+              // 대법원 판례만 엄격하게 필터링 (하급심 및 세무서 제외)
+              if (courtName && !courtName.includes("대법원")) {
+                return;
+              }
+
+              const precId = String(item["판례일련번호"] || item.판례일련번호 || Math.random());
+              const caseNum = item["사건번호"] || item.사건번호 || "";
+              const caseTitle = cleanHtml(item["사건명"] || item.사건명 || "판례");
+              
+              // 외부 원문 포털 링크: 대국민 법제처 포털 검색 링크 (공식 대국민 열람 경로)
+              const searchKeyword = caseNum || caseTitle;
+              const portalUrl = `https://www.law.go.kr/precSc.do?menuId=7&subMenuId=47&tabMenuId=213&query=${encodeURIComponent(searchKeyword)}`;
+
+              results.push({
+                id: `prec-${precId}`,
+                type: "prec",
+                title: caseTitle,
+                subtitle: `대법원 ${item["선고일자"] || item.선고일자 || ""} ${caseNum}`.trim(),
+                date: item["선고일자"] || item.선고일자,
+                court: "대법원",
+                caseNumber: caseNum,
+                caseType: item["사건종류명"] || item.사건종류명,
+                issue: cleanHtml(item["판시사항"] || item.판시사항),
+                summary: cleanHtml(item["판결요지"] || item.판결요지),
+                detailUrl: portalUrl,
+              });
+            });
           }
         } catch (e) {
           console.warn("[LawService] Prec API search failed:", (e as Error).message);
@@ -318,7 +343,7 @@ export async function searchLawsAndPrecedents(query: string, targetType: "all" |
     if (targetType === "all" || targetType === "law") {
       promises.push((async () => {
         try {
-          const lawUrl = `http://www.law.go.kr/DRF/lawSearch.do?OC=${LAW_API_OC}&target=law&type=XML&query=${encodeURIComponent(cleanQuery)}&page=${page}&display=20`;
+          const lawUrl = `http://www.law.go.kr/DRF/lawSearch.do?OC=${LAW_API_OC}&target=law&type=XML&query=${encodeURIComponent(cleanQuery)}&page=${page}&display=50`;
           const res = await fetch(lawUrl, { signal: AbortSignal.timeout(4000) });
           if (res.ok) {
             const xmlText = await res.text();

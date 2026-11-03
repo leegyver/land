@@ -319,7 +319,7 @@ const HomePage = () => {
                     type="text"
                     value={lawSearchText}
                     onChange={(e) => setLawSearchText(e.target.value)}
-                    placeholder="검색어 입력 (예: 주택임대차보호법, 대항력, 2018다252441)"
+                    placeholder="대법원 판례 본문, 사건번호 검색 (예: 임차권등기명령, 유치권 성립, 2021다252441)"
                     className="border-none shadow-none text-white placeholder:text-slate-500 text-xs sm:text-sm focus-visible:ring-0 bg-transparent h-8 sm:h-9"
                   />
                   <Button type="submit" size="sm" className="bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs px-3 sm:px-4 h-8 shrink-0 rounded-lg">

@@ -193,13 +193,13 @@ export default function LegalSearchPage() {
               <Search className="w-6 h-6 text-slate-400 ml-3 mr-2 shrink-0" />
               <Input
                 type="text"
-                placeholder="검색어 또는 사건번호 입력 (예: 주택임대차보호법, 대항력, 2018다252441)"
+                placeholder="대법원 판례 본문, 판시사항, 사건번호 검색 (예: 임차권등기명령, 유치권 성립, 2021다252441)"
                 className="border-none shadow-none text-slate-900 placeholder:text-slate-400 text-base md:text-lg focus-visible:ring-0 px-2 py-3 h-auto"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               <Button type="submit" className="bg-orange-600 hover:bg-orange-700 text-white font-bold px-6 py-6 rounded-xl text-base shrink-0 shadow-md">
-                검색
+                대법원 판례 검색
               </Button>
             </form>
 

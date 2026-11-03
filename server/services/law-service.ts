@@ -89,7 +89,7 @@ export const CURATED_LAWS: LawSearchResult[] = [
     caseType: "대통령령",
     summary: "[일부개정] 주택임대차보호법에서 위임된 소액보증금의 범위, 최우선변제금의 범위(서울 5,500만원, 과밀억제권역·세종·김포 4,800만원, 광역시·안산·광주·파주·이천 2,800만원, 그 밖의 지역 2,500만원 등) 규정.",
     articles: ["제10조(보증금 중 일정액의 범위 등)", "제11조(우선변제를 받을 임차인의 범위)"],
-    detailUrl: "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=287183"
+    detailUrl: "https://www.law.go.kr/법령/주택임대차보호법 시행령"
   },
   {
     id: "law-276291",
@@ -102,7 +102,7 @@ export const CURATED_LAWS: LawSearchResult[] = [
     caseType: "법률",
     summary: "[일부개정] 주택의 임대차에 관하여 「민법」에 대한 특례를 규정함으로써 국민 주거생활의 안정을 보장함을 목적으로 한다. 대항력(제3조), 보증금의 우선변제권(제3조의2), 임차권등기명령(제3조의3), 계약갱신요구(제6조의3) 등 규정.",
     articles: ["제3조(대항력 등)", "제3조의2(보증금의 회수)", "제8조(보증금 중 일정액의 보호)"],
-    detailUrl: "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=276291"
+    detailUrl: "https://www.law.go.kr/법령/주택임대차보호법"
   },
   {
     id: "law-263401",
@@ -115,7 +115,7 @@ export const CURATED_LAWS: LawSearchResult[] = [
     caseType: "법률",
     summary: "[일부개정] 상가건물 임대차에 대한 특례 규정. 사업자등록과 인도에 의한 대항력(제3조), 10년간의 계약갱신요구권(제10조), 권리금 회수기회 보호 및 임대인의 손해배상책임(제10조의4) 규정.",
     articles: ["제3조(대항력 등)", "제10조(계약갱신 요구 등)", "제10조의4(권리금 회수기회 보호 등)"],
-    detailUrl: "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=263401"
+    detailUrl: "https://www.law.go.kr/법령/상가건물 임대차보호법"
   },
   {
     id: "law-258902",
@@ -128,7 +128,7 @@ export const CURATED_LAWS: LawSearchResult[] = [
     caseType: "법률",
     summary: "[일부개정] 중개대상물의 확인·설명의무(제25조: 권리관계, 선순위 보증금 내역 등), 손해배상책임의 보장(제30조: 공제 가입 의무), 금지행위 및 중개보수 기준 규정.",
     articles: ["제25조(중개대상물의 확인·설명)", "제30조(손해배상책임의 보장)"],
-    detailUrl: "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=258902"
+    detailUrl: "https://www.law.go.kr/법령/공인중개사법"
   },
   {
     id: "law-254129",
@@ -141,7 +141,7 @@ export const CURATED_LAWS: LawSearchResult[] = [
     caseType: "법률",
     summary: "[일부개정] 부동산 강제경매 및 담보권 실행을 위한 경매절차 규정. 매각절차, 배당요구의 종기, 매수인의 대금지급 및 소유권취득, 인도명령(제136조) 등 부동산 경매 실무의 기본법률.",
     articles: ["제83조(경매개시결정)", "제84조(배당요구의 종기)", "제136조(부동산의 인도명령)"],
-    detailUrl: "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=254129"
+    detailUrl: "https://www.law.go.kr/법령/민사집행법"
   },
   {
     id: "law-245100",
@@ -154,7 +154,7 @@ export const CURATED_LAWS: LawSearchResult[] = [
     caseType: "법률",
     summary: "[일부개정] 주위토지통행권(제219조), 유치권(제320조), 저당권(제356조), 법정지상권(제366조), 임대차(제618조) 등 부동산 거래와 권리분석의 총괄 기본법.",
     articles: ["제219조(주위토지통행권)", "제320조(유치권의 내용)", "제366조(법정지상권)"],
-    detailUrl: "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=245100"
+    detailUrl: "https://www.law.go.kr/법령/민법"
   }
 ];
 
@@ -522,11 +522,15 @@ export async function searchLawsAndPrecedents(
                 const lawSeq = String(item["법령일련번호"] || item.법령일련번호 || item["법령ID"] || "");
                 const lawTitle = cleanHtml(item["법령명한글"] || item.법령명한글 || "법령");
                 
-                // 국가법령정보센터 공식 법령 웹 퍼머링크
-                // https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=XXXXXX
-                const officialLawUrl = lawSeq
-                  ? `https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=${lawSeq}`
-                  : `https://www.law.go.kr/법령/${encodeURIComponent(lawTitle)}`;
+                // 국가법령정보센터 공식 법령 웹 퍼머링크 (법령정보식별 디지털 딥링크 규격)
+                // https://www.law.go.kr/법령/{법령명} -> 404 없이 현행 법령 본문으로 100% 이동
+                const pureLawTitle = lawTitle
+                  .replace(/\[.*?\]/g, "")
+                  .replace(/\(.*?\)/g, "")
+                  .trim();
+                const officialLawUrl = pureLawTitle
+                  ? `https://www.law.go.kr/법령/${encodeURIComponent(pureLawTitle)}`
+                  : `https://www.law.go.kr/lsSc.do?menuId=1&query=${encodeURIComponent(lawTitle)}`;
 
                 const lawDate = formatDateString(item["시행일자"] || item.시행일자 || item["공포일자"]);
                 const pubDate = formatDateString(item["공포일자"] || item.공포일자);

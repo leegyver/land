@@ -117,6 +117,21 @@ function calculateClientRelevanceScore(item: LawItem, query: string): number {
   return score;
 }
 
+// 법령/판례 외부 원문 링크 안전 생성기 (법제처 404 방지 디지털 딥링크 표준 적용)
+function getSafeDetailUrl(item: LawItem): string {
+  if (item.type === "law") {
+    const pureTitle = (item.title || "")
+      .replace(/\[.*?\]/g, "")
+      .replace(/\(.*?\)/g, "")
+      .trim();
+    if (pureTitle) {
+      return `https://www.law.go.kr/법령/${encodeURIComponent(pureTitle)}`;
+    }
+    return item.detailUrl || "https://www.law.go.kr";
+  }
+  return item.detailUrl || `https://www.law.go.kr/LSW/precSearchP.do?q=${encodeURIComponent(item.caseNumber || item.title)}`;
+}
+
 export default function LegalSearchPage() {
   const [, setLocation] = useLocation();
   const [matchDetail, detailParams] = useRoute("/legal/:type/:id");
@@ -522,7 +537,7 @@ export default function LegalSearchPage() {
 
                     {item.detailUrl && (
                       <a
-                        href={item.detailUrl}
+                        href={getSafeDetailUrl(item)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 font-semibold"
@@ -691,7 +706,7 @@ export default function LegalSearchPage() {
                       className="text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                       asChild
                     >
-                      <a href={selectedItem.detailUrl} target="_blank" rel="noopener noreferrer">
+                      <a href={getSafeDetailUrl(selectedItem)} target="_blank" rel="noopener noreferrer">
                         {selectedItem.type === "prec" ? "대법원 판례 원문 보기" : "법제처 법령 원문 보기"} <ExternalLink className="w-3 h-3 ml-1" />
                       </a>
                     </Button>

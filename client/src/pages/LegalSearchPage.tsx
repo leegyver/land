@@ -557,14 +557,28 @@ export default function LegalSearchPage() {
 
               {/* 다이얼로그 푸터 CTA */}
               <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full sm:w-auto text-xs"
-                  onClick={() => handleCopyLink(selectedItem)}
-                >
-                  <Share2 className="w-3.5 h-3.5 mr-1" /> 이 판례 링크 복사
-                </Button>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => handleCopyLink(selectedItem)}
+                  >
+                    <Share2 className="w-3.5 h-3.5 mr-1" /> 공유 링크 복사
+                  </Button>
+                  {selectedItem.detailUrl && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      asChild
+                    >
+                      <a href={selectedItem.detailUrl} target="_blank" rel="noopener noreferrer">
+                        국가법령정보센터 원문 <ExternalLink className="w-3 h-3 ml-1" />
+                      </a>
+                    </Button>
+                  )}
+                </div>
 
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                   <Button

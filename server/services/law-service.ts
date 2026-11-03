@@ -226,6 +226,13 @@ export const CURATED_PRECEDENTS: LawSearchResult[] = [
   }
 ];
 
+// Fallback 판례들에 안전한 대국민 포털 공식 원문 열람 링크 자동 생성
+CURATED_PRECEDENTS.forEach(p => {
+  if (!p.detailUrl && p.caseNumber) {
+    p.detailUrl = `https://www.law.go.kr/precSc.do?menuId=7&subMenuId=47&tabMenuId=213&query=${encodeURIComponent(p.caseNumber)}`;
+  }
+});
+
 // 메모리 캐시 (1시간 유지)
 const searchCache = new Map<string, { data: LawSearchResult[]; timestamp: number }>();
 const CACHE_TTL = 1000 * 60 * 60; // 1시간
@@ -278,18 +285,25 @@ export async function searchLawsAndPrecedents(query: string, targetType: "all" |
               const precArray = Array.isArray(precSearch.prec) ? precSearch.prec : [precSearch.prec];
               precArray.forEach((item: any) => {
                 const precId = String(item["판례일련번호"] || item.판례일련번호 || Math.random());
+                const caseNum = item["사건번호"] || item.사건번호 || "";
+                const caseTitle = cleanHtml(item["사건명"] || item.사건명 || "판례");
+                
+                // 외부 원문 포털 링크: 대국민 법제처 포털 검색 또는 대법원 종합법률정보 링크 (DRF API 경로 대신 대국민 열람 경로 사용)
+                const searchKeyword = caseNum || caseTitle;
+                const portalUrl = `https://www.law.go.kr/precSc.do?menuId=7&subMenuId=47&tabMenuId=213&query=${encodeURIComponent(searchKeyword)}`;
+
                 results.push({
                   id: `prec-${precId}`,
                   type: "prec",
-                  title: cleanHtml(item["사건명"] || item.사건명 || "판례"),
-                  subtitle: `${item["법원명"] || item.법원명 || ""} ${item["선고일자"] || item.선고일자 || ""} ${item["사건번호"] || item.사건번호 || ""}`.trim(),
+                  title: caseTitle,
+                  subtitle: `${item["법원명"] || item.법원명 || ""} ${item["선고일자"] || item.선고일자 || ""} ${caseNum}`.trim(),
                   date: item["선고일자"] || item.선고일자,
                   court: item["법원명"] || item.법원명,
-                  caseNumber: item["사건번호"] || item.사건번호,
+                  caseNumber: caseNum,
                   caseType: item["사건종류명"] || item.사건종류명,
                   issue: cleanHtml(item["판시사항"] || item.판시사항),
                   summary: cleanHtml(item["판결요지"] || item.판결요지),
-                  detailUrl: item["판례상세링크"] ? `http://www.law.go.kr${item["판례상세링크"]}` : undefined,
+                  detailUrl: portalUrl,
                 });
               });
             }
@@ -314,15 +328,18 @@ export async function searchLawsAndPrecedents(query: string, targetType: "all" |
               const lawArray = Array.isArray(lawSearch.law) ? lawSearch.law : [lawSearch.law];
               lawArray.forEach((item: any) => {
                 const lawId = String(item["법령일련번호"] || item.법령일련번호 || item["법령ID"] || Math.random());
+                const lawTitle = cleanHtml(item["법령명한글"] || item.법령명한글 || "법령");
+                const portalLawUrl = `https://www.law.go.kr/LSW/lsSc.do?menuId=1&subMenuId=15&tabMenuId=81&query=${encodeURIComponent(lawTitle)}`;
+
                 results.push({
                   id: `law-${lawId}`,
                   type: "law",
-                  title: cleanHtml(item["법령명한글"] || item.법령명한글 || "법령"),
+                  title: lawTitle,
                   subtitle: `${item["소관부처명"] || item.소관부처명 || ""} | 공포 ${item["공포일자"] || item.공포일자 || ""}`,
                   date: item["시행일자"] || item.시행일자 || item["공포일자"],
                   court: item["소관부처명"] || item.소관부처명,
                   summary: item["제개정구분명"] ? `[${item["제개정구분명"]}] 시행일자: ${item["시행일자"] || "공포 즉시"}` : undefined,
-                  detailUrl: item["법령상세링크"] ? `http://www.law.go.kr${item["법령상세링크"]}` : undefined,
+                  detailUrl: portalLawUrl,
                 });
               });
             }

@@ -63,7 +63,7 @@ const NewsletterForm = () => {
 
     if (isSubscribed) {
         return (
-            <div className="relative overflow-hidden flex flex-col items-center justify-center p-8 md:p-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl shadow-xl text-white animate-in fade-in zoom-in duration-300">
+            <div className="relative overflow-hidden flex flex-col items-center justify-center p-6 sm:p-8 md:p-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl shadow-xl text-white animate-in fade-in zoom-in duration-300">
                 {/* 배경 꾸밈 요소 */}
                 <div className="absolute top-0 right-0 -mt-8 -mr-8 h-32 w-32 rounded-full bg-white/10 blur-2xl pointer-events-none" />
                 <div className="absolute bottom-0 left-0 -mb-8 -ml-8 h-32 w-32 rounded-full bg-blue-400/20 blur-2xl pointer-events-none" />
@@ -87,22 +87,22 @@ const NewsletterForm = () => {
 
     return (
         <>
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-8 md:p-12 text-white shadow-xl">
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-5 sm:p-7 md:p-10 lg:p-12 text-white shadow-xl">
             {/* Decorative elements */}
             <div className="absolute top-0 right-0 -mt-8 -mr-8 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
             <div className="absolute bottom-0 left-0 -mb-8 -ml-8 h-32 w-32 rounded-full bg-blue-400/20 blur-2xl" />
 
-            <div className="relative z-10 flex flex-col md:flex-row items-center gap-8 md:gap-12">
-                <div className="flex-1 text-center md:text-left">
-                    <h2 className="text-[17px] sm:text-xl md:text-3xl font-bold mb-2 md:mb-4 whitespace-nowrap tracking-tighter">
+            <div className="relative z-10 flex flex-col md:flex-row items-center gap-5 sm:gap-6 md:gap-10">
+                <div className="flex-1 text-center md:text-left w-full min-w-0">
+                    <h2 className="text-lg sm:text-2xl md:text-3xl font-black mb-1.5 md:mb-3 tracking-tight break-keep">
                         매주 강화도 부동산 동향 메일 받기
                     </h2>
-                    <p className="text-blue-100 text-[11px] sm:text-sm md:text-lg mb-0 opacity-90 leading-relaxed whitespace-nowrap tracking-tighter">
+                    <p className="text-blue-100 text-xs sm:text-sm md:text-base mb-0 opacity-90 leading-relaxed break-keep">
                         이가이버가 직접 분석한 실거래 및 단독 매물 정보를 받아보세요.
                     </p>
                 </div>
 
-                <div className="w-full md:w-auto min-w-[300px] lg:min-w-[400px]">
+                <div className="w-full md:w-auto md:min-w-[280px] lg:min-w-[380px] max-w-full">
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
                             <FormField
@@ -112,10 +112,10 @@ const NewsletterForm = () => {
                                     <FormItem>
                                         <FormControl>
                                             <div className="relative group">
-                                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 transition-colors group-focus-within:text-blue-600" />
+                                                <Mail className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400 transition-colors group-focus-within:text-blue-600" />
                                                 <Input
                                                     placeholder="이메일 주소를 입력하세요"
-                                                    className="bg-white text-gray-900 h-14 pl-12 rounded-xl focus:ring-4 focus:ring-blue-400/30 transition-all border-none shadow-lg"
+                                                    className="bg-white text-gray-900 h-11 sm:h-12 md:h-14 pl-10 sm:pl-12 text-sm sm:text-base rounded-xl focus:ring-4 focus:ring-blue-400/30 transition-all border-none shadow-lg w-full"
                                                     {...field}
                                                     disabled={subscriptionMutation.isPending}
                                                 />
@@ -144,19 +144,19 @@ const NewsletterForm = () => {
                             />
                             <Button
                                 type="submit"
-                                className="w-full h-14 bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-bold text-lg rounded-xl shadow-lg transform active:scale-[0.98] transition-all"
+                                className="w-full h-11 sm:h-12 md:h-14 bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-black text-sm sm:text-base md:text-lg rounded-xl shadow-lg transform active:scale-[0.98] transition-all touch-manipulation"
                                 disabled={subscriptionMutation.isPending}
                             >
                                 {subscriptionMutation.isPending ? (
                                     <>
-                                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                        <Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
                                         신청 중...
                                     </>
                                 ) : (
                                     "무료 구독 신청하기"
                                 )}
                             </Button>
-                            <p className="text-[10px] sm:text-xs text-blue-100/70 text-center mt-4 whitespace-nowrap tracking-tighter">
+                            <p className="text-[10px] sm:text-xs text-blue-100/70 text-center mt-2.5 sm:mt-3 break-keep">
                                 언제든지 구독을 해지하실 수 있습니다. 개인정보는 소중히 보호됩니다.
                             </p>
                         </form>

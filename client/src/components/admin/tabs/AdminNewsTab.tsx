@@ -58,37 +58,39 @@ export default function AdminNewsTab({ news, isLoading, isError, error, refetch 
 
       <AdminTabWrapper isLoading={isLoading} isError={isError} error={error} isEmpty={news.length === 0} emptyMessage="뉴스가 없습니다." onRetry={refetch}>
         <div id="admin-list-top" className="scroll-mt-20" />
-        <Table>
-          <TableHeader className="bg-slate-50/50">
-            <TableRow>
-              <TableHead>정보/미디어</TableHead>
-              <TableHead>출처</TableHead>
-              <TableHead className="hidden md:table-cell">일시</TableHead>
-              <TableHead className="text-right">관리</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedNews.map(item => (
-              <TableRow key={item.id} className="group hover:bg-slate-50/50 transition-colors">
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-16 bg-slate-100 rounded border overflow-hidden flex-shrink-0">
-                      {item.imageUrl ? <img src={item.imageUrl} className="w-full h-full object-cover" /> : <FileText className="m-auto h-4 w-4 text-slate-300" />}
-                    </div>
-                    <div className="font-bold text-slate-900 text-sm line-clamp-1 max-w-[300px]">{item.title || "제목 없음"}</div>
-                  </div>
-                </TableCell>
-                <TableCell className="text-sm text-slate-500 font-medium">{item.source}</TableCell>
-                <TableCell className="hidden md:table-cell text-xs text-slate-400">
-                  {item.createdAt ? new Date(item.createdAt).toLocaleDateString('ko-KR') : '-'}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(item.id)} className="text-slate-300 hover:text-red-500"><Trash2 className="h-4 w-4" /></Button>
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-slate-50/50">
+              <TableRow>
+                <TableHead>정보/미디어</TableHead>
+                <TableHead>출처</TableHead>
+                <TableHead className="hidden md:table-cell">일시</TableHead>
+                <TableHead className="text-right">관리</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {paginatedNews.map(item => (
+                <TableRow key={item.id} className="group hover:bg-slate-50/50 transition-colors">
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-16 bg-slate-100 rounded border overflow-hidden flex-shrink-0">
+                        {item.imageUrl ? <img src={item.imageUrl} className="w-full h-full object-cover" /> : <FileText className="m-auto h-4 w-4 text-slate-300" />}
+                      </div>
+                      <div className="font-bold text-slate-900 text-sm line-clamp-1 max-w-[180px] sm:max-w-[300px]">{item.title || "제목 없음"}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm text-slate-500 font-medium">{item.source}</TableCell>
+                  <TableCell className="hidden md:table-cell text-xs text-slate-400">
+                    {item.createdAt ? new Date(item.createdAt).toLocaleDateString('ko-KR') : '-'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(item.id)} className="text-slate-300 hover:text-red-500"><Trash2 className="h-4 w-4" /></Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
 
         {/* Pagination */}
         {totalPages > 1 && (

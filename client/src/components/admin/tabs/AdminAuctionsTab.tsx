@@ -318,22 +318,22 @@ export default function AdminAuctionsTab() {
   return (
     <div className="space-y-6">
       {/* Top Description & Action */}
-      <div className="bg-gradient-to-r from-slate-900 to-indigo-950 p-6 rounded-3xl text-white shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border border-amber-500/30">
+      <div className="bg-gradient-to-r from-slate-900 to-indigo-950 p-5 sm:p-6 rounded-2xl sm:rounded-3xl text-white shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border border-amber-500/30">
         <div className="space-y-1">
           <div className="inline-flex items-center gap-2 bg-amber-400/20 text-amber-300 text-xs font-black px-3 py-1 rounded-full border border-amber-400/30">
             <Gavel className="w-3.5 h-3.5" />
             강화군 유일 법원 정식 등록 공인중개사 입찰대리
           </div>
-          <h2 className="text-2xl font-black tracking-tight">법원 경매·공매 물건 관리</h2>
-          <p className="text-sm text-slate-300">
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight">법원 경매·공매 물건 관리</h2>
+          <p className="text-xs sm:text-sm text-slate-300">
             인천지방법원 경매 물건을 등록하면 메인 화면의 [반값 경매·공매] 탭에 즉시 노출됩니다.
           </p>
         </div>
 
-        <div className="flex gap-2 shrink-0">
+        <div className="flex flex-wrap sm:flex-nowrap gap-2 w-full sm:w-auto shrink-0">
           <Button
             variant="outline"
-            className="bg-white/10 hover:bg-white/20 border-white/20 text-white rounded-xl"
+            className="flex-1 sm:flex-none bg-white/10 hover:bg-white/20 border-white/20 text-white rounded-xl text-xs sm:text-sm"
             onClick={() => refetch()}
           >
             <RefreshCw className="w-4 h-4 mr-1.5" />
@@ -341,7 +341,7 @@ export default function AdminAuctionsTab() {
           </Button>
           <Button
             onClick={() => openModal()}
-            className="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl shadow-lg shadow-amber-500/30"
+            className="flex-1 sm:flex-none bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl shadow-lg shadow-amber-500/30 text-xs sm:text-sm"
           >
             <Plus className="w-4 h-4 mr-1.5" />
             새 경매물건 등록
@@ -350,7 +350,7 @@ export default function AdminAuctionsTab() {
       </div>
 
       {/* Auction List Table */}
-      <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
         {isLoading ? (
           <div className="p-12 text-center text-slate-400">데이터를 불러오는 중입니다...</div>
         ) : auctions.length === 0 ? (
@@ -367,66 +367,181 @@ export default function AdminAuctionsTab() {
             </Button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-600">
-              <thead className="bg-slate-50 text-slate-700 text-xs font-bold uppercase border-b border-slate-200">
-                <tr>
-                  <th className="p-4">대표사진</th>
-                  <th className="p-4">사건번호 / 법원</th>
-                  <th className="p-4">물건명 / 주소</th>
-                  <th className="p-4">감정가 / 최저입찰가</th>
-                  <th className="p-4">매각기일</th>
-                  <th className="p-4">안전도</th>
-                  <th className="p-4">진행상태</th>
-                  <th className="p-4 text-center">메인노출</th>
-                  <th className="p-4 text-right">관리</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {auctions.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="p-4">
-                      <img
-                        src={item.imageUrl || "/assets/default-property-images/house.png"}
-                        alt=""
-                        className="w-16 h-12 rounded-xl object-cover border border-slate-200"
-                      />
-                    </td>
-                    <td className="p-4">
-                      <div className="font-extrabold text-slate-900">{item.caseNumber}</div>
-                      <div className="text-xs text-slate-400">{item.court}</div>
-                    </td>
-                    <td className="p-4 max-w-xs">
-                      <div className="font-bold text-slate-800 line-clamp-1">{item.title}</div>
-                      <div className="text-xs text-slate-400 line-clamp-1">{item.address}</div>
-                    </td>
-                    <td className="p-4">
-                      <div className="text-xs text-slate-400 line-through">{item.appraisalPrice}</div>
-                      <div className="font-extrabold text-rose-600 flex items-center gap-1.5">
-                        <span>{item.minimumPrice}</span>
+          <>
+            {/* 데스크탑 테이블 뷰 (md 이상) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-600">
+                <thead className="bg-slate-50 text-slate-700 text-xs font-bold uppercase border-b border-slate-200">
+                  <tr>
+                    <th className="p-4">대표사진</th>
+                    <th className="p-4">사건번호 / 법원</th>
+                    <th className="p-4">물건명 / 주소</th>
+                    <th className="p-4">감정가 / 최저입찰가</th>
+                    <th className="p-4">매각기일</th>
+                    <th className="p-4">안전도</th>
+                    <th className="p-4">진행상태</th>
+                    <th className="p-4 text-center">메인노출</th>
+                    <th className="p-4 text-right">관리</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {auctions.map((item) => (
+                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="p-4">
+                        <img
+                          src={item.imageUrl || "/assets/default-property-images/house.png"}
+                          alt=""
+                          className="w-16 h-12 rounded-xl object-cover border border-slate-200"
+                        />
+                      </td>
+                      <td className="p-4">
+                        <div className="font-extrabold text-slate-900">{item.caseNumber}</div>
+                        <div className="text-xs text-slate-400">{item.court}</div>
+                      </td>
+                      <td className="p-4 max-w-xs">
+                        <div className="font-bold text-slate-800 line-clamp-1">{item.title}</div>
+                        <div className="text-xs text-slate-400 line-clamp-1">{item.address}</div>
+                      </td>
+                      <td className="p-4">
+                        <div className="text-xs text-slate-400 line-through">{item.appraisalPrice}</div>
+                        <div className="font-extrabold text-rose-600 flex items-center gap-1.5">
+                          <span>{item.minimumPrice}</span>
+                          {item.discountRate ? (
+                            <span className="bg-red-100 text-red-700 text-[10px] font-black px-1.5 py-0.2 rounded-md">
+                              -{item.discountRate}%
+                            </span>
+                          ) : null}
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <div className="font-bold text-slate-800">{item.auctionDate.split(' ')[0]}</div>
+                        <div className="text-xs text-amber-600 font-semibold">{item.auctionDate.split(' ')[1] || ""}</div>
+                      </td>
+                      <td className="p-4">
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                          <ShieldCheck className="w-3 h-3" />
+                          {item.safetyRating || "안전"}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <Select
+                          value={item.status}
+                          onValueChange={(val) => handleQuickStatusChange(item.id, val)}
+                        >
+                          <SelectTrigger className="w-24 h-8 text-xs font-bold rounded-lg">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="진행중">진행중</SelectItem>
+                            <SelectItem value="낙찰">낙찰</SelectItem>
+                            <SelectItem value="유찰">유찰</SelectItem>
+                            <SelectItem value="변경">변경</SelectItem>
+                            <SelectItem value="취하">취하</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td className="p-4 text-center">
+                        <span className={`inline-block w-2.5 h-2.5 rounded-full ${item.featured ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                      </td>
+                      <td className="p-4 text-right space-x-1">
+                        <a
+                          href={`/auctions/${item.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center justify-center h-8 w-8 rounded-lg hover:bg-slate-100 text-slate-600"
+                          title="상세페이지 새창 열기"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </a>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openModal(item)}
+                          className="h-8 w-8 p-0 rounded-lg hover:bg-slate-100 text-slate-600"
+                          title="수정"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            if (confirm(`'${item.caseNumber}' 경매 물건을 삭제하시겠습니까?`)) {
+                              deleteMutation.mutate(item.id);
+                            }
+                          }}
+                          className="h-8 w-8 p-0 rounded-lg hover:bg-red-50 text-red-500"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* 모바일 전용 카드 뷰 (md 미만 - 가로스크롤 완전 제거) */}
+            <div className="block md:hidden divide-y divide-slate-100">
+              {auctions.map((item) => (
+                <div key={item.id} className="p-4 space-y-3 bg-white">
+                  <div className="flex gap-3 items-start">
+                    <img
+                      src={item.imageUrl || "/assets/default-property-images/house.png"}
+                      alt=""
+                      className="w-20 h-16 rounded-xl object-cover border border-slate-200 shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1 mb-0.5">
+                        <span className="font-extrabold text-slate-900 text-sm truncate">{item.caseNumber}</span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {item.featured && (
+                            <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 py-0.5 rounded">
+                              메인
+                            </span>
+                          )}
+                          <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                            <ShieldCheck className="w-2.5 h-2.5" />
+                            {item.safetyRating || "안전"}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-xs text-slate-500 truncate">{item.court}</div>
+                      <div className="font-bold text-slate-800 text-xs truncate mt-1">{item.title}</div>
+                      <div className="text-[11px] text-slate-400 truncate">{item.address}</div>
+                    </div>
+                  </div>
+
+                  {/* 가격 및 기일 박스 */}
+                  <div className="bg-slate-50/80 p-2.5 rounded-xl border border-slate-100 grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">최저입찰가</span>
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <span className="font-extrabold text-rose-600 text-xs">{item.minimumPrice}</span>
                         {item.discountRate ? (
-                          <span className="bg-red-100 text-red-700 text-[10px] font-black px-1.5 py-0.2 rounded-md">
+                          <span className="bg-red-100 text-red-700 text-[10px] font-black px-1 py-0.2 rounded">
                             -{item.discountRate}%
                           </span>
                         ) : null}
                       </div>
-                    </td>
-                    <td className="p-4">
-                      <div className="font-bold text-slate-800">{item.auctionDate.split(' ')[0]}</div>
-                      <div className="text-xs text-amber-600 font-semibold">{item.auctionDate.split(' ')[1] || ""}</div>
-                    </td>
-                    <td className="p-4">
-                      <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                        <ShieldCheck className="w-3 h-3" />
-                        {item.safetyRating || "안전"}
-                      </span>
-                    </td>
-                    <td className="p-4">
+                      <span className="text-[10px] text-slate-400 line-through block mt-0.5">{item.appraisalPrice}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">매각기일</span>
+                      <span className="font-bold text-slate-800 block text-xs">{item.auctionDate.split(' ')[0]}</span>
+                      <span className="text-[10px] text-amber-600 font-semibold block">{item.auctionDate.split(' ')[1] || ""}</span>
+                    </div>
+                  </div>
+
+                  {/* 하단 액션 & 상태 변경 */}
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-slate-500 font-medium">상태:</span>
                       <Select
                         value={item.status}
                         onValueChange={(val) => handleQuickStatusChange(item.id, val)}
                       >
-                        <SelectTrigger className="w-24 h-8 text-xs font-bold rounded-lg">
+                        <SelectTrigger className="w-24 h-7 text-xs font-bold rounded-lg bg-white">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -437,28 +552,27 @@ export default function AdminAuctionsTab() {
                           <SelectItem value="취하">취하</SelectItem>
                         </SelectContent>
                       </Select>
-                    </td>
-                    <td className="p-4 text-center">
-                      <span className={`inline-block w-2.5 h-2.5 rounded-full ${item.featured ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                    </td>
-                    <td className="p-4 text-right space-x-1">
+                    </div>
+
+                    <div className="flex items-center gap-1">
                       <a
                         href={`/auctions/${item.id}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center justify-center h-8 w-8 rounded-lg hover:bg-slate-100 text-slate-600"
-                        title="상세페이지 새창 열기"
+                        className="inline-flex items-center justify-center h-8 px-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold gap-1"
+                        title="새창 열기"
                       >
-                        <ExternalLink className="w-4 h-4" />
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        보기
                       </a>
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         onClick={() => openModal(item)}
-                        className="h-8 w-8 p-0 rounded-lg hover:bg-slate-100 text-slate-600"
-                        title="수정"
+                        className="h-8 px-2.5 rounded-lg text-xs font-semibold gap-1"
                       >
-                        <Edit className="w-4 h-4" />
+                        <Edit className="w-3.5 h-3.5" />
+                        수정
                       </Button>
                       <Button
                         variant="ghost"
@@ -472,12 +586,12 @@ export default function AdminAuctionsTab() {
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 

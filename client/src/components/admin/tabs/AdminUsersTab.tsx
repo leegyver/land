@@ -250,93 +250,175 @@ export default function AdminUsersTab({ users, currentUser, isLoading, isError, 
 
       <AdminTabWrapper isLoading={isLoading} isError={isError} error={error} isEmpty={users.length === 0} emptyMessage="사용자가 없습니다." onRetry={refetch}>
         <div id="admin-list-top" className="scroll-mt-20" />
-        <Table>
-          <TableHeader className="bg-slate-50/50">
-            <TableRow>
-              <TableHead>사용자 정보</TableHead>
-              <TableHead className="hidden md:table-cell">연락처/이메일</TableHead>
-              <TableHead>권한 (등급)</TableHead>
-              <TableHead className="text-right">관리</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedUsers.map(u => (
-              <TableRow key={u.id} className="group hover:bg-slate-50/50 transition-colors">
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 bg-slate-900 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm ring-2 ring-white">
-                      {(u.nickname || u.username).substring(0,1).toUpperCase()}
+
+        {/* 데스크탑 테이블 뷰 (md 이상) */}
+        <div className="hidden md:block overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-slate-50/50">
+              <TableRow>
+                <TableHead>사용자 정보</TableHead>
+                <TableHead className="hidden md:table-cell">연락처/이메일</TableHead>
+                <TableHead>권한 (등급)</TableHead>
+                <TableHead className="text-right">관리</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedUsers.map(u => (
+                <TableRow key={u.id} className="group hover:bg-slate-50/50 transition-colors">
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 bg-slate-900 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm ring-2 ring-white">
+                        {(u.nickname || u.username).substring(0,1).toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="font-bold text-slate-900">{u.nickname || u.username}</div>
+                        <div className="text-[10px] text-slate-400">{u.nickname ? u.username : ''}</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-bold text-slate-900">{u.nickname || u.username}</div>
-                      <div className="text-[10px] text-slate-400">{u.nickname ? u.username : ''}</div>
-                    </div>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    <div className="text-xs text-slate-500">{u.email || '-'}</div>
+                    <div className="text-[10px] text-slate-400 mt-0.5">{u.phone || '-'}</div>
+                  </TableCell>
+                  <TableCell>
+                    {getTierBadge(u)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {u.role !== 'master' ? (
+                      <div className="flex items-center justify-end gap-1">
+                          {u.id !== currentUser?.id && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-900">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <div className="px-2 py-1.5 text-xs font-semibold text-slate-500">등급 변경</div>
+                                <DropdownMenuItem onClick={() => updateRoleMutation.mutate({ id: u.id, role: 'user' })}>
+                                  무료회원 강등 (초기화)
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => {
+                                  openUpgradeDialog(u, 'monthly', 30);
+                                }}>
+                                  공인중개사 (월결제 1개월) 승인/연장
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => {
+                                  openUpgradeDialog(u, 'yearly', 365);
+                                }}>
+                                  공인중개사 (연결제 1년) 승인/연장
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => {
+                                  openUpgradeDialog(u, 'lifetime');
+                                }}>
+                                  👉 평생회원 영구 승급
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => updateRoleMutation.mutate({ id: u.id, role: 'admin' })}>
+                                  시스템 관리자(Admin) 권한 부여
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => {
+                            if (confirm("정말 삭제하시겠습니까? 데이터가 모두 지워집니다.")) deleteMutation.mutate(u.id);
+                          }} 
+                          disabled={u.id === currentUser?.id}
+                          className="text-slate-300 hover:text-red-500 disabled:opacity-30 h-8 w-8"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-400 font-bold pr-2 whitespace-nowrap">변경 불가 (Root)</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* 모바일 전용 카드 뷰 (md 미만 - 가로스크롤 완전 제거) */}
+        <div className="block md:hidden divide-y divide-slate-100">
+          {paginatedUsers.map(u => (
+            <div key={u.id} className="p-4 space-y-3 bg-white">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="h-10 w-10 shrink-0 bg-slate-900 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm ring-2 ring-white">
+                    {(u.nickname || u.username).substring(0, 1).toUpperCase()}
                   </div>
-                </TableCell>
-                <TableCell className="hidden md:table-cell">
-                  <div className="text-xs text-slate-500">{u.email || '-'}</div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">{u.phone || '-'}</div>
-                </TableCell>
-                <TableCell>
+                  <div className="min-w-0">
+                    <div className="font-bold text-slate-900 text-sm truncate">{u.nickname || u.username}</div>
+                    <div className="text-[11px] text-slate-400 truncate">{u.nickname ? u.username : `ID: ${u.id}`}</div>
+                  </div>
+                </div>
+                <div className="shrink-0 flex items-center gap-1">
                   {getTierBadge(u)}
-                </TableCell>
-                <TableCell className="text-right">
                   {u.role !== 'master' ? (
-                    <div className="flex items-center justify-end gap-1">
-                        {u.id !== currentUser?.id && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-900">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <div className="px-2 py-1.5 text-xs font-semibold text-slate-500">등급 변경</div>
-                              <DropdownMenuItem onClick={() => updateRoleMutation.mutate({ id: u.id, role: 'user' })}>
-                                무료회원 강등 (초기화)
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => {
-                                openUpgradeDialog(u, 'monthly', 30);
-                              }}>
-                                공인중개사 (월결제 1개월) 승인/연장
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => {
-                                openUpgradeDialog(u, 'yearly', 365);
-                              }}>
-                                공인중개사 (연결제 1년) 승인/연장
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => {
-                                openUpgradeDialog(u, 'lifetime');
-                              }}>
-                                👉 평생회원 영구 승급
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => updateRoleMutation.mutate({ id: u.id, role: 'admin' })}>
-                                시스템 관리자(Admin) 권한 부여
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                    <div className="flex items-center">
+                      {u.id !== currentUser?.id && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-slate-900">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <div className="px-2 py-1.5 text-xs font-semibold text-slate-500">등급 변경</div>
+                            <DropdownMenuItem onClick={() => updateRoleMutation.mutate({ id: u.id, role: 'user' })}>
+                              무료회원 강등 (초기화)
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openUpgradeDialog(u, 'monthly', 30)}>
+                              공인중개사 (월결제 1개월) 승인/연장
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openUpgradeDialog(u, 'yearly', 365)}>
+                              공인중개사 (연결제 1년) 승인/연장
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openUpgradeDialog(u, 'lifetime')}>
+                              👉 평생회원 영구 승급
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => updateRoleMutation.mutate({ id: u.id, role: 'admin' })}>
+                              시스템 관리자(Admin) 권한 부여
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => {
                           if (confirm("정말 삭제하시겠습니까? 데이터가 모두 지워집니다.")) deleteMutation.mutate(u.id);
-                        }} 
+                        }}
                         disabled={u.id === currentUser?.id}
-                        className="text-slate-300 hover:text-red-500 disabled:opacity-30 h-8 w-8"
+                        className="text-slate-400 hover:text-red-500 disabled:opacity-30 h-8 w-8"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   ) : (
-                    <span className="text-xs text-slate-400 font-bold pr-2 whitespace-nowrap">변경 불가 (Root)</span>
+                    <span className="text-[10px] text-slate-400 font-bold px-1.5 py-0.5 bg-slate-100 rounded">Root</span>
                   )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 bg-slate-50/80 p-2.5 rounded-xl border border-slate-100">
+                <div className="min-w-0">
+                  <span className="text-slate-400 text-[10px] block">이메일</span>
+                  <span className="font-medium truncate block">{u.email || '-'}</span>
+                </div>
+                <div className="min-w-0">
+                  <span className="text-slate-400 text-[10px] block">연락처</span>
+                  <span className="font-medium truncate block">{u.phone || '-'}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
 
         {/* Pagination */}
         {totalPages > 1 && (

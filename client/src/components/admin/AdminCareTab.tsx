@@ -194,27 +194,27 @@ export default function AdminCareTab() {
           </div>
 
           {/* 하위 탭 전환: 실시간 견적 상담 관리 vs 간편 접수 내역 */}
-          <div className="flex flex-wrap gap-2 mb-6 border-b border-slate-200 pb-3">
+          <div className="flex flex-col sm:flex-row gap-2 mb-6 border-b border-slate-200 pb-3">
             <button
               onClick={() => setSubTab("estimates")}
-              className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              className={`w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center sm:justify-start gap-2 cursor-pointer ${
                 subTab === "estimates"
                   ? "bg-slate-900 text-white shadow-sm"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
-              <FileText className="w-4 h-4 text-amber-400" />
-              <span>실시간 견적 상담실 관리 (답변 작성 & 카톡 발송)</span>
+              <FileText className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>실시간 견적 상담실 관리</span>
             </button>
             <button
               onClick={() => setSubTab("inquiries")}
-              className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
+              className={`w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center sm:justify-start gap-2 cursor-pointer ${
                 subTab === "inquiries"
                   ? "bg-slate-900 text-white shadow-sm"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
-              <Wrench className="w-4 h-4 text-orange-500" />
+              <Wrench className="w-4 h-4 text-orange-500 shrink-0" />
               <span>간편 문의 접수 내역 ({filteredInquiries.length})</span>
             </button>
           </div>

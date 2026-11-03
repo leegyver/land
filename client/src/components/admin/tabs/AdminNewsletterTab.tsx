@@ -241,42 +241,78 @@ export default function AdminNewsletterTab({ subscriptions, isLoading, isError, 
 
       <AdminTabWrapper isLoading={isLoading} isError={isError} error={error} isEmpty={subscriptions.length === 0} emptyMessage="구독자가 없습니다." onRetry={refetch}>
         <div id="admin-list-top" className="scroll-mt-20" />
-        <Table>
-          <TableHeader className="bg-slate-50/50">
-            <TableRow>
-              <TableHead className="w-[50px]">
-                <Checkbox 
-                  checked={subscriptions.length > 0 && selectedIds.length === subscriptions.length} 
-                  onCheckedChange={(c) => toggleAll(!!c)} 
-                />
-              </TableHead>
-              <TableHead>이메일</TableHead>
-              <TableHead>구독 일시</TableHead>
-              <TableHead className="text-right">관리</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedSubs.map(item => (
-              <TableRow key={item.id} className="group hover:bg-slate-50/50 transition-colors">
-                <TableCell>
+
+        {/* 데스크탑 테이블 뷰 (md 이상) */}
+        <div className="hidden md:block overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-slate-50/50">
+              <TableRow>
+                <TableHead className="w-[50px]">
                   <Checkbox 
-                    checked={selectedIds.includes(item.id)} 
-                    onCheckedChange={(c) => toggleOne(item.id, !!c)} 
+                    checked={subscriptions.length > 0 && selectedIds.length === subscriptions.length} 
+                    onCheckedChange={(c) => toggleAll(!!c)} 
                   />
-                </TableCell>
-                <TableCell className="font-medium text-slate-900">{item.email}</TableCell>
-                <TableCell className="text-sm text-slate-500">
-                  {item.createdAt ? new Date(item.createdAt).toLocaleString('ko-KR') : '-'}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)} className="text-slate-300 hover:text-red-500">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </TableCell>
+                </TableHead>
+                <TableHead>이메일</TableHead>
+                <TableHead>구독 일시</TableHead>
+                <TableHead className="text-right">관리</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {paginatedSubs.map(item => (
+                <TableRow key={item.id} className="group hover:bg-slate-50/50 transition-colors">
+                  <TableCell>
+                    <Checkbox 
+                      checked={selectedIds.includes(item.id)} 
+                      onCheckedChange={(c) => toggleOne(item.id, !!c)} 
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium text-slate-900">{item.email}</TableCell>
+                  <TableCell className="text-sm text-slate-500">
+                    {item.createdAt ? new Date(item.createdAt).toLocaleString('ko-KR') : '-'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)} className="text-slate-300 hover:text-red-500">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* 모바일 전용 구독자 카드 뷰 (md 미만 - 가로스크롤 완전 제거) */}
+        <div className="block md:hidden divide-y divide-slate-100">
+          <div className="p-3 bg-slate-50/80 flex items-center justify-between text-xs text-slate-600 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <Checkbox 
+                checked={subscriptions.length > 0 && selectedIds.length === subscriptions.length} 
+                onCheckedChange={(c) => toggleAll(!!c)} 
+              />
+              <span className="font-bold">전체 선택 ({selectedIds.length}/{subscriptions.length})</span>
+            </div>
+          </div>
+          {paginatedSubs.map(item => (
+            <div key={item.id} className="p-3.5 flex items-center justify-between gap-3 bg-white">
+              <div className="flex items-center gap-3 min-w-0">
+                <Checkbox 
+                  checked={selectedIds.includes(item.id)} 
+                  onCheckedChange={(c) => toggleOne(item.id, !!c)} 
+                />
+                <div className="min-w-0">
+                  <div className="font-semibold text-slate-900 text-sm truncate">{item.email}</div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">
+                    {item.createdAt ? new Date(item.createdAt).toLocaleString('ko-KR') : '-'}
+                  </div>
+                </div>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)} className="text-slate-400 hover:text-red-500 shrink-0 h-8 w-8">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="py-4 border-t border-slate-100 bg-slate-50/50">
@@ -438,60 +474,105 @@ export default function AdminNewsletterTab({ subscriptions, isLoading, isError, 
           ) : logs.length === 0 ? (
             <div className="p-8 text-center text-slate-500">아직 뉴스레터 발송 내역이 없습니다.</div>
           ) : (
-            <div className="max-h-[500px] overflow-y-auto">
-              <Table>
-                <TableHeader className="bg-slate-50/50 sticky top-0">
-                  <TableRow>
-                    <TableHead>발송 일시</TableHead>
-                    <TableHead>발송 유형</TableHead>
-                    <TableHead>대상</TableHead>
-                    <TableHead>수신자 수</TableHead>
-                    <TableHead>메일 제목</TableHead>
-                    <TableHead>상태</TableHead>
-                    <TableHead className="text-right">미리보기</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {logs.map((log: any) => (
-                    <TableRow key={log.id} className="hover:bg-slate-50/50 transition-colors">
-                      <TableCell className="text-sm text-slate-500">
-                        {log.sentAt ? new Date(log.sentAt).toLocaleString('ko-KR') : '-'}
-                      </TableCell>
-                      <TableCell>
-                        {log.type === 'weekly' && <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">주간</span>}
-                        {log.type === 'monthly' && <span className="inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full font-medium">월간</span>}
-                        {log.type === 'custom' && <span className="inline-block px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-full font-medium">수동</span>}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {log.target === 'master' ? '마스터 메일' : log.target === 'all' ? '구독자 전체' : '일반 회원'}
-                      </TableCell>
-                      <TableCell className="text-sm font-medium">{log.recipientCount} 명</TableCell>
-                      <TableCell className="font-medium text-slate-900 max-w-[200px] truncate" title={log.subject}>
-                        {log.subject}
-                      </TableCell>
-                      <TableCell>
-                        {log.success ? (
-                          <span className="text-green-600 text-sm font-medium">성공</span>
-                        ) : (
-                          <span className="text-red-600 text-sm font-medium">실패</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => {
-                            setSelectedLog(log);
-                            setIsLogDialogOpen(true);
-                          }}
-                        >
-                          본문 보기
-                        </Button>
-                      </TableCell>
+            <div>
+              {/* 데스크탑 테이블 뷰 (md 이상) */}
+              <div className="hidden md:block max-h-[500px] overflow-y-auto">
+                <Table>
+                  <TableHeader className="bg-slate-50/50 sticky top-0">
+                    <TableRow>
+                      <TableHead>발송 일시</TableHead>
+                      <TableHead>발송 유형</TableHead>
+                      <TableHead>대상</TableHead>
+                      <TableHead>수신자 수</TableHead>
+                      <TableHead>메일 제목</TableHead>
+                      <TableHead>상태</TableHead>
+                      <TableHead className="text-right">미리보기</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {logs.map((log: any) => (
+                      <TableRow key={log.id} className="hover:bg-slate-50/50 transition-colors">
+                        <TableCell className="text-sm text-slate-500">
+                          {log.sentAt ? new Date(log.sentAt).toLocaleString('ko-KR') : '-'}
+                        </TableCell>
+                        <TableCell>
+                          {log.type === 'weekly' && <span className="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">주간</span>}
+                          {log.type === 'monthly' && <span className="inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full font-medium">월간</span>}
+                          {log.type === 'custom' && <span className="inline-block px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-full font-medium">수동</span>}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {log.target === 'master' ? '마스터 메일' : log.target === 'all' ? '구독자 전체' : '일반 회원'}
+                        </TableCell>
+                        <TableCell className="text-sm font-medium">{log.recipientCount} 명</TableCell>
+                        <TableCell className="font-medium text-slate-900 max-w-[200px] truncate" title={log.subject}>
+                          {log.subject}
+                        </TableCell>
+                        <TableCell>
+                          {log.success ? (
+                            <span className="text-green-600 text-sm font-medium">성공</span>
+                          ) : (
+                            <span className="text-red-600 text-sm font-medium">실패</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setSelectedLog(log);
+                              setIsLogDialogOpen(true);
+                            }}
+                          >
+                            본문 보기
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* 모바일 전용 발송 로그 카드 뷰 (md 미만 - 가로스크롤 완전 제거) */}
+              <div className="block md:hidden divide-y divide-slate-100 max-h-[500px] overflow-y-auto">
+                {logs.map((log: any) => (
+                  <div key={log.id} className="p-4 space-y-2.5 bg-white">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {log.type === 'weekly' && <span className="inline-block px-2 py-0.5 bg-blue-100 text-blue-700 text-[10px] rounded-full font-bold">주간</span>}
+                        {log.type === 'monthly' && <span className="inline-block px-2 py-0.5 bg-purple-100 text-purple-700 text-[10px] rounded-full font-bold">월간</span>}
+                        {log.type === 'custom' && <span className="inline-block px-2 py-0.5 bg-slate-100 text-slate-700 text-[10px] rounded-full font-bold">수동</span>}
+                        <span className="text-xs text-slate-500 font-medium">
+                          {log.target === 'master' ? '마스터 메일' : log.target === 'all' ? '구독자 전체' : '일반 회원'} ({log.recipientCount}명)
+                        </span>
+                      </div>
+                      <div>
+                        {log.success ? (
+                          <span className="text-green-700 bg-green-50 text-[10px] font-bold px-2 py-0.5 rounded-full border border-green-200">성공</span>
+                        ) : (
+                          <span className="text-red-700 bg-red-50 text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-200">실패</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="font-bold text-slate-900 text-sm line-clamp-2">{log.subject}</div>
+
+                    <div className="flex items-center justify-between gap-2 pt-1 text-xs text-slate-400">
+                      <span>{log.sentAt ? new Date(log.sentAt).toLocaleString('ko-KR') : '-'}</span>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="h-7 text-xs px-2.5"
+                        onClick={() => {
+                          setSelectedLog(log);
+                          setIsLogDialogOpen(true);
+                        }}
+                      >
+                        본문 보기
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

@@ -103,7 +103,7 @@ const Hero = () => {
   ];
 
   return (
-    <section className="relative w-full bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden pt-8 pb-12 md:pt-14 md:pb-20">
+    <section className="relative w-full bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden pt-6 pb-10 md:pt-14 md:pb-20 landscape:pt-6 landscape:pb-8">
       {/* Background Subtle Pattern */}
       <div className="absolute inset-0 opacity-25 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
       <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-orange-500/20 blur-[100px] rounded-full pointer-events-none" />
@@ -172,7 +172,7 @@ const Hero = () => {
         </motion.div>
 
         {/* 4 Super Friendly Category Buttons */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-4xl mx-auto">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 max-w-4xl mx-auto">
           {categoryButtons.map((cat, idx) => {
             const Icon = cat.icon;
             return (

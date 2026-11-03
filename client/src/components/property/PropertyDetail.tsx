@@ -719,14 +719,14 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
             <table className="w-full text-sm">
               <tbody>
                 {property.approvalDate && (
-                  <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-32">사용승인</td><td className="py-3 font-medium">{property.approvalDate}</td></tr>
+                  <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-24 sm:w-28 md:w-32 text-xs sm:text-sm">사용승인</td><td className="py-3 font-medium">{property.approvalDate}</td></tr>
                 )}
-                <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-32">유형</td><td className="py-3 font-medium">{property.type}</td></tr>
+                <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-24 sm:w-28 md:w-32 text-xs sm:text-sm">유형</td><td className="py-3 font-medium">{property.type}</td></tr>
                 {property.landType && typeof property.landType === 'string' && property.landType.trim().length > 0 && (
-                  <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-32">지목</td><td className="py-3 font-medium">{property.landType}</td></tr>
+                  <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-24 sm:w-28 md:w-32 text-xs sm:text-sm">지목</td><td className="py-3 font-medium">{property.landType}</td></tr>
                 )}
                 {property.zoneType && typeof property.zoneType === 'string' && property.zoneType.trim().length > 0 && (
-                  <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-32">용도지역</td><td className="py-3 font-medium">{property.zoneType}</td></tr>
+                  <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-24 sm:w-28 md:w-32 text-xs sm:text-sm">용도지역</td><td className="py-3 font-medium">{property.zoneType}</td></tr>
                 )}
               </tbody>
             </table>
@@ -738,13 +738,13 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
             <table className="w-full text-sm">
               <tbody>
                 {property.size && (
-                  <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-32">총면적</td><td className="py-3 font-medium">{property.size}m² (약 {(Number(property.size) * 0.3025).toFixed(2)}평)</td></tr>
+                  <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-24 sm:w-28 md:w-32 text-xs sm:text-sm">총면적</td><td className="py-3 font-medium">{property.size}m² (약 {(Number(property.size) * 0.3025).toFixed(2)}평)</td></tr>
                 )}
                 {property.supplyArea && (
-                  <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-32">공급면적</td><td className="py-3 font-medium">{property.supplyArea}m² (약 {(Number(property.supplyArea) * 0.3025).toFixed(2)}평)</td></tr>
+                  <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-24 sm:w-28 md:w-32 text-xs sm:text-sm">공급면적</td><td className="py-3 font-medium">{property.supplyArea}m² (약 {(Number(property.supplyArea) * 0.3025).toFixed(2)}평)</td></tr>
                 )}
                 {property.privateArea && (
-                  <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-32">전용면적</td><td className="py-3 font-medium">{property.privateArea}m² (약 {(Number(property.privateArea) * 0.3025).toFixed(2)}평)</td></tr>
+                  <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-24 sm:w-28 md:w-32 text-xs sm:text-sm">전용면적</td><td className="py-3 font-medium">{property.privateArea}m² (약 {(Number(property.privateArea) * 0.3025).toFixed(2)}평)</td></tr>
                 )}
               </tbody>
             </table>
@@ -770,7 +770,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                 <table className="w-full text-sm">
                   <tbody>
                     {hasTotalFloors && (
-                      <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-32">총 층수</td><td className="py-3 font-medium">{property.totalFloors}층</td></tr>
+                      <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-24 sm:w-28 md:w-32 text-xs sm:text-sm">총 층수</td><td className="py-3 font-medium">{property.totalFloors}층</td></tr>
                     )}
                     {hasFloorLevel && (() => {
                       const level = (property as any).floorLevel;
@@ -781,7 +781,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                       };
                       return (
                         <tr className="border-b border-gray-200">
-                          <td className="py-3 text-gray-500 w-32">층수표시</td>
+                          <td className="py-3 text-gray-500 w-24 sm:w-28 md:w-32 text-xs sm:text-sm">층수표시</td>
                           <td className="py-3 font-medium">
                             <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold ${colorMap[level] || 'bg-gray-100 text-gray-700'}`}>{level}층</span>
                           </td>
@@ -789,16 +789,16 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                       );
                     })()}
                     {hasRooms && (
-                      <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-32">방 / 욕실</td><td className="py-3 font-medium">방 {property.bedrooms || 0}개 / 욕실 {property.bathrooms || 0}개</td></tr>
+                      <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-24 sm:w-28 md:w-32 text-xs sm:text-sm">방 / 욕실</td><td className="py-3 font-medium">방 {property.bedrooms || 0}개 / 욕실 {property.bathrooms || 0}개</td></tr>
                     )}
                     {hasDirection && (
-                      <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-32">방향</td><td className="py-3 font-medium">{property.direction}</td></tr>
+                      <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-24 sm:w-28 md:w-32 text-xs sm:text-sm">방향</td><td className="py-3 font-medium">{property.direction}</td></tr>
                     )}
                     {hasElevator && (
-                      <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-32">승강기</td><td className="py-3 font-medium">있음</td></tr>
+                      <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-24 sm:w-28 md:w-32 text-xs sm:text-sm">승강기</td><td className="py-3 font-medium">있음</td></tr>
                     )}
                     {hasParking && (
-                      <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-32">주차</td><td className="py-3 font-medium">{property.parking}</td></tr>
+                      <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-24 sm:w-28 md:w-32 text-xs sm:text-sm">주차</td><td className="py-3 font-medium">{property.parking}</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -812,16 +812,16 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
             <table className="w-full text-sm">
               <tbody>
                 {property.price && Number(property.price) > 0 && (
-                  <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-32">매매가</td><td className="py-3 font-medium">{formatKoreanPrice(property.price)}</td></tr>
+                  <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-24 sm:w-28 md:w-32 text-xs sm:text-sm">매매가</td><td className="py-3 font-medium">{formatKoreanPrice(property.price)}</td></tr>
                 )}
                 {property.deposit && Number(property.deposit) > 0 && (
-                  <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-32">전세금</td><td className="py-3 font-medium">{formatKoreanPrice(property.deposit)}</td></tr>
+                  <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-24 sm:w-28 md:w-32 text-xs sm:text-sm">전세금</td><td className="py-3 font-medium">{formatKoreanPrice(property.deposit)}</td></tr>
                 )}
                 {property.depositAmount && Number(property.depositAmount) > 0 && (
-                  <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-32">보증금</td><td className="py-3 font-medium">{formatKoreanPrice(property.depositAmount)}</td></tr>
+                  <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-24 sm:w-28 md:w-32 text-xs sm:text-sm">보증금</td><td className="py-3 font-medium">{formatKoreanPrice(property.depositAmount)}</td></tr>
                 )}
                 {property.monthlyRent && Number(property.monthlyRent) > 0 && (
-                  <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-32">월세</td><td className="py-3 font-medium">{formatKoreanPrice(property.monthlyRent)}</td></tr>
+                  <tr className="border-b border-gray-200"><td className="py-3 text-gray-500 w-24 sm:w-28 md:w-32 text-xs sm:text-sm">월세</td><td className="py-3 font-medium">{formatKoreanPrice(property.monthlyRent)}</td></tr>
                 )}
               </tbody>
             </table>

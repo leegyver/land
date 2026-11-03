@@ -361,23 +361,23 @@ const PropertiesPage = () => {
       </div>
 
       <div className="container mx-auto px-4 -mt-6 relative z-10">
-        <div className="bg-white rounded-3xl shadow-2xl shadow-slate-200/50 border border-slate-100 p-3 md:p-4">
+        <div className="bg-white rounded-2xl md:rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-3 md:p-4">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col md:flex-row gap-2 items-end">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-1 w-full">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 flex-1 w-full">
                 <FormField
                   control={form.control}
                   name="district"
                   render={({ field }) => (
                     <FormItem className="space-y-0.5">
-                      <FormLabel className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">지역 선택</FormLabel>
+                      <FormLabel className="text-[11px] sm:text-xs font-black text-slate-400 uppercase tracking-widest pl-1">지역 선택</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger className="h-12 bg-slate-50 border-slate-200 rounded-xl font-bold text-slate-700 hover:bg-slate-100 transition-colors">
+                          <SelectTrigger className="h-11 sm:h-12 bg-slate-50 border-slate-200 rounded-xl font-bold text-xs sm:text-sm text-slate-700 hover:bg-slate-100 transition-colors">
                             <SelectValue placeholder="모든 지역" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                        <SelectContent className="rounded-xl border-slate-200 shadow-xl max-h-60">
                           <SelectItem value="all">강화군 전체</SelectItem>
                           <SelectItem value="강화읍">강화읍</SelectItem>
                           <SelectItem value="선원면">선원면</SelectItem>
@@ -402,14 +402,14 @@ const PropertiesPage = () => {
                   name="type"
                   render={({ field }) => (
                     <FormItem className="space-y-0.5">
-                      <FormLabel className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">건물 종류</FormLabel>
+                      <FormLabel className="text-[11px] sm:text-xs font-black text-slate-400 uppercase tracking-widest pl-1">건물 종류</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger className="h-12 bg-slate-50 border-slate-200 rounded-xl font-bold text-slate-700 hover:bg-slate-100 transition-colors">
+                          <SelectTrigger className="h-11 sm:h-12 bg-slate-50 border-slate-200 rounded-xl font-bold text-xs sm:text-sm text-slate-700 hover:bg-slate-100 transition-colors">
                             <SelectValue placeholder="모든 건물" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                        <SelectContent className="rounded-xl border-slate-200 shadow-xl max-h-60">
                           <SelectItem value="all">전체 건물</SelectItem>
                           <SelectItem value="토지">토지</SelectItem>
                           <SelectItem value="주택">주택</SelectItem>
@@ -426,14 +426,14 @@ const PropertiesPage = () => {
                   name="dealType"
                   render={({ field }) => (
                     <FormItem className="space-y-0.5">
-                      <FormLabel className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">거래 유형</FormLabel>
+                      <FormLabel className="text-[11px] sm:text-xs font-black text-slate-400 uppercase tracking-widest pl-1">거래 유형</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger className="h-12 bg-slate-50 border-slate-200 rounded-xl font-bold text-slate-700 hover:bg-slate-100 transition-colors">
+                          <SelectTrigger className="h-11 sm:h-12 bg-slate-50 border-slate-200 rounded-xl font-bold text-xs sm:text-sm text-slate-700 hover:bg-slate-100 transition-colors">
                             <SelectValue placeholder="모든 유형" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                        <SelectContent className="rounded-xl border-slate-200 shadow-xl max-h-60">
                           <SelectItem value="all">전체 거래</SelectItem>
                           <SelectItem value="매매">매매</SelectItem>
                           <SelectItem value="전세">전세</SelectItem>
@@ -448,14 +448,14 @@ const PropertiesPage = () => {
                   name="priceRange"
                   render={({ field }) => (
                     <FormItem className="space-y-0.5">
-                      <FormLabel className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">희망 가격대</FormLabel>
+                      <FormLabel className="text-[11px] sm:text-xs font-black text-slate-400 uppercase tracking-widest pl-1">희망 가격대</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger className="h-12 bg-slate-50 border-slate-200 rounded-xl font-bold text-slate-700 hover:bg-slate-100 transition-colors">
+                          <SelectTrigger className="h-11 sm:h-12 bg-slate-50 border-slate-200 rounded-xl font-bold text-xs sm:text-sm text-slate-700 hover:bg-slate-100 transition-colors">
                             <SelectValue placeholder="모든 가격" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                        <SelectContent className="rounded-xl border-slate-200 shadow-xl max-h-60">
                           <SelectItem value="all">전체 가격대</SelectItem>
                           <SelectItem value="0-100000000">1억 이하</SelectItem>
                           <SelectItem value="100000000-300000000">1억~3억</SelectItem>
@@ -471,15 +471,15 @@ const PropertiesPage = () => {
                   control={form.control}
                   name="sortBy"
                   render={({ field }) => (
-                    <FormItem className="space-y-0.5">
-                      <FormLabel className="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">정렬 순서</FormLabel>
+                    <FormItem className="space-y-0.5 col-span-2 sm:col-span-1">
+                      <FormLabel className="text-[11px] sm:text-xs font-black text-slate-400 uppercase tracking-widest pl-1">정렬 순서</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger className="h-12 bg-slate-50 border-slate-200 rounded-xl font-bold text-slate-700 hover:bg-slate-100 transition-colors">
+                          <SelectTrigger className="h-11 sm:h-12 bg-slate-50 border-slate-200 rounded-xl font-bold text-xs sm:text-sm text-slate-700 hover:bg-slate-100 transition-colors">
                             <SelectValue placeholder="최신순" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                        <SelectContent className="rounded-xl border-slate-200 shadow-xl max-h-60">
                           <SelectItem value="latest">최신 등록순</SelectItem>
                           <SelectItem value="priceLow">가격 낮은순</SelectItem>
                           <SelectItem value="priceHigh">가격 높은순</SelectItem>
@@ -490,7 +490,7 @@ const PropertiesPage = () => {
                   )}
                 />
               </div>
-              <Button type="submit" className="w-full md:w-32 h-12 bg-slate-900 hover:bg-blue-600 text-white font-black rounded-xl transition-all duration-300">
+              <Button type="submit" className="w-full md:w-32 h-11 sm:h-12 bg-slate-900 hover:bg-blue-600 text-white font-black rounded-xl transition-all duration-300 touch-manipulation">
                 조건 적용
               </Button>
             </form>
@@ -500,36 +500,36 @@ const PropertiesPage = () => {
 
       <div className="container mx-auto px-4 py-8">
         {isRecommend && sajuData && (
-          <div className="mb-12 bg-gradient-to-br from-indigo-600 via-blue-600 to-violet-700 rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden shadow-2xl shadow-blue-200">
+          <div className="mb-8 md:mb-12 bg-gradient-to-br from-indigo-600 via-blue-600 to-violet-700 rounded-2xl md:rounded-[2.5rem] p-6 md:p-12 relative overflow-hidden shadow-2xl shadow-blue-200">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32 blur-3xl" />
-            <div className="relative flex flex-col md:flex-row items-center gap-8">
-              <div className="bg-white/20 backdrop-blur-xl p-6 rounded-3xl shadow-inner border border-white/20">
-                <Sparkles className="w-10 h-10 text-yellow-300" />
+            <div className="relative flex flex-col md:flex-row items-center gap-6 md:gap-8">
+              <div className="bg-white/20 backdrop-blur-xl p-4 md:p-6 rounded-2xl md:rounded-3xl shadow-inner border border-white/20">
+                <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-yellow-300" />
               </div>
               <div className="flex-1 text-center md:text-left space-y-2">
-                <h2 className="text-2xl md:text-4xl font-black text-white tracking-tight">
+                <h2 className="text-xl sm:text-2xl md:text-4xl font-black text-white tracking-tight">
                   {user?.username || '게스트'}님 맞춤형 <span className="text-yellow-300">기운 명당</span>
                 </h2>
-                <p className="text-blue-100 text-lg font-medium opacity-90">
+                <p className="text-blue-100 text-sm md:text-lg font-medium opacity-90">
                   사주 분석 결과가 반영되었습니다. 귀하의 기운과 가장 잘 맞는 매물을 최상단에 배치했습니다.
                 </p>
               </div>
-              <Button onClick={() => setLocation('/properties')} variant="secondary" className="h-14 px-8 bg-white text-blue-600 font-black rounded-2xl hover:bg-blue-50 transition-all">
+              <Button onClick={() => setLocation('/properties')} variant="secondary" className="h-12 md:h-14 px-6 md:px-8 bg-white text-blue-600 font-black rounded-xl md:rounded-2xl hover:bg-blue-50 transition-all touch-manipulation">
                 전체 매물 보기
               </Button>
             </div>
           </div>
         )}
 
-        <div className="mb-12">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
-              <MapIcon className="w-6 h-6 text-blue-600" />
+        <div className="mb-8 md:mb-12">
+          <div className="flex items-center justify-between mb-4 md:mb-6">
+            <h3 className="text-lg md:text-xl font-black text-slate-800 flex items-center gap-2">
+              <MapIcon className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
               매물 위치 전체보기
             </h3>
-            <Badge className="bg-slate-100 text-slate-500 hover:bg-slate-100 border-none font-bold">인근 매물 추천 포함</Badge>
+            <Badge className="bg-slate-100 text-slate-500 hover:bg-slate-100 border-none font-bold text-xs">인근 매물 추천 포함</Badge>
           </div>
-          <div className="h-[400px] md:h-[600px] w-full rounded-[2.5rem] overflow-hidden shadow-2xl shadow-slate-200 border border-slate-100 relative group">
+          <div className="h-[300px] sm:h-[420px] md:h-[600px] landscape:h-[260px] w-full rounded-2xl md:rounded-[2.5rem] overflow-hidden shadow-xl shadow-slate-200 border border-slate-100 relative group">
             <PropertyMap properties={mapProperties} showCrawled={true} />
             <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
           </div>

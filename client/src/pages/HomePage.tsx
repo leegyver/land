@@ -614,14 +614,44 @@ const HomePage = () => {
         </div>
       </section >
 
-      {/* 모바일 최적화 통합 유튜브 채널관 (3단 나열 -> 직관적 탭 통합) */}
-      <CombinedYouTubeSection
-        channels={[
-          { title: "이가이버TV", videos: latestVideos, isLoading: isVideosLoading, channelUrl: "https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA", isLive: channel1Live?.isLive, liveVideoId: channel1Live?.videoId },
-          { title: "강화도 부동산이야기", videos: secondChannelVideos, isLoading: isSecondVideosLoading, channelUrl: "https://youtube.com/channel/UChvA8_nrczWDBYdHUum7Amw?si=K45xaU3foR1mSPFE", isLive: channel2Live?.isLive, liveVideoId: channel2Live?.videoId },
-          { title: "강화114부동산TV", videos: thirdChannelVideos, isLoading: isThirdVideosLoading, channelUrl: "https://youtube.com/channel/UCRicoETqTmWVJ8_o34OxwFg", isLive: channel3Live?.isLive, liveVideoId: channel3Live?.videoId },
-        ]}
-      />
+      {/* 모바일 화면 (md 미만): 가로스크롤 없는 직관적인 3채널 탭 통합 뷰 */}
+      <div className="block md:hidden">
+        <CombinedYouTubeSection
+          channels={[
+            { title: "이가이버TV", videos: latestVideos, isLoading: isVideosLoading, channelUrl: "https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA", isLive: channel1Live?.isLive, liveVideoId: channel1Live?.videoId },
+            { title: "강화도 부동산이야기", videos: secondChannelVideos, isLoading: isSecondVideosLoading, channelUrl: "https://youtube.com/channel/UChvA8_nrczWDBYdHUum7Amw?si=K45xaU3foR1mSPFE", isLive: channel2Live?.isLive, liveVideoId: channel2Live?.videoId },
+            { title: "강화114부동산TV", videos: thirdChannelVideos, isLoading: isThirdVideosLoading, channelUrl: "https://youtube.com/channel/UCRicoETqTmWVJ8_o34OxwFg", isLive: channel3Live?.isLive, liveVideoId: channel3Live?.videoId },
+          ]}
+        />
+      </div>
+
+      {/* 데스크탑 화면 (md 이상): 3개 채널이 모두 나와서 각각 롤링(Autoplay Carousel) */}
+      <div className="hidden md:block space-y-1 bg-slate-950 py-3 border-y border-slate-800">
+        <YouTubeSliderSection
+          title="이가이버TV"
+          videos={latestVideos}
+          isLoading={isVideosLoading}
+          channelUrl="https://www.youtube.com/channel/UCCG3_JlKhgalqhict7tKkbA"
+          isLive={channel1Live?.isLive}
+          liveVideoId={channel1Live?.videoId}
+        />
+        <YouTubeSliderSection
+          title="강화도 부동산이야기"
+          videos={secondChannelVideos}
+          isLoading={isSecondVideosLoading}
+          channelUrl="https://youtube.com/channel/UChvA8_nrczWDBYdHUum7Amw?si=K45xaU3foR1mSPFE"
+          isLive={channel2Live?.isLive}
+          liveVideoId={channel2Live?.videoId}
+        />
+        <YouTubeSliderSection
+          title="강화114부동산TV"
+          videos={thirdChannelVideos}
+          isLoading={isThirdVideosLoading}
+          channelUrl="https://youtube.com/channel/UCRicoETqTmWVJ8_o34OxwFg"
+          isLive={channel3Live?.isLive}
+          liveVideoId={channel3Live?.videoId}
+        />
+      </div>
 
       <section className="pt-4 pb-12 bg-white">
         <div className="container mx-auto px-4">
@@ -858,29 +888,29 @@ const YouTubeSliderSection = ({ title, videos, isLoading, channelUrl, isLive, li
   liveVideoId?: string
 }) => {
   return (
-    <section className="py-2 bg-slate-900 text-white">
-      <div className="container mx-auto px-4">
-        <div className="flex flex-row justify-between items-center mb-2">
+    <section className="py-2.5 bg-slate-900 text-white rounded-2xl mx-auto container px-4 max-w-6xl shadow-sm">
+      <div>
+        <div className="flex flex-row justify-between items-center mb-2 px-1">
           <div>
-            <h2 className="text-lg md:text-2xl font-bold mb-0 flex items-center">
-              <Youtube className="h-5 w-5 md:h-6 md:w-6 text-red-600 mr-2" />
-              {title}
+            <h2 className="text-base md:text-lg font-extrabold mb-0 flex items-center">
+              <Youtube className="h-5 w-5 text-red-600 mr-2 shrink-0" />
+              <span>{title}</span>
             </h2>
           </div>
           <a
             href={channelUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-0 text-gray-300 hover:text-white transition-colors flex items-center text-sm"
+            className="text-slate-300 hover:text-white transition-colors flex items-center text-xs font-bold"
           >
-            더보기 <ArrowRight className="ml-1 h-3 w-3" />
+            채널 바로가기 <ArrowRight className="ml-1 h-3 w-3" />
           </a>
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-4 gap-3">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-slate-800 h-64 rounded-xl animate-pulse" />
+              <div key={i} className="bg-slate-800 aspect-video rounded-xl animate-pulse" />
             ))}
           </div>
         ) : (
@@ -895,18 +925,18 @@ const YouTubeSliderSection = ({ title, videos, isLoading, channelUrl, isLive, li
                 stopOnInteraction: false,
               }),
             ]}
-            className="w-full relative px-2"
+            className="w-full relative px-1"
           >
-            <CarouselContent className="-ml-2 md:-ml-4">
+            <CarouselContent className="-ml-3">
               {videos?.map((video) => (
-                <CarouselItem key={video.id} className="pl-2 md:pl-4 basis-[85%] sm:basis-[45%] lg:basis-1/4 xl:basis-1/5">
+                <CarouselItem key={video.id} className="pl-3 basis-1/2 sm:basis-1/3 lg:basis-1/4">
                   <a
                     href={video.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="group h-full block"
                   >
-                    <div className="bg-slate-800 rounded-xl overflow-hidden hover:transform hover:-translate-y-2 transition-all duration-300 shadow-lg border border-slate-700 h-full flex flex-col">
+                    <div className="bg-slate-800 rounded-xl overflow-hidden hover:transform hover:-translate-y-1 transition-all duration-300 shadow-md border border-slate-700/80 h-full flex flex-col">
                       <div className="relative aspect-video overflow-hidden shrink-0">
                         <img
                           src={video.thumbnail || `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`}
@@ -918,14 +948,14 @@ const YouTubeSliderSection = ({ title, videos, isLoading, channelUrl, isLive, li
                             target.src = `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`;
                           }}
                         />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <div className="bg-red-600 p-3 rounded-full text-white">
-                            <Play className="h-6 w-6 fill-current" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <div className="bg-red-600 p-2 rounded-full text-white shadow-lg">
+                            <Play className="h-4 w-4 fill-current" />
                           </div>
                         </div>
                       </div>
-                      <div className="p-3 flex-grow bg-slate-800">
-                        <h3 className="font-semibold line-clamp-2 text-gray-100 group-hover:text-red-400 transition-colors text-sm">
+                      <div className="p-2.5 flex-grow bg-slate-800">
+                        <h3 className="font-bold line-clamp-1 text-slate-100 group-hover:text-red-400 transition-colors text-xs sm:text-sm">
                           {video.title}
                         </h3>
                       </div>
@@ -935,8 +965,8 @@ const YouTubeSliderSection = ({ title, videos, isLoading, channelUrl, isLive, li
               ))}
             </CarouselContent>
             <div className="hidden md:block">
-              <CarouselPrevious className="absolute -left-12 top-1/2 -translate-y-1/2 bg-white/10 border-white/20 text-white hover:bg-white/20" />
-              <CarouselNext className="absolute -right-12 top-1/2 -translate-y-1/2 bg-white/10 border-white/20 text-white hover:bg-white/20" />
+              <CarouselPrevious className="absolute -left-4 top-1/2 -translate-y-1/2 bg-slate-950/80 border-slate-700 text-white hover:bg-slate-800 shadow-md" />
+              <CarouselNext className="absolute -right-4 top-1/2 -translate-y-1/2 bg-slate-950/80 border-slate-700 text-white hover:bg-slate-800 shadow-md" />
             </div>
           </Carousel>
         )}

@@ -62,6 +62,8 @@ export function formatKoreanPrice(price: string | number | null | undefined): st
 export interface SeoMetadata {
   title: string;
   description: string;
+  ogTitle?: string;
+  ogDescription?: string;
   keywords?: string;
   canonicalUrl: string;
   imageUrl: string;
@@ -441,14 +443,16 @@ export async function resolveSeoMetadata(
     default:
       // 홈 / 메인 페이지
       return {
-        title: "이가이버부동산 - 강화도 부동산 전문 중개 (토지, 전원주택, 매물정보)",
-        description: "강화도 부동산 전문 중개 - 강화도 전 지역 토지, 전원주택, 농가주택, 상가 매물 정보 및 매매/임대 실시간 상담 서비스를 제공합니다.",
-        keywords: defaultKeywords,
+        title: "강화 이가이버 부동산 - 강화도 주택·상가·토지 매매/임대 전문 & 전문 경매 컨설팅",
+        description: "강화도 전 지역 전원주택, 토지, 구옥/농가주택 실매물 정보. 현장 검증을 거친 정직한 매물과 매매·임대 실시간 맞춤 상담을 제공합니다.",
+        ogTitle: "강화도 부동산 이가이버 - 전원주택·토지 매매/임대 전문 & 경매 컨설팅",
+        ogDescription: "강화도 전 지역 전원주택, 토지, 농가주택 맞춤물건발굴 및 친절·정확한 전문 중개 상담",
+        keywords: defaultKeywords + ", 강화도 경매",
         canonicalUrl: baseUrl,
         imageUrl: defaultImage,
         imageWidth: 1200,
         imageHeight: 600,
-        imageAlt: "이가이버부동산 대표이미지",
+        imageAlt: "강화도 부동산 이가이버 대표이미지",
       };
   }
 }
@@ -489,8 +493,11 @@ export async function injectSeoIntoHtml(
   }
 
   // 4. Open Graph 태그 교체
-  html = html.replace(/<meta\s+property="og:title"\s+content="[^"]*"\s*\/?>/i, `<meta property="og:title" content="${escapeAttr(seo.title)}" />`);
-  html = html.replace(/<meta\s+property="og:description"\s+content="[^"]*"\s*\/?>/i, `<meta property="og:description" content="${escapeAttr(seo.description)}" />`);
+  const ogTitle = seo.ogTitle || seo.title;
+  const ogDescription = seo.ogDescription || seo.description;
+
+  html = html.replace(/<meta\s+property="og:title"\s+content="[^"]*"\s*\/?>/i, `<meta property="og:title" content="${escapeAttr(ogTitle)}" />`);
+  html = html.replace(/<meta\s+property="og:description"\s+content="[^"]*"\s*\/?>/i, `<meta property="og:description" content="${escapeAttr(ogDescription)}" />`);
   html = html.replace(/<meta\s+property="og:image"\s+content="[^"]*"\s*\/?>/i, `<meta property="og:image" content="${escapeAttr(seo.imageUrl)}" />`);
   html = html.replace(/<meta\s+property="og:image:secure_url"\s+content="[^"]*"\s*\/?>/i, `<meta property="og:image:secure_url" content="${escapeAttr(seo.imageUrl)}" />`);
   html = html.replace(/<meta\s+property="og:url"\s+content="[^"]*"\s*\/?>/i, `<meta property="og:url" content="${escapeAttr(seo.canonicalUrl)}" />`);
@@ -499,8 +506,8 @@ export async function injectSeoIntoHtml(
   }
 
   // 5. Twitter Card 교체
-  html = html.replace(/<meta\s+name="twitter:title"\s+content="[^"]*"\s*\/?>/i, `<meta name="twitter:title" content="${escapeAttr(seo.title)}" />`);
-  html = html.replace(/<meta\s+name="twitter:description"\s+content="[^"]*"\s*\/?>/i, `<meta name="twitter:description" content="${escapeAttr(seo.description)}" />`);
+  html = html.replace(/<meta\s+name="twitter:title"\s+content="[^"]*"\s*\/?>/i, `<meta name="twitter:title" content="${escapeAttr(ogTitle)}" />`);
+  html = html.replace(/<meta\s+name="twitter:description"\s+content="[^"]*"\s*\/?>/i, `<meta name="twitter:description" content="${escapeAttr(ogDescription)}" />`);
   html = html.replace(/<meta\s+name="twitter:image"\s+content="[^"]*"\s*\/?>/i, `<meta name="twitter:image" content="${escapeAttr(seo.imageUrl)}" />`);
   html = html.replace(/<meta\s+name="twitter:url"\s+content="[^"]*"\s*\/?>/i, `<meta name="twitter:url" content="${escapeAttr(seo.canonicalUrl)}" />`);
 

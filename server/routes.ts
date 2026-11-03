@@ -50,6 +50,7 @@ import { generateSitemapXml } from "./sitemap";
 import { generateRssXml } from "./rss";
 import { getGa4Stats, getSearchConsoleStats, getNaverAdvisorStats, saveNaverAdvisorStats } from "./services/externalStats";
 import { naverBlogRouter } from "./naver-blog-routes";
+import { searchLawsAndPrecedents, getPrecedentDetail, CURATION_THEMES } from "./services/law-service";
 
 import { log } from "./vite";
 
@@ -317,6 +318,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/uploads', express.static(uploadDir));
 
   // Dynamic Sitemap for Google / Naver SEO
+  // 대한민국 법령 및 판례 검색/상세 API
+  app.get('/api/law/curations', (_req, res) => {
+    res.json({ success: true, themes: CURATION_THEMES });
+  });
+
+  app.get('/api/law/search', async (req, res) => {
+    try {
+      const query = String(req.query.q || req.query.query || "");
+      const type = (req.query.type as "all" | "law" | "prec") || "all";
+      const page = parseInt(String(req.query.page || "1"), 10) || 1;
+
+      const result = await searchLawsAndPrecedents(query, type, page);
+      res.json({ success: true, ...result });
+    } catch (err: any) {
+      console.error("[API /api/law/search] Error:", err);
+      res.status(500).json({ success: false, message: "법령 및 판례 검색 중 오류가 발생했습니다." });
+    }
+  });
+
+  app.get('/api/law/precedent/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const detail = await getPrecedentDetail(id);
+      if (!detail) {
+        return res.status(404).json({ success: false, message: "판례 정보를 찾을 수 없습니다." });
+      }
+      res.json({ success: true, data: detail });
+    } catch (err: any) {
+      console.error("[API /api/law/precedent/:id] Error:", err);
+      res.status(500).json({ success: false, message: "판례 상세 조회 중 오류가 발생했습니다." });
+    }
+  });
+
   app.get('/sitemap.xml', async (_req, res) => {
     try {
       const sitemap = await generateSitemapXml(storage);

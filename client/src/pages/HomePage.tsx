@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { News, Auction } from "@shared/schema";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
-import { Calendar, ArrowRight, Newspaper, Youtube, Play, BookOpen, Search, Map, ThumbsUp, MessageSquare, Gavel, ShieldCheck, Clock, CheckCircle2, Phone, Sparkles, Trees, Home as HomeIcon } from "lucide-react";
+import { Calendar, ArrowRight, Newspaper, Youtube, Play, BookOpen, Search, Map, ThumbsUp, MessageSquare, Gavel, ShieldCheck, Clock, CheckCircle2, Phone, Sparkles, Trees, Home as HomeIcon, Scale } from "lucide-react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,6 +48,16 @@ interface BlogPost {
 const HomePage = () => {
   const [, setLocation] = useLocation();
   const [searchKeyword, setSearchKeyword] = useState("");
+  const [lawSearchText, setLawSearchText] = useState("");
+
+  const handleLawSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (lawSearchText.trim()) {
+      setLocation(`/legal?q=${encodeURIComponent(lawSearchText.trim())}`);
+    } else {
+      setLocation("/legal");
+    }
+  };
 
   // 최신 유튜브 영상 데이터 가져오기 (이가이버 유튜브 - 채널ID: UCCG3_JlKhgalqhict7tKkbA)
     // 유튜브 라이브 상태 확인
@@ -273,6 +283,65 @@ const HomePage = () => {
               <span>추천 경매</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
+          </div>
+        </div>
+      </section>
+
+      {/* 실무 법령 & 판례 스마트 검색바 (기획안 1 + 2 결합 섹션) */}
+      <section className="bg-slate-900 text-white py-4 sm:py-6 border-b border-slate-800">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <div className="bg-slate-800/90 rounded-2xl p-3.5 sm:p-5 border border-slate-700/80 shadow-lg">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0 border border-orange-500/30">
+                  <Scale className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm sm:text-base font-bold text-white tracking-tight">
+                      부동산 · 경매 법령 & 판례 검색
+                    </span>
+                    <Badge variant="outline" className="text-[10px] bg-orange-500/10 text-orange-300 border-orange-500/30 font-semibold">
+                      법제처·대법원 공식
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-slate-400 hidden sm:block">
+                    전세 대항력, 유치권 성립 요건, 상가 권리금 분쟁 판례를 바로 검색하세요.
+                  </p>
+                </div>
+              </div>
+
+              {/* 검색창 및 빠른 태그 */}
+              <div className="w-full lg:max-w-xl">
+                <form onSubmit={handleLawSearchSubmit} className="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-700 focus-within:border-orange-500 transition-colors">
+                  <Search className="w-4 h-4 text-slate-400 ml-2 shrink-0" />
+                  <Input
+                    type="text"
+                    value={lawSearchText}
+                    onChange={(e) => setLawSearchText(e.target.value)}
+                    placeholder="검색어 입력 (예: 주택임대차보호법, 대항력, 2018다252441)"
+                    className="border-none shadow-none text-white placeholder:text-slate-500 text-xs sm:text-sm focus-visible:ring-0 bg-transparent h-8 sm:h-9"
+                  />
+                  <Button type="submit" size="sm" className="bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs px-3 sm:px-4 h-8 shrink-0 rounded-lg">
+                    판례 검색
+                  </Button>
+                </form>
+
+                <div className="flex items-center gap-1.5 mt-2 overflow-x-auto no-scrollbar text-[11px] text-slate-400">
+                  <span className="shrink-0 text-slate-500">추천:</span>
+                  {["대항력", "우선변제권", "유치권", "법정지상권", "상가권리금"].map((kw) => (
+                    <button
+                      key={kw}
+                      type="button"
+                      onClick={() => setLocation(`/legal?q=${encodeURIComponent(kw)}`)}
+                      className="shrink-0 hover:text-orange-400 transition-colors bg-slate-900 px-2 py-0.5 rounded border border-slate-800"
+                    >
+                      #{kw}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

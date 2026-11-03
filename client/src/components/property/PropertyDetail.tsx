@@ -365,9 +365,9 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-        {/* 왼쪽: 이미지 갤러리 */}
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1 landscape:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-8 mb-8 sm:mb-12">
+        {/* 왼쪽: 이미지 갤러리 (가로모드 50% 분할) */}
+        <div className="lg:col-span-2 landscape:col-span-1">
           <Carousel setApi={setApi} className="w-full relative group">
             <CarouselContent>
               {images.map((img, index) => (
@@ -673,7 +673,7 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
       {/* 주요 특징 (4개 박스) */}
       <h3 className="text-xl font-bold mb-4">주요 특징</h3>
       {/* 주요 특징 (4개 박스) - 값이 0이거나 없으면 숨김 처리됨 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+      <div className="grid grid-cols-2 landscape:grid-cols-4 md:grid-cols-4 gap-2.5 sm:gap-4 mb-8 sm:mb-12">
         {property.size && Number(property.size) > 0 ? (
           <div className="border border-blue-100 bg-blue-50/30 rounded-lg p-6 flex flex-col items-center justify-center text-center hover:shadow-md transition-shadow">
             <Maximize className="w-8 h-8 text-primary mb-2" />

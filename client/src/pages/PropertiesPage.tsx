@@ -363,8 +363,8 @@ const PropertiesPage = () => {
       <div className="container mx-auto px-4 -mt-6 relative z-10">
         <div className="bg-white rounded-2xl md:rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-3 md:p-4">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col md:flex-row gap-2 items-end">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 flex-1 w-full">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col landscape:flex-row md:flex-row gap-2 items-end">
+              <div className="grid grid-cols-2 landscape:grid-cols-5 sm:grid-cols-3 lg:grid-cols-5 gap-2 flex-1 w-full">
                 <FormField
                   control={form.control}
                   name="district"
@@ -471,7 +471,7 @@ const PropertiesPage = () => {
                   control={form.control}
                   name="sortBy"
                   render={({ field }) => (
-                    <FormItem className="space-y-0.5 col-span-2 sm:col-span-1">
+                    <FormItem className="space-y-0.5 col-span-2 landscape:col-span-1 sm:col-span-1">
                       <FormLabel className="text-[11px] sm:text-xs font-black text-slate-400 uppercase tracking-widest pl-1">정렬 순서</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
@@ -490,7 +490,7 @@ const PropertiesPage = () => {
                   )}
                 />
               </div>
-              <Button type="submit" className="w-full md:w-32 h-11 sm:h-12 bg-slate-900 hover:bg-blue-600 text-white font-black rounded-xl transition-all duration-300 touch-manipulation">
+              <Button type="submit" className="w-full landscape:w-28 md:w-32 h-11 sm:h-12 bg-slate-900 hover:bg-blue-600 text-white font-black rounded-xl transition-all duration-300 touch-manipulation shrink-0">
                 조건 적용
               </Button>
             </form>

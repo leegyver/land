@@ -42,7 +42,7 @@ export default function TotalCareSection() {
         </div>
 
         {/* 4 Core Cards (2x2 on mobile, 4 in 1 row on desktop) */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-6">
+        <div className="grid grid-cols-2 landscape:grid-cols-4 lg:grid-cols-4 gap-2.5 sm:gap-6">
           {/* Card 1: 원룸/다가구 */}
           <Link href="/total-care" className="group">
             <div className="h-full bg-slate-800/80 hover:bg-slate-800/90 rounded-xl sm:rounded-2xl p-3 sm:p-5 border border-slate-700/80 hover:border-orange-500/50 transition-all flex flex-col justify-between shadow-md touch-manipulation">

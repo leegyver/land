@@ -280,64 +280,79 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
 
   return (
     <div className="space-y-6">
-      <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex flex-col md:flex-row gap-6">
-        {/* Sort Controls */}
+      <div className="space-y-4">
+        {/* Sort Controls (테마별 진열 순서 관리) */}
         {isAdmin && (
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-             <div className="flex items-center justify-between mb-2">
-               <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">홈페이지 테마별 진열 순서 관리</h3>
-               <span className="text-[11px] text-amber-600 font-semibold bg-amber-50 px-2 py-0.5 rounded-md">메인 탭 노출과 연동</span>
+          <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200">
+             <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+               <h3 className="text-xs sm:text-sm font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                 <span>🏷️</span> 홈페이지 테마별 진열 순서 관리
+               </h3>
+               <span className="text-[11px] text-amber-700 font-bold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">메인 탭 노출과 연동</span>
              </div>
-             <p className="text-[11px] text-slate-400 mb-3">메인 화면의 최근매물, 초급매물 및 추천 매물에 노출되는 순서를 관리합니다.</p>
+             <p className="text-xs text-slate-500 mb-3">메인 화면의 최근매물, 초급매물 및 추천 매물에 노출되는 순서를 관리합니다.</p>
              <div className="flex flex-wrap gap-2">
-               <Button variant={sortCategory === "all" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("all")} className={sortCategory === "all" ? "bg-slate-800 font-bold" : "text-xs font-medium"}>전체(최근등록순)</Button>
-               <Button variant={sortCategory === "urgent" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("urgent")} className={sortCategory === "urgent" ? "bg-red-600 hover:bg-red-700 text-white border-none font-bold shadow-sm" : "border-red-200 text-red-600 text-xs font-semibold"}>🔥 초급매물 탭</Button>
-               <Button variant={sortCategory === "negotiable" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("negotiable")} className={sortCategory === "negotiable" ? "bg-emerald-600 hover:bg-emerald-700 text-white border-none font-bold shadow-sm" : "border-emerald-200 text-emerald-600 text-xs font-semibold"}>🌲 토지추천 탭</Button>
-               <Button variant={sortCategory === "longTerm" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("longTerm")} className={sortCategory === "longTerm" ? "bg-blue-600 hover:bg-blue-700 text-white border-none font-bold shadow-sm" : "border-blue-200 text-blue-600 text-xs font-semibold"}>🏡 주택상가추천 탭</Button>
-               <Button variant={sortCategory === "featured" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("featured")} className={sortCategory === "featured" ? "bg-purple-600 hover:bg-purple-700 text-white border-none font-bold shadow-sm" : "border-purple-200 text-purple-600 text-xs font-semibold"}>⭐ 추천매물</Button>
+               <Button variant={sortCategory === "all" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("all")} className={sortCategory === "all" ? "bg-slate-800 font-bold text-white text-xs sm:text-sm" : "text-xs sm:text-sm font-medium"}>전체(최근등록순)</Button>
+               <Button variant={sortCategory === "urgent" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("urgent")} className={sortCategory === "urgent" ? "bg-red-600 hover:bg-red-700 text-white border-none font-bold shadow-sm text-xs sm:text-sm" : "border-red-200 text-red-600 text-xs sm:text-sm font-semibold"}>🔥 초급매물 탭</Button>
+               <Button variant={sortCategory === "negotiable" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("negotiable")} className={sortCategory === "negotiable" ? "bg-emerald-600 hover:bg-emerald-700 text-white border-none font-bold shadow-sm text-xs sm:text-sm" : "border-emerald-200 text-emerald-600 text-xs sm:text-sm font-semibold"}>🌲 토지추천 탭</Button>
+               <Button variant={sortCategory === "longTerm" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("longTerm")} className={sortCategory === "longTerm" ? "bg-blue-600 hover:bg-blue-700 text-white border-none font-bold shadow-sm text-xs sm:text-sm" : "border-blue-200 text-blue-600 text-xs sm:text-sm font-semibold"}>🏡 주택상가추천 탭</Button>
+               <Button variant={sortCategory === "featured" ? "default" : "outline"} size="sm" onClick={() => setSortCategory("featured")} className={sortCategory === "featured" ? "bg-purple-600 hover:bg-purple-700 text-white border-none font-bold shadow-sm text-xs sm:text-sm" : "border-purple-200 text-purple-600 text-xs sm:text-sm font-semibold"}>⭐ 추천매물</Button>
              </div>
-             {true && (
-                <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-500">메인페이지 노출 개수:</span>
-                  <Input 
-                    type="number" 
-                    min="1" max="20" 
-                    value={limitInput}
-                    onChange={(e) => setLimitInput(e.target.value)}
-                    className="w-16 h-8 text-sm px-2 text-center" 
-                  />
-                  <Button 
-                    size="sm" 
-                    className="h-8"
-                    disabled={configMutation.isPending}
-                    onClick={() => {
-                      const keyMap: Record<string, string> = {
-                        all: "home_latest_limit",
-                        urgent: "home_urgent_limit",
-                        negotiable: "home_negotiable_limit",
-                        longTerm: "home_long_term_limit",
-                        featured: "home_featured_limit",
-                      };
-                      const key = keyMap[sortCategory] || "home_latest_limit";
-                      if (key) {
-                        configMutation.mutate({ key, value: limitInput });
-                      }
-                    }}
-                  >저장</Button>
-                </div>
-             )}
+             <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
+               <span className="text-xs font-bold text-slate-600">메인페이지 노출 개수:</span>
+               <Input 
+                 type="number" 
+                 min="1" max="20" 
+                 value={limitInput}
+                 onChange={(e) => setLimitInput(e.target.value)}
+                 className="w-16 h-8 text-sm px-2 text-center" 
+               />
+               <Button 
+                 size="sm" 
+                 className="h-8 text-xs sm:text-sm"
+                 disabled={configMutation.isPending}
+                 onClick={() => {
+                   const keyMap: Record<string, string> = {
+                     all: "home_latest_limit",
+                     urgent: "home_urgent_limit",
+                     negotiable: "home_negotiable_limit",
+                     longTerm: "home_long_term_limit",
+                     featured: "home_featured_limit",
+                   };
+                   const key = keyMap[sortCategory] || "home_latest_limit";
+                   if (key) {
+                     configMutation.mutate({ key, value: limitInput });
+                   }
+                 }}
+               >저장</Button>
+             </div>
           </div>
         )}
 
-        {/* Text Filters (Disabled if actively sorting a category) */}
-        <div className={`flex-1 grid grid-cols-2 ${isAdmin ? "md:grid-cols-4" : "md:grid-cols-3"} gap-2 sm:gap-4 transition-opacity ${sortCategory !== "all" ? "opacity-30 pointer-events-none" : ""}`}>
-          <div className={isAdmin ? "md:col-span-4" : "md:col-span-3"}><h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">상세 검색 (전체보기 전용)</h3></div>
-          <FilterSelect label="유형" value={filterType} onChange={setFilterType} options={[{value: "all", label: "모든 유형"}, ...PROPERTY_TYPES]} />
-          <FilterSelect label="지역" value={filterDistrict} onChange={setFilterDistrict} options={[{value: "all", label: "모든 지역"}, ...DISTRICTS.map(d => ({value: d, label: d}))]} />
-          <FilterSelect label="거래" value={filterDealType} onChange={setFilterDealType} options={[{value: "all", label: "모든 거래"}, ...DEAL_TYPES]} />
-          {isAdmin && (
-            <FilterSelect label="중개사" value={filterAgent} onChange={setFilterAgent} options={[{value: "all", label: "모든 중개사"}, ...agentNames.map(n => ({value: n, label: n}))]} />
-          )}
+        {/* Text Filters - Detailed Search Bar (매물 상세 검색 바 - 항상 100% 노출) */}
+        <div className={`bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3 transition-opacity ${sortCategory !== "all" ? "opacity-60" : ""}`}>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
+            <h3 className="text-xs sm:text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+              <span>🔍</span> 매물 상세 검색 (필터링)
+            </h3>
+            {sortCategory !== "all" ? (
+              <span className="text-[11px] text-amber-700 font-bold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                💡 현재 테마 순서 정렬 모드입니다. 검색 필터를 적용하려면 상단의 [전체(최근등록순)]을 눌러주세요.
+              </span>
+            ) : (
+              <span className="text-xs font-semibold text-slate-500">
+                총 {filteredProperties.length}개 매물 검색됨
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
+            <FilterSelect label="유형" value={filterType} onChange={setFilterType} options={[{value: "all", label: "모든 유형"}, ...PROPERTY_TYPES]} />
+            <FilterSelect label="지역" value={filterDistrict} onChange={setFilterDistrict} options={[{value: "all", label: "모든 지역"}, ...DISTRICTS.map(d => ({value: d, label: d}))]} />
+            <FilterSelect label="거래" value={filterDealType} onChange={setFilterDealType} options={[{value: "all", label: "모든 거래"}, ...DEAL_TYPES]} />
+            {isAdmin && (
+              <FilterSelect label="중개사" value={filterAgent} onChange={setFilterAgent} options={[{value: "all", label: "모든 중개사"}, ...agentNames.map(n => ({value: n, label: n}))]} />
+            )}
+          </div>
         </div>
       </div>
 
@@ -358,12 +373,12 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
             </div>
           )}
           
-          {/* Mobile Card View (Zero horizontal scroll on phones) */}
-          <div className="block md:hidden divide-y divide-slate-100">
+          {/* Mobile Card View (Zero horizontal scroll on phones - portrait 1 col, landscape 2 cols) */}
+          <div className="block lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-slate-50/50">
             {paginatedProperties.length === 0 ? (
-              <div className="text-center py-10 text-slate-500 text-sm">해당 조건의 매물이 없습니다.</div>
+              <div className="col-span-full text-center py-10 text-slate-500 text-sm">해당 조건의 매물이 없습니다.</div>
             ) : paginatedProperties.map((p, idx) => (
-              <div key={p.id} className="p-3 bg-white space-y-2.5">
+              <div key={p.id} className="p-3.5 bg-white rounded-2xl border border-slate-200/80 shadow-xs space-y-2.5">
                 {/* Card Top: Checkbox, ID, Type, Badges & Quick Actions */}
                 <div className="flex items-center justify-between gap-1.5 border-b border-slate-100 pb-2">
                   <div className="flex items-center gap-1.5 min-w-0">
@@ -420,8 +435,8 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
             ))}
           </div>
 
-          {/* Desktop Table View (Hidden on mobile) */}
-          <div className="hidden md:block">
+          {/* Desktop Table View (Hidden on mobile phones and tablets < lg) */}
+          <div className="hidden lg:block overflow-x-auto">
             <DragDropContext onDragEnd={handleDragEnd}>
               <Table>
                 <TableHeader className="bg-slate-50/50">

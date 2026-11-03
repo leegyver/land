@@ -368,8 +368,8 @@ export default function AdminAuctionsTab() {
           </div>
         ) : (
           <>
-            {/* 데스크탑 테이블 뷰 (md 이상) */}
-            <div className="hidden md:block overflow-x-auto">
+            {/* 데스크탑 테이블 뷰 (lg 이상 - 1024px 이상 PC 전용) */}
+            <div className="hidden lg:block overflow-x-auto">
               <table className="w-full text-left text-sm text-slate-600">
                 <thead className="bg-slate-50 text-slate-700 text-xs font-bold uppercase border-b border-slate-200">
                   <tr>
@@ -481,10 +481,10 @@ export default function AdminAuctionsTab() {
               </table>
             </div>
 
-            {/* 모바일 전용 카드 뷰 (md 미만 - 가로스크롤 완전 제거) */}
-            <div className="block md:hidden divide-y divide-slate-100">
+            {/* 모바일 및 태블릿 전용 카드 뷰 (lg 미만 - 세로 1열 / 가로모드 2열 그리드로 가로스크롤 완전 제거) */}
+            <div className="block lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 sm:p-4 bg-slate-50/50">
               {auctions.map((item) => (
-                <div key={item.id} className="p-4 space-y-3 bg-white">
+                <div key={item.id} className="p-4 space-y-3 bg-white rounded-2xl border border-slate-200/80 shadow-xs">
                   <div className="flex gap-3 items-start">
                     <img
                       src={item.imageUrl || "/assets/default-property-images/house.png"}

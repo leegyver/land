@@ -242,8 +242,8 @@ export default function AdminNewsletterTab({ subscriptions, isLoading, isError, 
       <AdminTabWrapper isLoading={isLoading} isError={isError} error={error} isEmpty={subscriptions.length === 0} emptyMessage="구독자가 없습니다." onRetry={refetch}>
         <div id="admin-list-top" className="scroll-mt-20" />
 
-        {/* 데스크탑 테이블 뷰 (md 이상) */}
-        <div className="hidden md:block overflow-x-auto">
+        {/* 데스크탑 테이블 뷰 (lg 이상 - 1024px 이상 PC 전용) */}
+        <div className="hidden lg:block overflow-x-auto">
           <Table>
             <TableHeader className="bg-slate-50/50">
               <TableRow>
@@ -282,8 +282,8 @@ export default function AdminNewsletterTab({ subscriptions, isLoading, isError, 
           </Table>
         </div>
 
-        {/* 모바일 전용 구독자 카드 뷰 (md 미만 - 가로스크롤 완전 제거) */}
-        <div className="block md:hidden divide-y divide-slate-100">
+        {/* 모바일 전용 구독자 카드 뷰 (lg 미만 - 가로스크롤 완전 제거) */}
+        <div className="block lg:hidden divide-y divide-slate-100">
           <div className="p-3 bg-slate-50/80 flex items-center justify-between text-xs text-slate-600 border-b border-slate-100">
             <div className="flex items-center gap-2">
               <Checkbox 
@@ -475,8 +475,8 @@ export default function AdminNewsletterTab({ subscriptions, isLoading, isError, 
             <div className="p-8 text-center text-slate-500">아직 뉴스레터 발송 내역이 없습니다.</div>
           ) : (
             <div>
-              {/* 데스크탑 테이블 뷰 (md 이상) */}
-              <div className="hidden md:block max-h-[500px] overflow-y-auto">
+              {/* 데스크탑 테이블 뷰 (lg 이상 - 1024px 이상 PC 전용) */}
+              <div className="hidden lg:block max-h-[500px] overflow-y-auto">
                 <Table>
                   <TableHeader className="bg-slate-50/50 sticky top-0">
                     <TableRow>
@@ -532,8 +532,8 @@ export default function AdminNewsletterTab({ subscriptions, isLoading, isError, 
                 </Table>
               </div>
 
-              {/* 모바일 전용 발송 로그 카드 뷰 (md 미만 - 가로스크롤 완전 제거) */}
-              <div className="block md:hidden divide-y divide-slate-100 max-h-[500px] overflow-y-auto">
+              {/* 모바일 전용 발송 로그 카드 뷰 (lg 미만 - 가로스크롤 완전 제거) */}
+              <div className="block lg:hidden divide-y divide-slate-100 max-h-[500px] overflow-y-auto">
                 {logs.map((log: any) => (
                   <div key={log.id} className="p-4 space-y-2.5 bg-white">
                     <div className="flex items-center justify-between gap-2">

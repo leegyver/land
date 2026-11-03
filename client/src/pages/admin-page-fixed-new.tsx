@@ -226,17 +226,17 @@ export default function AdminPage() {
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         {/* Tabs: 2-col on mobile portrait, 4-col on landscape, row on wide screen. Zero horizontal scroll. */}
-        <TabsList className="grid grid-cols-2 sm:grid-cols-4 lg:flex lg:flex-row gap-1.5 bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200 shadow-inner h-auto w-full lg:w-auto">
-          <TabsTrigger value="properties" className="rounded-xl px-2 sm:px-4 py-2 sm:py-2.5 h-10 sm:h-11 lg:h-12 font-bold transition-all text-xs sm:text-sm text-center flex items-center justify-center whitespace-nowrap touch-manipulation">부동산 매물 관리</TabsTrigger>
+        <TabsList className="grid grid-cols-2 sm:grid-cols-4 lg:flex lg:flex-row gap-1.5 bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200 shadow-inner h-auto w-full lg:w-auto max-w-full overflow-hidden">
+          <TabsTrigger value="properties" className="rounded-xl px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 h-10 sm:h-11 lg:h-12 font-bold transition-all text-xs sm:text-xs md:text-sm text-center flex items-center justify-center whitespace-nowrap touch-manipulation truncate">부동산 매물 관리</TabsTrigger>
           {(user?.role === "admin" || user?.role === "master") && (
             <>
-              <TabsTrigger value="care" className="rounded-xl px-2 sm:px-4 py-2 sm:py-2.5 h-10 sm:h-11 lg:h-12 font-bold transition-all text-xs sm:text-sm text-center flex items-center justify-center whitespace-nowrap touch-manipulation text-orange-950 bg-orange-100/80 data-[state=active]:bg-orange-500 data-[state=active]:text-white">🛠️ 토탈케어 접수</TabsTrigger>
-              <TabsTrigger value="auctions" className="rounded-xl px-2 sm:px-4 py-2 sm:py-2.5 h-10 sm:h-11 lg:h-12 font-bold transition-all text-xs sm:text-sm text-center flex items-center justify-center whitespace-nowrap touch-manipulation text-amber-900 bg-amber-100/60 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">🔨 경매·공매 관리</TabsTrigger>
-              <TabsTrigger value="news" className="rounded-xl px-2 sm:px-4 py-2 sm:py-2.5 h-10 sm:h-11 lg:h-12 font-bold transition-all text-xs sm:text-sm text-center flex items-center justify-center whitespace-nowrap touch-manipulation">뉴스 소식</TabsTrigger>
-              <TabsTrigger value="newsletter" className="rounded-xl px-2 sm:px-4 py-2 sm:py-2.5 h-10 sm:h-11 lg:h-12 font-bold transition-all text-xs sm:text-sm text-center flex items-center justify-center whitespace-nowrap touch-manipulation">구독자 관리</TabsTrigger>
-              <TabsTrigger value="banners" className="rounded-xl px-2 sm:px-4 py-2 sm:py-2.5 h-10 sm:h-11 lg:h-12 font-bold transition-all text-xs sm:text-sm text-center flex items-center justify-center whitespace-nowrap touch-manipulation">배너 관리</TabsTrigger>
-              <TabsTrigger value="popups" className="rounded-xl px-2 sm:px-4 py-2 sm:py-2.5 h-10 sm:h-11 lg:h-12 font-bold transition-all text-xs sm:text-sm text-center flex items-center justify-center whitespace-nowrap touch-manipulation">팝업 관리</TabsTrigger>
-              <TabsTrigger value="users" className="rounded-xl px-2 sm:px-4 py-2 sm:py-2.5 h-10 sm:h-11 lg:h-12 font-bold transition-all text-xs sm:text-sm text-center flex items-center justify-center whitespace-nowrap touch-manipulation">사용자 권한</TabsTrigger>
+              <TabsTrigger value="care" className="rounded-xl px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 h-10 sm:h-11 lg:h-12 font-bold transition-all text-xs sm:text-xs md:text-sm text-center flex items-center justify-center whitespace-nowrap touch-manipulation truncate text-orange-950 bg-orange-100/80 data-[state=active]:bg-orange-500 data-[state=active]:text-white">🛠️ 토탈케어 접수</TabsTrigger>
+              <TabsTrigger value="auctions" className="rounded-xl px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 h-10 sm:h-11 lg:h-12 font-bold transition-all text-xs sm:text-xs md:text-sm text-center flex items-center justify-center whitespace-nowrap touch-manipulation truncate text-amber-900 bg-amber-100/60 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">🔨 경매·공매 관리</TabsTrigger>
+              <TabsTrigger value="news" className="rounded-xl px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 h-10 sm:h-11 lg:h-12 font-bold transition-all text-xs sm:text-xs md:text-sm text-center flex items-center justify-center whitespace-nowrap touch-manipulation truncate">뉴스 소식</TabsTrigger>
+              <TabsTrigger value="newsletter" className="rounded-xl px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 h-10 sm:h-11 lg:h-12 font-bold transition-all text-xs sm:text-xs md:text-sm text-center flex items-center justify-center whitespace-nowrap touch-manipulation truncate">구독자 관리</TabsTrigger>
+              <TabsTrigger value="banners" className="rounded-xl px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 h-10 sm:h-11 lg:h-12 font-bold transition-all text-xs sm:text-xs md:text-sm text-center flex items-center justify-center whitespace-nowrap touch-manipulation truncate">배너 관리</TabsTrigger>
+              <TabsTrigger value="popups" className="rounded-xl px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 h-10 sm:h-11 lg:h-12 font-bold transition-all text-xs sm:text-xs md:text-sm text-center flex items-center justify-center whitespace-nowrap touch-manipulation truncate">팝업 관리</TabsTrigger>
+              <TabsTrigger value="users" className="rounded-xl px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 h-10 sm:h-11 lg:h-12 font-bold transition-all text-xs sm:text-xs md:text-sm text-center flex items-center justify-center whitespace-nowrap touch-manipulation truncate">사용자 권한</TabsTrigger>
             </>
           )}
         </TabsList>
@@ -255,7 +255,7 @@ export default function AdminPage() {
                   )}
                 </div>
               </div>
-              <div className="p-2 sm:p-4 md:p-8">
+              <div className="p-2 sm:p-4 md:p-6">
                 <AdminPropertyTab properties={properties} isLoading={isLoadingProperties} isError={isErrorProperties} error={errorProperties} refetch={refetchProperties} />
               </div>
             </div>

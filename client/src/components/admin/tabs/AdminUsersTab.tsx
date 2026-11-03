@@ -251,8 +251,8 @@ export default function AdminUsersTab({ users, currentUser, isLoading, isError, 
       <AdminTabWrapper isLoading={isLoading} isError={isError} error={error} isEmpty={users.length === 0} emptyMessage="사용자가 없습니다." onRetry={refetch}>
         <div id="admin-list-top" className="scroll-mt-20" />
 
-        {/* 데스크탑 테이블 뷰 (md 이상) */}
-        <div className="hidden md:block overflow-x-auto">
+        {/* 데스크탑 테이블 뷰 (lg 이상 - 1024px 이상 노트북/PC 전용) */}
+        <div className="hidden lg:block overflow-x-auto">
           <Table>
             <TableHeader className="bg-slate-50/50">
               <TableRow>
@@ -342,10 +342,10 @@ export default function AdminUsersTab({ users, currentUser, isLoading, isError, 
           </Table>
         </div>
 
-        {/* 모바일 전용 카드 뷰 (md 미만 - 가로스크롤 완전 제거) */}
-        <div className="block md:hidden divide-y divide-slate-100">
+        {/* 모바일 및 태블릿 전용 카드 뷰 (lg 미만 - 세로 1열 / 가로모드 2열 그리드로 가로스크롤 완전 제거) */}
+        <div className="block lg:hidden grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 sm:p-4 bg-slate-50/50">
           {paginatedUsers.map(u => (
-            <div key={u.id} className="p-4 space-y-3 bg-white">
+            <div key={u.id} className="p-4 space-y-3 bg-white rounded-2xl border border-slate-200/80 shadow-xs">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="h-10 w-10 shrink-0 bg-slate-900 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-sm ring-2 ring-white">

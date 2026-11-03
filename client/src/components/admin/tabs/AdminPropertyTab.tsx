@@ -330,7 +330,7 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
         )}
 
         {/* Text Filters (Disabled if actively sorting a category) */}
-        <div className={`flex-1 grid grid-cols-2 ${isAdmin ? "md:grid-cols-4" : "md:grid-cols-3"} gap-4 transition-opacity ${sortCategory !== "all" ? "opacity-30 pointer-events-none" : ""}`}>
+        <div className={`flex-1 grid grid-cols-2 ${isAdmin ? "md:grid-cols-4" : "md:grid-cols-3"} gap-2 sm:gap-4 transition-opacity ${sortCategory !== "all" ? "opacity-30 pointer-events-none" : ""}`}>
           <div className={isAdmin ? "md:col-span-4" : "md:col-span-3"}><h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">상세 검색 (전체보기 전용)</h3></div>
           <FilterSelect label="유형" value={filterType} onChange={setFilterType} options={[{value: "all", label: "모든 유형"}, ...PROPERTY_TYPES]} />
           <FilterSelect label="지역" value={filterDistrict} onChange={setFilterDistrict} options={[{value: "all", label: "모든 지역"}, ...DISTRICTS.map(d => ({value: d, label: d}))]} />
@@ -358,97 +358,162 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
             </div>
           )}
           
-          <DragDropContext onDragEnd={handleDragEnd}>
-            <Table>
-              <TableHeader className="bg-slate-50/50">
-                <TableRow>
-                  {!dragDisabled && <TableHead className="w-10 text-center cursor-help" title="드래그하여 순서 변경">순서</TableHead>}
-                  <TableHead className="w-10">
-                    <Checkbox checked={selectedIds.length > 0 && selectedIds.length === filteredProperties.length} onCheckedChange={(v) => setSelectedIds(v ? filteredProperties.map(p => p.id) : [])} />
-                  </TableHead>
-                  <TableHead>매물 정보</TableHead>
-                  <TableHead className="hidden md:table-cell">상세 주소</TableHead>
-                  <TableHead>가격</TableHead>
-                  <TableHead>뱃지 컨트롤</TableHead>
-                  <TableHead className="text-right">관리</TableHead>
-                </TableRow>
-              </TableHeader>
-              <Droppable droppableId="properties" isDropDisabled={dragDisabled}>
-                {(provided) => (
-                  <TableBody {...provided.droppableProps} ref={provided.innerRef}>
-                    {paginatedProperties.length === 0 ? (
-                      <TableRow><TableCell colSpan={7} className="text-center py-10 text-slate-500">해당 조건의 매물이 없습니다.</TableCell></TableRow>
-                    ) : paginatedProperties.map((p, idx) => (
-                      <Draggable key={p.id} draggableId={p.id.toString()} index={idx} isDragDisabled={dragDisabled}>
-                        {(provided, snapshot) => (
-                          <TableRow ref={provided.innerRef} {...provided.draggableProps} className={`${snapshot.isDragging ? 'bg-primary/5 shadow-md border border-primary/20' : 'hover:bg-slate-50/50'} group transition-colors`}>
-                            {!dragDisabled && (
-                              <TableCell {...provided.dragHandleProps} className="text-slate-300 hover:text-primary transition-colors cursor-grab">
-                                <div className="flex items-center gap-2">
-                                  <GripVertical className="h-5 w-5" />
-                                  <span className="text-xs font-bold text-slate-400">TOP {(page - 1) * itemsPerPage + idx + 1}</span>
+          {/* Mobile Card View (Zero horizontal scroll on phones) */}
+          <div className="block md:hidden divide-y divide-slate-100">
+            {paginatedProperties.length === 0 ? (
+              <div className="text-center py-10 text-slate-500 text-sm">해당 조건의 매물이 없습니다.</div>
+            ) : paginatedProperties.map((p, idx) => (
+              <div key={p.id} className="p-3 bg-white space-y-2.5">
+                {/* Card Top: Checkbox, ID, Type, Badges & Quick Actions */}
+                <div className="flex items-center justify-between gap-1.5 border-b border-slate-100 pb-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <Checkbox checked={selectedIds.includes(p.id)} onCheckedChange={(v) => setSelectedIds(v ? [...selectedIds, p.id] : selectedIds.filter(id => id !== p.id))} />
+                    <span className="text-xs font-black text-slate-800 shrink-0">#{p.id}</span>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 shrink-0">{p.type}</span>
+                    <span className="text-[11px] font-semibold text-slate-500 truncate">{p.district}</span>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setNaverModalPropertyId(p.id)}
+                      className="h-7 px-2 text-[10px] font-bold text-[#03C75A] border-[#03C75A]/40 hover:bg-[#03C75A]/10 gap-1 touch-manipulation" 
+                      title="네이버 블로그 자동 포스팅"
+                    >
+                      <span className="bg-[#03C75A] text-white font-black text-[9px] w-3.5 h-3.5 rounded flex items-center justify-center">N</span>
+                      블로그
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-500" title="수정" asChild>
+                      <a href={`/admin/properties/edit/${p.id}`}><Edit className="h-3.5 w-3.5" /></a>
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)} disabled={deleteMutation.isPending} className="h-7 w-7 text-red-400 hover:text-red-500" title="삭제">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Card Middle: Thumbnail + Title + Price */}
+                <div className="flex items-center gap-2.5">
+                  <a href={`/properties/${p.id}`} target="_blank" className="h-16 w-20 rounded-xl bg-slate-100 overflow-hidden shrink-0 border block relative group">
+                    {p.imageUrls?.[0] ? <img src={p.imageUrls[0]} className="w-full h-full object-cover" /> : <Eye className="h-4 w-4 m-auto text-slate-300 mt-5" />}
+                  </a>
+                  <div className="flex-1 min-w-0">
+                    <a href={`/properties/${p.id}`} target="_blank" className="font-extrabold text-xs sm:text-sm text-slate-900 line-clamp-1 hover:text-primary transition-colors">
+                      {p.title}
+                    </a>
+                    <div className="text-[11px] text-slate-500 truncate mt-0.5">{p.address}</div>
+                    <div className="text-xs sm:text-sm font-black text-primary mt-1">
+                      {formatPrice(p.price)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card Bottom: Status Badges Toggle */}
+                <div className="flex flex-wrap gap-1 pt-1.5 border-t border-slate-100/80">
+                  <StatusBadge active={p.isVisible} label="노출" disabled={isMutatingBadge(p.id, 'visibility')} onClick={() => toggleMutation.mutate({ id: p.id, field: 'visibility', value: !p.isVisible })} />
+                  <StatusBadge active={p.isUrgent} label="초급매" color="red" disabled={isMutatingBadge(p.id, 'urgent')} onClick={() => toggleMutation.mutate({ id: p.id, field: 'urgent', value: !p.isUrgent })} />
+                  <StatusBadge active={p.isNegotiable} label="토지추천" color="green" disabled={isMutatingBadge(p.id, 'negotiable')} onClick={() => toggleMutation.mutate({ id: p.id, field: 'negotiable', value: !p.isNegotiable })} />
+                  <StatusBadge active={p.isLongTerm} label="주택상가추천" color="blue" disabled={isMutatingBadge(p.id, 'long-term')} onClick={() => toggleMutation.mutate({ id: p.id, field: 'long-term', value: !p.isLongTerm })} />
+                  <StatusBadge active={p.featured} label="추천" color="purple" disabled={isMutatingBadge(p.id, 'featured')} onClick={() => toggleMutation.mutate({ id: p.id, field: 'featured', value: !p.featured })} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table View (Hidden on mobile) */}
+          <div className="hidden md:block">
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Table>
+                <TableHeader className="bg-slate-50/50">
+                  <TableRow>
+                    {!dragDisabled && <TableHead className="w-10 text-center cursor-help" title="드래그하여 순서 변경">순서</TableHead>}
+                    <TableHead className="w-10">
+                      <Checkbox checked={selectedIds.length > 0 && selectedIds.length === filteredProperties.length} onCheckedChange={(v) => setSelectedIds(v ? filteredProperties.map(p => p.id) : [])} />
+                    </TableHead>
+                    <TableHead>매물 정보</TableHead>
+                    <TableHead className="hidden md:table-cell">상세 주소</TableHead>
+                    <TableHead>가격</TableHead>
+                    <TableHead>뱃지 컨트롤</TableHead>
+                    <TableHead className="text-right">관리</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <Droppable droppableId="properties" isDropDisabled={dragDisabled}>
+                  {(provided) => (
+                    <TableBody {...provided.droppableProps} ref={provided.innerRef}>
+                      {paginatedProperties.length === 0 ? (
+                        <TableRow><TableCell colSpan={7} className="text-center py-10 text-slate-500">해당 조건의 매물이 없습니다.</TableCell></TableRow>
+                      ) : paginatedProperties.map((p, idx) => (
+                        <Draggable key={p.id} draggableId={p.id.toString()} index={idx} isDragDisabled={dragDisabled}>
+                          {(provided, snapshot) => (
+                            <TableRow ref={provided.innerRef} {...provided.draggableProps} className={`${snapshot.isDragging ? 'bg-primary/5 shadow-md border border-primary/20' : 'hover:bg-slate-50/50'} group transition-colors`}>
+                              {!dragDisabled && (
+                                <TableCell {...provided.dragHandleProps} className="text-slate-300 hover:text-primary transition-colors cursor-grab">
+                                  <div className="flex items-center gap-2">
+                                    <GripVertical className="h-5 w-5" />
+                                    <span className="text-xs font-bold text-slate-400">TOP {(page - 1) * itemsPerPage + idx + 1}</span>
+                                  </div>
+                                </TableCell>
+                              )}
+                              <TableCell>
+                                <Checkbox checked={selectedIds.includes(p.id)} onCheckedChange={(v) => setSelectedIds(v ? [...selectedIds, p.id] : selectedIds.filter(id => id !== p.id))} />
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <a href={`/properties/${p.id}`} target="_blank" className="h-12 w-16 rounded-lg bg-slate-100 overflow-hidden flex-shrink-0 border block relative group/preview">
+                                    {p.imageUrls?.[0] ? <img src={p.imageUrls[0]} className="w-full h-full object-cover transition-transform group-hover/preview:scale-110" /> : <Eye className="h-4 w-4 m-auto text-slate-300 mt-4" />}
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/preview:opacity-100 transition-opacity flex items-center justify-center">
+                                      <ExternalLink className="h-4 w-4 text-white" />
+                                    </div>
+                                  </a>
+                                  <div className="min-w-0">
+                                    <div className="font-bold text-slate-900 truncate max-w-[350px]" title={p.title}>{p.title}</div>
+                                    <div className="text-[10px] text-slate-400 md:hidden">{p.district} • {p.type}</div>
+                                  </div>
                                 </div>
                               </TableCell>
-                            )}
-                            <TableCell>
-                              <Checkbox checked={selectedIds.includes(p.id)} onCheckedChange={(v) => setSelectedIds(v ? [...selectedIds, p.id] : selectedIds.filter(id => id !== p.id))} />
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <a href={`/properties/${p.id}`} target="_blank" className="h-12 w-16 rounded-lg bg-slate-100 overflow-hidden flex-shrink-0 border block relative group/preview">
-                                  {p.imageUrls?.[0] ? <img src={p.imageUrls[0]} className="w-full h-full object-cover transition-transform group-hover/preview:scale-110" /> : <Eye className="h-4 w-4 m-auto text-slate-300 mt-4" />}
-                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/preview:opacity-100 transition-opacity flex items-center justify-center">
-                                    <ExternalLink className="h-4 w-4 text-white" />
-                                  </div>
-                                </a>
-                                <div className="min-w-0">
-                                  <div className="font-bold text-slate-900 truncate max-w-[350px]" title={p.title}>{p.title}</div>
-                                  <div className="text-[10px] text-slate-400 md:hidden">{p.district} • {p.type}</div>
+                              <TableCell className="hidden md:table-cell text-sm text-slate-600">
+                                <span className="font-medium text-slate-800">[{p.district}]</span> {p.address}
+                              </TableCell>
+                              <TableCell className="font-bold text-primary text-sm whitespace-nowrap">
+                                {formatPrice(p.price)}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1 max-w-[150px]">
+                                  <StatusBadge active={p.isVisible} label="노출" disabled={isMutatingBadge(p.id, 'visibility')} onClick={() => toggleMutation.mutate({ id: p.id, field: 'visibility', value: !p.isVisible })} />
+                                  <StatusBadge active={p.isUrgent} label="초급매" color="red" disabled={isMutatingBadge(p.id, 'urgent')} onClick={() => toggleMutation.mutate({ id: p.id, field: 'urgent', value: !p.isUrgent })} />
+                                  <StatusBadge active={p.isNegotiable} label="토지추천" color="green" disabled={isMutatingBadge(p.id, 'negotiable')} onClick={() => toggleMutation.mutate({ id: p.id, field: 'negotiable', value: !p.isNegotiable })} />
+                                  <StatusBadge active={p.isLongTerm} label="주택상가추천" color="blue" disabled={isMutatingBadge(p.id, 'long-term')} onClick={() => toggleMutation.mutate({ id: p.id, field: 'long-term', value: !p.isLongTerm })} />
+                                  <StatusBadge active={p.featured} label="추천" color="purple" disabled={isMutatingBadge(p.id, 'featured')} onClick={() => toggleMutation.mutate({ id: p.id, field: 'featured', value: !p.featured })} />
                                 </div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell text-sm text-slate-600">
-                              <span className="font-medium text-slate-800">[{p.district}]</span> {p.address}
-                            </TableCell>
-                            <TableCell className="font-bold text-primary text-sm whitespace-nowrap">
-                              {formatPrice(p.price)}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-wrap gap-1 max-w-[150px]">
-                                <StatusBadge active={p.isVisible} label="노출" disabled={isMutatingBadge(p.id, 'visibility')} onClick={() => toggleMutation.mutate({ id: p.id, field: 'visibility', value: !p.isVisible })} />
-                                <StatusBadge active={p.isUrgent} label="초급매" color="red" disabled={isMutatingBadge(p.id, 'urgent')} onClick={() => toggleMutation.mutate({ id: p.id, field: 'urgent', value: !p.isUrgent })} />
-                                <StatusBadge active={p.isNegotiable} label="토지추천" color="green" disabled={isMutatingBadge(p.id, 'negotiable')} onClick={() => toggleMutation.mutate({ id: p.id, field: 'negotiable', value: !p.isNegotiable })} />
-                                <StatusBadge active={p.isLongTerm} label="주택상가추천" color="blue" disabled={isMutatingBadge(p.id, 'long-term')} onClick={() => toggleMutation.mutate({ id: p.id, field: 'long-term', value: !p.isLongTerm })} />
-                                <StatusBadge active={p.featured} label="추천" color="purple" disabled={isMutatingBadge(p.id, 'featured')} onClick={() => toggleMutation.mutate({ id: p.id, field: 'featured', value: !p.featured })} />
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-1 items-center">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  onClick={() => setNaverModalPropertyId(p.id)}
-                                  className="h-8 px-2 text-xs font-bold text-[#03C75A] border-[#03C75A]/40 hover:bg-[#03C75A]/10 gap-1 mr-1 shadow-xs" 
-                                  title="네이버 블로그 자동 포스팅"
-                                >
-                                  <span className="bg-[#03C75A] text-white font-black text-[10px] w-4 h-4 rounded flex items-center justify-center">N</span>
-                                  블로그
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" title="미리보기" asChild><a href={`/properties/${p.id}`} target="_blank"><Eye className="h-4 w-4 text-blue-500" /></a></Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" title="수정" asChild><a href={`/admin/properties/edit/${p.id}`}><Edit className="h-4 w-4 text-slate-500" /></a></Button>
-                                <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)} disabled={deleteMutation.isPending} className="h-8 w-8 text-red-400 hover:text-red-500" title="삭제"><Trash2 className="h-4 w-4" /></Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </TableBody>
-                )}
-              </Droppable>
-            </Table>
-          </DragDropContext>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-1 items-center">
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    onClick={() => setNaverModalPropertyId(p.id)}
+                                    className="h-8 px-2 text-xs font-bold text-[#03C75A] border-[#03C75A]/40 hover:bg-[#03C75A]/10 gap-1 mr-1 shadow-xs" 
+                                    title="네이버 블로그 자동 포스팅"
+                                  >
+                                    <span className="bg-[#03C75A] text-white font-black text-[10px] w-4 h-4 rounded flex items-center justify-center">N</span>
+                                    블로그
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" title="미리보기" asChild><a href={`/properties/${p.id}`} target="_blank"><Eye className="h-4 w-4 text-blue-500" /></a></Button>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" title="수정" asChild><a href={`/admin/properties/edit/${p.id}`}><Edit className="h-4 w-4 text-slate-500" /></a></Button>
+                                  <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)} disabled={deleteMutation.isPending} className="h-8 w-8 text-red-400 hover:text-red-500" title="삭제"><Trash2 className="h-4 w-4" /></Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </TableBody>
+                  )}
+                </Droppable>
+              </Table>
+            </DragDropContext>
+          </div>
 
           {/* Pagination */}
           {totalPages > 1 && (
@@ -511,7 +576,7 @@ export default function AdminPropertyTab({ properties, isLoading, isError, error
 
 function FilterSelect({ label, value, onChange, options }: any) {
   return (
-    <div className="space-y-1.5 flex-1 min-w-[150px]">
+    <div className="space-y-1.5 flex-1 min-w-0 w-full">
       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-tight ml-1">{label}</label>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger className="h-10 rounded-xl bg-white border-slate-200"><SelectValue /></SelectTrigger>

@@ -10,6 +10,7 @@ import {
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import {
+  ShieldCheck,
   Maximize,
   Bed,
   Bath,
@@ -318,30 +319,40 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
         : `${property.type || "매물"} - ${property.district || ""}`);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* 헤더 섹션 */}
-      <div className="mb-6">
-        <div className="flex justify-between items-start gap-4 mb-1">
-          <h1 className="text-2xl font-bold text-gray-900">{displayTitle}</h1>
-          {isAdminOrMaster && (
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                onClick={() => setIsNaverBlogModalOpen(true)}
-                className="bg-[#03C75A] hover:bg-[#02b350] text-white font-bold items-center gap-1.5 shadow-sm"
-              >
-                <span className="bg-white text-[#03C75A] font-black text-[10px] w-4 h-4 rounded-xs flex items-center justify-center">N</span>
-                네이버 블로그 포스팅
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8 max-w-7xl overflow-x-hidden">
+      {/* 관리자 전용 독립 툴바 - 본문 레이아웃에 전혀 지장을 주지 않는 상단 바 */}
+      {isAdminOrMaster && (
+        <div className="mb-4 p-2.5 sm:p-3 bg-slate-950 text-white rounded-2xl shadow-md flex items-center justify-between gap-2 border border-slate-800">
+          <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold min-w-0">
+            <span className="inline-flex items-center gap-1 bg-orange-500 text-slate-950 text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-md shrink-0">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              관리자 모드
+            </span>
+            <span className="text-slate-400 text-xs truncate">매물 #{property.id}</span>
+          </div>
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <Button
+              size="sm"
+              onClick={() => setIsNaverBlogModalOpen(true)}
+              className="h-8 px-2.5 sm:px-3 text-xs font-black bg-[#03C75A] hover:bg-[#02b350] text-white flex items-center gap-1.5 rounded-xl shadow-sm touch-manipulation whitespace-nowrap"
+            >
+              <span className="bg-white text-[#03C75A] font-black text-[9px] w-3.5 h-3.5 rounded flex items-center justify-center">N</span>
+              <span className="hidden sm:inline">네이버 블로그 포스팅</span>
+              <span className="sm:hidden">블로그 포스팅</span>
+            </Button>
+            <Link href={`/admin/properties/edit/${property.id}`}>
+              <Button size="sm" className="h-8 px-2.5 sm:px-3 text-xs font-black bg-slate-800 hover:bg-slate-700 text-white flex items-center gap-1.5 rounded-xl shadow-sm touch-manipulation whitespace-nowrap border border-slate-700">
+                <Edit className="w-3.5 h-3.5" />
+                <span>매물 수정</span>
               </Button>
-              <Link href={`/admin/properties/edit/${property.id}`}>
-                <Button size="sm" className="hidden md:flex bg-slate-800 hover:bg-slate-900 text-white items-center gap-2">
-                  <Edit className="w-4 h-4" />
-                  매물 수정하기
-                </Button>
-              </Link>
-            </div>
-          )}
+            </Link>
+          </div>
         </div>
+      )}
+
+      {/* 헤더 섹션 - 매물 제목이 100% 가로너비를 독점하여 방해받지 않음 */}
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 tracking-tight leading-snug mb-2">{displayTitle}</h1>
         <div className="flex flex-wrap items-center gap-1 mb-1">
           {property.type && (
             <Badge className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-1">

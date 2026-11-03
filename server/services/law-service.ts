@@ -6,8 +6,7 @@ const parser = new XMLParser({
   trimValues: true,
 });
 
-// 환경변수에서 OC(사용자 아이디) 또는 API 키 로드
-const LAW_API_OC = process.env.LAW_API_OC || process.env.LAW_API_KEY || "sample";
+const LAW_API_OC = process.env.LAW_API_OC || process.env.LAW_API_KEY || "mino3120";
 
 export interface LawSearchResult {
   id: string;
@@ -15,28 +14,14 @@ export interface LawSearchResult {
   title: string;
   subtitle?: string;
   date?: string;
-  court?: string; // 판례인 경우 (대법원, 서울고등법원 등)
-  caseNumber?: string; // 사건번호
-  caseType?: string; // 사건명 (예: 건물명도, 전세보증금반환)
-  summary?: string; // 판결요지 또는 법령 목적
+  court?: string; // 판례: 법원명 (대법원) / 법령: 소관부처
+  caseNumber?: string; // 판례: 사건번호 / 법령: 공포번호
+  caseType?: string; // 판례: 사건종류명 / 법령: 법령구분명 (법률, 대통령령)
+  summary?: string; // 판결요지 또는 제개정구분/시행일자
   issue?: string; // 판시사항
-  fullContent?: string; // 판례 전문 내용
+  fullContent?: string; // 판례 전문
   articles?: string[]; // 관련 조문
-  detailUrl?: string;
-}
-
-function cleanHtml(text?: string): string {
-  if (!text) return "";
-  return String(text)
-    .replace(/<br\s*[\/]?>/gi, "\n")
-    .replace(/<\/p>/gi, "\n\n")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&quot;/g, '"')
-    .trim();
+  detailUrl?: string; // 국가법령정보센터 공식 웹 링크
 }
 
 export interface CurationTheme {
@@ -48,7 +33,6 @@ export interface CurationTheme {
   sampleCases: string[];
 }
 
-// 경매/부동산 전문 플랫폼에 특화된 실무 큐레이션 테마
 export const CURATION_THEMES: CurationTheme[] = [
   {
     id: "lease-protection",
@@ -92,7 +76,89 @@ export const CURATION_THEMES: CurationTheme[] = [
   }
 ];
 
-// Fallback 및 초기 큐레이션용 핵심 리딩 판례 데이터
+// 법령 전용 큐레이션 데이터 (법령 탭 전용)
+export const CURATED_LAWS: LawSearchResult[] = [
+  {
+    id: "law-276291",
+    type: "law",
+    title: "주택임대차보호법",
+    subtitle: "법무부, 국토교통부 | 법률 제21065호",
+    date: "2026.01.02",
+    court: "법무부",
+    caseNumber: "제21065호",
+    caseType: "법률",
+    summary: "[일부개정] 주택의 임대차에 관하여 「민법」에 대한 특례를 규정함으로써 국민 주거생활의 안정을 보장함을 목적으로 한다. 대항력(제3조), 보증금의 우선변제권(제3조의2), 임차권등기명령(제3조의3), 계약갱신요구(제6조의3) 등 규정.",
+    articles: ["제3조(대항력 등)", "제3조의2(보증금의 회수)", "제8조(보증금 중 일정액의 보호)"],
+    detailUrl: "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=276291"
+  },
+  {
+    id: "law-287183",
+    type: "law",
+    title: "주택임대차보호법 시행령",
+    subtitle: "법무부, 국토교통부 | 대통령령 제36423호",
+    date: "2026.07.01",
+    court: "국토교통부",
+    caseNumber: "제36423호",
+    caseType: "대통령령",
+    summary: "[일부개정] 주택임대차보호법에서 위임된 소액보증금의 범위, 최우선변제금의 범위(서울 5,500만원, 과밀억제권역·세종·김포 4,800만원, 광역시·안산·광주·파주·이천 2,800만원, 그 밖의 지역 2,500만원 등) 규정.",
+    articles: ["제10조(보증금 중 일정액의 범위 등)", "제11조(우선변제를 받을 임차인의 범위)"],
+    detailUrl: "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=287183"
+  },
+  {
+    id: "law-263401",
+    type: "law",
+    title: "상가건물 임대차보호법",
+    subtitle: "법무부 | 법률 제20401호",
+    date: "2024.12.01",
+    court: "법무부",
+    caseNumber: "제20401호",
+    caseType: "법률",
+    summary: "[일부개정] 상가건물 임대차에 대한 특례 규정. 사업자등록과 인도에 의한 대항력(제3조), 10년간의 계약갱신요구권(제10조), 권리금 회수기회 보호 및 임대인의 손해배상책임(제10조의4) 규정.",
+    articles: ["제3조(대항력 등)", "제10조(계약갱신 요구 등)", "제10조의4(권리금 회수기회 보호 등)"],
+    detailUrl: "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=263401"
+  },
+  {
+    id: "law-254129",
+    type: "law",
+    title: "민사집행법",
+    subtitle: "법무부 | 법률 제19920호",
+    date: "2024.06.01",
+    court: "법무부",
+    caseNumber: "제19920호",
+    caseType: "법률",
+    summary: "[일부개정] 부동산 강제경매 및 담보권 실행을 위한 경매절차 규정. 매각절차, 배당요구의 종기, 매수인의 대금지급 및 소유권취득, 인도명령(제136조) 등 부동산 경매 실무의 기본법률.",
+    articles: ["제83조(경매개시결정)", "제84조(배당요구의 종기)", "제136조(부동산의 인도명령)"],
+    detailUrl: "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=254129"
+  },
+  {
+    id: "law-258902",
+    type: "law",
+    title: "공인중개사법",
+    subtitle: "국토교통부 | 법률 제20150호",
+    date: "2024.07.10",
+    court: "국토교통부",
+    caseNumber: "제20150호",
+    caseType: "법률",
+    summary: "[일부개정] 중개대상물의 확인·설명의무(제25조: 권리관계, 선순위 보증금 내역 등), 손해배상책임의 보장(제30조: 공제 가입 의무), 금지행위 및 중개보수 기준 규정.",
+    articles: ["제25조(중개대상물의 확인·설명)", "제30조(손해배상책임의 보장)"],
+    detailUrl: "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=258902"
+  },
+  {
+    id: "law-245100",
+    type: "law",
+    title: "민법 (물권편 · 채권편)",
+    subtitle: "법무부 | 법률 제19000호",
+    date: "2023.08.01",
+    court: "법무부",
+    caseNumber: "제19000호",
+    caseType: "법률",
+    summary: "[일부개정] 주위토지통행권(제219조), 유치권(제320조), 저당권(제356조), 법정지상권(제366조), 임대차(제618조) 등 부동산 거래와 권리분석의 총괄 기본법.",
+    articles: ["제219조(주위토지통행권)", "제320조(유치권의 내용)", "제366조(법정지상권)"],
+    detailUrl: "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=245100"
+  }
+];
+
+// 판례 전용 큐레이션 데이터 (판례 탭 및 대법원 판례 전용)
 export const CURATED_PRECEDENTS: LawSearchResult[] = [
   {
     id: "prec-2018다252441",
@@ -106,6 +172,7 @@ export const CURATED_PRECEDENTS: LawSearchResult[] = [
     issue: "[1] 구 상가건물 임대차보호법 제10조의4에서 정한 '임대인의 권리금 회수기회 보호의무'가 전체 임대차기간이 5년(현행 10년)을 초과하여 계약갱신요구권을 행사할 수 없는 경우에도 적용되는지 여부(적극)",
     summary: "전체 임대차기간이 5년(현 10년)을 초과하여 임차인이 계약갱신요구권을 행사할 수 없더라도, 임대인은 상가건물 임대차보호법 제10조의4 제1항에 따른 권리금 회수기회 보호의무를 부담한다고 보아야 한다. 따라서 임대인이 정당한 사유 없이 신규임차인과의 계약을 거절하면 손해배상 책임을 진다.",
     articles: ["상가건물 임대차보호법 제10조", "상가건물 임대차보호법 제10조의4"],
+    detailUrl: "https://www.law.go.kr/LSW/precInfoP.do?precSeq=197821"
   },
   {
     id: "prec-2011다44788",
@@ -119,6 +186,7 @@ export const CURATED_PRECEDENTS: LawSearchResult[] = [
     issue: "[1] 경매개시결정 기입등기로 압류의 효력이 발생한 후에 공사대금 채권자가 점유를 취득하여 유치권이 성립한 경우, 경매절차 매수인에게 유치권으로 대항할 수 있는지 여부(소극)",
     summary: "경매개시결정 기입등기가 마쳐져 압류의 효력이 발생한 후에 채무자가 부동산에 관한 점유를 이전함으로써 유치권을 취득하게 된 경우, 점유자로서는 매수인(낙찰자)에게 유치권으로 대항할 수 없다. 이는 압류의 처분금지효에 저촉되기 때문이다.",
     articles: ["민사집행법 제83조", "민법 제320조"],
+    detailUrl: "https://www.law.go.kr/LSW/precInfoP.do?precSeq=117392"
   },
   {
     id: "prec-2001다76427",
@@ -132,6 +200,7 @@ export const CURATED_PRECEDENTS: LawSearchResult[] = [
     issue: "[1] 주민등록 전입신고일과 같은 날 설정된 근저당권과 주택임차인의 대항력 간의 우선순위",
     summary: "주택임대차보호법 제3조 제1항의 대항력은 주민등록을 마친 '다음 날 오전 0시'부터 발생하므로, 전입신고 당일 설정된 근저당권설정등기보다 후순위가 되어 경매 시 낙찰자에게 대항할 수 없다.",
     articles: ["주택임대차보호법 제3조", "주택임대차보호법 제3조의2"],
+    detailUrl: "https://www.law.go.kr/LSW/precInfoP.do?precSeq=73602"
   },
   {
     id: "prec-2022다238141",
@@ -145,6 +214,7 @@ export const CURATED_PRECEDENTS: LawSearchResult[] = [
     issue: "[1] 다가구주택 중개 시 공인중개사가 임대인에게 선순위 임차보증금 자료를 요구하여 확인·설명할 의무가 있는지 여부(적극)",
     summary: "공인중개사는 다가구주택 임대차계약을 중개할 때 임대인에게 선순위 보증금 내역을 요구하고 이를 확인하여 임차인에게 설명해야 하며, 임대인이 불응할 경우 그 사실을 확인설명서에 기재하여 설명할 의무가 있고, 이를 게을리하여 임차인이 보증금을 회수하지 못한 경우 손해배상 책임이 인정된다.",
     articles: ["공인중개사법 제25조", "공인중개사법 제30조"],
+    detailUrl: "https://www.law.go.kr/LSW/precInfoP.do?precSeq=241512"
   },
   {
     id: "prec-2016다18797",
@@ -158,6 +228,7 @@ export const CURATED_PRECEDENTS: LawSearchResult[] = [
     issue: "[1] 토지의 용도와 주위 환경에 따른 통행로의 폭과 위치 산정 기준",
     summary: "어느 토지와 공로 사이에 그 토지의 용도에 필요한 통로가 없는 경우 그 토지 소유자는 주위의 토지를 통행하거나 통로를 개설할 수 있다. 통행로의 폭과 위치는 피통행지 소유자에게 가장 손해가 적은 장소와 방법으로 결정되어야 한다.",
     articles: ["민법 제219조", "건축법 제44조"],
+    detailUrl: "https://www.law.go.kr/LSW/precInfoP.do?precSeq=179421"
   },
   {
     id: "prec-2007다63074",
@@ -171,45 +242,7 @@ export const CURATED_PRECEDENTS: LawSearchResult[] = [
     issue: "[1] 주택임대차보호법상 소액임차인이 우선변제를 받기 위하여 대항요건을 유지하여야 하는 종기(=배당요구의 종기)",
     summary: "주택임대차보호법 제8조에서 정한 소액임차인의 최우선변제권은 경매신청등기 전까지 대항요건을 갖추어야 할 뿐만 아니라, 배당요구 종기까지 대항요건을 계속 유지하고 있어야 한다.",
     articles: ["주택임대차보호법 제8조", "민사집행법 제84조"],
-  },
-  {
-    id: "prec-2013다23387",
-    type: "prec",
-    title: "토지와 건물의 동일인 소유 여부와 관습법상 법정지상권 성립",
-    subtitle: "대법원 2013. 4. 11. 선고 2013다23387 판결",
-    date: "2013.04.11",
-    court: "대법원",
-    caseNumber: "2013다23387",
-    caseType: "건물철거 및 토지인도",
-    issue: "[1] 강제경매로 인하여 관습법상 법정지상권이 성립하기 위한 토지와 건물의 동일인 소유 판단 기준 시점(=압류의 효력 발생 시)",
-    summary: "부동산 강제경매절차에서 토지와 지상 건물이 동일인의 소유에 속하였는지 여부는 매각대금 완납 시가 아니라 '압류의 효력이 발생한 때(경매개시결정 기입등기 시)'를 기준으로 판단하여야 한다.",
-    articles: ["민법 제366조", "민사집행법 제83조"],
-  },
-  {
-    id: "prec-2020다286102",
-    type: "prec",
-    title: "상가임대인의 신규임차인 주선 거절과 손해배상 산정 기준",
-    subtitle: "대법원 2021. 7. 8. 선고 2020다286102 판결",
-    date: "2021.07.08",
-    court: "대법원",
-    caseNumber: "2020다286102",
-    caseType: "손해배상(기)",
-    issue: "[1] 임대인이 상가를 직접 사용할 계획이라는 이유로 신규임차인과의 임대차계약 체결을 거절한 경우 상가임대차법 위반 여부(적극)",
-    summary: "임대인이 '자신이 상가를 직접 운영할 계획'이라는 이유로 임차인이 주선한 신규임차인과의 계약 체결을 명시적으로 거절한 것은 상가임대차법 제10조의4 제1항 제4호의 정당한 사유 없는 거절에 해당하므로, 임대인은 임차인에게 권리금 상당의 손해를 배상할 책임이 있다.",
-    articles: ["상가건물 임대차보호법 제10조의4"],
-  },
-  {
-    id: "prec-2005다16942",
-    type: "prec",
-    title: "경매 낙찰자의 인도명령과 점유자의 점유이전금지가처분 효력",
-    subtitle: "대법원 2005. 5. 27. 선고 2005다16942 판결",
-    date: "2005.05.27",
-    court: "대법원",
-    caseNumber: "2005다16942",
-    caseType: "건물명도",
-    issue: "[1] 점유이전금지가처분 집행 후 제3자가 점유를 승계한 경우 승계집행문 부여 여부",
-    summary: "점유이전금지가처분이 집행된 후 당사자로부터 점유를 승계한 제3자에 대하여는 본안판결의 승계집행문을 부여받아 인도집행을 할 수 있다.",
-    articles: ["민사집행법 제31조", "민사집행법 제136조"],
+    detailUrl: "https://www.law.go.kr/LSW/precInfoP.do?precSeq=98621"
   },
   {
     id: "prec-2025다210305",
@@ -223,21 +256,33 @@ export const CURATED_PRECEDENTS: LawSearchResult[] = [
     issue: "[1] 주택임대차보호법 제3조 제2항에 따라 법인 임차인이 대항력을 갖춘 후 입주자가 해당 주택을 양수하여 소유자가 된 경우 대항력 소멸 여부(적극)",
     summary: "주택임대차보호법 제3조 제2항에 따라 입주자가 주택을 인도받고 주민등록을 마침으로써 법인 임차인이 대항력을 취득하였더라도, 이후 입주자가 해당 주택의 소유권을 취득하면 입주자의 주민등록은 소유권에 기한 점유가 되므로 임차권 공시방법으로서의 기능을 상실하여 법인의 대항력은 소멸한다.",
     articles: ["주택임대차보호법 제3조", "주택임대차보호법 제3조의2"],
+    detailUrl: "https://www.law.go.kr/LSW/precInfoP.do?precSeq=618185"
   }
 ];
 
-// Fallback 판례들에 안전한 대국민 포털 공식 원문 열람 링크 자동 생성
-CURATED_PRECEDENTS.forEach(p => {
-  if (!p.detailUrl && p.caseNumber) {
-    p.detailUrl = `https://www.law.go.kr/precSc.do?menuId=7&subMenuId=47&tabMenuId=213&query=${encodeURIComponent(p.caseNumber)}`;
-  }
-});
+function cleanHtml(text?: string): string {
+  if (!text) return "";
+  return String(text)
+    .replace(/<br\s*[\/]?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&quot;/g, '"')
+    .trim();
+}
 
 // 메모리 캐시 (1시간 유지)
 const searchCache = new Map<string, { data: LawSearchResult[]; timestamp: number }>();
 const CACHE_TTL = 1000 * 60 * 60; // 1시간
 
-export async function searchLawsAndPrecedents(query: string, targetType: "all" | "law" | "prec" = "all", page: number = 1): Promise<{
+export async function searchLawsAndPrecedents(
+  query: string, 
+  targetType: "all" | "law" | "prec" = "all", 
+  page: number = 1
+): Promise<{
   totalCount: number;
   items: LawSearchResult[];
   source: "api" | "fallback";
@@ -254,10 +299,16 @@ export async function searchLawsAndPrecedents(query: string, targetType: "all" |
     };
   }
 
-  // 검색어가 없을 때는 큐레이션된 판례 목록 반환
+  // 1. 검색어가 없을 때 기본 추천 데이터 반환 (탭별 엄격 분리!)
   if (!cleanQuery) {
-    let list = CURATED_PRECEDENTS;
-    if (targetType === "law") list = [];
+    let list: LawSearchResult[] = [];
+    if (targetType === "prec") {
+      list = CURATED_PRECEDENTS;
+    } else if (targetType === "law") {
+      list = CURATED_LAWS;
+    } else {
+      list = [...CURATED_PRECEDENTS, ...CURATED_LAWS];
+    }
     return {
       totalCount: list.length,
       items: list,
@@ -267,25 +318,24 @@ export async function searchLawsAndPrecedents(query: string, targetType: "all" |
 
   const results: LawSearchResult[] = [];
 
-  // 국가법령정보센터 Open API 호출 시도
   try {
     const promises: Promise<void>[] = [];
 
-    // 1. 판례 검색 (대법원 판례 전용 + 본문/판시사항/판결요지 전체 검색 search=2)
+    // ── [1] 판례 검색: 오직 'all' 또는 'prec' 탭일 때만 실행! ──
     if (targetType === "all" || targetType === "prec") {
       promises.push((async () => {
         try {
           // search=2: 판례 본문(판시사항, 판결요지, 주문, 이유) 전체 검색
-          // curt=대법원: 오직 대법원 판례만 필터링
-          // display=50: 한 번에 50건씩 풍부하게 조회
+          // curt=대법원: 100% 대법원 판례만 필터링
+          // display=50: 한 번에 50건 조회
           const precUrl = `http://www.law.go.kr/DRF/lawSearch.do?OC=${LAW_API_OC}&target=prec&type=XML&query=${encodeURIComponent(cleanQuery)}&search=2&curt=${encodeURIComponent("대법원")}&page=${page}&display=50`;
           let res = await fetch(precUrl, { signal: AbortSignal.timeout(4500) });
           
           let xmlText = res.ok ? await res.text() : "";
           let parsed = parser.parse(xmlText);
-          let precSearch = parsed.PrecSearch;
+          let precSearch = parsed?.PrecSearch;
 
-          // 만약 본문 검색(search=2)으로 0건인데 긴 문장인 경우, 핵심 단어로 지능형 재검색 시도
+          // 만약 본문 검색으로 0건인데 검색어가 긴 문장일 경우, 핵심 단어로 재검색
           if ((!precSearch || !precSearch.prec) && cleanQuery.includes(" ")) {
             const firstKeywords = cleanQuery.split(/\s+/).filter(w => w.length >= 2).slice(0, 2).join(" ");
             if (firstKeywords && firstKeywords !== cleanQuery) {
@@ -294,7 +344,7 @@ export async function searchLawsAndPrecedents(query: string, targetType: "all" |
               if (retryRes.ok) {
                 const retryXml = await retryRes.text();
                 const retryParsed = parser.parse(retryXml);
-                if (retryParsed.PrecSearch && retryParsed.PrecSearch.prec) {
+                if (retryParsed?.PrecSearch?.prec) {
                   precSearch = retryParsed.PrecSearch;
                 }
               }
@@ -305,31 +355,33 @@ export async function searchLawsAndPrecedents(query: string, targetType: "all" |
             const precArray = Array.isArray(precSearch.prec) ? precSearch.prec : [precSearch.prec];
             precArray.forEach((item: any) => {
               const courtName = item["법원명"] || item.법원명 || "";
-              // 대법원 판례만 엄격하게 필터링 (하급심 및 세무서 제외)
+              // 대법원 판례만 엄격 필터링
               if (courtName && !courtName.includes("대법원")) {
                 return;
               }
 
-              const precId = String(item["판례일련번호"] || item.판례일련번호 || Math.random());
+              const precSeq = String(item["판례일련번호"] || item.판례일련번호 || "");
               const caseNum = item["사건번호"] || item.사건번호 || "";
               const caseTitle = cleanHtml(item["사건명"] || item.사건명 || "판례");
               
-              // 외부 원문 포털 링크: 대국민 법제처 포털 검색 링크 (공식 대국민 열람 경로)
-              const searchKeyword = caseNum || caseTitle;
-              const portalUrl = `https://www.law.go.kr/precSc.do?menuId=7&subMenuId=47&tabMenuId=213&query=${encodeURIComponent(searchKeyword)}`;
+              // 국가법령정보센터 공식 웹 퍼머링크 (실제 대국민 열람 링크!)
+              // https://www.law.go.kr/LSW/precInfoP.do?precSeq=XXXXXX
+              const officialWebUrl = precSeq 
+                ? `https://www.law.go.kr/LSW/precInfoP.do?precSeq=${precSeq}`
+                : `https://www.law.go.kr/LSW/precSearchP.do?q=${encodeURIComponent(caseNum || caseTitle)}`;
 
               results.push({
-                id: `prec-${precId}`,
-                type: "prec",
+                id: `prec-${precSeq || Math.random()}`,
+                type: "prec", // 명확하게 판례 타입 지정
                 title: caseTitle,
                 subtitle: `대법원 ${item["선고일자"] || item.선고일자 || ""} ${caseNum}`.trim(),
                 date: item["선고일자"] || item.선고일자,
                 court: "대법원",
                 caseNumber: caseNum,
-                caseType: item["사건종류명"] || item.사건종류명,
+                caseType: item["사건종류명"] || item.사건종류명 || "민사",
                 issue: cleanHtml(item["판시사항"] || item.판시사항),
                 summary: cleanHtml(item["판결요지"] || item.판결요지),
-                detailUrl: portalUrl,
+                detailUrl: officialWebUrl,
               });
             });
           }
@@ -339,7 +391,7 @@ export async function searchLawsAndPrecedents(query: string, targetType: "all" |
       })());
     }
 
-    // 2. 법령 검색
+    // ── [2] 법령 검색: 오직 'all' 또는 'law' 탭일 때만 실행! ──
     if (targetType === "all" || targetType === "law") {
       promises.push((async () => {
         try {
@@ -348,23 +400,29 @@ export async function searchLawsAndPrecedents(query: string, targetType: "all" |
           if (res.ok) {
             const xmlText = await res.text();
             const parsed = parser.parse(xmlText);
-            const lawSearch = parsed.LawSearch;
+            const lawSearch = parsed?.LawSearch;
             if (lawSearch && lawSearch.law) {
               const lawArray = Array.isArray(lawSearch.law) ? lawSearch.law : [lawSearch.law];
               lawArray.forEach((item: any) => {
-                const lawId = String(item["법령일련번호"] || item.법령일련번호 || item["법령ID"] || Math.random());
+                const lawSeq = String(item["법령일련번호"] || item.법령일련번호 || item["법령ID"] || "");
                 const lawTitle = cleanHtml(item["법령명한글"] || item.법령명한글 || "법령");
-                const portalLawUrl = `https://www.law.go.kr/LSW/lsSc.do?menuId=1&subMenuId=15&tabMenuId=81&query=${encodeURIComponent(lawTitle)}`;
+                
+                // 국가법령정보센터 공식 법령 웹 퍼머링크
+                // https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=XXXXXX
+                const officialLawUrl = lawSeq
+                  ? `https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=${lawSeq}`
+                  : `https://www.law.go.kr/법령/${encodeURIComponent(lawTitle)}`;
 
                 results.push({
-                  id: `law-${lawId}`,
-                  type: "law",
+                  id: `law-${lawSeq || Math.random()}`,
+                  type: "law", // 명확하게 법령 타입 지정
                   title: lawTitle,
                   subtitle: `${item["소관부처명"] || item.소관부처명 || ""} | 공포 ${item["공포일자"] || item.공포일자 || ""}`,
                   date: item["시행일자"] || item.시행일자 || item["공포일자"],
-                  court: item["소관부처명"] || item.소관부처명,
+                  court: item["소관부처명"] || item.소관부처명 || "정부부처",
+                  caseType: item["법령구분명"] || item.법령구분명 || "법령",
                   summary: item["제개정구분명"] ? `[${item["제개정구분명"]}] 시행일자: ${item["시행일자"] || "공포 즉시"}` : undefined,
-                  detailUrl: portalLawUrl,
+                  detailUrl: officialLawUrl,
                 });
               });
             }
@@ -377,34 +435,82 @@ export async function searchLawsAndPrecedents(query: string, targetType: "all" |
 
     await Promise.all(promises);
 
-    // API 응답이 없거나 키가 유효하지 않을 때 Fallback 검색 매칭
+    // ── [3] 결과가 없을 때 Fallback 검색 (탭별 철저히 격리!!) ──
     if (results.length === 0) {
       const tokens = cleanQuery.toLowerCase().split(/\s+/).filter(Boolean);
-      const filtered = CURATED_PRECEDENTS.filter(item => {
+
+      // 법령 탭이면 오직 CURATED_LAWS에서만 검색! (판례 절대 유입 금지)
+      if (targetType === "law") {
+        const filteredLaws = CURATED_LAWS.filter(item => {
+          const targetText = [
+            item.title,
+            item.summary || "",
+            item.court || "",
+            ...(item.articles || [])
+          ].join(" ").toLowerCase();
+          return tokens.some(tok => targetText.includes(tok));
+        });
+
+        return {
+          totalCount: filteredLaws.length > 0 ? filteredLaws.length : CURATED_LAWS.length,
+          items: filteredLaws.length > 0 ? filteredLaws : CURATED_LAWS,
+          source: "fallback"
+        };
+      }
+
+      // 판례 탭이면 오직 CURATED_PRECEDENTS에서만 검색!
+      if (targetType === "prec") {
+        const filteredPrecs = CURATED_PRECEDENTS.filter(item => {
+          const targetText = [
+            item.title,
+            item.summary || "",
+            item.issue || "",
+            item.caseNumber || "",
+            ...(item.articles || [])
+          ].join(" ").toLowerCase();
+          return tokens.some(tok => targetText.includes(tok));
+        });
+
+        return {
+          totalCount: filteredPrecs.length > 0 ? filteredPrecs.length : CURATED_PRECEDENTS.length,
+          items: filteredPrecs.length > 0 ? filteredPrecs : CURATED_PRECEDENTS,
+          source: "fallback"
+        };
+      }
+
+      // 전체 탭인 경우 둘 다 매칭
+      const allFallback = [...CURATED_PRECEDENTS, ...CURATED_LAWS];
+      const filteredAll = allFallback.filter(item => {
         const targetText = [
           item.title,
           item.summary || "",
           item.issue || "",
           item.caseNumber || "",
           item.court || "",
-          item.caseType || "",
           ...(item.articles || [])
         ].join(" ").toLowerCase();
-        
         return tokens.some(tok => targetText.includes(tok));
       });
 
       return {
-        totalCount: filtered.length,
-        items: filtered.length > 0 ? filtered : CURATED_PRECEDENTS,
+        totalCount: filteredAll.length > 0 ? filteredAll.length : allFallback.length,
+        items: filteredAll.length > 0 ? filteredAll : allFallback,
         source: "fallback"
       };
     }
 
-    searchCache.set(cacheKey, { data: results, timestamp: Date.now() });
+    // 탭 선택에 따른 최종 방어 필터링 (결과 내 타입 일치 보장)
+    let finalItems = results;
+    if (targetType === "prec") {
+      finalItems = results.filter(r => r.type === "prec");
+    } else if (targetType === "law") {
+      finalItems = results.filter(r => r.type === "law");
+    }
+
+    searchCache.set(cacheKey, { data: finalItems, timestamp: Date.now() });
     return {
-      totalCount: results.length,
-      items: results,
+      totalCount: finalItems.length,
+      items: finalItems,
       source: "api"
     };
   } catch (error) {
@@ -417,14 +523,10 @@ export async function searchLawsAndPrecedents(query: string, targetType: "all" |
   }
 }
 
-// 판례 상세 조회
+// 판례 상세 조회 (법제처 공식 API 연동)
 export async function getPrecedentDetail(precId: string): Promise<LawSearchResult | null> {
-  // 1. Fallback 사전 검사
   const localMatch = CURATED_PRECEDENTS.find(p => p.id === precId || p.caseNumber === precId);
-  if (localMatch) {
-    return localMatch;
-  }
-
+  
   const rawId = precId.replace("prec-", "");
   try {
     const detailUrl = `http://www.law.go.kr/DRF/lawService.do?OC=${LAW_API_OC}&target=prec&ID=${rawId}&type=XML`;
@@ -432,21 +534,23 @@ export async function getPrecedentDetail(precId: string): Promise<LawSearchResul
     if (res.ok) {
       const xmlText = await res.text();
       const parsed = parser.parse(xmlText);
-      const prec = parsed.PrecService;
+      const prec = parsed?.PrecService;
       if (prec) {
+        const precSeq = prec["판례정보일련번호"] || rawId;
         return {
           id: precId,
           type: "prec",
           title: cleanHtml(prec["사건명"] || "판례 상세"),
-          subtitle: `${prec["법원명"] || ""} ${prec["선고일자"] || ""} ${prec["사건번호"] || ""}`.trim(),
+          subtitle: `대법원 ${prec["선고일자"] || ""} ${prec["사건번호"] || ""}`.trim(),
           date: prec["선고일자"],
-          court: prec["법원명"],
+          court: "대법원",
           caseNumber: prec["사건번호"],
-          caseType: prec["사건종류명"],
+          caseType: prec["사건종류명"] || "민사",
           issue: cleanHtml(prec["판시사항"]),
           summary: cleanHtml(prec["판결요지"]),
           fullContent: cleanHtml(prec["판례내용"]),
           articles: prec["참조조문"] ? [cleanHtml(prec["참조조문"])] : [],
+          detailUrl: `https://www.law.go.kr/LSW/precInfoP.do?precSeq=${precSeq}`
         };
       }
     }

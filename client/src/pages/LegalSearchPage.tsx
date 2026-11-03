@@ -121,6 +121,13 @@ export default function LegalSearchPage() {
     }
   }, [matchDetail, detailParams]);
 
+  // 탭에 따른 엄격한 2차 필터링 (법령 탭에 판례 노출 원천 차단)
+  const displayedItems = (searchData?.items || []).filter((item) => {
+    if (activeTab === "prec") return item.type === "prec";
+    if (activeTab === "law") return item.type === "law";
+    return true;
+  });
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setActiveQuery(searchQuery.trim());
@@ -282,7 +289,7 @@ export default function LegalSearchPage() {
                 {activeQuery ? `'${activeQuery}' 검색 결과` : "실무 추천 판례"}
               </h2>
               <span className="text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full">
-                총 {searchData?.totalCount || 0}건
+                총 {displayedItems.length}건
               </span>
             </div>
 
@@ -290,8 +297,8 @@ export default function LegalSearchPage() {
             <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)}>
               <TabsList className="bg-slate-100 p-1">
                 <TabsTrigger value="all" className="text-xs md:text-sm font-semibold">전체</TabsTrigger>
-                <TabsTrigger value="prec" className="text-xs md:text-sm font-semibold">판례 ({activeTab === "prec" ? searchData?.totalCount || 0 : "법원"})</TabsTrigger>
-                <TabsTrigger value="law" className="text-xs md:text-sm font-semibold">법령 ({activeTab === "law" ? searchData?.totalCount || 0 : "법제처"})</TabsTrigger>
+                <TabsTrigger value="prec" className="text-xs md:text-sm font-semibold">판례 ({activeTab === "prec" ? displayedItems.length : "대법원"})</TabsTrigger>
+                <TabsTrigger value="law" className="text-xs md:text-sm font-semibold">법령 ({activeTab === "law" ? displayedItems.length : "법제처"})</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -302,9 +309,9 @@ export default function LegalSearchPage() {
               <div className="animate-spin rounded-full h-10 w-10 border-4 border-slate-200 border-t-orange-500 mx-auto" />
               <p className="text-sm text-slate-500">법령 및 판례 데이터를 조회 중입니다...</p>
             </div>
-          ) : searchData?.items && searchData.items.length > 0 ? (
+          ) : displayedItems.length > 0 ? (
             <div className="space-y-4">
-              {searchData.items.map((item) => (
+              {displayedItems.map((item) => (
                 <Card 
                   key={item.id} 
                   className="bg-white border-slate-200 hover:border-slate-300 hover:shadow-md transition-shadow"
@@ -406,9 +413,9 @@ export default function LegalSearchPage() {
                         href={item.detailUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-blue-600 hover:underline flex items-center gap-1 font-medium"
+                        className="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 font-semibold"
                       >
-                        국가법령정보센터 원문 <ExternalLink className="w-3 h-3" />
+                        {item.type === "prec" ? "대법원 판례 원문 보기" : "법제처 법령 원문 보기"} <ExternalLink className="w-3 h-3" />
                       </a>
                     )}
                   </CardFooter>
@@ -574,7 +581,7 @@ export default function LegalSearchPage() {
                       asChild
                     >
                       <a href={selectedItem.detailUrl} target="_blank" rel="noopener noreferrer">
-                        국가법령정보센터 원문 <ExternalLink className="w-3 h-3 ml-1" />
+                        {selectedItem.type === "prec" ? "대법원 판례 원문 보기" : "법제처 법령 원문 보기"} <ExternalLink className="w-3 h-3 ml-1" />
                       </a>
                     </Button>
                   )}

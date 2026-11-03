@@ -76,21 +76,8 @@ export const CURATION_THEMES: CurationTheme[] = [
   }
 ];
 
-// 법령 전용 큐레이션 데이터 (법령 탭 전용)
+// 법령 전용 큐레이션 데이터 (최신 시행/공포일자 내림차순 정렬)
 export const CURATED_LAWS: LawSearchResult[] = [
-  {
-    id: "law-276291",
-    type: "law",
-    title: "주택임대차보호법",
-    subtitle: "법무부, 국토교통부 | 법률 제21065호",
-    date: "2026.01.02",
-    court: "법무부",
-    caseNumber: "제21065호",
-    caseType: "법률",
-    summary: "[일부개정] 주택의 임대차에 관하여 「민법」에 대한 특례를 규정함으로써 국민 주거생활의 안정을 보장함을 목적으로 한다. 대항력(제3조), 보증금의 우선변제권(제3조의2), 임차권등기명령(제3조의3), 계약갱신요구(제6조의3) 등 규정.",
-    articles: ["제3조(대항력 등)", "제3조의2(보증금의 회수)", "제8조(보증금 중 일정액의 보호)"],
-    detailUrl: "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=276291"
-  },
   {
     id: "law-287183",
     type: "law",
@@ -103,6 +90,19 @@ export const CURATED_LAWS: LawSearchResult[] = [
     summary: "[일부개정] 주택임대차보호법에서 위임된 소액보증금의 범위, 최우선변제금의 범위(서울 5,500만원, 과밀억제권역·세종·김포 4,800만원, 광역시·안산·광주·파주·이천 2,800만원, 그 밖의 지역 2,500만원 등) 규정.",
     articles: ["제10조(보증금 중 일정액의 범위 등)", "제11조(우선변제를 받을 임차인의 범위)"],
     detailUrl: "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=287183"
+  },
+  {
+    id: "law-276291",
+    type: "law",
+    title: "주택임대차보호법",
+    subtitle: "법무부, 국토교통부 | 법률 제21065호",
+    date: "2026.01.02",
+    court: "법무부",
+    caseNumber: "제21065호",
+    caseType: "법률",
+    summary: "[일부개정] 주택의 임대차에 관하여 「민법」에 대한 특례를 규정함으로써 국민 주거생활의 안정을 보장함을 목적으로 한다. 대항력(제3조), 보증금의 우선변제권(제3조의2), 임차권등기명령(제3조의3), 계약갱신요구(제6조의3) 등 규정.",
+    articles: ["제3조(대항력 등)", "제3조의2(보증금의 회수)", "제8조(보증금 중 일정액의 보호)"],
+    detailUrl: "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=276291"
   },
   {
     id: "law-263401",
@@ -118,19 +118,6 @@ export const CURATED_LAWS: LawSearchResult[] = [
     detailUrl: "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=263401"
   },
   {
-    id: "law-254129",
-    type: "law",
-    title: "민사집행법",
-    subtitle: "법무부 | 법률 제19920호",
-    date: "2024.06.01",
-    court: "법무부",
-    caseNumber: "제19920호",
-    caseType: "법률",
-    summary: "[일부개정] 부동산 강제경매 및 담보권 실행을 위한 경매절차 규정. 매각절차, 배당요구의 종기, 매수인의 대금지급 및 소유권취득, 인도명령(제136조) 등 부동산 경매 실무의 기본법률.",
-    articles: ["제83조(경매개시결정)", "제84조(배당요구의 종기)", "제136조(부동산의 인도명령)"],
-    detailUrl: "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=254129"
-  },
-  {
     id: "law-258902",
     type: "law",
     title: "공인중개사법",
@@ -142,6 +129,19 @@ export const CURATED_LAWS: LawSearchResult[] = [
     summary: "[일부개정] 중개대상물의 확인·설명의무(제25조: 권리관계, 선순위 보증금 내역 등), 손해배상책임의 보장(제30조: 공제 가입 의무), 금지행위 및 중개보수 기준 규정.",
     articles: ["제25조(중개대상물의 확인·설명)", "제30조(손해배상책임의 보장)"],
     detailUrl: "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=258902"
+  },
+  {
+    id: "law-254129",
+    type: "law",
+    title: "민사집행법",
+    subtitle: "법무부 | 법률 제19920호",
+    date: "2024.06.01",
+    court: "법무부",
+    caseNumber: "제19920호",
+    caseType: "법률",
+    summary: "[일부개정] 부동산 강제경매 및 담보권 실행을 위한 경매절차 규정. 매각절차, 배당요구의 종기, 매수인의 대금지급 및 소유권취득, 인도명령(제136조) 등 부동산 경매 실무의 기본법률.",
+    articles: ["제83조(경매개시결정)", "제84조(배당요구의 종기)", "제136조(부동산의 인도명령)"],
+    detailUrl: "https://www.law.go.kr/LSW/lsInfoP.do?lsiSeq=254129"
   },
   {
     id: "law-245100",
@@ -158,49 +158,21 @@ export const CURATED_LAWS: LawSearchResult[] = [
   }
 ];
 
-// 판례 전용 큐레이션 데이터 (판례 탭 및 대법원 판례 전용)
+// 판례 전용 큐레이션 데이터 (최신 선고일자 내림차순 정렬)
 export const CURATED_PRECEDENTS: LawSearchResult[] = [
   {
-    id: "prec-2018다252441",
+    id: "prec-2025다210305",
     type: "prec",
-    title: "상가건물 임대차보호법상 권리금 회수기회 보호",
-    subtitle: "대법원 2019. 5. 16. 선고 2018다252441 판결",
-    date: "2019.05.16",
+    title: "전세임대주택 입주자가 주택 소유권 취득 시 대항력 소멸 여부",
+    subtitle: "대법원 2026. 2. 26. 선고 2025다210305 판결",
+    date: "2026.02.26",
     court: "대법원",
-    caseNumber: "2018다252441",
-    caseType: "손해배상(기)",
-    issue: "[1] 구 상가건물 임대차보호법 제10조의4에서 정한 '임대인의 권리금 회수기회 보호의무'가 전체 임대차기간이 5년(현행 10년)을 초과하여 계약갱신요구권을 행사할 수 없는 경우에도 적용되는지 여부(적극)",
-    summary: "전체 임대차기간이 5년(현 10년)을 초과하여 임차인이 계약갱신요구권을 행사할 수 없더라도, 임대인은 상가건물 임대차보호법 제10조의4 제1항에 따른 권리금 회수기회 보호의무를 부담한다고 보아야 한다. 따라서 임대인이 정당한 사유 없이 신규임차인과의 계약을 거절하면 손해배상 책임을 진다.",
-    articles: ["상가건물 임대차보호법 제10조", "상가건물 임대차보호법 제10조의4"],
-    detailUrl: "https://www.law.go.kr/LSW/precInfoP.do?precSeq=197821"
-  },
-  {
-    id: "prec-2011다44788",
-    type: "prec",
-    title: "부동산 경매에서 압류 후 성립한 유치권의 대항력 배제",
-    subtitle: "대법원 2011. 11. 24. 선고 2011다44788 판결",
-    date: "2011.11.24",
-    court: "대법원",
-    caseNumber: "2011다44788",
-    caseType: "건물명도 등",
-    issue: "[1] 경매개시결정 기입등기로 압류의 효력이 발생한 후에 공사대금 채권자가 점유를 취득하여 유치권이 성립한 경우, 경매절차 매수인에게 유치권으로 대항할 수 있는지 여부(소극)",
-    summary: "경매개시결정 기입등기가 마쳐져 압류의 효력이 발생한 후에 채무자가 부동산에 관한 점유를 이전함으로써 유치권을 취득하게 된 경우, 점유자로서는 매수인(낙찰자)에게 유치권으로 대항할 수 없다. 이는 압류의 처분금지효에 저촉되기 때문이다.",
-    articles: ["민사집행법 제83조", "민법 제320조"],
-    detailUrl: "https://www.law.go.kr/LSW/precInfoP.do?precSeq=117392"
-  },
-  {
-    id: "prec-2001다76427",
-    type: "prec",
-    title: "주택임대차보호법상 대항력 발생 시기 및 근저당권과의 우열",
-    subtitle: "대법원 2002. 3. 15. 선고 2001다76427 판결",
-    date: "2002.03.15",
-    court: "대법원",
-    caseNumber: "2001다76427",
+    caseNumber: "2025다210305",
     caseType: "배당이의",
-    issue: "[1] 주민등록 전입신고일과 같은 날 설정된 근저당권과 주택임차인의 대항력 간의 우선순위",
-    summary: "주택임대차보호법 제3조 제1항의 대항력은 주민등록을 마친 '다음 날 오전 0시'부터 발생하므로, 전입신고 당일 설정된 근저당권설정등기보다 후순위가 되어 경매 시 낙찰자에게 대항할 수 없다.",
+    issue: "[1] 주택임대차보호법 제3조 제2항에 따라 법인 임차인이 대항력을 갖춘 후 입주자가 해당 주택을 양수하여 소유자가 된 경우 대항력 소멸 여부(적극)",
+    summary: "주택임대차보호법 제3조 제2항에 따라 입주자가 주택을 인도받고 주민등록을 마침으로써 법인 임차인이 대항력을 취득하였더라도, 이후 입주자가 해당 주택의 소유권을 취득하면 입주자의 주민등록은 소유권에 기한 점유가 되므로 임차권 공시방법으로서의 기능을 상실하여 법인의 대항력은 소멸한다.",
     articles: ["주택임대차보호법 제3조", "주택임대차보호법 제3조의2"],
-    detailUrl: "https://www.law.go.kr/LSW/precInfoP.do?precSeq=73602"
+    detailUrl: "https://www.law.go.kr/LSW/precInfoP.do?precSeq=618185"
   },
   {
     id: "prec-2022다238141",
@@ -217,6 +189,20 @@ export const CURATED_PRECEDENTS: LawSearchResult[] = [
     detailUrl: "https://www.law.go.kr/LSW/precInfoP.do?precSeq=241512"
   },
   {
+    id: "prec-2018다252441",
+    type: "prec",
+    title: "상가건물 임대차보호법상 권리금 회수기회 보호",
+    subtitle: "대법원 2019. 5. 16. 선고 2018다252441 판결",
+    date: "2019.05.16",
+    court: "대법원",
+    caseNumber: "2018다252441",
+    caseType: "손해배상(기)",
+    issue: "[1] 구 상가건물 임대차보호법 제10조의4에서 정한 '임대인의 권리금 회수기회 보호의무'가 전체 임대차기간이 5년(현행 10년)을 초과하여 계약갱신요구권을 행사할 수 없는 경우에도 적용되는지 여부(적극)",
+    summary: "전체 임대차기간이 5년(현 10년)을 초과하여 임차인이 계약갱신요구권을 행사할 수 없더라도, 임대인은 상가건물 임대차보호법 제10조의4 제1항에 따른 권리금 회수기회 보호의무를 부담한다고 보아야 한다. 따라서 임대인이 정당한 사유 없이 신규임차인과의 계약을 거절하면 손해배상 책임을 진다.",
+    articles: ["상가건물 임대차보호법 제10조", "상가건물 임대차보호법 제10조의4"],
+    detailUrl: "https://www.law.go.kr/LSW/precInfoP.do?precSeq=197821"
+  },
+  {
     id: "prec-2016다18797",
     type: "prec",
     title: "맹지 탈출을 위한 민법상 주위토지통행권 인정 기준",
@@ -229,6 +215,20 @@ export const CURATED_PRECEDENTS: LawSearchResult[] = [
     summary: "어느 토지와 공로 사이에 그 토지의 용도에 필요한 통로가 없는 경우 그 토지 소유자는 주위의 토지를 통행하거나 통로를 개설할 수 있다. 통행로의 폭과 위치는 피통행지 소유자에게 가장 손해가 적은 장소와 방법으로 결정되어야 한다.",
     articles: ["민법 제219조", "건축법 제44조"],
     detailUrl: "https://www.law.go.kr/LSW/precInfoP.do?precSeq=179421"
+  },
+  {
+    id: "prec-2011다44788",
+    type: "prec",
+    title: "부동산 경매에서 압류 후 성립한 유치권의 대항력 배제",
+    subtitle: "대법원 2011. 11. 24. 선고 2011다44788 판결",
+    date: "2011.11.24",
+    court: "대법원",
+    caseNumber: "2011다44788",
+    caseType: "건물명도 등",
+    issue: "[1] 경매개시결정 기입등기로 압류의 효력이 발생한 후에 공사대금 채권자가 점유를 취득하여 유치권이 성립한 경우, 경매절차 매수인에게 유치권으로 대항할 수 있는지 여부(소극)",
+    summary: "경매개시결정 기입등기가 마쳐져 압류의 효력이 발생한 후에 채무자가 부동산에 관한 점유를 이전함으로써 유치권을 취득하게 된 경우, 점유자로서는 매수인(낙찰자)에게 유치권으로 대항할 수 없다. 이는 압류의 처분금지효에 저촉되기 때문이다.",
+    articles: ["민사집행법 제83조", "민법 제320조"],
+    detailUrl: "https://www.law.go.kr/LSW/precInfoP.do?precSeq=117392"
   },
   {
     id: "prec-2007다63074",
@@ -245,18 +245,18 @@ export const CURATED_PRECEDENTS: LawSearchResult[] = [
     detailUrl: "https://www.law.go.kr/LSW/precInfoP.do?precSeq=98621"
   },
   {
-    id: "prec-2025다210305",
+    id: "prec-2001다76427",
     type: "prec",
-    title: "전세임대주택 입주자가 주택 소유권 취득 시 대항력 소멸 여부",
-    subtitle: "대법원 2026. 2. 26. 선고 2025다210305 판결",
-    date: "2026.02.26",
+    title: "주택임대차보호법상 대항력 발생 시기 및 근저당권과의 우열",
+    subtitle: "대법원 2002. 3. 15. 선고 2001다76427 판결",
+    date: "2002.03.15",
     court: "대법원",
-    caseNumber: "2025다210305",
+    caseNumber: "2001다76427",
     caseType: "배당이의",
-    issue: "[1] 주택임대차보호법 제3조 제2항에 따라 법인 임차인이 대항력을 갖춘 후 입주자가 해당 주택을 양수하여 소유자가 된 경우 대항력 소멸 여부(적극)",
-    summary: "주택임대차보호법 제3조 제2항에 따라 입주자가 주택을 인도받고 주민등록을 마침으로써 법인 임차인이 대항력을 취득하였더라도, 이후 입주자가 해당 주택의 소유권을 취득하면 입주자의 주민등록은 소유권에 기한 점유가 되므로 임차권 공시방법으로서의 기능을 상실하여 법인의 대항력은 소멸한다.",
+    issue: "[1] 주민등록 전입신고일과 같은 날 설정된 근저당권과 주택임차인의 대항력 간의 우선순위",
+    summary: "주택임대차보호법 제3조 제1항의 대항력은 주민등록을 마친 '다음 날 오전 0시'부터 발생하므로, 전입신고 당일 설정된 근저당권설정등기보다 후순위가 되어 경매 시 낙찰자에게 대항할 수 없다.",
     articles: ["주택임대차보호법 제3조", "주택임대차보호법 제3조의2"],
-    detailUrl: "https://www.law.go.kr/LSW/precInfoP.do?precSeq=618185"
+    detailUrl: "https://www.law.go.kr/LSW/precInfoP.do?precSeq=73602"
   }
 ];
 
@@ -272,6 +272,15 @@ function cleanHtml(text?: string): string {
     .replace(/&nbsp;/g, " ")
     .replace(/&quot;/g, '"')
     .trim();
+}
+
+// 날짜(선고일자 / 시행일자 / 공포일자) 기준 최신순(내림차순) 정렬 헬퍼
+function sortByDateDesc(items: LawSearchResult[]): LawSearchResult[] {
+  return [...items].sort((a, b) => {
+    const numA = parseInt((a.date || "").replace(/\D/g, ""), 10) || 0;
+    const numB = parseInt((b.date || "").replace(/\D/g, ""), 10) || 0;
+    return numB - numA;
+  });
 }
 
 // 메모리 캐시 (1시간 유지)
@@ -299,7 +308,7 @@ export async function searchLawsAndPrecedents(
     };
   }
 
-  // 1. 검색어가 없을 때 기본 추천 데이터 반환 (탭별 엄격 분리!)
+  // 1. 검색어가 없을 때 기본 추천 데이터 반환 (최신순 정렬 및 탭별 엄격 분리!)
   if (!cleanQuery) {
     let list: LawSearchResult[] = [];
     if (targetType === "prec") {
@@ -309,9 +318,10 @@ export async function searchLawsAndPrecedents(
     } else {
       list = [...CURATED_PRECEDENTS, ...CURATED_LAWS];
     }
+    const sortedList = sortByDateDesc(list);
     return {
-      totalCount: list.length,
-      items: list,
+      totalCount: sortedList.length,
+      items: sortedList,
       source: "fallback",
     };
   }
@@ -327,8 +337,9 @@ export async function searchLawsAndPrecedents(
         try {
           // search=2: 판례 본문(판시사항, 판결요지, 주문, 이유) 전체 검색
           // curt=대법원: 100% 대법원 판례만 필터링
+          // sort=ddes: 선고일자 내림차순(최신 판례 우선)
           // display=50: 한 번에 50건 조회
-          const precUrl = `http://www.law.go.kr/DRF/lawSearch.do?OC=${LAW_API_OC}&target=prec&type=XML&query=${encodeURIComponent(cleanQuery)}&search=2&curt=${encodeURIComponent("대법원")}&page=${page}&display=50`;
+          const precUrl = `http://www.law.go.kr/DRF/lawSearch.do?OC=${LAW_API_OC}&target=prec&type=XML&query=${encodeURIComponent(cleanQuery)}&search=2&curt=${encodeURIComponent("대법원")}&sort=ddes&page=${page}&display=50`;
           let res = await fetch(precUrl, { signal: AbortSignal.timeout(4500) });
           
           let xmlText = res.ok ? await res.text() : "";
@@ -339,7 +350,7 @@ export async function searchLawsAndPrecedents(
           if ((!precSearch || !precSearch.prec) && cleanQuery.includes(" ")) {
             const firstKeywords = cleanQuery.split(/\s+/).filter(w => w.length >= 2).slice(0, 2).join(" ");
             if (firstKeywords && firstKeywords !== cleanQuery) {
-              const retryUrl = `http://www.law.go.kr/DRF/lawSearch.do?OC=${LAW_API_OC}&target=prec&type=XML&query=${encodeURIComponent(firstKeywords)}&search=2&curt=${encodeURIComponent("대법원")}&page=${page}&display=50`;
+              const retryUrl = `http://www.law.go.kr/DRF/lawSearch.do?OC=${LAW_API_OC}&target=prec&type=XML&query=${encodeURIComponent(firstKeywords)}&search=2&curt=${encodeURIComponent("대법원")}&sort=ddes&page=${page}&display=50`;
               const retryRes = await fetch(retryUrl, { signal: AbortSignal.timeout(4500) });
               if (retryRes.ok) {
                 const retryXml = await retryRes.text();
@@ -395,7 +406,7 @@ export async function searchLawsAndPrecedents(
     if (targetType === "all" || targetType === "law") {
       promises.push((async () => {
         try {
-          const lawUrl = `http://www.law.go.kr/DRF/lawSearch.do?OC=${LAW_API_OC}&target=law&type=XML&query=${encodeURIComponent(cleanQuery)}&page=${page}&display=50`;
+          const lawUrl = `http://www.law.go.kr/DRF/lawSearch.do?OC=${LAW_API_OC}&target=law&type=XML&query=${encodeURIComponent(cleanQuery)}&sort=ddes&page=${page}&display=50`;
           const res = await fetch(lawUrl, { signal: AbortSignal.timeout(4000) });
           if (res.ok) {
             const xmlText = await res.text();
@@ -435,7 +446,7 @@ export async function searchLawsAndPrecedents(
 
     await Promise.all(promises);
 
-    // ── [3] 결과가 없을 때 Fallback 검색 (탭별 철저히 격리!!) ──
+    // ── [3] 결과가 없을 때 Fallback 검색 (최신순 정렬 및 탭별 철저히 격리!!) ──
     if (results.length === 0) {
       const tokens = cleanQuery.toLowerCase().split(/\s+/).filter(Boolean);
 
@@ -451,9 +462,10 @@ export async function searchLawsAndPrecedents(
           return tokens.some(tok => targetText.includes(tok));
         });
 
+        const sortedLaws = sortByDateDesc(filteredLaws.length > 0 ? filteredLaws : CURATED_LAWS);
         return {
-          totalCount: filteredLaws.length > 0 ? filteredLaws.length : CURATED_LAWS.length,
-          items: filteredLaws.length > 0 ? filteredLaws : CURATED_LAWS,
+          totalCount: sortedLaws.length,
+          items: sortedLaws,
           source: "fallback"
         };
       }
@@ -471,14 +483,15 @@ export async function searchLawsAndPrecedents(
           return tokens.some(tok => targetText.includes(tok));
         });
 
+        const sortedPrecs = sortByDateDesc(filteredPrecs.length > 0 ? filteredPrecs : CURATED_PRECEDENTS);
         return {
-          totalCount: filteredPrecs.length > 0 ? filteredPrecs.length : CURATED_PRECEDENTS.length,
-          items: filteredPrecs.length > 0 ? filteredPrecs : CURATED_PRECEDENTS,
+          totalCount: sortedPrecs.length,
+          items: sortedPrecs,
           source: "fallback"
         };
       }
 
-      // 전체 탭인 경우 둘 다 매칭
+      // 전체 탭인 경우 둘 다 매칭 후 최신순 정렬
       const allFallback = [...CURATED_PRECEDENTS, ...CURATED_LAWS];
       const filteredAll = allFallback.filter(item => {
         const targetText = [
@@ -492,9 +505,10 @@ export async function searchLawsAndPrecedents(
         return tokens.some(tok => targetText.includes(tok));
       });
 
+      const sortedAll = sortByDateDesc(filteredAll.length > 0 ? filteredAll : allFallback);
       return {
-        totalCount: filteredAll.length > 0 ? filteredAll.length : allFallback.length,
-        items: filteredAll.length > 0 ? filteredAll : allFallback,
+        totalCount: sortedAll.length,
+        items: sortedAll,
         source: "fallback"
       };
     }
@@ -506,6 +520,9 @@ export async function searchLawsAndPrecedents(
     } else if (targetType === "law") {
       finalItems = results.filter(r => r.type === "law");
     }
+
+    // ★ 대법원 판례 및 법령: 최신 선고일자/시행일자 내림차순(최신순) 정렬 보장!
+    finalItems = sortByDateDesc(finalItems);
 
     searchCache.set(cacheKey, { data: finalItems, timestamp: Date.now() });
     return {

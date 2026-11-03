@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation, useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { 
@@ -66,6 +66,7 @@ export default function LegalSearchPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeQuery, setActiveQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "prec" | "law">("all");
+  const [sortBy, setSortBy] = useState<"latest" | "accuracy">("latest");
   const [selectedItem, setSelectedItem] = useState<LawItem | null>(null);
   const [showFullContent, setShowFullContent] = useState(false);
 
@@ -121,12 +122,24 @@ export default function LegalSearchPage() {
     }
   }, [matchDetail, detailParams]);
 
-  // 탭에 따른 엄격한 2차 필터링 (법령 탭에 판례 노출 원천 차단)
-  const displayedItems = (searchData?.items || []).filter((item) => {
-    if (activeTab === "prec") return item.type === "prec";
-    if (activeTab === "law") return item.type === "law";
-    return true;
-  });
+  // 탭에 따른 엄격한 2차 필터링 및 최신 선고순(기본값) 정렬
+  const displayedItems = useMemo(() => {
+    const list = (searchData?.items || []).filter((item) => {
+      if (activeTab === "prec") return item.type === "prec";
+      if (activeTab === "law") return item.type === "law";
+      return true;
+    });
+
+    if (sortBy === "latest") {
+      return [...list].sort((a, b) => {
+        const numA = parseInt((a.date || "").replace(/\D/g, ""), 10) || 0;
+        const numB = parseInt((b.date || "").replace(/\D/g, ""), 10) || 0;
+        return numB - numA;
+      });
+    }
+
+    return list;
+  }, [searchData?.items, activeTab, sortBy]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -282,25 +295,54 @@ export default function LegalSearchPage() {
 
         {/* 2. 검색 필터 & 결과 리스트 */}
         <section className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
             <div className="flex items-center gap-3">
               <h2 className="text-lg md:text-xl font-bold text-slate-900 flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-blue-600" />
                 {activeQuery ? `'${activeQuery}' 검색 결과` : "실무 추천 판례"}
               </h2>
-              <span className="text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full">
+              <span className="text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full">
                 총 {displayedItems.length}건
               </span>
             </div>
 
-            {/* Tabs */}
-            <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)}>
-              <TabsList className="bg-slate-100 p-1">
-                <TabsTrigger value="all" className="text-xs md:text-sm font-semibold">전체</TabsTrigger>
-                <TabsTrigger value="prec" className="text-xs md:text-sm font-semibold">판례 ({activeTab === "prec" ? displayedItems.length : "대법원"})</TabsTrigger>
-                <TabsTrigger value="law" className="text-xs md:text-sm font-semibold">법령 ({activeTab === "law" ? displayedItems.length : "법제처"})</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Tabs */}
+              <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)}>
+                <TabsList className="bg-slate-100 p-1">
+                  <TabsTrigger value="all" className="text-xs md:text-sm font-semibold">전체</TabsTrigger>
+                  <TabsTrigger value="prec" className="text-xs md:text-sm font-semibold">판례 ({activeTab === "prec" ? displayedItems.length : "대법원"})</TabsTrigger>
+                  <TabsTrigger value="law" className="text-xs md:text-sm font-semibold">법령 ({activeTab === "law" ? displayedItems.length : "법제처"})</TabsTrigger>
+                </TabsList>
+              </Tabs>
+
+              {/* 최신순 / 관련도순 정렬 토글 */}
+              <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200/80 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setSortBy("latest")}
+                  className={`px-2.5 py-1 rounded-md font-semibold transition-all flex items-center gap-1 ${
+                    sortBy === "latest"
+                      ? "bg-white text-orange-600 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  최신 선고순
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSortBy("accuracy")}
+                  className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
+                    sortBy === "accuracy"
+                      ? "bg-white text-orange-600 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  관련도순
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Results List */}
@@ -338,9 +380,9 @@ export default function LegalSearchPage() {
                         )}
                       </div>
                       {item.date && (
-                        <div className="flex items-center text-xs text-slate-400 gap-1">
-                          <Calendar className="w-3.5 h-3.5" />
-                          <span>{item.date}</span>
+                        <div className="flex items-center text-xs font-semibold text-orange-700 bg-orange-50 border border-orange-200 px-2.5 py-0.5 rounded-md gap-1">
+                          <Calendar className="w-3.5 h-3.5 text-orange-500" />
+                          <span>{item.type === "prec" ? `선고 ${item.date}` : `시행 ${item.date}`}</span>
                         </div>
                       )}
                     </div>

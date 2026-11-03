@@ -27,8 +27,8 @@ const Header = () => {
     { name: "강화도 매물", path: "/properties", icon: Search },
     { name: "반값 경매·공매", path: "/auctions", isHot: true, icon: Gavel },
     { name: "부동산 토탈케어", path: "/total-care", isNew: true, icon: Sparkles },
-    { name: "법률·판례", path: "/legal", icon: Scale },
     { name: "유튜브", path: "/youtube", icon: Youtube },
+    { name: "법률·판례", path: "/legal", icon: Scale },
   ];
 
   const handleLogout = () => {

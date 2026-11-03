@@ -287,65 +287,6 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* 실무 법령 & 판례 스마트 검색바 (기획안 1 + 2 결합 섹션) */}
-      <section className="bg-slate-900 text-white py-4 sm:py-6 border-b border-slate-800">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <div className="bg-slate-800/90 rounded-2xl p-3.5 sm:p-5 border border-slate-700/80 shadow-lg">
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-3 shrink-0">
-                <div className="w-10 h-10 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0 border border-orange-500/30">
-                  <Scale className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm sm:text-base font-bold text-white tracking-tight">
-                      부동산 · 경매 법령 & 판례 검색
-                    </span>
-                    <Badge variant="outline" className="text-[10px] bg-orange-500/10 text-orange-300 border-orange-500/30 font-semibold">
-                      법제처·대법원 공식
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-slate-400 hidden sm:block">
-                    전세 대항력, 유치권 성립 요건, 상가 권리금 분쟁 판례를 바로 검색하세요.
-                  </p>
-                </div>
-              </div>
-
-              {/* 검색창 및 빠른 태그 */}
-              <div className="w-full lg:max-w-xl">
-                <form onSubmit={handleLawSearchSubmit} className="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-700 focus-within:border-orange-500 transition-colors">
-                  <Search className="w-4 h-4 text-slate-400 ml-2 shrink-0" />
-                  <Input
-                    type="text"
-                    value={lawSearchText}
-                    onChange={(e) => setLawSearchText(e.target.value)}
-                    placeholder="대법원 판례 본문, 사건번호 검색 (예: 임차권등기명령, 유치권 성립, 2021다252441)"
-                    className="border-none shadow-none text-white placeholder:text-slate-500 text-xs sm:text-sm focus-visible:ring-0 bg-transparent h-8 sm:h-9"
-                  />
-                  <Button type="submit" size="sm" className="bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs px-3 sm:px-4 h-8 shrink-0 rounded-lg">
-                    판례 검색
-                  </Button>
-                </form>
-
-                <div className="flex items-center gap-1.5 mt-2 overflow-x-auto no-scrollbar text-[11px] text-slate-400">
-                  <span className="shrink-0 text-slate-500">추천:</span>
-                  {["대항력", "우선변제권", "유치권", "법정지상권", "상가권리금"].map((kw) => (
-                    <button
-                      key={kw}
-                      type="button"
-                      onClick={() => setLocation(`/legal?q=${encodeURIComponent(kw)}`)}
-                      className="shrink-0 hover:text-orange-400 transition-colors bg-slate-900 px-2 py-0.5 rounded border border-slate-800"
-                    >
-                      #{kw}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Theme Tab Property Showcase */}
       <section id="auction-section" className="overflow-hidden pt-5 pb-8 sm:pt-8 sm:pb-10 landscape:pt-3 landscape:pb-5 bg-[#F7F5F0]">
         <div className="container mx-auto px-3 sm:px-4 max-w-6xl">
@@ -821,6 +762,60 @@ const HomePage = () => {
                     </div>
                   </a>
                 ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 실무 법령 & 판례 스마트 검색바 (페이지 최하단 배치, 모바일 줄바꿈/가로스크롤바 100% 방지) */}
+      <section className="bg-slate-900 text-white py-4 sm:py-6 border-t border-slate-800 overflow-x-hidden w-full max-w-full">
+        <div className="container mx-auto px-3 sm:px-4 max-w-6xl">
+          <div className="bg-slate-800/90 rounded-2xl p-3 sm:p-4 md:p-5 border border-slate-700/80 shadow-lg">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
+              <div className="flex items-center justify-between lg:justify-start gap-2.5 sm:gap-3 shrink-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center shrink-0 border border-orange-500/30">
+                    <Scale className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5" />
+                  </div>
+                  <span className="text-xs sm:text-base font-bold text-white tracking-tight whitespace-nowrap">
+                    부동산 법률·판례 검색
+                  </span>
+                </div>
+                <Badge variant="outline" className="text-[10px] sm:text-xs bg-orange-500/10 text-orange-300 border-orange-500/30 font-semibold whitespace-nowrap shrink-0">
+                  대법원·법제처 공식
+                </Badge>
+              </div>
+
+              {/* 검색창 및 빠른 태그 (가로바 없음, 모바일 100% 최적화) */}
+              <div className="w-full lg:max-w-xl">
+                <form onSubmit={handleLawSearchSubmit} className="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-700 focus-within:border-orange-500 transition-colors">
+                  <Search className="w-4 h-4 text-slate-400 ml-1.5 sm:ml-2 shrink-0" />
+                  <Input
+                    type="text"
+                    value={lawSearchText}
+                    onChange={(e) => setLawSearchText(e.target.value)}
+                    placeholder="대법원 판례 본문, 사건번호 검색 (예: 유치권, 대항력)"
+                    className="border-none shadow-none text-white placeholder:text-slate-500 text-xs sm:text-sm focus-visible:ring-0 bg-transparent h-8 sm:h-9 min-w-0"
+                  />
+                  <Button type="submit" size="sm" className="bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs px-3 sm:px-4 h-8 shrink-0 rounded-lg whitespace-nowrap">
+                    판례 검색
+                  </Button>
+                </form>
+
+                {/* 가로바(overflow-x-auto) 없이 너비에 꼭 맞게 5분할 그리드로 줄바꿈 없이 배치 */}
+                <div className="grid grid-cols-5 gap-1 mt-2 text-[10px] sm:text-xs w-full overflow-hidden">
+                  {["대항력", "우선변제", "유치권", "법정지상권", "상가권리금"].map((kw) => (
+                    <button
+                      key={kw}
+                      type="button"
+                      onClick={() => setLocation(`/legal?q=${encodeURIComponent(kw)}`)}
+                      className="w-full text-center py-1 rounded bg-slate-900 border border-slate-800 text-slate-300 hover:text-orange-400 hover:border-orange-500/50 transition-colors whitespace-nowrap truncate font-medium touch-manipulation"
+                    >
+                      #{kw}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

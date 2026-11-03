@@ -306,22 +306,22 @@ export default function LegalSearchPage() {
               </span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2.5 sm:gap-3 w-full sm:w-auto">
               {/* Tabs */}
               <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)}>
                 <TabsList className="bg-slate-100 p-1">
-                  <TabsTrigger value="all" className="text-xs md:text-sm font-semibold">전체</TabsTrigger>
-                  <TabsTrigger value="prec" className="text-xs md:text-sm font-semibold">판례 ({activeTab === "prec" ? displayedItems.length : "대법원"})</TabsTrigger>
-                  <TabsTrigger value="law" className="text-xs md:text-sm font-semibold">법령 ({activeTab === "law" ? displayedItems.length : "법제처"})</TabsTrigger>
+                  <TabsTrigger value="all" className="text-xs md:text-sm font-semibold whitespace-nowrap px-2.5 sm:px-3">전체</TabsTrigger>
+                  <TabsTrigger value="prec" className="text-xs md:text-sm font-semibold whitespace-nowrap px-2.5 sm:px-3">판례 (대법원)</TabsTrigger>
+                  <TabsTrigger value="law" className="text-xs md:text-sm font-semibold whitespace-nowrap px-2.5 sm:px-3">법령 (법제처)</TabsTrigger>
                 </TabsList>
               </Tabs>
 
               {/* 최신순 / 관련도순 정렬 토글 */}
-              <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200/80 text-xs">
+              <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200/80 text-xs shrink-0 whitespace-nowrap">
                 <button
                   type="button"
                   onClick={() => setSortBy("latest")}
-                  className={`px-2.5 py-1 rounded-md font-semibold transition-all flex items-center gap-1 ${
+                  className={`px-2.5 py-1 rounded-md font-semibold transition-all flex items-center gap-1 whitespace-nowrap ${
                     sortBy === "latest"
                       ? "bg-white text-orange-600 shadow-sm"
                       : "text-slate-500 hover:text-slate-800"
@@ -333,7 +333,7 @@ export default function LegalSearchPage() {
                 <button
                   type="button"
                   onClick={() => setSortBy("accuracy")}
-                  className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
+                  className={`px-2.5 py-1 rounded-md font-semibold transition-all whitespace-nowrap ${
                     sortBy === "accuracy"
                       ? "bg-white text-orange-600 shadow-sm"
                       : "text-slate-500 hover:text-slate-800"

@@ -501,8 +501,7 @@ export default function LegalSearchPage() {
               </Button>
               <Button
                 size="lg"
-                variant="outline"
-                className="border-white/80 text-white hover:bg-white/10 font-bold"
+                className="bg-white text-slate-900 hover:text-orange-600 hover:bg-orange-50 font-bold shadow-lg border-none"
                 onClick={() => setLocation("/auctions")}
               >
                 법원 경매 매물 보기

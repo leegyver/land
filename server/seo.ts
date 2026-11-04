@@ -89,7 +89,7 @@ export async function resolveSeoMetadata(
 ): Promise<SeoMetadata> {
   const cleanPath = urlPath.split("?")[0].split("#")[0];
   const baseUrl = "https://leegyver.com";
-  const defaultImage = "https://leegyver.com/images/thumbnail.png";
+  const defaultImage = "https://leegyver.com/images/og-main.jpg";
   const defaultKeywords = "강화도 부동산, 강화도 토지, 강화도 전원주택, 강화도 매물, 이가이버, 이가이버부동산, 강화도 중개, 인천 강화";
 
   // 0. 관리자/인증/작성 등 비공개 페이지 noindex 처리
@@ -451,7 +451,7 @@ export async function resolveSeoMetadata(
         canonicalUrl: baseUrl,
         imageUrl: defaultImage,
         imageWidth: 1200,
-        imageHeight: 600,
+        imageHeight: 670,
         imageAlt: "강화도 부동산 이가이버 대표이미지",
       };
   }

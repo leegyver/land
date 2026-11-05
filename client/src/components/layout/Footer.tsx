@@ -34,6 +34,10 @@ const Footer = () => {
             <Link href="/privacy" className="text-slate-400 hover:text-white transition-colors font-semibold py-1">
               개인정보처리방침
             </Link>
+            <span className="text-slate-700 py-1">|</span>
+            <Link href="/card" className="text-amber-400 hover:text-amber-300 transition-colors font-medium py-1">
+              모바일 명함
+            </Link>
           </div>
           <div className="mb-4">
             <h3 className="text-xs sm:text-sm font-bold text-slate-300 md:text-left text-center">이가이버랜드 대표 이민호</h3>

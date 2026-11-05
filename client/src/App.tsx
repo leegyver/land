@@ -43,6 +43,7 @@ const RoadviewPopupPage = lazy(() => import("@/pages/RoadviewPopupPage"));
 const TermsPage = lazy(() => import("@/pages/TermsPage"));
 const PrivacyPage = lazy(() => import("@/pages/PrivacyPage"));
 const LegalSearchPage = lazy(() => import("@/pages/LegalSearchPage"));
+const BusinessCardPage = lazy(() => import("@/pages/BusinessCardPage"));
 
 // 페이지 로딩 중 표시할 최소한의 스켈레톤
 const PageLoader = () => (
@@ -100,6 +101,8 @@ function Router({ user, isLoading }: { user: any; isLoading: boolean }) {
         <Route path="/popup/roadview" component={RoadviewPopupPage} />
         <Route path="/terms" component={TermsPage} />
         <Route path="/privacy" component={PrivacyPage} />
+        <Route path="/card" component={BusinessCardPage} />
+        <Route path="/intro" component={BusinessCardPage} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
@@ -110,10 +113,11 @@ function AppContent() {
   const { user, isLoading } = useAuth();
   const [location] = useLocation();
   const isPopup = location.startsWith("/popup");
+  const isCard = location === "/card" || location === "/intro";
 
-  if (isPopup) {
+  if (isPopup || isCard) {
     return (
-      <main className="h-screen w-screen overflow-hidden">
+      <main className={isCard ? "min-h-screen bg-slate-950" : "h-screen w-screen overflow-hidden"}>
         <Router user={user} isLoading={isLoading} />
       </main>
     );

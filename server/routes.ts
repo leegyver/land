@@ -230,7 +230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ].join("\r\n") + "\r\n";
 
     res.setHeader("Content-Type", "text/vcard; charset=utf-8");
-    res.setHeader("Content-Disposition", 'attachment; filename="이민호-이가이버.vcf"; filename*=UTF-8\'\'%EC%9D%B4%EB%AF%BC%ED%98%B8-%EC%9D%B4%EA%B0%80%EC%9D%B4%EB%B2%84.vcf');
+    res.setHeader("Content-Disposition", 'attachment; filename="contact.vcf"; filename*=UTF-8\'\'%EC%9D%B4%EB%AF%BC%ED%98%B8-%EC%9D%B4%EA%B0%80%EC%9D%B4%EB%B2%84.vcf');
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     return res.status(200).send(vcard);
   });

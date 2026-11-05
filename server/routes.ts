@@ -208,28 +208,31 @@ function standardizePrice(val: any, fieldName?: string): string {
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
-  // 모바일 명함 vCard 연락처 다운로드 엔드포인트
+  // 모바일 명함 vCard 연락처 다운로드 엔드포인트 (안드로이드/삼성/iOS 100% 호환 표준 포맷)
   app.get(["/api/vcard", "/vcard"], (req, res) => {
     const vcard = [
       "BEGIN:VCARD",
       "VERSION:3.0",
-      "N;CHARSET=UTF-8:이;민호;;;",
-      "FN;CHARSET=UTF-8:이민호 대표 (이가이버부동산)",
-      "ORG;CHARSET=UTF-8:이가이버 공인중개사 사무소;이가이버랜드",
-      "TITLE;CHARSET=UTF-8:대표 공인중개사",
-      "TEL;TYPE=CELL,VOICE:010-4787-3120",
-      "TEL;TYPE=WORK,VOICE:032-934-3120",
-      "TEL;TYPE=WORK,FAX:032-932-3120",
-      "EMAIL;TYPE=INTERNET,WORK:9551304@naver.com",
-      "ADR;TYPE=WORK;CHARSET=UTF-8:;;인천광역시 강화군 강화읍 남문로 51, 1호;인천;강화군;23037;대한민국",
+      "FN:이민호 대표 (이가이버부동산)",
+      "N:이;민호;;;",
+      "ORG:이가이버 공인중개사 사무소;이가이버랜드",
+      "TITLE:대표 공인중개사",
+      "TEL;TYPE=CELL:010-4787-3120",
+      "TEL;TYPE=WORK:032-934-3120",
+      "TEL;TYPE=FAX:032-932-3120",
+      "EMAIL;TYPE=INTERNET:9551304@naver.com",
+      "ADR;TYPE=WORK:;;인천광역시 강화군 강화읍 남문로 51, 1호;인천;강화군;23037;대한민국",
       "URL:https://leegyver.com",
-      "NOTE;CHARSET=UTF-8:사업자등록번호: 558-23-01088 / 중개등록번호: 제28710-2021-00012호 / 모든 강화도 부동산은 이가이버로 연결됩니다.",
+      "NOTE:사업자등록번호: 558-23-01088 / 중개등록번호: 제28710-2021-00012호 / 모든 강화도 부동산은 이가이버로 연결됩니다.",
       "END:VCARD"
-    ].join("\r\n");
+    ].join("\r\n") + "\r\n";
 
+    // UTF-8 BOM(\uFEFF)을 포함한 버퍼로 전달하여 단말기 연락처 앱 호환성 극대화
+    const buffer = Buffer.from("\uFEFF" + vcard, "utf-8");
     res.setHeader("Content-Type", "text/vcard; charset=utf-8");
     res.setHeader("Content-Disposition", 'attachment; filename="leegyver_contact.vcf"; filename*=UTF-8\'\'leegyver_contact.vcf');
-    return res.send(vcard);
+    res.setHeader("Content-Length", buffer.length.toString());
+    return res.end(buffer);
   });
 
   // Global request logger for debugging

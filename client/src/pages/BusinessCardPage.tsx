@@ -215,8 +215,8 @@ export default function BusinessCardPage() {
       // 서버 엔드포인트(/api/vcard)로 직접 이동하여 스마트폰 네이티브 연락처 등록 트리거
       window.location.href = "/api/vcard";
       toast({
-        title: "연락처 다운로드 시작",
-        description: "파일이 다운로드되면 [열기]를 눌러 전화번호부에 바로 저장하세요."
+        title: "연락처 파일 다운로드",
+        description: "화면의 [가져오기] 또는 [저장] 버튼을 누르면 전화번호부에 등록이 완료됩니다."
       });
     } catch (err) {
       // 차단 브라우저 대응 새 창 열기
@@ -452,22 +452,19 @@ export default function BusinessCardPage() {
               </button>
             </div>
 
-            {/* 계좌 정보 카드 (가로바/스크롤바 없음, 큰 폰트 적용) */}
-            <div className="bg-slate-900/90 rounded-xl p-3.5 border border-slate-700/60 overflow-hidden">
-              <div className="flex items-center justify-between gap-1 mb-1.5">
-                <span className="inline-block px-2 py-0.5 rounded text-[11px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            {/* 계좌 정보 카드 (가로바 없음, 한 줄 배치) */}
+            <div className="bg-slate-900/90 rounded-xl px-3.5 py-3 border border-slate-700/60 overflow-hidden flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="shrink-0 px-2 py-0.5 rounded text-[11px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30">
                   {CARD_INFO.bankInfo.bankName}
                 </span>
-                <span className="text-xs font-semibold text-slate-300">
-                  예금주: <strong className="text-white font-bold">{CARD_INFO.bankInfo.accountHolder}</strong>
-                </span>
-              </div>
-              <div className="flex items-center justify-between pt-0.5">
-                <span className="font-mono text-base sm:text-lg font-black text-amber-400 tracking-wide selection:bg-amber-500 selection:text-slate-950">
+                <span className="font-mono text-sm sm:text-base font-bold text-amber-400 tracking-tight">
                   {CARD_INFO.bankInfo.accountNumber}
                 </span>
-                <span className="text-[10px] text-slate-400">터치 시 복사</span>
               </div>
+              <span className="shrink-0 text-xs font-semibold text-slate-300">
+                예금주: <strong className="text-white font-bold">{CARD_INFO.bankInfo.accountHolder}</strong>
+              </span>
             </div>
           </div>
 

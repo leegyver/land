@@ -32,20 +32,20 @@ declare global {
 const CARD_INFO = {
   name: "이민호",
   title: "대표 공인중개사",
-  subtitle: "부동산 자산관리 & 경공매 권리분석 전문가",
+  subtitle: "강화도 부동산 매매, 임대 & 경공매 권리분석 전문가",
   agency: "이가이버 공인중개사 사무소",
-  brand: "이가이버랜드 (LEENOMICS)",
-  slogan: "강화도 부동산 20년, 정직과 실력으로 소중한 자산을 지킵니다.",
+  brand: "이가이버랜드",
+  slogan: "모든 강화도 부동산은 이가이버로 연결됩니다.",
   
   // 연락처
   mobile: "010-4787-3120",
   phone: "032-934-3120",
-  fax: "032-934-3121",
+  fax: "032-932-3120",
   email: "9551304@naver.com",
   
   // 등록 및 사업자 정보
-  businessNo: "786-73-00447",
-  realtorNo: "제28710-2020-00010호", // 공인중개사 등록번호
+  businessNo: "558-23-01088",
+  realtorNo: "제28710-2021-00012호", // 공인중개사 등록번호
   
   // 주소
   addressRoad: "인천광역시 강화군 강화읍 남문로 51, 1호",
@@ -53,8 +53,8 @@ const CARD_INFO = {
   
   // 계좌 정보 (계약금/중개보수/자문료 입금용)
   bankInfo: {
-    bankName: "농협",
-    accountNumber: "356-4787-3120-03", // 대표번호 연동형 또는 실제 계좌
+    bankName: "카카오뱅크",
+    accountNumber: "3333-24-9326734", // 대표번호 연동형 또는 실제 계좌
     accountHolder: "이민호 (이가이버)"
   },
   
@@ -430,7 +430,7 @@ export default function BusinessCardPage() {
                 </div>
                 <div>
                   <h3 className="text-xs font-bold text-slate-100">입금 전용 계좌안내</h3>
-                  <p className="text-[11px] text-slate-400">계약금 · 중개보수 · 용역비</p>
+                  <p className="text-[11px] text-slate-400">중개보수 · 용역비 · 입찰보증금</p>
                 </div>
               </div>
               <button
@@ -569,9 +569,9 @@ export default function BusinessCardPage() {
                 </div>
                 <div>
                   <div className="text-xs font-bold text-white group-hover:text-red-400 transition-colors">
-                    유튜브 '이가이버랜드' 채널
+                    유튜브 '이가이버의 강화도 부동산 및 일상' 채널
                   </div>
-                  <div className="text-[10px] text-slate-400">생생한 현장 영상 & 토탈케어 안내</div>
+                  <div className="text-[10px] text-slate-400">생생한 부동산 현장 영상 & 강화도 일상 안내</div>
                 </div>
               </div>
               <ExternalLink className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-300" />
@@ -592,7 +592,7 @@ export default function BusinessCardPage() {
                   <div className="text-xs font-bold text-white group-hover:text-emerald-400 transition-colors">
                     공식 네이버 블로그
                   </div>
-                  <div className="text-[10px] text-slate-400">강화도 알짜 매물 & 지역 분석 칼럼</div>
+                  <div className="text-[10px] text-slate-400">강화도 소개 & 이가이버 칼럼</div>
                 </div>
               </div>
               <ExternalLink className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-300" />

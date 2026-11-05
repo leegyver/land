@@ -208,79 +208,31 @@ function standardizePrice(val: any, fieldName?: string): string {
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
-  // 모바일 명함 vCard 연락처 다운로드 엔드포인트 (안드로이드/삼성/iOS 100% 무결점 한글 호환)
+  // 모바일 명함 vCard 연락처 다운로드 엔드포인트 (안드로이드/삼성/iOS 100% 무결점 한글 표준 vCard 3.0)
   app.get(["/api/vcard", "/vcard"], (req, res) => {
-    const userAgent = req.headers["user-agent"] || "";
-    const isIOS = /iPhone|iPad|iPod/i.test(userAgent);
+    // RFC 2426 국제 표준 vCard 3.0 포맷 (UTF-8 네이티브, 비표준 태그 및 BOM 제거로 삼성 연락처 DB 저장 시 한글 무결성 보장)
+    const vcard = [
+      "BEGIN:VCARD",
+      "VERSION:3.0",
+      "PRODID:-//Leegyver//Land Business Card//KO",
+      "N:이;민호;;;",
+      "FN:이민호 대표 (이가이버부동산)",
+      "ORG:이가이버 공인중개사 사무소;이가이버랜드",
+      "TITLE:대표 공인중개사",
+      "TEL;TYPE=CELL,VOICE:010-4787-3120",
+      "TEL;TYPE=WORK,VOICE:032-934-3120",
+      "TEL;TYPE=WORK,FAX:032-932-3120",
+      "EMAIL;TYPE=INTERNET,WORK:9551304@naver.com",
+      "ADR;TYPE=WORK:;;인천광역시 강화군 강화읍 남문로 51 1호;강화군;인천;23037;대한민국",
+      "URL:https://leegyver.com",
+      "NOTE:사업자등록번호: 558-23-01088 / 중개등록번호: 제28710-2021-00012호",
+      "END:VCARD"
+    ].join("\r\n") + "\r\n";
 
-    let vcardContent = "";
-
-    if (isIOS) {
-      // iOS 전용 vCard 3.0 표준 포맷
-      vcardContent = [
-        "BEGIN:VCARD",
-        "VERSION:3.0",
-        "PRODID:-//Apple Inc.//macOS 14.0//EN",
-        "N:이;민호;;;",
-        "FN:이민호 대표 (이가이버부동산)",
-        "ORG:이가이버 공인중개사 사무소;이가이버랜드",
-        "TITLE:대표 공인중개사",
-        "TEL;type=CELL;type=VOICE;type=pref:010-4787-3120",
-        "TEL;type=WORK;type=VOICE:032-934-3120",
-        "TEL;type=WORK;type=FAX:032-932-3120",
-        "EMAIL;type=INTERNET;type=WORK;type=pref:9551304@naver.com",
-        "ADR;type=WORK;type=pref:;;인천광역시 강화군 강화읍 남문로 51, 1호;강화군;인천;23037;대한민국",
-        "URL:https://leegyver.com",
-        "NOTE:사업자등록번호: 558-23-01088 / 중개등록번호: 제28710-2021-00012호",
-        "END:VCARD"
-      ].join("\r\n") + "\r\n";
-    } else {
-      // 안드로이드(삼성 갤럭시 등) 전용 vCard 2.1 + Quoted-Printable 인코딩
-      // (안드로이드 기본 연락처 앱의 한글 깨짐을 원천 방지하는 국제 표준 방식)
-      const toQP = (str: string) => {
-        const buf = Buffer.from(str, "utf-8");
-        let qp = "";
-        for (let i = 0; i < buf.length; i++) {
-          const b = buf[i];
-          if (
-            (b >= 48 && b <= 57) ||
-            (b >= 65 && b <= 90) ||
-            (b >= 97 && b <= 122) ||
-            b === 32 ||
-            b === 45 ||
-            b === 46 ||
-            b === 58 ||
-            b === 47
-          ) {
-            qp += String.fromCharCode(b);
-          } else {
-            qp += "=" + b.toString(16).toUpperCase().padStart(2, "0");
-          }
-        }
-        return qp;
-      };
-
-      vcardContent = [
-        "BEGIN:VCARD",
-        "VERSION:2.1",
-        `N;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:;${toQP("이민호")};;;`,
-        `FN;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:${toQP("이민호 대표 (이가이버부동산)")}`,
-        `ORG;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:${toQP("이가이버 공인중개사 사무소")}`,
-        `TITLE;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:${toQP("대표 공인중개사")}`,
-        "TEL;CELL;VOICE:010-4787-3120",
-        "TEL;WORK;VOICE:032-934-3120",
-        "TEL;WORK;FAX:032-932-3120",
-        "EMAIL;INTERNET:9551304@naver.com",
-        `ADR;WORK;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:;;${toQP("인천광역시 강화군 강화읍 남문로 51, 1호")};${toQP("강화군")};${toQP("인천")};23037;${toQP("대한민국")}`,
-        "URL:https://leegyver.com",
-        `NOTE;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:${toQP("사업자등록번호: 558-23-01088 / 중개등록번호: 제28710-2021-00012호")}`,
-        "END:VCARD"
-      ].join("\r\n") + "\r\n";
-    }
-
-    res.setHeader("Content-Type", "text/x-vcard; charset=utf-8");
+    res.setHeader("Content-Type", "text/vcard; charset=utf-8");
     res.setHeader("Content-Disposition", 'attachment; filename="leegyver_contact.vcf"; filename*=UTF-8\'\'leegyver_contact.vcf');
-    return res.send(vcardContent);
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    return res.status(200).send(vcard);
   });
 
   // Global request logger for debugging

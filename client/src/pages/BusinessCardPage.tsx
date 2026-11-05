@@ -451,16 +451,16 @@ export default function BusinessCardPage() {
               </button>
             </div>
 
-            <div className="bg-slate-900/80 rounded-xl p-3 border border-slate-700/60 flex items-center justify-between">
-              <div>
-                <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 mr-2">
+            <div className="bg-slate-900/80 rounded-xl px-3 py-2.5 border border-slate-700/60 flex items-center justify-between gap-1.5 whitespace-nowrap overflow-x-auto">
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 shrink-0 whitespace-nowrap">
                   {CARD_INFO.bankInfo.bankName}
                 </span>
-                <span className="font-mono text-sm font-bold text-white tracking-wide">
+                <span className="font-mono text-[12.5px] sm:text-sm font-bold text-white tracking-tight shrink-0 whitespace-nowrap">
                   {CARD_INFO.bankInfo.accountNumber}
                 </span>
               </div>
-              <span className="text-xs font-medium text-slate-300">
+              <span className="text-[11px] sm:text-xs font-medium text-slate-300 shrink-0 whitespace-nowrap">
                 예금주: {CARD_INFO.bankInfo.accountHolder}
               </span>
             </div>

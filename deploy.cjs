@@ -146,7 +146,7 @@ req.end();
     '"',
 
     // 오래된 백업 정리 (30일 이상)
-    'find /root/db_backups -name "database_*.sqlite" -mtime +30 -delete 2>/dev/null',
+    'cd /root/db_backups && (ls -t database_*.sqlite 2>/dev/null | tail -n +6 | xargs rm -f 2>/dev/null || true)',
     'echo "🎉 배포 완료!"'
   ].join(' && ');
 

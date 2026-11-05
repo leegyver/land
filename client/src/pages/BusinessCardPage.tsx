@@ -54,14 +54,14 @@ const CARD_INFO = {
   // 계좌 정보 (계약금/중개보수/자문료 입금용)
   bankInfo: {
     bankName: "카카오뱅크",
-    accountNumber: "3333-24-9326734", // 대표번호 연동형 또는 실제 계좌
-    accountHolder: "이민호 (이가이버)"
+    accountNumber: "3333-24-9326734",
+    accountHolder: "이민호"
   },
   
-  // 좌표 (강화읍 남문로 51)
+  // 좌표 (인천 강화군 강화읍 남문로 51 실측 좌표)
   coords: {
-    lat: 37.7441,
-    lng: 126.4882
+    lat: 37.742424,
+    lng: 126.487597
   },
 
   // 소셜 및 외부 링크
@@ -208,39 +208,38 @@ export default function BusinessCardPage() {
     }
   };
 
-  // 연락처(vCard) 파일 생성 및 다운로드 (원터치 연락처 저장)
-  const handleDownloadVCard = () => {
-    const vCardData = [
-      "BEGIN:VCARD",
-      "VERSION:3.0",
-      `N:${CARD_INFO.name};;;;`,
-      `FN:${CARD_INFO.name} 대표 (${CARD_INFO.agency})`,
-      `ORG:${CARD_INFO.agency};`,
-      `TITLE:${CARD_INFO.title}`,
-      `TEL;TYPE=CELL:${CARD_INFO.mobile}`,
-      `TEL;TYPE=WORK,VOICE:${CARD_INFO.phone}`,
-      `TEL;TYPE=WORK,FAX:${CARD_INFO.fax}`,
-      `EMAIL;TYPE=INTERNET,WORK:${CARD_INFO.email}`,
-      `ADR;TYPE=WORK:;;${CARD_INFO.addressRoad};;;;`,
-      `URL:${CARD_INFO.links.website}`,
-      `NOTE:사업자번호: ${CARD_INFO.businessNo} / 등록번호: ${CARD_INFO.realtorNo}`,
-      "END:VCARD"
-    ].join("\r\n");
+  // 연락처(vCard) 파일 생성 및 다운로드 (서버 API 연동으로 모바일 인앱/사파리 100% 호환)
+  const handleDownloadVCard = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    try {
+      // 서버 엔드포인트(/api/vcard)로 직접 이동하여 스마트폰 네이티브 연락처 등록 트리거
+      window.location.href = "/api/vcard";
+      toast({
+        title: "연락처 다운로드 시작",
+        description: "파일이 다운로드되면 [열기]를 눌러 전화번호부에 바로 저장하세요."
+      });
+    } catch (err) {
+      // 차단 브라우저 대응 새 창 열기
+      window.open("/api/vcard", "_blank");
+    }
+  };
 
-    const blob = new Blob([vCardData], { type: "text/vcard;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `${CARD_INFO.name}_대표_${CARD_INFO.agency}.vcf`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    toast({
-      title: "연락처 파일 다운로드 완료",
-      description: "열기를 누르면 스마트폰 전화번호부에 바로 저장됩니다."
-    });
+  // 티맵 길안내 (상호명 검색 실패 방지를 위해 정확한 좌표 기반 경로안내 실행)
+  const handleOpenTmap = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      // 티맵 앱: 목적지 좌표와 상호명으로 즉시 경로안내 시작
+      const tmapUrl = `tmap://route?goalname=${encodeURIComponent(CARD_INFO.agency)}&goaly=${CARD_INFO.coords.lat}&goalx=${CARD_INFO.coords.lng}`;
+      window.location.href = tmapUrl;
+      // 1.5초 후 앱 미설치 시 카카오맵 길찾기로 대체 오픈
+      setTimeout(() => {
+        window.open(`https://map.kakao.com/link/to/${encodeURIComponent(CARD_INFO.agency)},${CARD_INFO.coords.lat},${CARD_INFO.coords.lng}`, "_blank");
+      }, 1500);
+    } else {
+      // PC 환경에서는 카카오맵 길찾기로 오픈
+      window.open(`https://map.kakao.com/link/to/${encodeURIComponent(CARD_INFO.agency)},${CARD_INFO.coords.lat},${CARD_INFO.coords.lng}`, "_blank");
+    }
   };
 
   return (
@@ -367,16 +366,18 @@ export default function BusinessCardPage() {
             </a>
 
             {/* 4. 연락처 폰에 저장 */}
-            <button
+            <a
+              href="/api/vcard"
+              download="leegyver_contact.vcf"
               onClick={handleDownloadVCard}
-              className="flex flex-col items-center justify-center p-3 rounded-2xl bg-gradient-to-b from-slate-700 to-slate-800 text-white border border-slate-600/60 shadow-lg hover:brightness-110 active:scale-95 transition-all text-center group"
+              className="flex flex-col items-center justify-center p-3 rounded-2xl bg-gradient-to-b from-slate-700 to-slate-800 text-white border border-slate-600/60 shadow-lg hover:brightness-110 active:scale-95 transition-all text-center group cursor-pointer"
             >
               <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
                 <Download className="w-5 h-5 text-amber-300" />
               </div>
               <span className="text-xs font-bold">연락처 저장</span>
               <span className="text-[10px] text-slate-300 mt-0.5">폰에추가</span>
-            </button>
+            </a>
           </div>
         </div>
 
@@ -451,18 +452,22 @@ export default function BusinessCardPage() {
               </button>
             </div>
 
-            <div className="bg-slate-900/80 rounded-xl px-3 py-2.5 border border-slate-700/60 flex items-center justify-between gap-1.5 whitespace-nowrap overflow-x-auto">
-              <div className="flex items-center gap-1.5 shrink-0">
-                <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 shrink-0 whitespace-nowrap">
+            {/* 계좌 정보 카드 (가로바/스크롤바 없음, 큰 폰트 적용) */}
+            <div className="bg-slate-900/90 rounded-xl p-3.5 border border-slate-700/60 overflow-hidden">
+              <div className="flex items-center justify-between gap-1 mb-1.5">
+                <span className="inline-block px-2 py-0.5 rounded text-[11px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30">
                   {CARD_INFO.bankInfo.bankName}
                 </span>
-                <span className="font-mono text-[12.5px] sm:text-sm font-bold text-white tracking-tight shrink-0 whitespace-nowrap">
-                  {CARD_INFO.bankInfo.accountNumber}
+                <span className="text-xs font-semibold text-slate-300">
+                  예금주: <strong className="text-white font-bold">{CARD_INFO.bankInfo.accountHolder}</strong>
                 </span>
               </div>
-              <span className="text-[11px] sm:text-xs font-medium text-slate-300 shrink-0 whitespace-nowrap">
-                예금주: {CARD_INFO.bankInfo.accountHolder}
-              </span>
+              <div className="flex items-center justify-between pt-0.5">
+                <span className="font-mono text-base sm:text-lg font-black text-amber-400 tracking-wide selection:bg-amber-500 selection:text-slate-950">
+                  {CARD_INFO.bankInfo.accountNumber}
+                </span>
+                <span className="text-[10px] text-slate-400">터치 시 복사</span>
+              </div>
             </div>
           </div>
 
@@ -514,19 +519,14 @@ export default function BusinessCardPage() {
                 <span>네이버지도</span>
               </a>
 
-              <a
-                href={`tmap://search?name=${encodeURIComponent(CARD_INFO.agency)}`}
-                className="flex items-center justify-center gap-1 py-2 px-1 rounded-xl bg-red-600 text-white text-xs font-bold hover:brightness-105 active:scale-95 transition-all shadow-xs"
-                onClick={(e) => {
-                  // 모바일 브라우저 티맵 앱 미설치 시 웹으로 대체 연결
-                  setTimeout(() => {
-                    window.location.href = `https://map.kakao.com/link/to/${encodeURIComponent(CARD_INFO.agency)},${CARD_INFO.coords.lat},${CARD_INFO.coords.lng}`;
-                  }, 1500);
-                }}
+              <button
+                type="button"
+                onClick={handleOpenTmap}
+                className="flex items-center justify-center gap-1 py-2 px-1 rounded-xl bg-red-600 text-white text-xs font-bold hover:brightness-105 active:scale-95 transition-all shadow-xs cursor-pointer"
               >
                 <Compass className="w-3.5 h-3.5" />
                 <span>티맵 길안내</span>
-              </a>
+              </button>
             </div>
           </div>
 

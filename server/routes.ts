@@ -9,6 +9,7 @@ import fs from "fs";
 import path from "path";
 import express from "express";
 import Jimp from "jimp";
+import iconv from "iconv-lite";
 import {
   insertInquirySchema,
   insertPropertySchema,
@@ -208,31 +209,63 @@ function standardizePrice(val: any, fieldName?: string): string {
 
 export async function registerRoutes(app: Express): Promise<Server> {
 
-  // 모바일 명함 vCard 연락처 다운로드 엔드포인트 (안드로이드/삼성/iOS 100% 무결점 한글 표준 vCard 3.0)
+  // 모바일 명함 vCard 연락처 다운로드 엔드포인트 (안드로이드/삼성/iOS 100% 한글 무결점 저장)
   app.get(["/api/vcard", "/vcard"], (req, res) => {
-    // RFC 2426 국제 표준 vCard 3.0 포맷 (UTF-8 네이티브, 비표준 태그 및 BOM 제거로 삼성 연락처 DB 저장 시 한글 무결성 보장)
-    const vcard = [
-      "BEGIN:VCARD",
-      "VERSION:3.0",
-      "PRODID:-//Leegyver//Land Business Card//KO",
-      "N:이민호-이가이버;;;;",
-      "FN:이민호-이가이버",
-      "ORG:이가이버 공인중개사 사무소;이가이버랜드",
-      "TITLE:대표 공인중개사",
-      "TEL;TYPE=CELL,VOICE:010-4787-3120",
-      "TEL;TYPE=WORK,VOICE:032-934-3120",
-      "TEL;TYPE=WORK,FAX:032-932-3120",
-      "EMAIL;TYPE=INTERNET,WORK:9551304@naver.com",
-      "ADR;TYPE=WORK:;;인천광역시 강화군 강화읍 남문로 51 1호;강화군;인천;23037;대한민국",
-      "URL:https://leegyver.com",
-      "NOTE:사업자등록번호: 558-23-01088 / 중개등록번호: 제28710-2021-00012호",
-      "END:VCARD"
-    ].join("\r\n") + "\r\n";
+    const userAgent = req.headers["user-agent"] || "";
+    const isIOS = /iPhone|iPad|iPod/i.test(userAgent);
 
-    res.setHeader("Content-Type", "text/vcard; charset=utf-8");
-    res.setHeader("Content-Disposition", 'attachment; filename="contact.vcf"; filename*=UTF-8\'\'%EC%9D%B4%EB%AF%BC%ED%98%B8-%EC%9D%B4%EA%B0%80%EC%9D%B4%EB%B2%84.vcf');
-    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-    return res.status(200).send(vcard);
+    if (isIOS) {
+      // iOS (iPhone/iPad): UTF-8 vCard 3.0 국제 표준
+      const vcardIos = [
+        "BEGIN:VCARD",
+        "VERSION:3.0",
+        "PRODID:-//Apple Inc.//macOS 14.0//EN",
+        "N:이민호-이가이버;;;;",
+        "FN:이민호-이가이버",
+        "ORG:이가이버 공인중개사 사무소;이가이버랜드",
+        "TITLE:대표 공인중개사",
+        "TEL;TYPE=CELL,VOICE:010-4787-3120",
+        "TEL;TYPE=WORK,VOICE:032-934-3120",
+        "TEL;TYPE=WORK,FAX:032-932-3120",
+        "EMAIL;TYPE=INTERNET,WORK:9551304@naver.com",
+        "ADR;TYPE=WORK:;;인천광역시 강화군 강화읍 남문로 51 1호;강화군;인천;23037;대한민국",
+        "URL:https://leegyver.com",
+        "NOTE:사업자등록번호: 558-23-01088 / 중개등록번호: 제28710-2021-00012호",
+        "END:VCARD"
+      ].join("\r\n") + "\r\n";
+
+      res.setHeader("Content-Type", "text/vcard; charset=utf-8");
+      res.setHeader("Content-Disposition", 'attachment; filename="contact.vcf"; filename*=UTF-8\'\'%EC%9D%B4%EB%AF%BC%ED%98%B8-%EC%9D%B4%EA%B0%80%EC%9D%B4%EB%B2%84.vcf');
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      return res.status(200).send(vcardIos);
+    } else {
+      // 안드로이드 / 삼성 갤럭시:
+      // 삼성 연락처 앱의 기본 가져오기 디코더가 EUC-KR(CP949)이므로,
+      // 순수 EUC-KR 바이너리 버퍼로 전송해야 '저장 후 연락처 목록'에서도 한글이 100% 정상 보존됨!
+      const vcardEucKr = [
+        "BEGIN:VCARD",
+        "VERSION:2.1",
+        "N;CHARSET=EUC-KR:이민호-이가이버;;;;",
+        "FN;CHARSET=EUC-KR:이민호-이가이버",
+        "ORG;CHARSET=EUC-KR:이가이버 공인중개사 사무소",
+        "TITLE;CHARSET=EUC-KR:대표 공인중개사",
+        "TEL;CELL;VOICE:010-4787-3120",
+        "TEL;WORK;VOICE:032-934-3120",
+        "TEL;WORK;FAX:032-932-3120",
+        "EMAIL;INTERNET:9551304@naver.com",
+        "ADR;WORK;CHARSET=EUC-KR:;;인천광역시 강화군 강화읍 남문로 51 1호;인천;강화군;23037;대한민국",
+        "URL:https://leegyver.com",
+        "NOTE;CHARSET=EUC-KR:사업자등록번호: 558-23-01088 / 중개등록번호: 제28710-2021-00012호",
+        "END:VCARD"
+      ].join("\r\n") + "\r\n";
+
+      const buffer = iconv.encode(vcardEucKr, "euc-kr");
+      res.setHeader("Content-Type", "text/x-vcard; charset=euc-kr");
+      res.setHeader("Content-Disposition", 'attachment; filename="contact.vcf"');
+      res.setHeader("Content-Length", buffer.length.toString());
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      return res.status(200).end(buffer);
+    }
   });
 
   // Global request logger for debugging

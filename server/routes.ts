@@ -215,8 +215,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       "BEGIN:VCARD",
       "VERSION:3.0",
       "PRODID:-//Leegyver//Land Business Card//KO",
-      "N:이;민호;;;",
-      "FN:이민호 대표 (이가이버부동산)",
+      "N:이민호-이가이버;;;;",
+      "FN:이민호-이가이버",
       "ORG:이가이버 공인중개사 사무소;이가이버랜드",
       "TITLE:대표 공인중개사",
       "TEL;TYPE=CELL,VOICE:010-4787-3120",
@@ -230,7 +230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ].join("\r\n") + "\r\n";
 
     res.setHeader("Content-Type", "text/vcard; charset=utf-8");
-    res.setHeader("Content-Disposition", 'attachment; filename="leegyver_contact.vcf"; filename*=UTF-8\'\'leegyver_contact.vcf');
+    res.setHeader("Content-Disposition", 'attachment; filename="이민호-이가이버.vcf"; filename*=UTF-8\'\'%EC%9D%B4%EB%AF%BC%ED%98%B8-%EC%9D%B4%EA%B0%80%EC%9D%B4%EB%B2%84.vcf');
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     return res.status(200).send(vcard);
   });

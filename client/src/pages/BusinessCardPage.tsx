@@ -368,7 +368,7 @@ export default function BusinessCardPage() {
             {/* 4. 연락처 폰에 저장 */}
             <a
               href="/api/vcard"
-              download="leegyver_contact.vcf"
+              download="이민호-이가이버.vcf"
               onClick={handleDownloadVCard}
               className="flex flex-col items-center justify-center p-3 rounded-2xl bg-gradient-to-b from-slate-700 to-slate-800 text-white border border-slate-600/60 shadow-lg hover:brightness-110 active:scale-95 transition-all text-center group cursor-pointer"
             >

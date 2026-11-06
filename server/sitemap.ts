@@ -27,12 +27,11 @@ export async function generateSitemapXml(storage: IStorage): Promise<string> {
   let urls: { loc: string; lastmod: string; changefreq: string; priority: string }[] = [
     { loc: `${baseUrl}/`, lastmod: today, changefreq: "daily", priority: "1.0" },
     { loc: `${baseUrl}/properties`, lastmod: today, changefreq: "daily", priority: "0.9" },
-    { loc: `${baseUrl}/news`, lastmod: today, changefreq: "daily", priority: "0.9" },
     { loc: `${baseUrl}/community`, lastmod: today, changefreq: "daily", priority: "0.8" },
     { loc: `${baseUrl}/reviews`, lastmod: today, changefreq: "weekly", priority: "0.7" },
     { loc: `${baseUrl}/saju`, lastmod: today, changefreq: "weekly", priority: "0.7" },
-    { loc: `${baseUrl}/about`, lastmod: today, changefreq: "weekly", priority: "0.7" },
-    { loc: `${baseUrl}/contact`, lastmod: today, changefreq: "monthly", priority: "0.6" },
+    { loc: `${baseUrl}/about`, lastmod: today, changefreq: "weekly", priority: "0.8" },
+    { loc: `${baseUrl}/contact`, lastmod: today, changefreq: "monthly", priority: "0.7" },
     { loc: `${baseUrl}/youtube`, lastmod: today, changefreq: "weekly", priority: "0.7" },
   ];
 
@@ -53,20 +52,8 @@ export async function generateSitemapXml(storage: IStorage): Promise<string> {
     console.error("[Sitemap] Error fetching properties for sitemap", e);
   }
 
-  try {
-    const newsList = await storage.getNews();
-    for (const news of newsList) {
-      const lastmod = formatToIsoDate(news.createdAt, today);
-      urls.push({
-        loc: `${baseUrl}/news/${news.id}`,
-        lastmod,
-        changefreq: "monthly",
-        priority: "0.7",
-      });
-    }
-  } catch (e) {
-    console.error("[Sitemap] Error fetching news for sitemap", e);
-  }
+  // NOTE: 타사 네이버 뉴스 검색 자동 수집 페이지(607개)는 1~2줄 단문 요약(Thin/Scraped Content)이므로
+  // 구글 애드센스 심사 통과 및 검색 품질을 위해 사이트맵에서 완전 제외합니다.
 
   try {
     const posts = await storage.getPosts();

@@ -83,6 +83,221 @@ const CATEGORY_MAP: Record<string, string> = {
   free: "자유게시판",
 };
 
+async function buildHomePrerenderHtml(storage: IStorage): Promise<string> {
+  let propertyRows = "";
+  try {
+    const props = await storage.getProperties();
+    const visibleProps = props.filter(p => p.isVisible !== false && p.isActive !== false).slice(0, 15);
+    propertyRows = visibleProps.map(p => {
+      const priceText = formatKoreanPrice(p.price) || String(p.price || "협의");
+      const desc = stripHtml(p.propertyDescription || p.description || "").slice(0, 140);
+      return `
+        <li style="margin-bottom: 16px; padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px; list-style: none; background: #ffffff;">
+          <h3 style="font-size: 17px; font-weight: bold; margin: 0 0 6px 0;">
+            <a href="/properties/${p.id}" style="color: #1d4ed8; text-decoration: none;">[${escapeHtml(p.district || "강화도")} ${escapeHtml(p.type || "부동산")}] ${escapeHtml(p.title)}</a>
+          </h3>
+          <div style="color: #dc2626; font-weight: bold; margin-bottom: 6px;">매매가: ${escapeHtml(priceText)}</div>
+          <div style="font-size: 13px; color: #4b5563; margin-bottom: 8px;">
+            <span>위치: 강화군 ${escapeHtml(p.district || "")}</span> | 
+            <span>면적: ${escapeHtml(p.size || "-")}</span> | 
+            <span>매물유형: ${escapeHtml(p.type || "-")}</span>
+          </div>
+          <p style="font-size: 14px; color: #374151; line-height: 1.6; margin: 0;">
+            ${escapeHtml(desc || "강화도 실매물 정보입니다. 상세 정보 및 현장 답사는 전화 문의 바랍니다.")}...
+          </p>
+        </li>
+      `;
+    }).join("");
+  } catch (e) {
+    console.error("[SEO] Error building home prerender HTML:", e);
+  }
+
+  return `
+    <main style="max-width: 960px; margin: 0 auto; padding: 24px 16px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', Roboto, sans-serif; color: #1f2937; line-height: 1.7;">
+      <header style="margin-bottom: 28px; border-bottom: 2px solid #2563eb; padding-bottom: 16px;">
+        <h1 style="font-size: 26px; font-weight: 800; color: #1e3a8a; margin: 0 0 8px 0;">강화 이가이버 부동산 - 강화도 전원주택·토지·농가주택·상가 전문 중개</h1>
+        <p style="font-size: 15px; color: #4b5563; margin: 0;">
+          인천광역시 강화도 전 지역(강화읍, 길상면, 화도면, 선원면, 내가면, 양도면, 불은면, 하점면, 삼산면 등)의 엄선된 현장 검증 실매물 정보와 전문 경매·풍수 맞춤 컨설팅을 제공합니다.
+        </p>
+      </header>
+
+      <section style="margin-bottom: 32px; background: #f8fafc; padding: 20px 24px; border-radius: 10px; border: 1px solid #e2e8f0;">
+        <h2 style="font-size: 19px; font-weight: bold; color: #0f172a; margin-top: 0; margin-bottom: 12px;">강화도 부동산 거래 핵심 가이드 & 전문 분석</h2>
+        <div style="font-size: 14px; color: #334155; line-height: 1.8;">
+          <p style="margin-bottom: 10px;">
+            <strong>1. 강화도 토지 매매 시 필수 체크포인트:</strong> 강화도 토지는 계획관리지역, 생산관리지역, 보전관리지역, 농림지역(농업진흥구역·농업보호구역)에 따라 건축 가능한 건폐율과 용적률이 크게 달라집니다. 특히 진입 도로가 사도인지 국공유지인지, 도로 폭이 4m 이상 확보되어 건축허가가 가능한지 여부를 사전 현장 답사를 통해 철저히 검증해야 합니다.
+          </p>
+          <p style="margin-bottom: 10px;">
+            <strong>2. 강화도 전원주택 및 세컨하우스 선정 기준:</strong> 수도권(서울·인천·경기)과의 접근성(강화대교 및 초지대교 인근 생활권)과 더불어 지하수 개발 상태, 상수도 인입 여부, 오수처리시설(정화조) 허가 조건, 향(남향·동남향) 및 조망권을 입체적으로 분석하여 실수요자 맞춤형 주택을 추천해 드립니다.
+          </p>
+          <p style="margin: 0;">
+            <strong>3. 농가주택 및 구옥 매입 유의사항:</strong> 무허가 건축물 대장 유무, 지상권 설정 여부, 경계 침범 여부를 사전 측량 및 공적 장부를 통해 안전하게 확인 후 중개합니다.
+          </p>
+        </div>
+      </section>
+
+      <section style="margin-bottom: 32px;">
+        <h2 style="font-size: 20px; font-weight: bold; color: #1e3a8a; margin-bottom: 16px; border-left: 4px solid #2563eb; padding-left: 10px;">
+          실시간 추천 확인 매물 리스트
+        </h2>
+        <ul style="padding: 0; margin: 0;">
+          ${propertyRows || "<p>현재 추천 매물을 조회하고 있습니다.</p>"}
+        </ul>
+      </section>
+
+      <section style="margin-bottom: 32px; background: #ffffff; padding: 20px; border: 1px solid #e5e7eb; border-radius: 10px;">
+        <h2 style="font-size: 19px; font-weight: bold; color: #111827; margin-top: 0; margin-bottom: 14px;">강화도 주요 읍·면별 지역 특성 안내</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; font-size: 13px; color: #4b5563;">
+          <div style="padding: 12px; background: #f9fafb; border-radius: 8px;">
+            <strong style="color: #1e40af; font-size: 14px;">강화읍 / 선원면</strong>
+            <p style="margin: 6px 0 0 0;">강화대교 인접, 군청 및 병원·대형마트·학군 등 도시 인프라가 집중되어 편리한 실주거 및 수익형 상가·원룸 수요가 풍부한 지역입니다.</p>
+          </div>
+          <div style="padding: 12px; background: #f9fafb; border-radius: 8px;">
+            <strong style="color: #1e40af; font-size: 14px;">길상면 / 불은면</strong>
+            <p style="margin: 6px 0 0 0;">초지대교 진입로 인근으로 김포·인천·서울 출퇴근이 용이하며 온수리 상권과 전원주택 단지가 잘 발달되어 귀촌 1순위로 선호됩니다.</p>
+          </div>
+          <div style="padding: 12px; background: #f9fafb; border-radius: 8px;">
+            <strong style="color: #1e40af; font-size: 14px;">화도면 / 내가면</strong>
+            <p style="margin: 6px 0 0 0;">마니산과 동막해수욕장, 고려저수지 등 천혜의 자연경관과 서해 낙조 조망을 품고 있어 카페, 펜션, 휴양형 전원주택 입지로 각광받습니다.</p>
+          </div>
+          <div style="padding: 12px; background: #f9fafb; border-radius: 8px;">
+            <strong style="color: #1e40af; font-size: 14px;">삼산면(석모도) / 교동면</strong>
+            <p style="margin: 6px 0 0 0;">석모대교 및 교동대교 개통으로 차량 접근이 자유로우며 온천, 바다 조망, 조용한 전원생활 및 힐링 부지로 높은 가치를 지닙니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <footer style="margin-top: 32px; padding: 20px; background: #f1f5f9; border-radius: 8px; font-size: 13px; color: #64748b; line-height: 1.8;">
+        <h3 style="font-size: 14px; font-weight: bold; color: #334155; margin-top: 0; margin-bottom: 8px;">강화 이가이버 공인중개사사무소 안내</h3>
+        <div>상호: 이가이버공인중개사사무소 | 소재지: 인천광역시 강화군 강화읍 남문로 51 (남산리 96-1)</div>
+        <div>대표전화: 032-934-3120 | 휴대전화: 010-4787-3120 | 전문분야: 토지, 전원주택, 상가, 공장, 경매 컨설팅</div>
+        <div style="margin-top: 6px;">Copyright © 이가이버부동산. All rights reserved.</div>
+      </footer>
+    </main>
+  `;
+}
+
+async function buildPropertiesPrerenderHtml(storage: IStorage): Promise<string> {
+  let propertyRows = "";
+  try {
+    const props = await storage.getProperties();
+    const visibleProps = props.filter(p => p.isVisible !== false && p.isActive !== false);
+    propertyRows = visibleProps.map(p => {
+      const priceText = formatKoreanPrice(p.price) || String(p.price || "협의");
+      const desc = stripHtml(p.propertyDescription || p.description || "").slice(0, 160);
+      return `
+        <li style="margin-bottom: 16px; padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px; list-style: none; background: #ffffff;">
+          <h3 style="font-size: 17px; font-weight: bold; margin: 0 0 6px 0;">
+            <a href="/properties/${p.id}" style="color: #1d4ed8; text-decoration: none;">[${escapeHtml(p.district || "강화도")} ${escapeHtml(p.type || "부동산")}] ${escapeHtml(p.title)}</a>
+          </h3>
+          <div style="color: #dc2626; font-weight: bold; margin-bottom: 6px;">매매가: ${escapeHtml(priceText)}</div>
+          <div style="font-size: 13px; color: #4b5563; margin-bottom: 8px;">
+            <span>위치: 강화군 ${escapeHtml(p.district || "")}</span> | 
+            <span>면적: ${escapeHtml(p.size || "-")}</span> | 
+            <span>매물유형: ${escapeHtml(p.type || "-")}</span>
+          </div>
+          <p style="font-size: 14px; color: #374151; line-height: 1.6; margin: 0;">
+            ${escapeHtml(desc || "강화도 부동산 실매물 정보입니다.")}
+          </p>
+        </li>
+      `;
+    }).join("");
+  } catch (e) {
+    console.error("[SEO] Error building properties prerender HTML:", e);
+  }
+
+  return `
+    <main style="max-width: 960px; margin: 0 auto; padding: 24px 16px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', Roboto, sans-serif; color: #1f2937; line-height: 1.7;">
+      <header style="margin-bottom: 24px; border-bottom: 2px solid #2563eb; padding-bottom: 12px;">
+        <h1 style="font-size: 24px; font-weight: bold; color: #1e3a8a; margin: 0 0 8px 0;">강화도 부동산 매물 전체보기 - 토지, 전원주택, 상가, 아파트</h1>
+        <p style="font-size: 14px; color: #4b5563; margin: 0;">
+          강화도 전 지역 실시간 확인 매물 리스트입니다. 현장 검증을 완료한 정직한 실매물만 등록됩니다.
+        </p>
+      </header>
+      <ul style="padding: 0; margin: 0;">
+        ${propertyRows || "<p>등록된 매물이 없습니다.</p>"}
+      </ul>
+    </main>
+  `;
+}
+
+function buildAboutPrerenderHtml(): string {
+  return `
+    <main style="max-width: 960px; margin: 0 auto; padding: 24px 16px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', Roboto, sans-serif; color: #1f2937; line-height: 1.8;">
+      <h1 style="font-size: 26px; font-weight: bold; color: #1e3a8a; margin-bottom: 16px; border-bottom: 2px solid #2563eb; padding-bottom: 10px;">
+        이가이버부동산 소개 - 강화도 No.1 공인중개사사무소
+      </h1>
+      <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
+        강화 이가이버 공인중개사사무소는 인천광역시 강화도 전 지역의 토지, 전원주택, 농가주택, 상가 및 창고를 전문으로 중개하는 신뢰할 수 있는 공인중개사사무소입니다.
+      </p>
+      <h2 style="font-size: 20px; font-weight: bold; color: #0f172a; margin-top: 24px; margin-bottom: 12px;">주요 업무 및 전문 컨설팅 분야</h2>
+      <ul style="padding-left: 20px; color: #4b5563; font-size: 15px;">
+        <li>강화도 전 지역 토지(전·답·임야·대지) 개발행위 인허가 및 맞춤 매물 중개</li>
+        <li>전원주택, 세컨하우스, 주말농장 부지 실매물 발굴 및 권리분석</li>
+        <li>강화도 구옥, 농가주택 리모델링 및 지상권·경계 분쟁 사전 검토</li>
+        <li>법원 부동산 경매 권리분석 및 맞춤형 경매 입찰 컨설팅</li>
+        <li>풍수지리와 개인 사주를 결합한 명당 터 맞춤 추천 서비스</li>
+      </ul>
+      <h2 style="font-size: 20px; font-weight: bold; color: #0f172a; margin-top: 24px; margin-bottom: 12px;">사무소 위치 및 연락처</h2>
+      <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 14px; color: #334155;">
+        <div><strong>주소:</strong> 인천광역시 강화군 강화읍 남문로 51 (남산리 96-1)</div>
+        <div><strong>대표전화:</strong> 032-934-3120 | <strong>휴대전화:</strong> 010-4787-3120</div>
+      </div>
+    </main>
+  `;
+}
+
+async function buildCommunityPrerenderHtml(storage: IStorage): Promise<string> {
+  let postRows = "";
+  try {
+    const posts = await storage.getPosts();
+    postRows = posts.map(p => {
+      const categoryName = (p.category && CATEGORY_MAP[p.category]) ? CATEGORY_MAP[p.category] : "커뮤니티";
+      const desc = stripHtml(p.content || "").slice(0, 160);
+      return `
+        <li style="margin-bottom: 16px; padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px; list-style: none; background: #ffffff;">
+          <div style="font-size: 13px; color: #2563eb; font-weight: bold; margin-bottom: 4px;">[${escapeHtml(categoryName)}]</div>
+          <h3 style="font-size: 17px; font-weight: bold; margin: 0 0 6px 0;">
+            <a href="/community/${p.id}" style="color: #111827; text-decoration: none;">${escapeHtml(p.title)}</a>
+          </h3>
+          <div style="font-size: 13px; color: #6b7280; margin-bottom: 8px;">
+            <span>작성자: ${escapeHtml(p.authorName || "회원")}</span> | <span>등록일: ${escapeHtml(p.createdAt || "-")}</span>
+          </div>
+          <p style="font-size: 14px; color: #374151; line-height: 1.6; margin: 0;">
+            ${escapeHtml(desc)}...
+          </p>
+        </li>
+      `;
+    }).join("");
+  } catch (e) {
+    console.error("[SEO] Error building community prerender HTML:", e);
+  }
+
+  return `
+    <main style="max-width: 960px; margin: 0 auto; padding: 24px 16px; font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', Roboto, sans-serif; color: #1f2937; line-height: 1.7;">
+      <header style="margin-bottom: 24px; border-bottom: 2px solid #2563eb; padding-bottom: 12px;">
+        <h1 style="font-size: 24px; font-weight: bold; color: #1e3a8a; margin: 0 0 8px 0;">강화도 부동산 커뮤니티 및 정보 소통 공간</h1>
+        <p style="font-size: 14px; color: #4b5563; margin: 0;">
+          강화도 부동산에 대한 궁금증, 전원주택 건축과 리모델링 노하우, 강화도 생활 이야기와 유용한 정보를 나누는 열린 소통 공간입니다.
+        </p>
+      </header>
+
+      <section style="margin-bottom: 24px; background: #f8fafc; padding: 16px 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <h2 style="font-size: 16px; font-weight: bold; color: #0f172a; margin-top: 0; margin-bottom: 8px;">커뮤니티 카테고리 안내</h2>
+        <div style="font-size: 14px; color: #475569; line-height: 1.6;">
+          <span>• <strong>궁금해요 부동산:</strong> 강화도 부동산 거래, 세무, 토지 분할, 인허가 등 전문 상담과 질의응답</span><br/>
+          <span>• <strong>건축과 리모델링:</strong> 전원주택 설계·시공 경험담, 구옥 리모델링 비법, 단열 및 정화조 팁 공유</span><br/>
+          <span>• <strong>강화도 이야기:</strong> 강화도 맛집, 전원생활 일기, 숨은 명소와 축제 소식</span>
+        </div>
+      </section>
+
+      <ul style="padding: 0; margin: 0;">
+        ${postRows || "<p>등록된 게시글이 없습니다.</p>"}
+      </ul>
+    </main>
+  `;
+}
+
 export async function resolveSeoMetadata(
   urlPath: string,
   storage: IStorage
@@ -92,13 +307,15 @@ export async function resolveSeoMetadata(
   const defaultImage = "https://leegyver.com/images/og-main.jpg";
   const defaultKeywords = "강화도 부동산, 강화도 토지, 강화도 전원주택, 강화도 매물, 이가이버, 이가이버부동산, 강화도 중개, 인천 강화";
 
-  // 0. 관리자/인증/작성 등 비공개 페이지 noindex 처리
+  // 0. 관리자/인증/작성 등 비공개 페이지 및 타사 스크랩 뉴스 noindex 처리
+  // (607개의 네이버 1줄 요약 뉴스는 구글 애드센스 저품질/스크랩 판정 원인이므로 색인 차단)
   if (
     cleanPath.startsWith("/admin") ||
     cleanPath.startsWith("/auth") ||
     cleanPath.startsWith("/profile") ||
     cleanPath === "/community/new" ||
-    cleanPath.startsWith("/community/edit")
+    cleanPath.startsWith("/community/edit") ||
+    cleanPath.startsWith("/news")
   ) {
     return {
       title: "이가이버부동산",
@@ -354,15 +571,16 @@ export async function resolveSeoMetadata(
         canonicalUrl: `${baseUrl}/properties`,
         imageUrl: defaultImage,
         keywords: "강화도 토지 매매, 강화도 전원주택 매매, 강화도 농가주택, 강화도 부동산 매물, 이가이버부동산",
+        initialBodyHtml: await buildPropertiesPrerenderHtml(storage),
       };
 
     case "/news":
       return {
-        title: "강화도 부동산 뉴스 및 최신 동향 | 이가이버부동산",
-        description: "강화도 부동산 최신 시장 동향, 개발 호재, 정책 변화 및 유용한 부동산 가이드와 칼럼을 실시간으로 제공합니다.",
+        title: "강화도 부동산 소식 및 정보 | 이가이버부동산",
+        description: "강화도 부동산 정보입니다.",
         canonicalUrl: `${baseUrl}/news`,
         imageUrl: defaultImage,
-        keywords: "강화도 부동산 동향, 강화도 개발 호재, 강화도 부동산 뉴스, 부동산 칼럼",
+        noIndex: true,
       };
 
     case "/community":
@@ -372,6 +590,7 @@ export async function resolveSeoMetadata(
         canonicalUrl: `${baseUrl}/community`,
         imageUrl: defaultImage,
         keywords: "강화도 커뮤니티, 강화도 전원생활, 강화도 전원주택 건축, 강화도 부동산 질문",
+        initialBodyHtml: await buildCommunityPrerenderHtml(storage),
       };
 
     case "/reviews":
@@ -398,6 +617,7 @@ export async function resolveSeoMetadata(
         description: "정직과 신뢰를 바탕으로 강화도 전 지역 토지, 전원주택, 상가 중개 및 맞춤형 컨설팅을 제공하는 이가이버부동산입니다.",
         canonicalUrl: `${baseUrl}/about`,
         imageUrl: defaultImage,
+        initialBodyHtml: buildAboutPrerenderHtml(),
       };
 
     case "/contact":
@@ -453,6 +673,7 @@ export async function resolveSeoMetadata(
         imageWidth: 1200,
         imageHeight: 670,
         imageAlt: "강화도 부동산 이가이버 대표이미지",
+        initialBodyHtml: await buildHomePrerenderHtml(storage),
       };
   }
 }

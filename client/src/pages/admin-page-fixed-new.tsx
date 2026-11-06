@@ -23,6 +23,7 @@ const AdminBannerTab = lazy(() => import("@/components/admin/tabs/AdminBannerTab
 const AdminPopupTab = lazy(() => import("@/components/admin/tabs/AdminPopupTab"));
 const AdminAuctionsTab = lazy(() => import("@/components/admin/tabs/AdminAuctionsTab"));
 const AdminCareTab = lazy(() => import("@/components/admin/AdminCareTab"));
+const AdminCommunityTab = lazy(() => import("@/components/admin/tabs/AdminCommunityTab"));
 
 const TabLoadingFallback = () => (
   <div className="flex flex-col items-center justify-center py-20 text-slate-400">
@@ -111,6 +112,16 @@ export default function AdminPage() {
     enabled: visitedTabs.includes("newsletter") && ["admin", "master"].includes(user?.role as string) 
   });
 
+  const {
+    data: posts = [],
+    isLoading: isLoadingPosts,
+    isError: isErrorPosts,
+    error: errorPosts,
+    refetch: refetchPosts
+  } = useAdminQuery<any>(["/api/posts"], { 
+    enabled: visitedTabs.includes("community") && ["admin", "master"].includes(user?.role as string) 
+  });
+
   const { toast } = useToast();
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
   // 전역 백그라운드 폴링(알림 5초 주기 등)과 분리하여 실제 새로고침 시에만 동기화 중 표시
@@ -150,6 +161,8 @@ export default function AdminPage() {
         await queryClient.refetchQueries({
           predicate: (query) => typeof query.queryKey[0] === "string" && query.queryKey[0].startsWith("/api/admin/newsletter"),
         });
+      } else if (activeTab === "community") {
+        await queryClient.refetchQueries({ queryKey: ["/api/posts"] });
       } else if (activeTab === "auctions") {
         await queryClient.refetchQueries({
           predicate: (query) => typeof query.queryKey[0] === "string" && query.queryKey[0].startsWith("/api/auctions"),
@@ -231,6 +244,7 @@ export default function AdminPage() {
           {(user?.role === "admin" || user?.role === "master") && (
             <>
               <TabsTrigger value="care" className="rounded-xl px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 h-10 sm:h-11 lg:h-12 font-bold transition-all text-xs sm:text-xs md:text-sm text-center flex items-center justify-center whitespace-nowrap touch-manipulation truncate text-orange-950 bg-orange-100/80 data-[state=active]:bg-orange-500 data-[state=active]:text-white">🛠️ 토탈케어 접수</TabsTrigger>
+              <TabsTrigger value="community" className="rounded-xl px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 h-10 sm:h-11 lg:h-12 font-bold transition-all text-xs sm:text-xs md:text-sm text-center flex items-center justify-center whitespace-nowrap touch-manipulation truncate text-blue-950 bg-blue-100/70 data-[state=active]:bg-blue-600 data-[state=active]:text-white">💬 커뮤니티 관리</TabsTrigger>
               <TabsTrigger value="auctions" className="rounded-xl px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 h-10 sm:h-11 lg:h-12 font-bold transition-all text-xs sm:text-xs md:text-sm text-center flex items-center justify-center whitespace-nowrap touch-manipulation truncate text-amber-900 bg-amber-100/60 data-[state=active]:bg-amber-500 data-[state=active]:text-slate-950">🔨 경매·공매 관리</TabsTrigger>
               <TabsTrigger value="news" className="rounded-xl px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 h-10 sm:h-11 lg:h-12 font-bold transition-all text-xs sm:text-xs md:text-sm text-center flex items-center justify-center whitespace-nowrap touch-manipulation truncate">뉴스 소식</TabsTrigger>
               <TabsTrigger value="newsletter" className="rounded-xl px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 h-10 sm:h-11 lg:h-12 font-bold transition-all text-xs sm:text-xs md:text-sm text-center flex items-center justify-center whitespace-nowrap touch-manipulation truncate">구독자 관리</TabsTrigger>
@@ -265,6 +279,10 @@ export default function AdminPage() {
             <>
               <TabsContent value="care" className="mt-0">
                 <AdminCareTab />
+              </TabsContent>
+
+              <TabsContent value="community" className="mt-0">
+                <AdminCommunityTab posts={posts} isLoading={isLoadingPosts} isError={isErrorPosts} error={errorPosts} refetch={refetchPosts} />
               </TabsContent>
 
               <TabsContent value="auctions" className="mt-0">

@@ -25,7 +25,9 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // index: false 로 설정하여 루트(/) 요청 시 정적 index.html이 바로 나가지 않고
+  // 아래 dynamic SEO & Prerender 주입 미들웨어를 반드시 거치도록 함
+  app.use(express.static(distPath, { index: false }));
 
   // fall through to index.html with dynamic SEO metadata injection
   app.use("*", async (req, res) => {

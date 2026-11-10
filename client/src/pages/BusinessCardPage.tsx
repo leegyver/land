@@ -446,17 +446,17 @@ export default function BusinessCardPage() {
               </div>
             </div>
 
-            {/* 계좌 정보 카드 목록 (각 계좌 1줄: 계좌정보 / 2줄: 복사 버튼) */}
+            {/* 계좌 정보 카드 목록 (1줄: 은행+계좌번호 + 복사버튼 / 2줄 우측: 예금주) */}
             <div className="space-y-2.5">
               {CARD_INFO.bankAccounts.map((account, idx) => {
                 const isCopied = copiedAccountIdx === idx;
                 return (
                   <div
                     key={idx}
-                    className="bg-slate-900/90 rounded-xl p-3 border border-slate-700/60 overflow-hidden shadow-sm"
+                    className="bg-slate-900/90 rounded-xl px-3.5 py-3 border border-slate-700/60 overflow-hidden shadow-sm"
                   >
-                    {/* 1줄: 은행명 + 계좌번호 + 예금주 (한 줄에 여유 있게 배치) */}
-                    <div className="flex items-center justify-between gap-2 overflow-hidden">
+                    {/* 1줄: 은행명 + 계좌번호 (좌측) & 계좌 복사 버튼 (우측) */}
+                    <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span className="shrink-0 px-2 py-0.5 rounded text-[11px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30">
                           {account.bankName}
@@ -465,33 +465,36 @@ export default function BusinessCardPage() {
                           {account.accountNumber}
                         </span>
                       </div>
-                      <span className="shrink-0 text-xs font-semibold text-slate-300 whitespace-nowrap">
-                        예금주: <strong className="text-white font-bold">{account.accountHolder}</strong>
-                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => handleCopyAccount(account, idx)}
+                        className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 shadow ${
+                          isCopied
+                            ? "bg-emerald-500 text-slate-950"
+                            : "bg-amber-500 hover:bg-amber-400 text-slate-950"
+                        }`}
+                      >
+                        {isCopied ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-slate-950" />
+                            <span>복사완료!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>계좌 복사</span>
+                          </>
+                        )}
+                      </button>
                     </div>
 
-                    {/* 2줄: 한 줄 아래 복사 버튼 */}
-                    <button
-                      type="button"
-                      onClick={() => handleCopyAccount(account, idx)}
-                      className={`w-full mt-2.5 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-[0.99] shadow ${
-                        isCopied
-                          ? "bg-emerald-500 text-slate-950"
-                          : "bg-amber-500 hover:bg-amber-400 text-slate-950"
-                      }`}
-                    >
-                      {isCopied ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-slate-950" />
-                          <span>복사완료!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>계좌 복사</span>
-                        </>
-                      )}
-                    </button>
+                    {/* 2줄: 아래 오른쪽 예금주 출력 */}
+                    <div className="mt-1.5 flex justify-end items-center">
+                      <span className="text-xs text-slate-400">
+                        예금주: <strong className="text-slate-100 font-bold">{account.accountHolder}</strong>
+                      </span>
+                    </div>
                   </div>
                 );
               })}

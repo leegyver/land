@@ -52,9 +52,21 @@ const CARD_INFO = {
   addressJibun: "인천광역시 강화군 강화읍 남산리 96-1",
   
   // 계좌 정보 (계약금/중개보수/자문료 입금용)
+  bankAccounts: [
+    {
+      bankName: "카카오뱅크",
+      accountNumber: "3333-37-4397902",
+      accountHolder: "이민호"
+    },
+    {
+      bankName: "기업은행",
+      accountNumber: "339-108411-04-012",
+      accountHolder: "(주)이구동성"
+    }
+  ],
   bankInfo: {
     bankName: "카카오뱅크",
-    accountNumber: "3333-24-9326734",
+    accountNumber: "3333-37-4397902",
     accountHolder: "이민호"
   },
   
@@ -79,7 +91,7 @@ const CARD_INFO = {
 
 export default function BusinessCardPage() {
   const { toast } = useToast();
-  const [copiedAccount, setCopiedAccount] = useState(false);
+  const [copiedAccountIdx, setCopiedAccountIdx] = useState<number | null>(null);
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [imgError, setImgError] = useState(false);
@@ -138,16 +150,16 @@ export default function BusinessCardPage() {
   }, []);
 
   // 계좌번호 복사
-  const handleCopyAccount = async () => {
-    const textToCopy = `${CARD_INFO.bankInfo.bankName} ${CARD_INFO.bankInfo.accountNumber} ${CARD_INFO.bankInfo.accountHolder}`;
+  const handleCopyAccount = async (account: typeof CARD_INFO.bankAccounts[0], idx: number) => {
+    const textToCopy = `${account.bankName} ${account.accountNumber} ${account.accountHolder}`;
     try {
       await navigator.clipboard.writeText(textToCopy);
-      setCopiedAccount(true);
+      setCopiedAccountIdx(idx);
       toast({
         title: "계좌번호가 복사되었습니다",
-        description: `${CARD_INFO.bankInfo.bankName} ${CARD_INFO.bankInfo.accountNumber}`
+        description: `${account.bankName} ${account.accountNumber} (${account.accountHolder})`
       });
-      setTimeout(() => setCopiedAccount(false), 2500);
+      setTimeout(() => setCopiedAccountIdx(null), 2500);
     } catch (err) {
       toast({
         title: "복사 실패",
@@ -423,48 +435,63 @@ export default function BusinessCardPage() {
           </div>
 
           {/* 2. 계좌번호 복사 섹션 (사용자 필수 요구사항) */}
-          <div className="bg-gradient-to-r from-slate-800/90 to-amber-950/30 rounded-2xl p-4 border border-amber-500/30 shadow-md">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400">
-                  <CreditCard className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-xs font-bold text-slate-100">입금 전용 계좌안내</h3>
-                  <p className="text-[11px] text-slate-400">중개보수 · 용역비 · 입찰보증금</p>
-                </div>
+          <div className="bg-gradient-to-r from-slate-800/90 to-amber-950/30 rounded-2xl p-3.5 sm:p-4 border border-amber-500/30 shadow-md">
+            <div className="flex items-center gap-2 mb-2.5">
+              <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400">
+                <CreditCard className="w-4 h-4" />
               </div>
-              <button
-                onClick={handleCopyAccount}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition-all active:scale-95 shadow"
-              >
-                {copiedAccount ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-slate-950" />
-                    <span>복사완료!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>계좌 복사</span>
-                  </>
-                )}
-              </button>
+              <div>
+                <h3 className="text-xs font-bold text-slate-100">입금 전용 계좌안내</h3>
+                <p className="text-[11px] text-slate-400">중개보수 · 용역비 · 입찰보증금</p>
+              </div>
             </div>
 
-            {/* 계좌 정보 카드 (가로바 없음, 한 줄 배치) */}
-            <div className="bg-slate-900/90 rounded-xl px-3.5 py-3 border border-slate-700/60 overflow-hidden flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="shrink-0 px-2 py-0.5 rounded text-[11px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                  {CARD_INFO.bankInfo.bankName}
-                </span>
-                <span className="font-mono text-sm sm:text-base font-bold text-amber-400 tracking-tight">
-                  {CARD_INFO.bankInfo.accountNumber}
-                </span>
-              </div>
-              <span className="shrink-0 text-xs font-semibold text-slate-300">
-                예금주: <strong className="text-white font-bold">{CARD_INFO.bankInfo.accountHolder}</strong>
-              </span>
+            {/* 계좌 정보 카드 목록 (가로바 없음, 각 계좌 한 줄 배치 + 개별 복사 버튼) */}
+            <div className="space-y-2">
+              {CARD_INFO.bankAccounts.map((account, idx) => {
+                const isCopied = copiedAccountIdx === idx;
+                return (
+                  <div
+                    key={idx}
+                    className="bg-slate-900/90 rounded-xl px-2.5 sm:px-3 py-2.5 border border-slate-700/60 overflow-hidden flex items-center justify-between gap-1 sm:gap-1.5"
+                  >
+                    <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 flex-1">
+                      <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        {account.bankName}
+                      </span>
+                      <span className="font-mono text-xs sm:text-sm font-bold text-amber-400 tracking-tight whitespace-nowrap">
+                        {account.accountNumber}
+                      </span>
+                      <span className="shrink-0 text-[10px] sm:text-[11px] font-medium text-slate-300 whitespace-nowrap">
+                        <span className="text-slate-400">예금주: </span>
+                        <strong className="text-white font-bold">{account.accountHolder}</strong>
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleCopyAccount(account, idx)}
+                      className={`shrink-0 flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-bold transition-all active:scale-95 shadow ${
+                        isCopied
+                          ? "bg-emerald-500 text-slate-950"
+                          : "bg-amber-500 hover:bg-amber-400 text-slate-950"
+                      }`}
+                    >
+                      {isCopied ? (
+                        <>
+                          <Check className="w-3 h-3 text-slate-950" />
+                          <span>복사완료</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3" />
+                          <span>복사</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

@@ -446,30 +446,36 @@ export default function BusinessCardPage() {
               </div>
             </div>
 
-            {/* 계좌 정보 카드 목록 (1줄: 은행+계좌번호 + 복사버튼 / 2줄 우측: 예금주) */}
-            <div className="space-y-2.5">
+            {/* 계좌 정보 카드 목록 (1줄: 은행명 + 크게 키운 계좌번호 / 2줄: 예금주 + 복사 버튼) */}
+            <div className="space-y-3">
               {CARD_INFO.bankAccounts.map((account, idx) => {
                 const isCopied = copiedAccountIdx === idx;
                 return (
                   <div
                     key={idx}
-                    className="bg-slate-900/90 rounded-xl px-3.5 py-3 border border-slate-700/60 overflow-hidden shadow-sm"
+                    className="bg-slate-900/90 rounded-xl p-3.5 sm:p-4 border border-slate-700/60 overflow-hidden shadow-sm"
                   >
-                    {/* 1줄: 은행명 + 계좌번호 (좌측) & 계좌 복사 버튼 (우측) */}
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="shrink-0 px-2 py-0.5 rounded text-[11px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                          {account.bankName}
-                        </span>
-                        <span className="font-mono text-sm sm:text-base font-bold text-amber-400 tracking-tight whitespace-nowrap">
-                          {account.accountNumber}
-                        </span>
+                    {/* 1줄: 은행명 뱃지 + 크게 키운 계좌번호 (가림 없이 단독 배치) */}
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <span className="shrink-0 px-2 py-0.5 rounded text-xs font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        {account.bankName}
+                      </span>
+                      <span className="font-mono text-base sm:text-lg font-bold text-amber-400 tracking-wide select-all">
+                        {account.accountNumber}
+                      </span>
+                    </div>
+
+                    {/* 2줄: 좌측 예금주 정보 & 우측 계좌 복사 버튼 */}
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-800/80">
+                      <div className="text-xs sm:text-[13px] text-slate-300">
+                        <span className="text-slate-400">예금주: </span>
+                        <strong className="text-white font-bold">{account.accountHolder}</strong>
                       </div>
 
                       <button
                         type="button"
                         onClick={() => handleCopyAccount(account, idx)}
-                        className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 shadow ${
+                        className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all active:scale-95 shadow ${
                           isCopied
                             ? "bg-emerald-500 text-slate-950"
                             : "bg-amber-500 hover:bg-amber-400 text-slate-950"
@@ -487,13 +493,6 @@ export default function BusinessCardPage() {
                           </>
                         )}
                       </button>
-                    </div>
-
-                    {/* 2줄: 아래 오른쪽 예금주 출력 */}
-                    <div className="mt-1.5 flex justify-end items-center">
-                      <span className="text-xs text-slate-400">
-                        예금주: <strong className="text-slate-100 font-bold">{account.accountHolder}</strong>
-                      </span>
                     </div>
                   </div>
                 );

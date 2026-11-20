@@ -54,19 +54,24 @@ const CARD_INFO = {
   // 계좌 정보 (계약금/중개보수/자문료 입금용)
   bankAccounts: [
     {
-      bankName: "카카오뱅크",
-      accountNumber: "3333-37-4397902",
+      bankName: "산림조합",
+      accountNumber: "117-12-0052699",
       accountHolder: "이민호"
     },
     {
       bankName: "기업은행",
       accountNumber: "339-108411-04-012",
       accountHolder: "(주)이구동성"
+    },
+    {
+      bankName: "카카오뱅크",
+      accountNumber: "3333-37-4397902",
+      accountHolder: "이민호"
     }
   ],
   bankInfo: {
-    bankName: "카카오뱅크",
-    accountNumber: "3333-37-4397902",
+    bankName: "산림조합",
+    accountNumber: "117-12-0052699",
     accountHolder: "이민호"
   },
   

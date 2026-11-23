@@ -6285,10 +6285,10 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${updated.id}`;
     }
   });
 
-  // 강화군 실거래 수동 동기화 트리거
-  app.post("/api/property/ganghwa-sync", async (req, res) => {
+  // 강화군 실거래 수동 동기화 트리거 (GET & POST 모두 지원)
+  app.all("/api/property/ganghwa-sync", async (req, res) => {
     try {
-      const isFull = req.body?.full === true;
+      const isFull = req.body?.full === true || req.query?.full === 'true' || req.query?.full === '1';
       if (isFull) {
         backfillGanghwa5Years().catch(e => console.error("Backfill error:", e));
         return res.json({ success: true, message: "5년치 백필 작업이 백그라운드에서 시작되었습니다." });

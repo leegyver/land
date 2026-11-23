@@ -285,8 +285,8 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
     throw new Error('주소를 입력해 주세요.');
   }
 
-  // 1. 캐시 확인 (v4: 건축물대장 503 방어 및 정밀 매핑 적용)
-  const cacheKey = `property_integrated_v4_${trimmedAddress}`;
+  // 1. 캐시 확인 (v5: 건축물대장 단독 우선 호출 및 503 방어 적용)
+  const cacheKey = `property_integrated_v5_${trimmedAddress}`;
   const cached = memoryCache.get<IntegratedPropertyReport>(cacheKey);
   if (cached) {
     return cached;
@@ -410,18 +410,18 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
     ? fetchBuildingInfoWithRetry(DATA_GO_KEY, sigunguCd, bjdongCd, mainBun, subBun, isMountain)
     : Promise.resolve({ items: [], hasError: false });
 
-  // 5. 최근 실거래가 조회 (최근 1~2개 분기)
+  // 5. 최근 실거래가 조회 (최근 2개 월 기준)
   const now = new Date();
   const year = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
   const recentYmds: string[] = [];
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 2; i++) {
     const d = new Date(year, currentMonth - 1 - i, 1);
     const ym = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
     recentYmds.push(ym);
   }
 
-  // 아파트 매매 + 단독다가구 매매 + 토지 매매 최근 거래내역 수집 (최근 3개월)
+  // 아파트 매매 + 단독다가구 매매 + 토지 매매 최근 거래내역 수집
   const transactionPromises: Promise<any[]>[] = [];
   if (DATA_GO_KEY && sigunguCd) {
     for (const dealYmd of recentYmds) {
@@ -457,16 +457,19 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
     }
   }
 
-  // 비동기 병렬 실행
-  const [landData, landUseList, possessionData, buildingResult, ...tradeResults] = await Promise.all([
+  // 6. 비동기 단계별 실행 (공공데이터포털 동시 요청수 분리로 건축물대장 503 타임아웃 방지)
+  // 1단계: 토지대장 및 건축물대장 우선 호출
+  const [landData, landUseList, possessionData, buildingResult] = await Promise.all([
     landCharacteristicPromise,
     landUsePromise,
     possessionPromise,
-    buildingPromise,
-    ...transactionPromises
+    buildingPromise
   ]);
 
   const buildingItems = buildingResult?.items || [];
+
+  // 2단계: 실거래가 비동기 호출
+  const tradeResults = await Promise.all(transactionPromises);
 
   // 6. 데이터 가공 및 정제
   // (1) 토지대장 데이터

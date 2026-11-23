@@ -192,14 +192,84 @@ export function getZoningLimits(useAreaNm: string, regulations: string[] = []): 
   return { bcRatLimit: 60, vlRatLimit: 200, desc: `${name || '일반지역'} (지자체 조례 기준 확인 요망)` };
 }
 
+/**
+ * 국토교통부 건축물대장 (건축HUB 표제부) API 안전 호출 (자동 재시도 및 타임아웃 방어)
+ */
+async function fetchBuildingInfoWithRetry(
+  serviceKey: string,
+  sigunguCd: string,
+  bjdongCd: string,
+  bun: string,
+  ji: string,
+  isMountain: boolean,
+  maxRetries = 2
+): Promise<any[]> {
+  if (!serviceKey || !sigunguCd || !bjdongCd || !bun) return [];
+
+  const baseParams: any = {
+    serviceKey,
+    sigunguCd,
+    bjdongCd,
+    bun,
+    ji,
+    numOfRows: 20,
+    pageNo: 1,
+    _type: 'json'
+  };
+
+  // 산인 경우에만 platGbCd: '1' 전달. 일반 대지일 때는 platGbCd를 생략해야 data.go.kr 게이트웨이 타임아웃(503)을 방지할 수 있음
+  if (isMountain) {
+    baseParams.platGbCd = '1';
+  }
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await axios.get('https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo', {
+        params: baseParams,
+        timeout: 10000 // 충분한 응답 대기 시간 확보
+      });
+
+      const items = res.data?.response?.body?.items?.item;
+      if (!items) {
+        // 만약 ji가 '0000'이고 결과가 없으면, ji 파라미터 없이 재조회 시도
+        if (ji === '0000') {
+          const paramsWithoutJi = { ...baseParams };
+          delete paramsWithoutJi.ji;
+          try {
+            const fallbackRes = await axios.get('https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo', {
+              params: paramsWithoutJi,
+              timeout: 8000
+            });
+            const fallbackItems = fallbackRes.data?.response?.body?.items?.item;
+            if (fallbackItems) {
+              return Array.isArray(fallbackItems) ? fallbackItems : [fallbackItems];
+            }
+          } catch (e) {
+            // ignore fallback error
+          }
+        }
+        return [];
+      }
+      return Array.isArray(items) ? items : [items];
+    } catch (err: any) {
+      console.warn(`건축물대장 조회 [시도 ${attempt}/${maxRetries}] 오류:`, err.response?.status || err.message);
+      if (attempt < maxRetries) {
+        await new Promise(r => setTimeout(r, 800));
+      }
+    }
+  }
+
+  return [];
+}
+
 export async function getIntegratedPropertyReport(queryAddress: string): Promise<IntegratedPropertyReport> {
   const trimmedAddress = queryAddress.trim();
   if (!trimmedAddress) {
     throw new Error('주소를 입력해 주세요.');
   }
 
-  // 1. 캐시 확인 (v3: 자연취락지구 특례 및 최신 공시지가 반영)
-  const cacheKey = `property_integrated_v3_${trimmedAddress}`;
+  // 1. 캐시 확인 (v4: 건축물대장 503 방어 및 정밀 매핑 적용)
+  const cacheKey = `property_integrated_v4_${trimmedAddress}`;
   const cached = memoryCache.get<IntegratedPropertyReport>(cacheKey);
   if (cached) {
     return cached;
@@ -318,29 +388,9 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
       })
     : Promise.resolve(null);
 
-  // 4. 건축물대장 (건축HUB 표제부) 호출
+  // 4. 건축물대장 (건축HUB 표제부) 호출 - 503 방어 및 재시도 포함
   const buildingPromise = DATA_GO_KEY
-    ? axios.get('https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo', {
-        params: {
-          serviceKey: DATA_GO_KEY,
-          sigunguCd,
-          bjdongCd,
-          platGbCd: isMountain ? '1' : '0',
-          bun: mainBun,
-          ji: subBun,
-          numOfRows: 10,
-          pageNo: 1,
-          _type: 'json'
-        },
-        timeout: 6000
-      }).then(r => {
-        const items = r.data?.response?.body?.items?.item;
-        if (!items) return [];
-        return Array.isArray(items) ? items : [items];
-      }).catch(err => {
-        console.error('건축물대장 조회 오류:', err.message);
-        return [];
-      })
+    ? fetchBuildingInfoWithRetry(DATA_GO_KEY, sigunguCd, bjdongCd, mainBun, subBun, isMountain)
     : Promise.resolve([]);
 
   // 5. 최근 실거래가 조회 (최근 1~2개 분기)
@@ -481,10 +531,23 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
       vlRat = Math.round((totArea / platArea) * 10000) / 100;
     }
 
+    const rawBldNm = b.bldNm ? String(b.bldNm).trim() : '';
+    const rawDongNm = b.dongNm ? String(b.dongNm).trim() : '';
+    let displayBldNm = rawBldNm;
+    if (!displayBldNm) {
+      if (rawDongNm) {
+        displayBldNm = rawDongNm.endsWith('동') ? rawDongNm : `${rawDongNm}동`;
+      } else {
+        displayBldNm = b.mainPurpsCdNm?.trim() || b.etcPurps?.trim() || '건축물';
+      }
+    } else if (rawDongNm && !displayBldNm.includes(rawDongNm)) {
+      displayBldNm = `${displayBldNm} (${rawDongNm})`;
+    }
+
     return {
-      bldNm: b.bldNm?.trim() || (b.dongNm?.trim() ? `${b.dongNm}동` : '건축물'),
-      dongNm: b.dongNm?.trim() || '',
-      mainPurpsNm: b.mainPurpsCdNm?.trim() || '기타',
+      bldNm: displayBldNm,
+      dongNm: rawDongNm,
+      mainPurpsNm: b.mainPurpsCdNm?.trim() || b.etcPurps?.trim() || '일반건축물',
       etcPurps: b.etcPurps?.trim() || '',
       strctNm: b.strctCdNm?.trim() || b.etcStrct?.trim() || '-',
       roofNm: b.roofCdNm?.trim() || b.etcRoof?.trim() || '-',

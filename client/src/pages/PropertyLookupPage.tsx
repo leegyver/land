@@ -314,11 +314,27 @@ export default function PropertyLookupPage() {
 
                     {/* 공시지가 및 토지이용규제 */}
                     <Card className="border-slate-200">
-                      <CardHeader className="pb-3 border-b border-slate-100">
+                      <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
                         <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
                           <DollarSign className="w-4 h-4 text-emerald-600" />
                           개별공시지가 및 규제 현황
                         </CardTitle>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 font-medium gap-1"
+                          onClick={() => {
+                            const pnu = data.basicInfo?.pnu;
+                            const url = pnu
+                              ? `https://www.eum.go.kr/web/ar/lu/luLandDet.jsp?selGbn=umd&pnu=${pnu}`
+                              : 'https://www.eum.go.kr';
+                            window.open(url, '_blank');
+                          }}
+                        >
+                          <span>토지이음 열람</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </Button>
                       </CardHeader>
                       <CardContent className="pt-4 space-y-4">
                         <div className="bg-emerald-50/70 p-3.5 rounded-xl border border-emerald-100">
@@ -395,6 +411,34 @@ export default function PropertyLookupPage() {
                               </div>
                               <div className="text-xs text-slate-500">{data.ownership.changeCauseNm}</div>
                             </div>
+                          </div>
+
+                          {/* 토지이음 해당 지번 바로가기 */}
+                          <div className="bg-emerald-50/90 p-3.5 rounded-xl border border-emerald-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-emerald-950">
+                            <div className="space-y-1">
+                              <div className="font-bold flex items-center gap-1.5 text-emerald-950">
+                                <FileText className="w-4 h-4 text-emerald-700" />
+                                <span>🌐 국토교통부 토지이음 (토지이용계획 · 행위제한) 바로가기</span>
+                              </div>
+                              <p className="text-emerald-800 leading-relaxed">
+                                선택하신 지번(<strong>{data.basicInfo?.addressName}</strong>)의 행위제한, 도시계획 도면, 건폐율·용적률 규제를 국토교통부 토지이음 공식 사이트에서 즉시 확인하실 수 있습니다.
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              className="shrink-0 bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-1.5 shadow-sm"
+                              onClick={() => {
+                                const pnu = data.basicInfo?.pnu;
+                                const url = pnu
+                                  ? `https://www.eum.go.kr/web/ar/lu/luLandDet.jsp?selGbn=umd&pnu=${pnu}`
+                                  : 'https://www.eum.go.kr';
+                                window.open(url, '_blank');
+                              }}
+                            >
+                              <span>토지이음 해당번지 바로가기</span>
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </Button>
                           </div>
 
                           <div className="bg-amber-50/80 p-3.5 rounded-xl border border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-900">

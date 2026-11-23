@@ -131,8 +131,30 @@ export interface ZoningLimit {
   desc: string;
 }
 
-export function getZoningLimits(useAreaNm: string): ZoningLimit {
+export function getZoningLimits(useAreaNm: string, regulations: string[] = []): ZoningLimit {
   const name = (useAreaNm || '').trim();
+
+  // 1. 용도지구 특례 완화 여부 확인 (자연취락지구 등)
+  const isSettlementDistrict = regulations.some(r => r.includes('자연취락지구'));
+  const isGrowthPlanDistrict = regulations.some(r => r.includes('성장관리계획구역') || r.includes('성장관리방안'));
+
+  // 자연취락지구 특례: 녹지·관리·농림지역 내 자연취락지구는 건폐율 50% 이하(조례 기준), 용적률 100% 이하로 대폭 완화
+  if (isSettlementDistrict) {
+    return {
+      bcRatLimit: 50,
+      vlRatLimit: 100,
+      desc: `${name || '해당지역'} (자연취락지구 특례 적용: 건폐율 50% 이하, 용적률 100% 이하)`
+    };
+  }
+
+  // 계획관리지역 내 성장관리계획구역 특례: 건폐율 50% 이하, 용적률 125% 이하
+  if (isGrowthPlanDistrict && name.includes('계획관리')) {
+    return {
+      bcRatLimit: 50,
+      vlRatLimit: 125,
+      desc: '계획관리지역 (성장관리계획구역 완화: 건폐율 50% 이하, 용적률 125% 이하)'
+    };
+  }
 
   // 주거지역
   if (name.includes('제1종전용주거')) return { bcRatLimit: 50, vlRatLimit: 100, desc: '제1종전용주거지역 (건폐율 50%↓, 용적률 100%↓)' };
@@ -159,7 +181,7 @@ export function getZoningLimits(useAreaNm: string): ZoningLimit {
   if (name.includes('자연녹지')) return { bcRatLimit: 20, vlRatLimit: 100, desc: '자연녹지지역 (건폐율 20%↓, 용적률 100%↓)' };
 
   // 관리지역
-  if (name.includes('계획관리')) return { bcRatLimit: 40, vlRatLimit: 100, desc: '계획관리지역 (건폐율 40%↓, 용적률 100%↓, 성장관리구역 시 완화 가능)' };
+  if (name.includes('계획관리')) return { bcRatLimit: 40, vlRatLimit: 100, desc: '계획관리지역 (건폐율 40%↓, 용적률 100%↓)' };
   if (name.includes('생산관리')) return { bcRatLimit: 20, vlRatLimit: 80, desc: '생산관리지역 (건폐율 20%↓, 용적률 80%↓)' };
   if (name.includes('보전관리')) return { bcRatLimit: 20, vlRatLimit: 80, desc: '보전관리지역 (건폐율 20%↓, 용적률 80%↓)' };
 
@@ -176,8 +198,8 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
     throw new Error('주소를 입력해 주세요.');
   }
 
-  // 1. 캐시 확인 (v2로 갱신하여 최신 공시지가 반영)
-  const cacheKey = `property_integrated_v2_${trimmedAddress}`;
+  // 1. 캐시 확인 (v3: 자연취락지구 특례 및 최신 공시지가 반영)
+  const cacheKey = `property_integrated_v3_${trimmedAddress}`;
   const cached = memoryCache.get<IntegratedPropertyReport>(cacheKey);
   if (cached) {
     return cached;
@@ -392,8 +414,12 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
       }
     });
   }
+  if (landData?.prposArea2Nm && landData.prposArea2Nm !== '지정되지않음') {
+    regulationSet.add(landData.prposArea2Nm);
+  }
 
-  const zoningLimits = getZoningLimits(landData?.prposArea1Nm || '');
+  const regList = Array.from(regulationSet);
+  const zoningLimits = getZoningLimits(landData?.prposArea1Nm || '', regList);
 
   const landLedger = {
     hasData: !!landData,
@@ -595,7 +621,11 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
   // 토지 평가
   if (landLedger.hasData) {
     points.push(`[토지] 지목은 '${landLedger.landCategoryNm}', 대지면적은 ${landLedger.areaM2.toLocaleString()}㎡(약 ${landLedger.areaPyeong}평)입니다.`);
-    points.push(`[용도 및 규제] 국토계획법상 '${landLedger.useArea1Nm}'이며, 법정 기준은 건폐율 ${landLedger.legalBcRatLimit}% 이하, 용적률 ${landLedger.legalVlRatLimit}% 이하입니다.`);
+    if (landLedger.legalZoningDesc && landLedger.legalZoningDesc.includes('특례')) {
+      points.push(`[용도 및 규제] 국토계획법상 '${landLedger.useArea1Nm}'이며, ${landLedger.legalZoningDesc}이 적용되어 법정 기준은 건폐율 ${landLedger.legalBcRatLimit}% 이하, 용적률 ${landLedger.legalVlRatLimit}% 이하입니다.`);
+    } else {
+      points.push(`[용도 및 규제] 국토계획법상 '${landLedger.useArea1Nm}'이며, 법정 기준은 건폐율 ${landLedger.legalBcRatLimit}% 이하, 용적률 ${landLedger.legalVlRatLimit}% 이하입니다.`);
+    }
     if (landLedger.officialPricePerM2 > 0) {
       points.push(`[최신 공시지가] ${landLedger.standardYear}년 공시 기준 ㎡당 ${landLedger.officialPricePerM2.toLocaleString()}원 (토지 총 공시지가 기준 약 ${formatMoney(Math.round(landLedger.officialPriceTotal / 10000))})입니다.`);
     }

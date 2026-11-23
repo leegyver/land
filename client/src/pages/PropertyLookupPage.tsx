@@ -269,6 +269,40 @@ export default function PropertyLookupPage() {
 
               {/* 1. 토지대장 탭 */}
               <TabsContent value="land" className="space-y-4">
+                {/* 공식 토지대장 열람/발급 바로가기 배너 */}
+                <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-bold text-emerald-950 flex items-center gap-1.5">
+                      <FileText className="w-4 h-4 text-emerald-700" />
+                      <span>공식 토지(임야)대장 열람 및 부동산종합증명서</span>
+                    </div>
+                    <div className="text-xs text-emerald-800 mt-0.5">
+                      정부24(토지·임야대장 등초본 열람/발급) 또는 일사편리(부동산종합증명서)에서 법적 효력이 있는 공식 대장을 즉시 확인하실 수 있습니다.
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs h-8 gap-1.5 shadow-sm"
+                      onClick={() => window.open('https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000026', '_blank')}
+                    >
+                      <span>정부24 토지대장</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="bg-white hover:bg-emerald-100 text-emerald-900 border-emerald-300 font-semibold text-xs h-8 gap-1.5"
+                      onClick={() => window.open('https://kras.go.kr', '_blank')}
+                    >
+                      <span>일사편리 종합증명서</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+
                 {data.landLedger.hasData ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     
@@ -299,14 +333,21 @@ export default function PropertyLookupPage() {
                             {data.landLedger.useArea1Nm} {data.landLedger.useArea2Nm && ` / ${data.landLedger.useArea2Nm}`}
                           </span>
                         </div>
-                        <div className="py-2.5 flex justify-between items-center bg-blue-50/60 px-2.5 rounded-lg -mx-1">
-                          <span className="text-slate-700 font-medium text-xs flex items-center gap-1">
-                            <span className="text-blue-600 font-bold">건축규제</span>
-                            <span>법정 건폐율 / 용적률</span>
-                          </span>
-                          <span className="font-extrabold text-blue-900 text-xs sm:text-sm">
-                            건폐율 {data.landLedger.legalBcRatLimit}% 이하 / 용적률 {data.landLedger.legalVlRatLimit}% 이하
-                          </span>
+                        <div className="py-2.5 bg-blue-50/60 px-2.5 rounded-lg -mx-1">
+                          <div className="flex justify-between items-center">
+                            <span className="text-slate-700 font-medium text-xs flex items-center gap-1">
+                              <span className="text-blue-600 font-bold">건축규제</span>
+                              <span>법정 건폐율 / 용적률</span>
+                            </span>
+                            <span className="font-extrabold text-blue-900 text-xs sm:text-sm">
+                              건폐율 {data.landLedger.legalBcRatLimit}% 이하 / 용적률 {data.landLedger.legalVlRatLimit}% 이하
+                            </span>
+                          </div>
+                          {data.landLedger.legalZoningDesc && (
+                            <div className="text-[11px] text-blue-700 mt-1 text-right font-medium">
+                              {data.landLedger.legalZoningDesc}
+                            </div>
+                          )}
                         </div>
                         <div className="py-2.5 flex justify-between items-center">
                           <span className="text-slate-500">도로조건</span>
@@ -488,6 +529,40 @@ export default function PropertyLookupPage() {
 
               {/* 2. 건축물대장 탭 */}
               <TabsContent value="building" className="space-y-4">
+                {/* 공식 건축물대장 열람/발급 바로가기 배너 */}
+                <div className="bg-blue-50/70 border border-blue-200/80 rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-bold text-blue-950 flex items-center gap-1.5">
+                      <Building2 className="w-4 h-4 text-blue-700" />
+                      <span>공식 건축물대장 무료 열람 및 발급 바로가기</span>
+                    </div>
+                    <div className="text-xs text-blue-800 mt-0.5">
+                      정부24(건축물대장 등·초본 무료열람/발급) 또는 세움터(국토교통부 건축행정시스템)에서 총괄표제부 및 전유부 대장을 즉시 확인하실 수 있습니다.
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs h-8 gap-1.5 shadow-sm"
+                      onClick={() => window.open('https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=15000000098', '_blank')}
+                    >
+                      <span>정부24 건축물대장</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="bg-white hover:bg-blue-100 text-blue-900 border-blue-300 font-semibold text-xs h-8 gap-1.5"
+                      onClick={() => window.open('https://cloud.eais.go.kr', '_blank')}
+                    >
+                      <span>세움터 건축물대장</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+
                 {data.buildingLedger.hasData ? (
                   <div className="space-y-4">
                     {data.buildingLedger.buildings.map((b: any, idx: number) => (

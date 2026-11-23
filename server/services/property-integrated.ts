@@ -203,8 +203,8 @@ async function fetchBuildingInfoWithRetry(
   ji: string,
   isMountain: boolean,
   maxRetries = 2
-): Promise<any[]> {
-  if (!serviceKey || !sigunguCd || !bjdongCd || !bun) return [];
+): Promise<{ items: any[]; hasError: boolean }> {
+  if (!serviceKey || !sigunguCd || !bjdongCd || !bun) return { items: [], hasError: false };
 
   const baseParams: any = {
     serviceKey,
@@ -222,11 +222,13 @@ async function fetchBuildingInfoWithRetry(
     baseParams.platGbCd = '1';
   }
 
+  let lastError: any = null;
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const res = await axios.get('https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo', {
         params: baseParams,
-        timeout: 10000 // 충분한 응답 대기 시간 확보
+        timeout: 9000 // 충분한 응답 대기 시간 확보
       });
 
       const items = res.data?.response?.body?.items?.item;
@@ -238,20 +240,21 @@ async function fetchBuildingInfoWithRetry(
           try {
             const fallbackRes = await axios.get('https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo', {
               params: paramsWithoutJi,
-              timeout: 8000
+              timeout: 7000
             });
             const fallbackItems = fallbackRes.data?.response?.body?.items?.item;
             if (fallbackItems) {
-              return Array.isArray(fallbackItems) ? fallbackItems : [fallbackItems];
+              return { items: Array.isArray(fallbackItems) ? fallbackItems : [fallbackItems], hasError: false };
             }
           } catch (e) {
             // ignore fallback error
           }
         }
-        return [];
+        return { items: [], hasError: false };
       }
-      return Array.isArray(items) ? items : [items];
+      return { items: Array.isArray(items) ? items : [items], hasError: false };
     } catch (err: any) {
+      lastError = err;
       console.warn(`건축물대장 조회 [시도 ${attempt}/${maxRetries}] 오류:`, err.response?.status || err.message);
       if (attempt < maxRetries) {
         await new Promise(r => setTimeout(r, 800));
@@ -259,7 +262,21 @@ async function fetchBuildingInfoWithRetry(
     }
   }
 
-  return [];
+  // getBrTitleInfo가 지속적으로 타임아웃 또는 실패할 경우 getBrBasisOulnInfo 등으로 추가 시도
+  try {
+    const basisRes = await axios.get('https://apis.data.go.kr/1613000/BldRgstHubService/getBrBasisOulnInfo', {
+      params: baseParams,
+      timeout: 7000
+    });
+    const basisItems = basisRes.data?.response?.body?.items?.item;
+    if (basisItems) {
+      return { items: Array.isArray(basisItems) ? basisItems : [basisItems], hasError: false };
+    }
+  } catch (e) {
+    // ignore
+  }
+
+  return { items: [], hasError: true };
 }
 
 export async function getIntegratedPropertyReport(queryAddress: string): Promise<IntegratedPropertyReport> {
@@ -391,7 +408,7 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
   // 4. 건축물대장 (건축HUB 표제부) 호출 - 503 방어 및 재시도 포함
   const buildingPromise = DATA_GO_KEY
     ? fetchBuildingInfoWithRetry(DATA_GO_KEY, sigunguCd, bjdongCd, mainBun, subBun, isMountain)
-    : Promise.resolve([]);
+    : Promise.resolve({ items: [], hasError: false });
 
   // 5. 최근 실거래가 조회 (최근 1~2개 분기)
   const now = new Date();
@@ -441,13 +458,15 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
   }
 
   // 비동기 병렬 실행
-  const [landData, landUseList, possessionData, buildingItems, ...tradeResults] = await Promise.all([
+  const [landData, landUseList, possessionData, buildingResult, ...tradeResults] = await Promise.all([
     landCharacteristicPromise,
     landUsePromise,
     possessionPromise,
     buildingPromise,
     ...transactionPromises
   ]);
+
+  const buildingItems = buildingResult?.items || [];
 
   // 6. 데이터 가공 및 정제
   // (1) 토지대장 데이터
@@ -748,8 +767,10 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
     }
   };
 
-  // 1시간 동안 메모리 캐시 보관
-  memoryCache.set(cacheKey, report, 60 * 60 * 1000);
+  // 건축물대장 조회가 503 등으로 실패한 상태가 아닐 때만 1시간 동안 메모리 캐시 보관
+  if (!buildingResult?.hasError) {
+    memoryCache.set(cacheKey, report, 60 * 60 * 1000);
+  }
 
   return report;
 }

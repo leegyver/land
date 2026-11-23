@@ -64,6 +64,7 @@ export interface IntegratedPropertyReport {
   };
   buildingLedger: {
     hasData: boolean;
+    hasError?: boolean;
     buildingCount: number;
     buildings: Array<{
       bldNm: string; // 건물명
@@ -202,7 +203,7 @@ async function fetchBuildingInfoWithRetry(
   bun: string,
   ji: string,
   isMountain: boolean,
-  maxRetries = 2
+  maxRetries = 3
 ): Promise<{ items: any[]; hasError: boolean }> {
   if (!serviceKey || !sigunguCd || !bjdongCd || !bun) return { items: [], hasError: false };
 
@@ -212,7 +213,7 @@ async function fetchBuildingInfoWithRetry(
     bjdongCd,
     bun,
     ji,
-    numOfRows: 20,
+    numOfRows: 30,
     pageNo: 1,
     _type: 'json'
   };
@@ -257,7 +258,7 @@ async function fetchBuildingInfoWithRetry(
       lastError = err;
       console.warn(`건축물대장 조회 [시도 ${attempt}/${maxRetries}] 오류:`, err.response?.status || err.message);
       if (attempt < maxRetries) {
-        await new Promise(r => setTimeout(r, 800));
+        await new Promise(r => setTimeout(r, 1000 + attempt * 500));
       }
     }
   }
@@ -593,6 +594,7 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
 
   const buildingLedger = {
     hasData: buildings.length > 0,
+    hasError: !!buildingResult?.hasError,
     buildingCount: buildings.length,
     buildings
   };

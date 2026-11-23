@@ -18,7 +18,8 @@ import {
   Car,
   Layers,
   ExternalLink,
-  Users
+  Users,
+  RefreshCw
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -295,9 +296,15 @@ export default function PropertyLookupPage() {
                 <TabsTrigger value="building" className="flex items-center gap-1.5 py-2.5 font-semibold text-sm">
                   <Building2 className="w-4 h-4 text-blue-600" />
                   <span>건축물대장</span>
-                  <Badge variant="secondary" className="ml-1 text-[11px] px-1.5 py-0 h-4">
-                    {data.buildingLedger.buildingCount}동
-                  </Badge>
+                  {data.buildingLedger.hasError ? (
+                    <Badge variant="outline" className="ml-1 text-[11px] px-1.5 py-0 h-4 bg-amber-50 text-amber-700 border-amber-300">
+                      지연
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="ml-1 text-[11px] px-1.5 py-0 h-4">
+                      {data.buildingLedger.buildingCount}동
+                    </Badge>
+                  )}
                 </TabsTrigger>
                 <TabsTrigger value="trades" className="flex items-center gap-1.5 py-2.5 font-semibold text-sm">
                   <DollarSign className="w-4 h-4 text-amber-600" />
@@ -682,6 +689,30 @@ export default function PropertyLookupPage() {
                       </Card>
                     ))}
                   </div>
+                ) : data.buildingLedger.hasError ? (
+                  <Card className="p-8 text-center border-amber-200 bg-amber-50/50">
+                    <div className="flex flex-col items-center justify-center space-y-3">
+                      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
+                        <AlertTriangle className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-800">국토교통부 건축물대장 서버 연계 지연</p>
+                        <p className="text-xs text-slate-500 mt-1 max-w-md">
+                          공공데이터포털(세움터) 서버의 일시적인 응답 지연으로 대장 정보를 가져오지 못했습니다. 아래 버튼을 눌러 다시 조회해 보세요.
+                        </p>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => refetch()}
+                        disabled={isFetching}
+                        className="border-amber-300 text-amber-800 hover:bg-amber-100 flex items-center gap-1.5 font-semibold"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`} />
+                        <span>건축물대장 다시 조회</span>
+                      </Button>
+                    </div>
+                  </Card>
                 ) : (
                   <Card className="p-8 text-center text-slate-500">
                     <p className="font-semibold text-slate-700">공부상 등재된 건축물이 없습니다.</p>

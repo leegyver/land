@@ -1,6 +1,21 @@
 import axios from 'axios';
 import { memoryCache } from '../cache';
 
+export interface TransactionItem {
+  category: '아파트' | '연립다세대' | '단독다가구' | '토지';
+  name: string;
+  dealAmount: number; // 거래금액 (만원)
+  dealAmountFormatted: string; // 거래금액 (억/만원)
+  dealDate: string; // YYYY-MM-DD
+  areaM2: number;
+  areaPyeong: number;
+  floor?: number;
+  dong?: string;
+  jibun?: string;
+  pyeongPriceFormatted: string; // 평당 가격
+  isDirectMatch: boolean; // 해당 선택 지번 직접 거래 여부
+}
+
 export interface IntegratedPropertyReport {
   success: boolean;
   message?: string;
@@ -71,19 +86,10 @@ export interface IntegratedPropertyReport {
   transactions: {
     hasData: boolean;
     count: number;
-    items: Array<{
-      category: '아파트' | '연립다세대' | '단독다가구' | '토지';
-      name: string;
-      dealAmount: number; // 거래금액 (만원)
-      dealAmountFormatted: string; // 거래금액 (억/만원)
-      dealDate: string; // YYYY-MM-DD
-      areaM2: number;
-      areaPyeong: number;
-      floor?: number;
-      dong?: string;
-      jibun?: string;
-      pyeongPriceFormatted: string; // 평당 가격
-    }>;
+    hasDirectTrades: boolean;
+    directTrades: TransactionItem[];
+    nearbyTrades: TransactionItem[];
+    items: TransactionItem[];
   };
   aiSummary: {
     headline: string;
@@ -268,26 +274,37 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
     recentYmds.push(ym);
   }
 
-  // 아파트 매매 + 단독다가구 매매 + 토지 매매 최근 거래내역 수집
+  // 아파트 매매 + 단독다가구 매매 + 토지 매매 최근 거래내역 수집 (최근 3개월)
   const transactionPromises: Promise<any[]>[] = [];
   if (DATA_GO_KEY && sigunguCd) {
-    // 가장 최근 2개 월의 아파트 및 단독다가구 조회
-    for (const dealYmd of recentYmds.slice(0, 2)) {
+    for (const dealYmd of recentYmds) {
+      // 1. 아파트 매매
       transactionPromises.push(
         axios.get('https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev', {
-          params: { serviceKey: DATA_GO_KEY, LAWD_CD: sigunguCd, DEAL_YMD: dealYmd, numOfRows: 20, pageNo: 1, _type: 'json' },
+          params: { serviceKey: DATA_GO_KEY, LAWD_CD: sigunguCd, DEAL_YMD: dealYmd, numOfRows: 40, pageNo: 1, _type: 'json' },
           timeout: 4000
         }).then(r => (r.data?.response?.body?.items?.item || []))
           .then(items => (Array.isArray(items) ? items : [items]).map((it: any) => ({ ...it, __tradeType: '아파트' })))
           .catch(() => [])
       );
 
+      // 2. 단독다가구 매매
       transactionPromises.push(
         axios.get('https://apis.data.go.kr/1613000/RTMSDataSvcSHTrade/getRTMSDataSvcSHTrade', {
-          params: { serviceKey: DATA_GO_KEY, LAWD_CD: sigunguCd, DEAL_YMD: dealYmd, numOfRows: 20, pageNo: 1, _type: 'json' },
+          params: { serviceKey: DATA_GO_KEY, LAWD_CD: sigunguCd, DEAL_YMD: dealYmd, numOfRows: 40, pageNo: 1, _type: 'json' },
           timeout: 4000
         }).then(r => (r.data?.response?.body?.items?.item || []))
           .then(items => (Array.isArray(items) ? items : [items]).map((it: any) => ({ ...it, __tradeType: '단독다가구' })))
+          .catch(() => [])
+      );
+
+      // 3. 토지 매매
+      transactionPromises.push(
+        axios.get('https://apis.data.go.kr/1613000/RTMSDataSvcLandTrade/getRTMSDataSvcLandTrade', {
+          params: { serviceKey: DATA_GO_KEY, LAWD_CD: sigunguCd, DEAL_YMD: dealYmd, numOfRows: 40, pageNo: 1, _type: 'json' },
+          timeout: 4000
+        }).then(r => (r.data?.response?.body?.items?.item || []))
+          .then(items => (Array.isArray(items) ? items : [items]).map((it: any) => ({ ...it, __tradeType: '토지' })))
           .catch(() => [])
       );
     }
@@ -405,9 +422,42 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
     const dealDay = String(t.dealDay || t.일 || '').padStart(2, '0');
     const dealDate = dealYear && dealMonth && dealDay ? `${dealYear}-${dealMonth}-${dealDay}` : '';
 
+    // 해당 선택 지번 직접 매칭 판별
+    const targetBunNum = parseInt(mainBun, 10);
+    const targetJiNum = parseInt(subBun, 10);
+    const targetJibunClean = targetJiNum > 0 ? `${targetBunNum}-${targetJiNum}` : `${targetBunNum}`;
+
+    let isDirectMatch = false;
+
+    // 1. 아파트 bonbun / bubun 확인
+    if (t.bonbun !== undefined && t.bonbun !== null && String(t.bonbun).trim() !== '') {
+      const itBon = parseInt(String(t.bonbun), 10);
+      const itBu = parseInt(String(t.bubun || '0'), 10);
+      if (!isNaN(itBon) && itBon === targetBunNum && (targetJiNum === 0 ? (itBu === 0 || isNaN(itBu)) : itBu === targetJiNum)) {
+        isDirectMatch = true;
+      }
+    }
+
+    // 2. jibun 문자열 매칭 (단독주택/토지 등)
+    const itemJibun = String(t.jibun || t.지번 || '').trim();
+    if (!isDirectMatch && itemJibun) {
+      if (itemJibun === targetJibunClean || itemJibun === String(targetBunNum)) {
+        isDirectMatch = true;
+      }
+    }
+
+    // 3. 법정동 일치 여부 확인 (동일 읍면동인지 검증)
+    if (isDirectMatch) {
+      const itemDong = String(t.umdNm || t.법정동 || '').trim();
+      const addrFull = basicInfo.addressName;
+      if (itemDong && !addrFull.includes(itemDong) && !itemDong.includes(addr?.region_3depth_name || '')) {
+        isDirectMatch = false;
+      }
+    }
+
     return {
       category: (t.__tradeType || '아파트') as '아파트' | '연립다세대' | '단독다가구' | '토지',
-      name: t.aptNm || t.아파트 || t.주택유형 || '부동산 거래',
+      name: t.aptNm || t.아파트 || t.주택유형 || (t.jimok ? `토지 (${t.jimok})` : '부동산 거래'),
       dealAmount: amountVal,
       dealAmountFormatted: formatMoney(amountVal),
       dealDate,
@@ -415,18 +465,30 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
       areaPyeong: pyeong,
       floor: parseInt(t.floor || t.층 || '0', 10) || undefined,
       dong: t.umdNm || t.법정동 || '',
-      jibun: String(t.jibun || t.지번 || ''),
-      pyeongPriceFormatted: pyeongPrice > 0 ? `${pyeongPrice.toLocaleString()}만원/평` : '-'
+      jibun: String(t.jibun || t.지번 || (t.bonbun ? `${parseInt(t.bonbun, 10)}${parseInt(t.bubun, 10) > 0 ? `-${parseInt(t.bubun, 10)}` : ''}` : '')),
+      pyeongPriceFormatted: pyeongPrice > 0 ? `${pyeongPrice.toLocaleString()}만원/평` : '-',
+      isDirectMatch
     };
   }).filter((t: any) => t.dealAmount > 0);
 
+  // 해당 주소지 직접 거래와 주변 거래 분리
+  const directTrades = parsedTrades.filter((t: any) => t.isDirectMatch);
+  const nearbyTrades = parsedTrades.filter((t: any) => !t.isDirectMatch);
+
   // 최신 거래일자 순 정렬
-  parsedTrades.sort((a: any, b: any) => (b.dealDate > a.dealDate ? 1 : -1));
+  directTrades.sort((a: any, b: any) => (b.dealDate > a.dealDate ? 1 : -1));
+  nearbyTrades.sort((a: any, b: any) => (b.dealDate > a.dealDate ? 1 : -1));
+
+  // 직접 거래를 최우선으로 배치하고, 주변 거래를 뒤에 연결
+  const combinedItems = [...directTrades, ...nearbyTrades.slice(0, 20)];
 
   const transactions = {
     hasData: parsedTrades.length > 0,
     count: parsedTrades.length,
-    items: parsedTrades.slice(0, 15) // 최대 15건 반환
+    hasDirectTrades: directTrades.length > 0,
+    directTrades,
+    nearbyTrades: nearbyTrades.slice(0, 20),
+    items: combinedItems
   };
 
   // (4) AI 자동 종합 브리핑 생성
@@ -470,9 +532,12 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
   }
 
   // 실거래 분석
-  if (transactions.hasData) {
-    const latest = transactions.items[0];
-    points.push(`[실거래] 최근 인근 실거래 사례: ${latest.name} (${latest.dealDate}) - 거래금액 ${latest.dealAmountFormatted} (${latest.pyeongPriceFormatted})`);
+  if (transactions.hasDirectTrades) {
+    const direct = transactions.directTrades[0];
+    points.push(`[해당 지번 실거래] 선택하신 주소지(${basicInfo.addressName})의 직접 실거래 신고 내역이 있습니다: ${direct.dealDate} ${direct.name} (${direct.dealAmountFormatted}, ${direct.pyeongPriceFormatted})`);
+  } else if (transactions.nearbyTrades.length > 0) {
+    const nearby = transactions.nearbyTrades[0];
+    points.push(`[인근 실거래] 해당 지번의 최근 직접 거래는 없으며, 인근 실거래 사례: ${nearby.name} (${nearby.dealDate}) - ${nearby.dealAmountFormatted} (${nearby.pyeongPriceFormatted})`);
   }
 
   const headline = `${basicInfo.addressName} 부동산 통합 분석 리포트`;

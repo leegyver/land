@@ -513,62 +513,141 @@ export default function PropertyLookupPage() {
               {/* 3. 최근 실거래가 탭 */}
               <TabsContent value="trades" className="space-y-4">
                 {data.transactions.hasData ? (
-                  <Card className="border-slate-200">
-                    <CardHeader className="pb-3 border-b border-slate-100">
-                      <CardTitle className="text-base font-bold text-slate-900 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <DollarSign className="w-4 h-4 text-amber-600" />
-                          해당 지역 인근 최근 실거래 내역
+                  <div className="space-y-4">
+                    
+                    {/* 1. 선택 주소지 직접 실거래가 카드 (있을 경우 최우선 표시) */}
+                    {data.transactions.hasDirectTrades && (
+                      <Card className="border-blue-300 bg-gradient-to-r from-blue-50/80 via-indigo-50/40 to-white shadow-sm overflow-hidden">
+                        <CardHeader className="pb-3 border-b border-blue-200/70 flex flex-row items-center justify-between">
+                          <div>
+                            <CardTitle className="text-base sm:text-lg font-bold text-blue-950 flex items-center gap-2">
+                              <Sparkles className="w-5 h-5 text-blue-600" />
+                              ⭐ 선택 주소지 직접 실거래 내역 ({data.transactions.directTrades.length}건)
+                            </CardTitle>
+                            <CardDescription className="text-xs text-blue-700 mt-0.5">
+                              검색하신 주소지({data.basicInfo.addressName})에서 실제 거래 신고된 내역입니다.
+                            </CardDescription>
+                          </div>
+                          <Badge className="bg-blue-600 text-white font-bold px-2.5 py-1 text-xs shadow-sm">
+                            해당 지번 거래
+                          </Badge>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                              <thead className="bg-blue-100/60 text-xs text-blue-900 uppercase border-b border-blue-200">
+                                <tr>
+                                  <th className="px-4 py-3">물건유형</th>
+                                  <th className="px-4 py-3">물건명 / 상세위치</th>
+                                  <th className="px-4 py-3">계약일자</th>
+                                  <th className="px-4 py-3">전용면적</th>
+                                  <th className="px-4 py-3 text-right">거래금액</th>
+                                  <th className="px-4 py-3 text-right">평당가격</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-blue-100/60 bg-white">
+                                {data.transactions.directTrades.map((tr: any, idx: number) => (
+                                  <tr key={idx} className="hover:bg-blue-50/50 transition-colors">
+                                    <td className="px-4 py-3">
+                                      <Badge className="bg-blue-600 text-white font-bold text-xs">{tr.category}</Badge>
+                                    </td>
+                                    <td className="px-4 py-3 font-bold text-slate-900">
+                                      {tr.name} {tr.floor ? `(${tr.floor}층)` : ''}
+                                      <div className="text-xs text-blue-600 font-semibold">{data.basicInfo.addressName}</div>
+                                    </td>
+                                    <td className="px-4 py-3 text-xs text-slate-700 font-semibold">{tr.dealDate}</td>
+                                    <td className="px-4 py-3 text-slate-900">
+                                      {tr.areaM2} ㎡ <span className="text-xs text-blue-700 font-bold">({tr.areaPyeong}평)</span>
+                                    </td>
+                                    <td className="px-4 py-3 text-right font-black text-blue-800 text-base">
+                                      {tr.dealAmountFormatted}
+                                    </td>
+                                    <td className="px-4 py-3 text-right text-xs text-slate-700 font-bold">
+                                      {tr.pyeongPriceFormatted}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* 직접 거래가 없을 때 안내문 */}
+                    {!data.transactions.hasDirectTrades && (
+                      <div className="bg-slate-100/80 p-4 rounded-xl border border-slate-200 text-xs sm:text-sm text-slate-600 flex items-start gap-2.5">
+                        <HelpCircle className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+                        <div>
+                          <span className="font-bold text-slate-800">선택하신 주소지({data.basicInfo.addressName})의 직접 실거래 신고 내역이 없습니다.</span>
+                          <p className="text-slate-500 mt-0.5">
+                            해당 필지에 최근 매매 실거래 신고가 없었거나 나대지/보유 중인 토지일 수 있습니다. 아래의 <strong>인근 및 주변 지역 최근 실거래 시세</strong>를 참고해 주세요.
+                          </p>
                         </div>
-                        <span className="text-xs font-normal text-slate-500">국토교통부 실거래가 공개시스템</span>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                          <thead className="bg-slate-50 text-xs text-slate-500 uppercase border-b border-slate-200">
-                            <tr>
-                              <th className="px-4 py-3">물건유형</th>
-                              <th className="px-4 py-3">물건명/위치</th>
-                              <th className="px-4 py-3">계약일자</th>
-                              <th className="px-4 py-3">전용면적</th>
-                              <th className="px-4 py-3 text-right">거래금액</th>
-                              <th className="px-4 py-3 text-right">평당가격</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100">
-                            {data.transactions.items.map((tr: any, idx: number) => (
-                              <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
-                                <td className="px-4 py-3 font-medium">
-                                  <Badge variant="outline" className={`text-xs ${
-                                    tr.category === '아파트' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                    tr.category === '토지' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                    'bg-purple-50 text-purple-700 border-purple-200'
-                                  }`}>
-                                    {tr.category}
-                                  </Badge>
-                                </td>
-                                <td className="px-4 py-3 font-semibold text-slate-900">
-                                  {tr.name} {tr.floor ? <span className="text-xs font-normal text-slate-500">({tr.floor}층)</span> : ''}
-                                  {tr.dong && <div className="text-xs text-slate-400 font-normal">{tr.dong}</div>}
-                                </td>
-                                <td className="px-4 py-3 text-xs text-slate-600">{tr.dealDate}</td>
-                                <td className="px-4 py-3 text-slate-700">
-                                  {tr.areaM2} ㎡ <span className="text-xs text-slate-400">({tr.areaPyeong}평)</span>
-                                </td>
-                                <td className="px-4 py-3 text-right font-extrabold text-blue-700">
-                                  {tr.dealAmountFormatted}
-                                </td>
-                                <td className="px-4 py-3 text-right text-xs text-slate-600 font-medium">
-                                  {tr.pyeongPriceFormatted}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
                       </div>
-                    </CardContent>
-                  </Card>
+                    )}
+
+                    {/* 2. 인근 및 주변 지역 실거래 내역 카드 */}
+                    {data.transactions.nearbyTrades && data.transactions.nearbyTrades.length > 0 && (
+                      <Card className="border-slate-200">
+                        <CardHeader className="pb-3 border-b border-slate-100">
+                          <CardTitle className="text-base font-bold text-slate-900 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="w-4 h-4 text-amber-600" />
+                              인근 및 주변 지역 최근 실거래 내역 ({data.transactions.nearbyTrades.length}건)
+                            </div>
+                            <span className="text-xs font-normal text-slate-500">국토교통부 실거래가 공개시스템</span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                              <thead className="bg-slate-50 text-xs text-slate-500 uppercase border-b border-slate-200">
+                                <tr>
+                                  <th className="px-4 py-3">물건유형</th>
+                                  <th className="px-4 py-3">물건명/위치</th>
+                                  <th className="px-4 py-3">계약일자</th>
+                                  <th className="px-4 py-3">전용면적</th>
+                                  <th className="px-4 py-3 text-right">거래금액</th>
+                                  <th className="px-4 py-3 text-right">평당가격</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {data.transactions.nearbyTrades.map((tr: any, idx: number) => (
+                                  <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                                    <td className="px-4 py-3 font-medium">
+                                      <Badge variant="outline" className={`text-xs ${
+                                        tr.category === '아파트' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                        tr.category === '토지' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                        'bg-purple-50 text-purple-700 border-purple-200'
+                                      }`}>
+                                        {tr.category}
+                                      </Badge>
+                                    </td>
+                                    <td className="px-4 py-3 font-semibold text-slate-900">
+                                      {tr.name} {tr.floor ? <span className="text-xs font-normal text-slate-500">({tr.floor}층)</span> : ''}
+                                      {tr.dong && <div className="text-xs text-slate-400 font-normal">{tr.dong} {tr.jibun ? `(${tr.jibun})` : ''}</div>}
+                                    </td>
+                                    <td className="px-4 py-3 text-xs text-slate-600">{tr.dealDate}</td>
+                                    <td className="px-4 py-3 text-slate-700">
+                                      {tr.areaM2} ㎡ <span className="text-xs text-slate-400">({tr.areaPyeong}평)</span>
+                                    </td>
+                                    <td className="px-4 py-3 text-right font-extrabold text-blue-700">
+                                      {tr.dealAmountFormatted}
+                                    </td>
+                                    <td className="px-4 py-3 text-right text-xs text-slate-600 font-medium">
+                                      {tr.pyeongPriceFormatted}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                  </div>
                 ) : (
                   <Card className="p-8 text-center text-slate-500">
                     최근 1~2개 분기 내에 신고된 인근 실거래 내역이 없습니다.

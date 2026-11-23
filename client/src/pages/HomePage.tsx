@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { News, Auction } from "@shared/schema";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
-import { Calendar, ArrowRight, Newspaper, Youtube, Play, BookOpen, Search, Map, ThumbsUp, MessageSquare, Gavel, ShieldCheck, Clock, CheckCircle2, Phone, Sparkles, Trees, Home as HomeIcon, Scale } from "lucide-react";
+import { Calendar, ArrowRight, Newspaper, Youtube, Play, BookOpen, Search, Map, ThumbsUp, MessageSquare, Gavel, ShieldCheck, Clock, CheckCircle2, Phone, Sparkles, Trees, Home as HomeIcon, Scale, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -283,6 +283,39 @@ const HomePage = () => {
               <span>추천 경매</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
+          </div>
+        </div>
+      </section>
+
+      {/* 토지대장 · 건축물대장 · 실거래가 원스톱 통합조회 배너 */}
+      <section className="bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 text-white py-3 sm:py-3.5 border-b border-blue-500/30 shadow-sm">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-500/20 border border-blue-400/40 flex items-center justify-center text-blue-300 shadow-md shrink-0">
+                <FileText className="w-5 h-5 text-blue-400" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="bg-blue-500/30 text-blue-200 text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded border border-blue-400/30 shrink-0">
+                    원스톱 무료 조회
+                  </span>
+                  <span className="text-xs sm:text-sm font-extrabold text-white truncate">
+                    토지대장 · 건축물대장 · 실거래가 한눈에 보기
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mt-0.5 hidden md:block">
+                  주소만 입력하면 지목, 면적, 공시지가, 건물 위반 여부, 최근 실거래가까지 즉시 분석
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/property-lookup"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm px-3.5 py-1.5 sm:py-2 rounded-xl shadow-md transition-all active:scale-95 flex items-center gap-1.5 shrink-0"
+            >
+              <span>통합 조회하기</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
         </div>
       </section>
@@ -563,6 +596,8 @@ const HomePage = () => {
         </div>
       </section>
 
+      
+
       {/* 이가이버 부동산 토탈케어 (원룸·건물유지보수·출장집수리·세컨하우스 케어) */}
       <TotalCareSection />
 
@@ -768,6 +803,8 @@ const HomePage = () => {
         </div>
       </section>
 
+      
+
       {/* 실무 법령 & 판례 스마트 검색바 (페이지 최하단 배치, 모바일 줄바꿈/가로스크롤바 100% 방지) */}
       <section className="bg-slate-900 text-white py-4 sm:py-6 border-t border-slate-800 overflow-x-hidden w-full max-w-full">
         <div className="container mx-auto px-3 sm:px-4 max-w-6xl">
@@ -821,6 +858,8 @@ const HomePage = () => {
           </div>
         </div>
       </section>
+
+      
     </>
   );
 };

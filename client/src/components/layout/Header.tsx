@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Building, LogIn, LogOut, User, Settings, Menu, Phone, Home, Search, Gavel, Sparkles, Youtube, Scale } from "lucide-react";
+import { Building, LogIn, LogOut, User, Settings, Menu, Phone, Home, Search, Gavel, Sparkles, Youtube, Scale, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
@@ -26,7 +26,8 @@ const Header = () => {
     { name: "홈", path: "/", icon: Home },
     { name: "강화도 매물", path: "/properties", icon: Search },
     { name: "반값 경매·공매", path: "/auctions", isHot: true, icon: Gavel },
-    { name: "부동산 토탈케어", path: "/total-care", isNew: true, icon: Sparkles },
+    { name: "대장·실거래", path: "/property-lookup", isNew: true, icon: FileText },
+    { name: "부동산 토탈케어", path: "/total-care", icon: Sparkles },
     { name: "유튜브", path: "/youtube", icon: Youtube },
     { name: "법률·판례", path: "/legal", icon: Scale },
   ];

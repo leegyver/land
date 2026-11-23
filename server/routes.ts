@@ -36,6 +36,7 @@ import { fetchAndSaveNews, setupNewsScheduler } from "./news-fetcher";
 import { sendEmail, createInquiryEmailTemplate, createInquiryReceiptTemplate, createNewsletterWelcomeTemplate } from "./mailer";
 import { getKakaoAuthUrl, exchangeCodeForTokens, sendKakaoAlertToMe, getValidKakaoAccessToken } from "./kakao";
 import { getRecentTransactions } from "./real-estate-api";
+import { getIntegratedPropertyReport } from "./services/property-integrated";
 // import { testRealEstateAPI } from "./test-api";
 import { getLatestBlogPosts } from "./blog-fetcher";
 import { 
@@ -6208,6 +6209,25 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${updated.id}`;
     } catch (error) {
       console.error("Failed to delete auction:", error);
       res.status(500).json({ message: "경매 물건 삭제 중 오류가 발생했습니다." });
+    }
+  });
+
+  // 부동산 통합 조회 (토지대장, 건축물대장, 실거래가, AI 분석)
+  app.get("/api/property/integrated-lookup", async (req, res) => {
+    try {
+      const address = req.query.address as string;
+      if (!address || typeof address !== "string" || !address.trim()) {
+        return res.status(400).json({ success: false, message: "조회할 주소를 입력해 주세요." });
+      }
+
+      const report = await getIntegratedPropertyReport(address);
+      res.json(report);
+    } catch (error: any) {
+      console.error("통합 부동산 조회 오류:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "부동산 통합 정보를 조회하는 중 오류가 발생했습니다."
+      });
     }
   });
 

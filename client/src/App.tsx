@@ -44,6 +44,7 @@ const TermsPage = lazy(() => import("@/pages/TermsPage"));
 const PrivacyPage = lazy(() => import("@/pages/PrivacyPage"));
 const LegalSearchPage = lazy(() => import("@/pages/LegalSearchPage"));
 const BusinessCardPage = lazy(() => import("@/pages/BusinessCardPage"));
+const PropertyLookupPage = lazy(() => import("@/pages/PropertyLookupPage"));
 
 // 페이지 로딩 중 표시할 최소한의 스켈레톤
 const PageLoader = () => (
@@ -71,6 +72,7 @@ function Router({ user, isLoading }: { user: any; isLoading: boolean }) {
         <Route path="/saju" component={SajuPage} />
         <Route path="/legal" component={LegalSearchPage} />
         <Route path="/legal/:type/:id" component={LegalSearchPage} />
+        <Route path="/property-lookup" component={PropertyLookupPage} />
         <Route path="/contact" component={ContactPage} />
         <Route path="/profile" component={ProfilePage} />
         <Route path="/pricing" component={PricingPage} />

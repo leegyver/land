@@ -540,7 +540,7 @@ export default function PropertyLookupPage() {
                                   <th className="px-4 py-3">물건유형</th>
                                   <th className="px-4 py-3">물건명 / 상세위치</th>
                                   <th className="px-4 py-3">계약일자</th>
-                                  <th className="px-4 py-3">전용면적</th>
+                                  <th className="px-4 py-3">거래면적</th>
                                   <th className="px-4 py-3 text-right">거래금액</th>
                                   <th className="px-4 py-3 text-right">평당가격</th>
                                 </tr>
@@ -556,8 +556,9 @@ export default function PropertyLookupPage() {
                                       <div className="text-xs text-blue-600 font-semibold">{data.basicInfo.addressName}</div>
                                     </td>
                                     <td className="px-4 py-3 text-xs text-slate-700 font-semibold">{tr.dealDate}</td>
-                                    <td className="px-4 py-3 text-slate-900">
-                                      {tr.areaM2} ㎡ <span className="text-xs text-blue-700 font-bold">({tr.areaPyeong}평)</span>
+                                    <td className="px-4 py-3 text-slate-900 font-medium">
+                                      <div>{tr.areaM2.toLocaleString()} ㎡ <span className="text-xs text-blue-700 font-bold">({tr.areaPyeong}평)</span></div>
+                                      <div className="text-[11px] text-slate-400 font-normal">{tr.areaTypeLabel || (tr.category === '토지' ? '토지면적' : '전용면적')}</div>
                                     </td>
                                     <td className="px-4 py-3 text-right font-black text-blue-800 text-base">
                                       {tr.dealAmountFormatted}
@@ -607,7 +608,7 @@ export default function PropertyLookupPage() {
                                   <th className="px-4 py-3">물건유형</th>
                                   <th className="px-4 py-3">물건명/위치</th>
                                   <th className="px-4 py-3">계약일자</th>
-                                  <th className="px-4 py-3">전용면적</th>
+                                  <th className="px-4 py-3">거래면적</th>
                                   <th className="px-4 py-3 text-right">거래금액</th>
                                   <th className="px-4 py-3 text-right">평당가격</th>
                                 </tr>
@@ -630,7 +631,8 @@ export default function PropertyLookupPage() {
                                     </td>
                                     <td className="px-4 py-3 text-xs text-slate-600">{tr.dealDate}</td>
                                     <td className="px-4 py-3 text-slate-700">
-                                      {tr.areaM2} ㎡ <span className="text-xs text-slate-400">({tr.areaPyeong}평)</span>
+                                      <div>{tr.areaM2.toLocaleString()} ㎡ <span className="text-xs text-slate-500 font-semibold">({tr.areaPyeong}평)</span></div>
+                                      <div className="text-[11px] text-slate-400 font-normal">{tr.areaTypeLabel || (tr.category === '토지' ? '토지면적' : '전용면적')}</div>
                                     </td>
                                     <td className="px-4 py-3 text-right font-extrabold text-blue-700">
                                       {tr.dealAmountFormatted}

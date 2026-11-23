@@ -9,6 +9,7 @@ export interface TransactionItem {
   dealDate: string; // YYYY-MM-DD
   areaM2: number;
   areaPyeong: number;
+  areaTypeLabel?: string; // 면적 종류 (토지면적 / 전용면적 / 대지면적)
   floor?: number;
   dong?: string;
   jibun?: string;
@@ -413,9 +414,15 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
   const parsedTrades = rawTrades.map((t: any) => {
     let rawAmount = String(t.dealAmount || t.거래금액 || '0').trim().replace(/,/g, '');
     const amountVal = parseInt(rawAmount, 10) || 0;
-    const excluAr = parseFloat(t.excluUseAr || t.전용면적 || t.연면적 || '0');
+
+    // 면적 필드 추출 (토지: dealArea, 아파트/오피스텔: excluUseAr, 주택: plottageAr/totalFloorAr)
+    const rawArea = t.dealArea || t.excluUseAr || t.plottageAr || t.totalFloorAr || t.전용면적 || t.연면적 || t.대지면적 || '0';
+    const excluAr = parseFloat(String(rawArea).trim().replace(/,/g, '')) || 0;
     const pyeong = Math.round(excluAr * 0.3025 * 10) / 10;
     const pyeongPrice = pyeong > 0 ? Math.round(amountVal / pyeong) : 0;
+
+    // 면적 구분 라벨
+    const areaTypeLabel = t.__tradeType === '토지' ? '토지면적' : (t.__tradeType === '단독다가구' ? '대지/연면적' : '전용면적');
 
     const dealYear = t.dealYear || t.년 || '';
     const dealMonth = String(t.dealMonth || t.월 || '').padStart(2, '0');
@@ -455,14 +462,27 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
       }
     }
 
+    // 물건 명칭 정제
+    let tradeName = t.aptNm || t.아파트 || t.주택유형 || '';
+    if (!tradeName) {
+      if (t.__tradeType === '토지' || t.jimok) {
+        tradeName = `토지 (${t.jimok || '필지'}${t.landUse ? `, ${t.landUse}` : ''})`;
+      } else if (t.houseType) {
+        tradeName = `${t.houseType}주택`;
+      } else {
+        tradeName = '부동산 매매';
+      }
+    }
+
     return {
       category: (t.__tradeType || '아파트') as '아파트' | '연립다세대' | '단독다가구' | '토지',
-      name: t.aptNm || t.아파트 || t.주택유형 || (t.jimok ? `토지 (${t.jimok})` : '부동산 거래'),
+      name: tradeName,
       dealAmount: amountVal,
       dealAmountFormatted: formatMoney(amountVal),
       dealDate,
       areaM2: excluAr,
       areaPyeong: pyeong,
+      areaTypeLabel,
       floor: parseInt(t.floor || t.층 || '0', 10) || undefined,
       dong: t.umdNm || t.법정동 || '',
       jibun: String(t.jibun || t.지번 || (t.bonbun ? `${parseInt(t.bonbun, 10)}${parseInt(t.bubun, 10) > 0 ? `-${parseInt(t.bubun, 10)}` : ''}` : '')),

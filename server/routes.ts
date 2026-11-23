@@ -37,6 +37,12 @@ import { sendEmail, createInquiryEmailTemplate, createInquiryReceiptTemplate, cr
 import { getKakaoAuthUrl, exchangeCodeForTokens, sendKakaoAlertToMe, getValidKakaoAccessToken } from "./kakao";
 import { getRecentTransactions } from "./real-estate-api";
 import { getIntegratedPropertyReport } from "./services/property-integrated";
+import { 
+  getGanghwaTransactionsInBounds, 
+  getGanghwaStats, 
+  syncRecentGanghwa, 
+  backfillGanghwa5Years 
+} from "./services/ganghwa-transactions";
 // import { testRealEstateAPI } from "./test-api";
 import { getLatestBlogPosts } from "./blog-fetcher";
 import { 
@@ -6228,6 +6234,70 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${updated.id}`;
         success: false,
         message: error.message || "부동산 통합 정보를 조회하는 중 오류가 발생했습니다."
       });
+    }
+  });
+
+  // 강화군 지도 영역 내 실거래가 조회 (최근 1~5년)
+  app.get("/api/property/ganghwa-transactions", (req, res) => {
+    try {
+      const minLat = parseFloat(req.query.minLat as string);
+      const maxLat = parseFloat(req.query.maxLat as string);
+      const minLng = parseFloat(req.query.minLng as string);
+      const maxLng = parseFloat(req.query.maxLng as string);
+
+      if (isNaN(minLat) || isNaN(maxLat) || isNaN(minLng) || isNaN(maxLng)) {
+        return res.status(400).json({ success: false, message: "올바른 지도 영역 좌표를 전달해 주세요." });
+      }
+
+      const typesParam = req.query.types as string;
+      const types = typesParam ? typesParam.split(",") : ['토지', '단독다가구', '아파트'];
+      const years = parseInt(req.query.years as string || '5', 10);
+      const limit = Math.min(parseInt(req.query.limit as string || '200', 10), 500);
+
+      const items = getGanghwaTransactionsInBounds({
+        minLat,
+        maxLat,
+        minLng,
+        maxLng,
+        types,
+        years,
+        limit
+      });
+
+      res.json({
+        success: true,
+        count: items.length,
+        items
+      });
+    } catch (err: any) {
+      console.error("강화군 실거래가 지도 조회 오류:", err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
+  // 강화군 실거래 DB 상태 및 통계
+  app.get("/api/property/ganghwa-stats", (req, res) => {
+    try {
+      const stats = getGanghwaStats();
+      res.json({ success: true, stats });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
+  // 강화군 실거래 수동 동기화 트리거
+  app.post("/api/property/ganghwa-sync", async (req, res) => {
+    try {
+      const isFull = req.body?.full === true;
+      if (isFull) {
+        backfillGanghwa5Years().catch(e => console.error("Backfill error:", e));
+        return res.json({ success: true, message: "5년치 백필 작업이 백그라운드에서 시작되었습니다." });
+      } else {
+        await syncRecentGanghwa();
+        return res.json({ success: true, message: "최근 실거래가 동기화가 완료되었습니다." });
+      }
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
     }
   });
 

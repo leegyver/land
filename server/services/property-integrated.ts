@@ -286,8 +286,8 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
     throw new Error('주소를 입력해 주세요.');
   }
 
-  // 1. 캐시 확인 (v5: 건축물대장 단독 우선 호출 및 503 방어 적용)
-  const cacheKey = `property_integrated_v5_${trimmedAddress}`;
+  // 1. 캐시 확인 (v6: 대지면적 누락 시 토지대장 면적 fallback 적용 및 합산 건폐/용적률 계산)
+  const cacheKey = `property_integrated_v6_${trimmedAddress}`;
   const cached = memoryCache.get<IntegratedPropertyReport>(cacheKey);
   if (cached) {
     return cached;
@@ -541,7 +541,9 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
                        String(b.regstrKindCdNm || '').includes('위반') ||
                        String(b.bldNm || '').includes('위반');
 
-    const platArea = parseFloat(b.platArea || '0');
+    const rawPlatArea = parseFloat(b.platArea || '0');
+    // 건축물대장에 대지면적이 0 또는 누락된 경우 토지대장의 대지면적(landAreaM2) 대체 적용
+    const platArea = rawPlatArea > 0 ? rawPlatArea : (landAreaM2 > 0 ? landAreaM2 : 0);
     const archArea = parseFloat(b.archArea || '0');
     let bcRat = parseFloat(b.bcRat || '0');
     let vlRat = parseFloat(b.vlRat || '0');
@@ -723,9 +725,45 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
 
   // 건물 평가
   if (buildingLedger.hasData) {
+    const isMulti = buildingLedger.buildings.length > 1;
     const mainBld = buildingLedger.buildings[0];
-    points.push(`[건물] 주용도 '${mainBld.mainPurpsNm}', ${mainBld.strctNm}으로 지상 ${mainBld.grndFlrCnt}층 연면적 ${mainBld.totAreaM2.toLocaleString()}㎡(약 ${mainBld.totAreaPyeong}평) 규모입니다.`);
-    points.push(`[건폐/용적] 실제 건폐율 ${mainBld.bcRat}%, 실제 용적률 ${mainBld.vlRat}% (법정 상한: 건폐율 ${mainBld.legalBcRatLimit}%↓, 용적률 ${mainBld.legalVlRatLimit}%↓)입니다.`);
+    const totalArchArea = buildingLedger.buildings.reduce((sum: number, b: any) => sum + (b.archAreaM2 || 0), 0);
+    const totalTotArea = buildingLedger.buildings.reduce((sum: number, b: any) => sum + (b.totAreaM2 || 0), 0);
+    const refPlatArea = landAreaM2 > 0 ? landAreaM2 : (mainBld.platAreaM2 || 0);
+
+    let overallBcRat = 0;
+    let overallVlRat = 0;
+    if (refPlatArea > 0 && totalArchArea > 0) {
+      overallBcRat = Math.round((totalArchArea / refPlatArea) * 10000) / 100;
+    }
+    if (refPlatArea > 0 && totalTotArea > 0) {
+      overallVlRat = Math.round((totalTotArea / refPlatArea) * 10000) / 100;
+    }
+
+    if (isMulti) {
+      points.push(`[건물] 총 ${buildingLedger.buildingCount}개동(주동: '${mainBld.bldNm}' 등), 필지 전체 연면적 ${totalTotArea.toLocaleString()}㎡(약 ${Math.round(totalTotArea * 0.3025 * 10) / 10}평) 규모입니다.`);
+      if (overallBcRat > 0 && overallVlRat > 0) {
+        points.push(`[건폐/용적] 필지 전체 합산 건폐율 ${overallBcRat}%, 용적률 ${overallVlRat}% (법정 상한: 건폐율 ${mainBld.legalBcRatLimit}%↓, 용적률 ${mainBld.legalVlRatLimit}%↓)입니다.`);
+      } else if (overallBcRat > 0) {
+        points.push(`[건폐/용적] 필지 전체 합산 건폐율 ${overallBcRat}% (법정 상한: 건폐율 ${mainBld.legalBcRatLimit}%↓, 용적률 ${mainBld.legalVlRatLimit}%↓)입니다.`);
+      } else if (overallVlRat > 0) {
+        points.push(`[건폐/용적] 필지 전체 합산 용적률 ${overallVlRat}% (법정 상한: 건폐율 ${mainBld.legalBcRatLimit}%↓, 용적률 ${mainBld.legalVlRatLimit}%↓)입니다.`);
+      } else {
+        points.push(`[건폐/용적] 건축물대장상 건폐율·용적률 미기재 (해당 용도지역 법정 상한: 건폐율 ${mainBld.legalBcRatLimit}%↓, 용적률 ${mainBld.legalVlRatLimit}%↓)입니다.`);
+      }
+    } else {
+      points.push(`[건물] 주용도 '${mainBld.mainPurpsNm}', ${mainBld.strctNm}으로 지상 ${mainBld.grndFlrCnt}층 연면적 ${mainBld.totAreaM2.toLocaleString()}㎡(약 ${mainBld.totAreaPyeong}평) 규모입니다.`);
+      if (mainBld.bcRat > 0 && mainBld.vlRat > 0) {
+        points.push(`[건폐/용적] 실제 건폐율 ${mainBld.bcRat}%, 실제 용적률 ${mainBld.vlRat}% (법정 상한: 건폐율 ${mainBld.legalBcRatLimit}%↓, 용적률 ${mainBld.legalVlRatLimit}%↓)입니다.`);
+      } else if (mainBld.bcRat > 0) {
+        points.push(`[건폐/용적] 실제 건폐율 ${mainBld.bcRat}% (법정 상한: 건폐율 ${mainBld.legalBcRatLimit}%↓, 용적률 ${mainBld.legalVlRatLimit}%↓)입니다.`);
+      } else if (mainBld.vlRat > 0) {
+        points.push(`[건폐/용적] 실제 용적률 ${mainBld.vlRat}% (법정 상한: 건폐율 ${mainBld.legalBcRatLimit}%↓, 용적률 ${mainBld.legalVlRatLimit}%↓)입니다.`);
+      } else {
+        points.push(`[건폐/용적] 건축물대장상 건폐율·용적률 미기재 (해당 용도지역 법정 상한: 건폐율 ${mainBld.legalBcRatLimit}%↓, 용적률 ${mainBld.legalVlRatLimit}%↓)입니다.`);
+      }
+    }
+
     if (mainBld.useAprDay && mainBld.useAprDay !== '-') {
       points.push(`[준공] ${mainBld.useAprDay} 사용승인 (준공 후 약 ${mainBld.buildingAgeYears}년 경과)된 건물입니다.`);
     }

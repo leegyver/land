@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import PropertyLookupMap from "@/components/map/PropertyLookupMap";
 
 // 추천 검색 주소
 const SAMPLE_ADDRESSES = [
@@ -193,6 +194,18 @@ export default function PropertyLookupPage() {
                 </div>
               )}
             </div>
+
+            {/* 인터랙티브 지적도 지도 (클릭하여 지번 정보 즉시 조회) */}
+            <PropertyLookupMap
+              lat={data.basicInfo.lat}
+              lng={data.basicInfo.lng}
+              addressName={data.basicInfo.addressName}
+              onSelectAddress={(newAddr) => {
+                setSearchInput(newAddr);
+                setSelectedAddress(newAddr);
+              }}
+              isLoading={isLoading || isFetching}
+            />
 
             {/* AI 스마트 분석 브리핑 패널 */}
             {data.aiSummary && (

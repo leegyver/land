@@ -17,7 +17,8 @@ import {
   HelpCircle,
   Car,
   Layers,
-  ExternalLink
+  ExternalLink,
+  Users
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -348,6 +349,78 @@ export default function PropertyLookupPage() {
                         </div>
                       </CardContent>
                     </Card>
+
+                    {/* 소유자 및 권리관계 (공유인 명부) 카드 */}
+                    {data.ownership && (
+                      <Card className="border-slate-200 md:col-span-2">
+                        <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
+                          <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <Users className="w-4 h-4 text-purple-600" />
+                            소유 및 권리관계 현황 (토지대장 기준)
+                          </CardTitle>
+                          {data.ownership.isCoOwned ? (
+                            <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-300 font-semibold">
+                              공동소유 (공유인 {data.ownership.coOwnerCount}명)
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-100 font-semibold">
+                              단독소유
+                            </Badge>
+                          )}
+                        </CardHeader>
+                        <CardContent className="pt-4 space-y-4">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                            <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                              <span className="text-xs text-slate-500">소유 구분</span>
+                              <div className="text-base font-bold text-slate-900 mt-0.5">
+                                {data.ownership.ownerTypeNm}
+                              </div>
+                            </div>
+                            <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                              <span className="text-xs text-slate-500">소유 형태</span>
+                              <div className="text-base font-bold text-slate-900 mt-0.5">
+                                {data.ownership.isCoOwned ? `공유지 (${data.ownership.coOwnerCount}명)` : '단독 소유'}
+                              </div>
+                            </div>
+                            <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                              <span className="text-xs text-slate-500">소유자 거주구분</span>
+                              <div className="text-base font-bold text-slate-900 mt-0.5">
+                                {data.ownership.residenceTypeNm}
+                              </div>
+                            </div>
+                            <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                              <span className="text-xs text-slate-500">소유권 변동일 (원인)</span>
+                              <div className="text-base font-bold text-slate-900 mt-0.5">
+                                {data.ownership.changeDate}
+                              </div>
+                              <div className="text-xs text-slate-500">{data.ownership.changeCauseNm}</div>
+                            </div>
+                          </div>
+
+                          <div className="bg-amber-50/80 p-3.5 rounded-xl border border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-900">
+                            <div className="space-y-1">
+                              <div className="font-bold flex items-center gap-1.5 text-amber-950">
+                                <span>🔒 소유자 실명, 상세 거주주소, 공유인별 지분 명부 열람 안내</span>
+                              </div>
+                              <p className="text-amber-800 leading-relaxed">
+                                공공데이터포털 및 브이월드는 개인정보보호법에 따라 소유자의 주민등록상 실명, 전체 주소, 주민번호를 비공개 처리합니다.
+                                소유자 실명과 공유인별 지분 명부(1/2, 1/3 등)는 <strong>대법원 인터넷등기소(등기부등본)</strong>에서 즉시 확인하실 수 있습니다.
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="shrink-0 bg-white hover:bg-amber-100 text-amber-900 border-amber-300 font-bold gap-1"
+                              onClick={() => window.open('http://www.iros.go.kr', '_blank')}
+                            >
+                              <span>대법원 등기소 바로가기</span>
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
 
                   </div>
                 ) : (

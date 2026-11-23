@@ -33,6 +33,16 @@ export interface IntegratedPropertyReport {
     terrainShapeNm: string; // 지형형상 (예: 사다리형, 정방형)
     regulations: string[]; // 토지이용규제 목록
   };
+  ownership: {
+    hasData: boolean;
+    ownerTypeNm: string; // 소유구분 (개인, 법인, 종중, 국유지 등)
+    residenceTypeNm: string; // 거주지구분 (관내, 시군구내, 관외)
+    coOwnerCount: number; // 공유인 수
+    isCoOwned: boolean; // 공동소유 여부
+    changeCauseNm: string; // 소유권 변동원인 (매매, 증여, 상속 등)
+    changeDate: string; // 소유권 변동일자 (YYYY-MM-DD)
+    note: string;
+  };
   buildingLedger: {
     hasData: boolean;
     buildingCount: number;
@@ -204,6 +214,24 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
       })
     : Promise.resolve([]);
 
+  // 토지 소유정보 조회 (소유구분, 공유인수, 거주구분, 변동일자/원인)
+  const possessionPromise = VWORLD_KEY
+    ? axios.get('https://api.vworld.kr/ned/data/getPossessionAttr', {
+        params: {
+          key: VWORLD_KEY,
+          pnu,
+          format: 'json',
+          numOfRows: 10,
+          pageNo: 1,
+          domain: 'leegyver.com'
+        },
+        timeout: 6000
+      }).then(r => r.data?.possessions?.field?.[0] || null).catch(err => {
+        console.error('VWorld 토지소유정보 오류:', err.message);
+        return null;
+      })
+    : Promise.resolve(null);
+
   // 4. 건축물대장 (건축HUB 표제부) 호출
   const buildingPromise = DATA_GO_KEY
     ? axios.get('https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo', {
@@ -266,9 +294,10 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
   }
 
   // 비동기 병렬 실행
-  const [landData, landUseList, buildingItems, ...tradeResults] = await Promise.all([
+  const [landData, landUseList, possessionData, buildingItems, ...tradeResults] = await Promise.all([
     landCharacteristicPromise,
     landUsePromise,
+    possessionPromise,
     buildingPromise,
     ...transactionPromises
   ]);
@@ -305,7 +334,21 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
     regulations: Array.from(regulationSet)
   };
 
-  // (2) 건축물대장 데이터
+  // (2) 소유 및 공유인 정보
+  const coOwnerCount = parseInt(possessionData?.cnrsPsnCo || '0', 10);
+  const isCoOwned = coOwnerCount > 0;
+  const ownership = {
+    hasData: !!possessionData,
+    ownerTypeNm: possessionData?.posesnSeCodeNm || (landData ? '개인' : '미확인'),
+    residenceTypeNm: possessionData?.resdncSeCodeNm || '-',
+    coOwnerCount,
+    isCoOwned,
+    changeCauseNm: possessionData?.ownshipChgCauseCodeNm || '소유권변동',
+    changeDate: formatDate(possessionData?.ownshipChgDe),
+    note: '공공 오픈API 특성상 소유자 실명, 주민번호, 전체 주소는 개인정보보호법에 따라 비공개 처리됩니다. 소유자 성명 및 공유인별 상세 지분 명부는 대법원 인터넷등기소(등기부등본) 열람으로 확인하실 수 있습니다.'
+  };
+
+  // (3) 건축물대장 데이터
   const currentYear = new Date().getFullYear();
   const buildings = buildingItems.map((b: any) => {
     const totArea = parseFloat(b.totArea || '0');
@@ -397,6 +440,9 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
     if (landLedger.officialPricePerM2 > 0) {
       points.push(`[공시지가] ㎡당 ${landLedger.officialPricePerM2.toLocaleString()}원 (토지 총 공시지가 기준 약 ${formatMoney(Math.round(landLedger.officialPriceTotal / 10000))})입니다.`);
     }
+    if (ownership.hasData) {
+      points.push(`[소유관계] ${ownership.ownerTypeNm} (${ownership.isCoOwned ? `공유인 ${ownership.coOwnerCount}명 공동소유` : '단독소유'}), 거주구분: ${ownership.residenceTypeNm}, 최근 변동일: ${ownership.changeDate} (${ownership.changeCauseNm})`);
+    }
   }
 
   // 건물 평가
@@ -437,6 +483,7 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
     searchedAt: new Date().toISOString(),
     basicInfo,
     landLedger,
+    ownership,
     buildingLedger,
     transactions,
     aiSummary: {

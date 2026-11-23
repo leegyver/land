@@ -109,7 +109,6 @@ app.use((req, res, next) => {
     // 뉴스 스케줄러 초기화
     setupNewsScheduler();
     setupNewsletterScheduler();
-    setupGanghwaTransactionScheduler();
 
 
   });

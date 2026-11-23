@@ -48,6 +48,9 @@ export interface IntegratedPropertyReport {
     terrainHeightNm: string; // 지형고저 (예: 평지, 완경사)
     terrainShapeNm: string; // 지형형상 (예: 사다리형, 정방형)
     regulations: string[]; // 토지이용규제 목록
+    legalBcRatLimit: number; // 법정 건폐율 상한 (%)
+    legalVlRatLimit: number; // 법정 용적률 상한 (%)
+    legalZoningDesc: string; // 용도지역 및 법정 기준 설명
   };
   ownership: {
     hasData: boolean;
@@ -75,6 +78,8 @@ export interface IntegratedPropertyReport {
       totAreaPyeong: number; // 연면적 (평)
       bcRat: number; // 건폐율 (%)
       vlRat: number; // 용적률 (%)
+      legalBcRatLimit: number; // 법정 건폐율 상한 (%)
+      legalVlRatLimit: number; // 법정 용적률 상한 (%)
       grndFlrCnt: number; // 지상 층수
       ugrndFlrCnt: number; // 지하 층수
       parkingCount: number; // 주차 대수
@@ -120,14 +125,59 @@ function formatDate(dateStr: string | number | undefined): string {
   return s;
 }
 
+export interface ZoningLimit {
+  bcRatLimit: number; // 법정 건폐율 상한 (%)
+  vlRatLimit: number; // 법정 용적률 상한 (%)
+  desc: string;
+}
+
+export function getZoningLimits(useAreaNm: string): ZoningLimit {
+  const name = (useAreaNm || '').trim();
+
+  // 주거지역
+  if (name.includes('제1종전용주거')) return { bcRatLimit: 50, vlRatLimit: 100, desc: '제1종전용주거지역 (건폐율 50%↓, 용적률 100%↓)' };
+  if (name.includes('제2종전용주거')) return { bcRatLimit: 50, vlRatLimit: 150, desc: '제2종전용주거지역 (건폐율 50%↓, 용적률 150%↓)' };
+  if (name.includes('제1종일반주거')) return { bcRatLimit: 60, vlRatLimit: 200, desc: '제1종일반주거지역 (건폐율 60%↓, 용적률 200%↓)' };
+  if (name.includes('제2종일반주거')) return { bcRatLimit: 60, vlRatLimit: 250, desc: '제2종일반주거지역 (건폐율 60%↓, 용적률 250%↓)' };
+  if (name.includes('제3종일반주거')) return { bcRatLimit: 50, vlRatLimit: 300, desc: '제3종일반주거지역 (건폐율 50%↓, 용적률 300%↓)' };
+  if (name.includes('준주거')) return { bcRatLimit: 70, vlRatLimit: 500, desc: '준주거지역 (건폐율 70%↓, 용적률 500%↓)' };
+
+  // 상업지역
+  if (name.includes('중심상업')) return { bcRatLimit: 90, vlRatLimit: 1500, desc: '중심상업지역 (건폐율 90%↓, 용적률 1,500%↓)' };
+  if (name.includes('일반상업')) return { bcRatLimit: 80, vlRatLimit: 1300, desc: '일반상업지역 (건폐율 80%↓, 용적률 1,300%↓)' };
+  if (name.includes('근린상업')) return { bcRatLimit: 70, vlRatLimit: 900, desc: '근린상업지역 (건폐율 70%↓, 용적률 900%↓)' };
+  if (name.includes('유통상업')) return { bcRatLimit: 80, vlRatLimit: 1100, desc: '유통상업지역 (건폐율 80%↓, 용적률 1,100%↓)' };
+
+  // 공업지역
+  if (name.includes('전용공업')) return { bcRatLimit: 70, vlRatLimit: 300, desc: '전용공업지역 (건폐율 70%↓, 용적률 300%↓)' };
+  if (name.includes('일반공업')) return { bcRatLimit: 70, vlRatLimit: 350, desc: '일반공업지역 (건폐율 70%↓, 용적률 350%↓)' };
+  if (name.includes('준공업')) return { bcRatLimit: 70, vlRatLimit: 400, desc: '준공업지역 (건폐율 70%↓, 용적률 400%↓)' };
+
+  // 녹지지역
+  if (name.includes('보전녹지')) return { bcRatLimit: 20, vlRatLimit: 80, desc: '보전녹지지역 (건폐율 20%↓, 용적률 80%↓)' };
+  if (name.includes('생산녹지')) return { bcRatLimit: 20, vlRatLimit: 100, desc: '생산녹지지역 (건폐율 20%↓, 용적률 100%↓)' };
+  if (name.includes('자연녹지')) return { bcRatLimit: 20, vlRatLimit: 100, desc: '자연녹지지역 (건폐율 20%↓, 용적률 100%↓)' };
+
+  // 관리지역
+  if (name.includes('계획관리')) return { bcRatLimit: 40, vlRatLimit: 100, desc: '계획관리지역 (건폐율 40%↓, 용적률 100%↓, 성장관리구역 시 완화 가능)' };
+  if (name.includes('생산관리')) return { bcRatLimit: 20, vlRatLimit: 80, desc: '생산관리지역 (건폐율 20%↓, 용적률 80%↓)' };
+  if (name.includes('보전관리')) return { bcRatLimit: 20, vlRatLimit: 80, desc: '보전관리지역 (건폐율 20%↓, 용적률 80%↓)' };
+
+  // 농림 및 자연환경보전
+  if (name.includes('농림')) return { bcRatLimit: 20, vlRatLimit: 80, desc: '농림지역 (건폐율 20%↓, 용적률 80%↓)' };
+  if (name.includes('자연환경보전')) return { bcRatLimit: 20, vlRatLimit: 80, desc: '자연환경보전지역 (건폐율 20%↓, 용적률 80%↓)' };
+
+  return { bcRatLimit: 60, vlRatLimit: 200, desc: `${name || '일반지역'} (지자체 조례 기준 확인 요망)` };
+}
+
 export async function getIntegratedPropertyReport(queryAddress: string): Promise<IntegratedPropertyReport> {
   const trimmedAddress = queryAddress.trim();
   if (!trimmedAddress) {
     throw new Error('주소를 입력해 주세요.');
   }
 
-  // 1. 캐시 확인
-  const cacheKey = `property_integrated_v1_${trimmedAddress}`;
+  // 1. 캐시 확인 (v2로 갱신하여 최신 공시지가 반영)
+  const cacheKey = `property_integrated_v2_${trimmedAddress}`;
   const cached = memoryCache.get<IntegratedPropertyReport>(cacheKey);
   if (cached) {
     return cached;
@@ -189,12 +239,19 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
           key: VWORLD_KEY,
           pnu,
           format: 'json',
-          numOfRows: 5,
+          numOfRows: 30,
           pageNo: 1,
           domain: 'leegyver.com'
         },
         timeout: 6000
-      }).then(r => r.data?.landCharacteristicss?.field?.[0] || null).catch(err => {
+      }).then(r => {
+        const raw = r.data?.landCharacteristicss?.field;
+        if (!raw) return null;
+        const list = Array.isArray(raw) ? raw : [raw];
+        // 최신 기준연도(stdrYear) 내림차순 정렬하여 가장 최근 공시지가 및 토지특성을 픽!
+        list.sort((a: any, b: any) => parseInt(b.stdrYear || '0', 10) - parseInt(a.stdrYear || '0', 10));
+        return list[0] || null;
+      }).catch(err => {
         console.error('VWorld 토지특성 오류:', err.message);
         return null;
       })
@@ -336,6 +393,8 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
     });
   }
 
+  const zoningLimits = getZoningLimits(landData?.prposArea1Nm || '');
+
   const landLedger = {
     hasData: !!landData,
     landCategoryNm: landData?.lndcgrCodeNm || '-',
@@ -349,7 +408,10 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
     roadSideNm: landData?.roadSideCodeNm || '-',
     terrainHeightNm: landData?.tpgrphHgCodeNm || '-',
     terrainShapeNm: landData?.tpgrphFrmCodeNm || '-',
-    regulations: Array.from(regulationSet)
+    regulations: Array.from(regulationSet),
+    legalBcRatLimit: zoningLimits.bcRatLimit,
+    legalVlRatLimit: zoningLimits.vlRatLimit,
+    legalZoningDesc: zoningLimits.desc
   };
 
   // (2) 소유 및 공유인 정보
@@ -380,6 +442,19 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
                        String(b.regstrKindCdNm || '').includes('위반') ||
                        String(b.bldNm || '').includes('위반');
 
+    const platArea = parseFloat(b.platArea || '0');
+    const archArea = parseFloat(b.archArea || '0');
+    let bcRat = parseFloat(b.bcRat || '0');
+    let vlRat = parseFloat(b.vlRat || '0');
+
+    // 대장상 비율이 0이거나 누락된 경우 대지·건축면적으로부터 자동 산출
+    if (bcRat <= 0 && platArea > 0 && archArea > 0) {
+      bcRat = Math.round((archArea / platArea) * 10000) / 100;
+    }
+    if (vlRat <= 0 && platArea > 0 && totArea > 0) {
+      vlRat = Math.round((totArea / platArea) * 10000) / 100;
+    }
+
     return {
       bldNm: b.bldNm?.trim() || (b.dongNm?.trim() ? `${b.dongNm}동` : '건축물'),
       dongNm: b.dongNm?.trim() || '',
@@ -387,12 +462,14 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
       etcPurps: b.etcPurps?.trim() || '',
       strctNm: b.strctCdNm?.trim() || b.etcStrct?.trim() || '-',
       roofNm: b.roofCdNm?.trim() || b.etcRoof?.trim() || '-',
-      platAreaM2: parseFloat(b.platArea || '0'),
-      archAreaM2: parseFloat(b.archArea || '0'),
+      platAreaM2: platArea,
+      archAreaM2: archArea,
       totAreaM2: totArea,
       totAreaPyeong: totPyeong,
-      bcRat: parseFloat(b.bcRat || '0'),
-      vlRat: parseFloat(b.vlRat || '0'),
+      bcRat,
+      vlRat,
+      legalBcRatLimit: zoningLimits.bcRatLimit,
+      legalVlRatLimit: zoningLimits.vlRatLimit,
       grndFlrCnt: parseInt(b.grndFlrCnt || '0', 10),
       ugrndFlrCnt: parseInt(b.ugrndFlrCnt || '0', 10),
       parkingCount: (parseInt(b.indrAutoUtcnt || '0', 10) + parseInt(b.oudrAutoUtcnt || '0', 10) + parseInt(b.indrMechUtcnt || '0', 10) + parseInt(b.oudrMechUtcnt || '0', 10)),
@@ -518,9 +595,9 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
   // 토지 평가
   if (landLedger.hasData) {
     points.push(`[토지] 지목은 '${landLedger.landCategoryNm}', 대지면적은 ${landLedger.areaM2.toLocaleString()}㎡(약 ${landLedger.areaPyeong}평)입니다.`);
-    points.push(`[용도] 국토계획법상 '${landLedger.useArea1Nm}'에 위치하며, 도로조건은 '${landLedger.roadSideNm}'입니다.`);
+    points.push(`[용도 및 규제] 국토계획법상 '${landLedger.useArea1Nm}'이며, 법정 기준은 건폐율 ${landLedger.legalBcRatLimit}% 이하, 용적률 ${landLedger.legalVlRatLimit}% 이하입니다.`);
     if (landLedger.officialPricePerM2 > 0) {
-      points.push(`[공시지가] ㎡당 ${landLedger.officialPricePerM2.toLocaleString()}원 (토지 총 공시지가 기준 약 ${formatMoney(Math.round(landLedger.officialPriceTotal / 10000))})입니다.`);
+      points.push(`[최신 공시지가] ${landLedger.standardYear}년 공시 기준 ㎡당 ${landLedger.officialPricePerM2.toLocaleString()}원 (토지 총 공시지가 기준 약 ${formatMoney(Math.round(landLedger.officialPriceTotal / 10000))})입니다.`);
     }
     if (ownership.hasData) {
       points.push(`[소유관계] ${ownership.ownerTypeNm} (${ownership.isCoOwned ? `공유인 ${ownership.coOwnerCount}명 공동소유` : '단독소유'}), 거주구분: ${ownership.residenceTypeNm}, 최근 변동일: ${ownership.changeDate} (${ownership.changeCauseNm})`);
@@ -531,7 +608,7 @@ export async function getIntegratedPropertyReport(queryAddress: string): Promise
   if (buildingLedger.hasData) {
     const mainBld = buildingLedger.buildings[0];
     points.push(`[건물] 주용도 '${mainBld.mainPurpsNm}', ${mainBld.strctNm}으로 지상 ${mainBld.grndFlrCnt}층 연면적 ${mainBld.totAreaM2.toLocaleString()}㎡(약 ${mainBld.totAreaPyeong}평) 규모입니다.`);
-    points.push(`[건폐/용적] 건폐율 ${mainBld.bcRat}%, 용적률 ${mainBld.vlRat}%가 적용되어 있습니다.`);
+    points.push(`[건폐/용적] 실제 건폐율 ${mainBld.bcRat}%, 실제 용적률 ${mainBld.vlRat}% (법정 상한: 건폐율 ${mainBld.legalBcRatLimit}%↓, 용적률 ${mainBld.legalVlRatLimit}%↓)입니다.`);
     if (mainBld.useAprDay && mainBld.useAprDay !== '-') {
       points.push(`[준공] ${mainBld.useAprDay} 사용승인 (준공 후 약 ${mainBld.buildingAgeYears}년 경과)된 건물입니다.`);
     }

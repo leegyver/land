@@ -299,6 +299,15 @@ export default function PropertyLookupPage() {
                             {data.landLedger.useArea1Nm} {data.landLedger.useArea2Nm && ` / ${data.landLedger.useArea2Nm}`}
                           </span>
                         </div>
+                        <div className="py-2.5 flex justify-between items-center bg-blue-50/60 px-2.5 rounded-lg -mx-1">
+                          <span className="text-slate-700 font-medium text-xs flex items-center gap-1">
+                            <span className="text-blue-600 font-bold">건축규제</span>
+                            <span>법정 건폐율 / 용적률</span>
+                          </span>
+                          <span className="font-extrabold text-blue-900 text-xs sm:text-sm">
+                            건폐율 {data.landLedger.legalBcRatLimit}% 이하 / 용적률 {data.landLedger.legalVlRatLimit}% 이하
+                          </span>
+                        </div>
                         <div className="py-2.5 flex justify-between items-center">
                           <span className="text-slate-500">도로조건</span>
                           <span className="font-semibold text-slate-900">{data.landLedger.roadSideNm}</span>
@@ -338,8 +347,11 @@ export default function PropertyLookupPage() {
                       </CardHeader>
                       <CardContent className="pt-4 space-y-4">
                         <div className="bg-emerald-50/70 p-3.5 rounded-xl border border-emerald-100">
-                          <div className="text-xs text-emerald-700 font-medium">
-                            개별공시지가 ({data.landLedger.standardYear}년 기준)
+                          <div className="text-xs text-emerald-700 font-semibold flex items-center justify-between">
+                            <span>개별공시지가 ({data.landLedger.standardYear}년 최신 공시 기준)</span>
+                            <Badge variant="outline" className="bg-emerald-100 text-emerald-800 border-emerald-300 text-[10px] py-0 h-4">
+                              최신 공시가
+                            </Badge>
                           </div>
                           <div className="text-xl font-extrabold text-emerald-900 mt-1">
                             {data.landLedger.officialPricePerM2.toLocaleString()} 원/㎡
@@ -522,11 +534,19 @@ export default function PropertyLookupPage() {
                               <div className="text-xs text-slate-500">대지: {b.platAreaM2.toLocaleString()}㎡</div>
                             </div>
                             <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                              <div className="text-xs text-slate-500">건폐율 / 용적률</div>
+                              <div className="text-xs text-slate-500">실제 건폐율 / 용적률</div>
                               <div className="text-base font-bold text-slate-900 mt-0.5">
-                                {b.bcRat}% / {b.vlRat}%
+                                {b.bcRat > 0 || b.vlRat > 0 ? (
+                                  `${b.bcRat}% / ${b.vlRat}%`
+                                ) : (
+                                  <span className="text-xs font-semibold text-slate-600">
+                                    법정 상한 {data.landLedger.legalBcRatLimit}% / {data.landLedger.legalVlRatLimit}%
+                                  </span>
+                                )}
                               </div>
-                              <div className="text-xs text-slate-500">법정 기준 내 적합</div>
+                              <div className="text-xs text-blue-700 font-medium">
+                                {`법정 상한: ${data.landLedger?.legalBcRatLimit || b.legalBcRatLimit || 60}%↓ / ${data.landLedger?.legalVlRatLimit || b.legalVlRatLimit || 200}%↓`}
+                              </div>
                             </div>
                             <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
                               <div className="text-xs text-slate-500">층수 / 사용승인일</div>

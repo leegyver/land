@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState, useEffect } from "react";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { 
   Search, 
   MapPin, 
@@ -28,6 +28,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import PropertyLookupMap from "@/components/map/PropertyLookupMap";
 
+// 마지막 조회 주소 로컬 스토리지 키 및 기본값
+const LAST_LOOKUP_ADDRESS_KEY = "last_property_lookup_address";
+const DEFAULT_LOOKUP_ADDRESS = "인천광역시 강화군 강화읍 관청리 89-1";
+
+function getInitialAddress(): string {
+  if (typeof window !== "undefined") {
+    try {
+      const saved = localStorage.getItem(LAST_LOOKUP_ADDRESS_KEY);
+      if (saved && saved.trim()) {
+        return saved.trim();
+      }
+    } catch (e) {
+      // 로컬스토리지 접근 제한 등 예외 방어
+    }
+  }
+  return DEFAULT_LOOKUP_ADDRESS;
+}
+
 // 추천 검색 주소
 const SAMPLE_ADDRESSES = [
   "인천광역시 강화군 강화읍 관청리 89-1",
@@ -37,8 +55,19 @@ const SAMPLE_ADDRESSES = [
 ];
 
 export default function PropertyLookupPage() {
-  const [searchInput, setSearchInput] = useState("");
-  const [selectedAddress, setSelectedAddress] = useState("인천광역시 강화군 강화읍 관청리 89-1");
+  const [selectedAddress, setSelectedAddress] = useState<string>(getInitialAddress);
+  const [searchInput, setSearchInput] = useState<string>(getInitialAddress);
+
+  // 선택된 주소 변경 시 localStorage에 저장
+  useEffect(() => {
+    if (selectedAddress && selectedAddress.trim()) {
+      try {
+        localStorage.setItem(LAST_LOOKUP_ADDRESS_KEY, selectedAddress.trim());
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, [selectedAddress]);
 
   // 부동산 통합 정보 조회 Query
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
@@ -52,9 +81,21 @@ export default function PropertyLookupPage() {
       return res.json();
     },
     enabled: !!selectedAddress,
+    placeholderData: keepPreviousData, // 주소 변경 시 기존 지도 및 데이터 유지 (맵 깜빡임/크기 축소 방지)
     staleTime: 10 * 60 * 1000, // 10분 캐싱
     retry: 1
   });
+
+  // 조회 완료 시 표준 주소명으로 로컬스토리지 동기화
+  useEffect(() => {
+    if (data?.success && data?.basicInfo?.addressName) {
+      try {
+        localStorage.setItem(LAST_LOOKUP_ADDRESS_KEY, data.basicInfo.addressName);
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, [data]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

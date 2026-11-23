@@ -28,6 +28,7 @@ export default function PropertyLookupMap({
   const mapInstance = useRef<any>(null);
   const markerInstance = useRef<any>(null);
   const overlayInstance = useRef<any>(null);
+  const isClickTriggeredRef = useRef<boolean>(false);
 
   const [isCadastral, setIsCadastral] = useState(true); // 지적편집도 기본 ON
   const [mapType, setMapType] = useState<"ROADMAP" | "HYBRID">("ROADMAP");
@@ -102,6 +103,9 @@ export default function PropertyLookupMap({
                 overlayInstance.current.setPosition(latlng);
               }
 
+              // 지도를 직접 클릭한 상태 플래그 설정 -> 부모의 신규 좌표 수신 시 줌 레벨(크기) 및 화면 유지
+              isClickTriggeredRef.current = true;
+
               // 상위 컴포넌트 호출 -> 토지/건물/실거래 자동 조회
               onSelectAddress(newAddr);
             }
@@ -137,9 +141,22 @@ export default function PropertyLookupMap({
   useEffect(() => {
     if (!mapInstance.current || !lat || !lng || lat <= 0 || lng <= 0) return;
 
+    // 만약 사용자가 지도를 직접 클릭하여 주소가 갱신된 경우:
+    // 이미 클릭 위치로 마커/오버레이가 이동되어 있고, 사용자가 현재 보고 있는 줌 크기(레벨)를 그대로 유지해야 함
+    if (isClickTriggeredRef.current) {
+      isClickTriggeredRef.current = false;
+      mapInstance.current.relayout();
+      return;
+    }
+
     const moveLatLon = new window.kakao.maps.LatLng(lat, lng);
     mapInstance.current.setCenter(moveLatLon);
-    mapInstance.current.setLevel(3);
+
+    // 검색창 입력 등으로 완전히 새로운 주소로 이동할 때만 줌 레벨 조정
+    const currentLevel = mapInstance.current.getLevel();
+    if (currentLevel > 4) {
+      mapInstance.current.setLevel(3);
+    }
 
     if (markerInstance.current) {
       markerInstance.current.setPosition(moveLatLon);
@@ -152,6 +169,8 @@ export default function PropertyLookupMap({
         content.innerHTML = `<span class="text-blue-400 font-bold">📍 선택된 필지:</span> ${addressName}`;
       }
     }
+
+    mapInstance.current.relayout();
   }, [lat, lng, addressName]);
 
   // 3. 지적편집도 토글 핸들러

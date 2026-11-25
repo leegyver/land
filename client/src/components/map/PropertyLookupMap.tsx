@@ -137,7 +137,36 @@ export default function PropertyLookupMap({
     }
   }, []);
 
-  // 2. 검색 주소 변경 시 지도 중심 및 마커 갱신
+  // 2. 인쇄 이벤트 감지: 인쇄 시 실측 A4 규격에 맞게 지도 레이아웃 재정렬 및 중심좌표 유지
+  useEffect(() => {
+    const handleBeforePrint = () => {
+      if (mapInstance.current && window.kakao) {
+        mapInstance.current.relayout();
+        if (lat && lng && lat > 0 && lng > 0) {
+          const center = new window.kakao.maps.LatLng(lat, lng);
+          mapInstance.current.setCenter(center);
+        }
+      }
+    };
+    const handleAfterPrint = () => {
+      if (mapInstance.current && window.kakao) {
+        mapInstance.current.relayout();
+        if (lat && lng && lat > 0 && lng > 0) {
+          const center = new window.kakao.maps.LatLng(lat, lng);
+          mapInstance.current.setCenter(center);
+        }
+      }
+    };
+
+    window.addEventListener("beforeprint", handleBeforePrint);
+    window.addEventListener("afterprint", handleAfterPrint);
+    return () => {
+      window.removeEventListener("beforeprint", handleBeforePrint);
+      window.removeEventListener("afterprint", handleAfterPrint);
+    };
+  }, [lat, lng]);
+
+  // 3. 검색 주소 변경 시 지도 중심 및 마커 갱신
   useEffect(() => {
     if (!mapInstance.current || !lat || !lng || lat <= 0 || lng <= 0) return;
 
@@ -210,10 +239,10 @@ export default function PropertyLookupMap({
   };
 
   return (
-    <div className="relative w-full rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-slate-100">
+    <div className="relative w-full rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-slate-100 print:rounded-md print:border-slate-300 print:shadow-none print:mb-1">
       
       {/* 안내 툴팁 바 */}
-      <div className="absolute top-3 left-3 z-20 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-lg shadow-md border border-slate-200/80 flex items-center gap-2 text-xs">
+      <div className="absolute top-3 left-3 z-20 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-lg shadow-md border border-slate-200/80 flex items-center gap-2 text-xs print:hidden">
         <Compass className="w-4 h-4 text-blue-600 animate-spin" style={{ animationDuration: "12s" }} />
         <span className="font-semibold text-slate-800">지도의 원하는 필지를 클릭하면 해당 지번이 즉시 조회됩니다</span>
         {isGeocoding && (
@@ -225,7 +254,7 @@ export default function PropertyLookupMap({
       </div>
 
       {/* 우측 상단 지도 컨트롤 버튼들 */}
-      <div className="absolute top-3 right-3 z-20 flex flex-col gap-1.5">
+      <div className="absolute top-3 right-3 z-20 flex flex-col gap-1.5 print:hidden">
         {/* 지적편집도 토글 버튼 */}
         <Button
           type="button"
@@ -279,12 +308,12 @@ export default function PropertyLookupMap({
       {/* 지도 렌더링 컨테이너 */}
       <div 
         ref={mapRef} 
-        className="w-full h-[320px] sm:h-[420px] cursor-crosshair"
+        className="w-full h-[320px] sm:h-[420px] print:h-[260px] cursor-crosshair"
       />
 
       {/* 로딩 인디케이터 오버레이 */}
       {isLoading && (
-        <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px] z-30 flex items-center justify-center pointer-events-none">
+        <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px] z-30 flex items-center justify-center pointer-events-none print:hidden">
           <div className="bg-slate-900/80 text-white text-xs px-3.5 py-2 rounded-xl shadow-xl flex items-center gap-2">
             <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
             <span>대장 및 실거래 데이터 조회 중...</span>

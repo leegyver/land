@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React from "react";
 
 interface PrintablePropertyLookupReportProps {
   data: any;
@@ -17,100 +17,6 @@ export default function PrintablePropertyLookupReport({ data }: PrintablePropert
   const mainBld = bld.buildings?.[0] || null;
   const isMultiBld = (bld.buildings?.length || 0) > 1;
 
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
-
-  // 카카오 지도(지적편집도) 초기화 및 갱신
-  useEffect(() => {
-    if (!mapContainerRef.current || !basic.lat || !basic.lng) return;
-
-    const initMap = () => {
-      if (!window.kakao || !window.kakao.maps || !mapContainerRef.current) return;
-
-      // 이미 생성된 지도가 있다면 위치 중심 및 마커만 갱신
-      if (mapInstanceRef.current) {
-        const center = new window.kakao.maps.LatLng(basic.lat, basic.lng);
-        mapInstanceRef.current.setCenter(center);
-        mapInstanceRef.current.relayout();
-        return;
-      }
-
-      // 지도 신규 생성
-      mapContainerRef.current.innerHTML = "";
-      const center = new window.kakao.maps.LatLng(basic.lat, basic.lng);
-      const options = {
-        center,
-        level: 3, // 필지 및 지번이 선명하게 보이는 최적 상세 레벨
-        draggable: false,
-        scrollwheel: false,
-        disableDoubleClickZoom: true
-      };
-
-      const map = new window.kakao.maps.Map(mapContainerRef.current, options);
-      mapInstanceRef.current = map;
-
-      // 화면에 나오는 카카오 지적편집도(USE_DISTRICT)와 동일하게 지번 및 필지경계선 활성화
-      map.addOverlayMapTypeId(window.kakao.maps.MapTypeId.USE_DISTRICT);
-
-      // 중심 마커 생성
-      new window.kakao.maps.Marker({
-        position: center,
-        map: map
-      });
-
-      // 중심 대상필지 빨간색 핀 라벨
-      const overlayContent = document.createElement("div");
-      overlayContent.className = "bg-red-600 text-white font-extrabold text-[9px] px-1.5 py-0.5 rounded shadow pointer-events-none -translate-y-8";
-      overlayContent.innerText = "📍 대상필지";
-
-      new window.kakao.maps.CustomOverlay({
-        position: center,
-        content: overlayContent,
-        yAnchor: 1.2,
-        map: map
-      });
-
-      setTimeout(() => {
-        map.relayout();
-        map.setCenter(center);
-      }, 100);
-    };
-
-    if (window.kakao && window.kakao.maps) {
-      if (window.kakao.maps.load) {
-        window.kakao.maps.load(initMap);
-      } else {
-        initMap();
-      }
-    } else {
-      const timer = setInterval(() => {
-        if (window.kakao && window.kakao.maps) {
-          clearInterval(timer);
-          if (window.kakao.maps.load) {
-            window.kakao.maps.load(initMap);
-          } else {
-            initMap();
-          }
-        }
-      }, 100);
-      return () => clearInterval(timer);
-    }
-  }, [basic.lat, basic.lng, basic.addressName]);
-
-  // 인쇄 직전 레이아웃 재정렬 (지도가 잘리지 않고 완벽하게 출력되도록 보장)
-  useEffect(() => {
-    const handleBeforePrint = () => {
-      if (mapInstanceRef.current && basic.lat && basic.lng) {
-        const center = new window.kakao.maps.LatLng(basic.lat, basic.lng);
-        mapInstanceRef.current.relayout();
-        mapInstanceRef.current.setCenter(center);
-      }
-    };
-
-    window.addEventListener("beforeprint", handleBeforePrint);
-    return () => window.removeEventListener("beforeprint", handleBeforePrint);
-  }, [basic.lat, basic.lng]);
-
   // 총 공시지가 한글 포맷팅
   const formatTotalWon = (val: number) => {
     if (!val || val <= 0) return "-";
@@ -122,98 +28,28 @@ export default function PrintablePropertyLookupReport({ data }: PrintablePropert
     return `${man.toLocaleString()}만원`;
   };
 
-  const todayStr = new Date().toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  });
-
   return (
-    <div className="printable-report-wrapper text-slate-900 bg-white font-sans p-0 m-0 max-w-[210mm] mx-auto text-[10px] leading-tight">
-      {/* 1. 상단 브랜딩 & 헤더 */}
-      <div className="border-b-2 border-slate-900 pb-1.5 mb-1.5 flex items-end justify-between">
-        <div>
-          <div className="flex items-center gap-1.5 text-blue-700 font-bold text-[11px] tracking-tight">
-            <span>🏛️ 이가이버 부동산 · 공공데이터 실시간 연계</span>
-          </div>
-          <h1 className="text-xl font-extrabold text-slate-900 tracking-tight mt-0.5">
-            부동산 종합 분석 브리핑 리포트
-          </h1>
-        </div>
-        <div className="text-right text-[9.5px] text-slate-500 space-y-0.5">
-          <div>
-            <span className="font-semibold text-slate-700">발행일자:</span> {todayStr}
-          </div>
-          <div>
-            <span className="font-semibold text-slate-700">데이터출처:</span> 국토교통부 · 카카오맵(Kakao Maps)
-          </div>
-        </div>
+    <div className="hidden print:block text-slate-900 bg-white font-sans p-0 m-0 w-full text-[10px] leading-tight">
+      {/* 지도 안내 캡션 바 */}
+      <div className="flex justify-between items-center text-[8.5px] text-slate-500 mb-1 px-1">
+        <span>※ 상단 지도: 카카오맵 지적편집도 실시간 연동 (중심 핀: 선택 대상필지)</span>
+        <span>용도지역 및 지번 경계선 확인</span>
       </div>
 
-      {/* 2. 대상 부동산 기본 정보 바 */}
-      <div className="bg-slate-50 border border-slate-300 rounded p-1.5 mb-1.5 flex items-center justify-between">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2">
-            <span className="bg-blue-600 text-white font-bold text-[9.5px] px-1.5 py-0.5 rounded shrink-0">
-              대상지번
-            </span>
-            <span className="text-[13px] font-bold text-slate-900">{basic.addressName}</span>
-            {basic.isMountain && (
-              <span className="bg-amber-100 text-amber-800 text-[9px] px-1 py-0.2 rounded font-semibold shrink-0">
-                산(임야)
-              </span>
-            )}
-          </div>
-          {basic.roadAddressName && (
-            <div className="text-[9.5px] text-slate-600">도로명: {basic.roadAddressName}</div>
-          )}
-        </div>
-        <div className="text-right text-[9.5px] text-slate-600 shrink-0">
-          <div>
-            <span className="font-semibold text-slate-700">PNU:</span> {basic.pnu || "-"}
-          </div>
-          <div>
-            <span className="font-semibold text-slate-700">용도지역:</span> {land.useArea1Nm || "-"}{" "}
-            {land.useArea2Nm ? `(${land.useArea2Nm})` : ""}
-          </div>
-        </div>
-      </div>
-
-      {/* 3. 2단 분할: [좌: 카카오 지도(지적편집도)] vs [우: 토지대장 및 소유 현황] */}
+      {/* 1. 토지대장 및 건축물대장 2열 나란히 배치 */}
       <div className="grid grid-cols-2 gap-2 mb-1.5">
-        {/* (1) 카카오 지도 (화면과 동일한 지적편집도 및 필지 경계선) */}
-        <div className="border border-slate-300 rounded overflow-hidden flex flex-col bg-white">
-          <div className="bg-slate-800 text-white font-bold px-2 py-0.5 text-[10.5px] flex justify-between items-center">
-            <span>🗺️ 카카오 지도 (지적편집도)</span>
-            <span className="text-[8.5px] font-normal text-slate-300">필지경계·지번 확인</span>
-          </div>
-          <div className="relative w-full h-[150px] min-h-[150px] bg-slate-50 overflow-hidden flex-1">
-            {basic.lat && basic.lng ? (
-              <div ref={mapContainerRef} className="w-full h-full min-h-[148px]" />
-            ) : (
-              <div className="flex items-center justify-center h-full text-slate-400 text-[10px]">
-                지적도 좌표 정보 없음
-              </div>
-            )}
-          </div>
-          <div className="bg-slate-100 border-t border-slate-200 px-2 py-0.5 text-[8.5px] text-slate-600 flex justify-between">
-            <span>※ 중심점(빨간핀): 해당 지번 필지</span>
-            <span>카카오맵 지적편집도 기반</span>
-          </div>
-        </div>
-
-        {/* (2) 토지대장 및 소유 현황 */}
+        {/* (1) 토지대장 및 소유 현황 */}
         <div className="border border-slate-300 rounded overflow-hidden flex flex-col">
-          <div className="bg-slate-800 text-white font-bold px-2 py-0.5 text-[10.5px] flex justify-between items-center">
+          <div className="bg-slate-800 text-white font-bold px-2 py-0.5 text-[10px] flex justify-between items-center">
             <span>📄 토지대장 및 소유 현황</span>
-            <span className="text-[8.5px] font-normal text-slate-300">
+            <span className="text-[8px] font-normal text-slate-300">
               공시지가 {land.standardYear || "-"}년 기준
             </span>
           </div>
-          <table className="w-full text-[9.5px] border-collapse flex-1">
+          <table className="w-full text-[9px] border-collapse flex-1">
             <tbody>
               <tr className="border-b border-slate-200">
-                <td className="bg-slate-100 font-semibold p-1 w-24 text-slate-700">지목 / 면적</td>
+                <td className="bg-slate-100 font-semibold p-1 w-20 text-slate-700">지목 / 면적</td>
                 <td className="p-1 font-bold text-slate-900">
                   {land.landCategoryNm || "-"} / {land.areaM2 ? Number(land.areaM2).toLocaleString() : 0}㎡ ({land.areaPyeong || 0}평)
                 </td>
@@ -238,7 +74,7 @@ export default function PrintablePropertyLookupReport({ data }: PrintablePropert
                 </td>
               </tr>
               <tr className="border-b border-slate-200">
-                <td className="bg-slate-100 font-semibold p-1 text-slate-700">도로 / 지형형상</td>
+                <td className="bg-slate-100 font-semibold p-1 text-slate-700">도로 / 지형</td>
                 <td className="p-1 text-slate-800">
                   {land.roadSideNm || "-"} · {land.terrainHeightNm || "-"} ({land.terrainShapeNm || "-"})
                 </td>
@@ -253,74 +89,80 @@ export default function PrintablePropertyLookupReport({ data }: PrintablePropert
             </tbody>
           </table>
         </div>
-      </div>
 
-      {/* 4. 건축물대장 현황 표 */}
-      <div className="border border-slate-300 rounded overflow-hidden mb-1.5">
-        <div className="bg-slate-800 text-white font-bold px-2 py-0.5 text-[10.5px] flex justify-between items-center">
-          <span>🏢 건축물대장 현황</span>
-          <span className="text-[8.5px] font-normal text-slate-300">
-            {bld.hasData ? `총 ${bld.buildingCount}개동` : "등재 건축물 없음"}
-          </span>
-        </div>
-        {bld.hasData && mainBld ? (
-          <table className="w-full text-[9.5px] border-collapse">
-            <tbody>
-              <tr className="border-b border-slate-200">
-                <td className="bg-slate-100 font-semibold p-1 w-20 text-slate-700">건물명/용도</td>
-                <td className="p-1 font-bold text-slate-900 w-1/3">
-                  {mainBld.bldNm} ({mainBld.mainPurpsNm})
-                  {isMultiBld && ` 외 ${bld.buildingCount - 1}개동`}
-                </td>
-                <td className="bg-slate-100 font-semibold p-1 w-20 text-slate-700">구조/층수</td>
-                <td className="p-1 text-slate-800">
-                  {mainBld.strctNm} / 지상 {mainBld.grndFlrCnt}층
-                  {mainBld.ugrndFlrCnt > 0 ? ` (지하 ${mainBld.ugrndFlrCnt}층)` : ""}
-                </td>
-              </tr>
-              <tr className="border-b border-slate-200">
-                <td className="bg-slate-100 font-semibold p-1 text-slate-700">연면적/건축</td>
-                <td className="p-1 font-bold text-slate-900">
-                  {Number(mainBld.totAreaM2).toLocaleString()}㎡ ({mainBld.totAreaPyeong}평) / {Number(mainBld.archAreaM2).toLocaleString()}㎡
-                </td>
-                <td className="bg-slate-100 font-semibold p-1 text-slate-700">실제 건폐/용적</td>
-                <td className="p-1 font-bold text-blue-700">
-                  건폐율 {mainBld.bcRat > 0 ? `${mainBld.bcRat}%` : "-"} / 용적률 {mainBld.vlRat > 0 ? `${mainBld.vlRat}%` : "-"}
-                </td>
-              </tr>
-              <tr>
-                <td className="bg-slate-100 font-semibold p-1 text-slate-700">준공/주차</td>
-                <td className="p-1 text-slate-800">
-                  {mainBld.useAprDay || "-"} ({mainBld.buildingAgeYears || 0}년차) · 주차 {mainBld.parkingCount || 0}대
-                </td>
-                <td className="bg-slate-100 font-semibold p-1 text-slate-700">위반 여부</td>
-                <td className="p-1 font-bold">
-                  {mainBld.isViolated ? (
-                    <span className="text-red-600">⚠️ 위반건축물 등재</span>
-                  ) : (
-                    <span className="text-emerald-700">✓ 정상 (위반건축물 표기 없음)</span>
-                  )}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        ) : (
-          <div className="p-2 text-center text-slate-500 text-[9.5px] bg-slate-50">
-            공부상 등재된 건축물이 없는 나대지 상태이거나 가설건축물일 수 있습니다.
+        {/* (2) 건축물대장 현황 */}
+        <div className="border border-slate-300 rounded overflow-hidden flex flex-col">
+          <div className="bg-slate-800 text-white font-bold px-2 py-0.5 text-[10px] flex justify-between items-center">
+            <span>🏢 건축물대장 현황</span>
+            <span className="text-[8px] font-normal text-slate-300">
+              {bld.hasData ? `총 ${bld.buildingCount}개동` : "등재 건축물 없음"}
+            </span>
           </div>
-        )}
+          {bld.hasData && mainBld ? (
+            <table className="w-full text-[9px] border-collapse flex-1">
+              <tbody>
+                <tr className="border-b border-slate-200">
+                  <td className="bg-slate-100 font-semibold p-1 w-20 text-slate-700">건물명/용도</td>
+                  <td className="p-1 font-bold text-slate-900">
+                    {mainBld.bldNm} ({mainBld.mainPurpsNm})
+                    {isMultiBld && ` 외 ${bld.buildingCount - 1}개동`}
+                  </td>
+                </tr>
+                <tr className="border-b border-slate-200">
+                  <td className="bg-slate-100 font-semibold p-1 text-slate-700">연면적 / 건축</td>
+                  <td className="p-1 font-bold text-slate-900">
+                    {Number(mainBld.totAreaM2).toLocaleString()}㎡ ({mainBld.totAreaPyeong}평) / {Number(mainBld.archAreaM2).toLocaleString()}㎡
+                  </td>
+                </tr>
+                <tr className="border-b border-slate-200">
+                  <td className="bg-slate-100 font-semibold p-1 text-slate-700">구조 / 층수</td>
+                  <td className="p-1 text-slate-800">
+                    {mainBld.strctNm} / 지상 {mainBld.grndFlrCnt}층
+                    {mainBld.ugrndFlrCnt > 0 ? ` (지하 ${mainBld.ugrndFlrCnt}층)` : ""}
+                  </td>
+                </tr>
+                <tr className="border-b border-slate-200">
+                  <td className="bg-slate-100 font-semibold p-1 text-slate-700">실제 건폐/용적</td>
+                  <td className="p-1 font-bold text-blue-700">
+                    건폐율 {mainBld.bcRat > 0 ? `${mainBld.bcRat}%` : "-"} / 용적률 {mainBld.vlRat > 0 ? `${mainBld.vlRat}%` : "-"}
+                  </td>
+                </tr>
+                <tr className="border-b border-slate-200">
+                  <td className="bg-slate-100 font-semibold p-1 text-slate-700">준공 / 주차</td>
+                  <td className="p-1 text-slate-800">
+                    {mainBld.useAprDay || "-"} ({mainBld.buildingAgeYears || 0}년차) · 주차 {mainBld.parkingCount || 0}대
+                  </td>
+                </tr>
+                <tr>
+                  <td className="bg-slate-100 font-semibold p-1 text-slate-700">위반 여부</td>
+                  <td className="p-1 font-bold">
+                    {mainBld.isViolated ? (
+                      <span className="text-red-600">⚠️ 위반건축물 등재</span>
+                    ) : (
+                      <span className="text-emerald-700">✓ 정상 (위반건축물 표기 없음)</span>
+                    )}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          ) : (
+            <div className="p-3 text-center text-slate-500 text-[9px] bg-slate-50 flex-1 flex items-center justify-center">
+              공부상 등재된 건축물이 없는 나대지 상태이거나 가설건축물일 수 있습니다.
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* 5. 최근 실거래가 현황 표 */}
+      {/* 2. 최근 실거래가 현황 표 */}
       <div className="border border-slate-300 rounded overflow-hidden mb-1.5">
-        <div className="bg-slate-800 text-white font-bold px-2 py-0.5 text-[10.5px] flex justify-between items-center">
+        <div className="bg-slate-800 text-white font-bold px-2 py-0.5 text-[10px] flex justify-between items-center">
           <span>💰 국토교통부 최근 실거래가 신고 내역</span>
-          <span className="text-[8.5px] font-normal text-slate-300">
+          <span className="text-[8px] font-normal text-slate-300">
             {trades.hasDirectTrades ? "⭐ 선택 주소지 직접 거래 내역 포함" : "반경 인근 실거래 사례"}
           </span>
         </div>
         {trades.hasData && trades.items?.length > 0 ? (
-          <table className="w-full text-[9px] text-center border-collapse">
+          <table className="w-full text-[8.5px] text-center border-collapse">
             <thead className="bg-slate-100 text-slate-700 border-b border-slate-200">
               <tr>
                 <th className="p-0.5 w-14">구분</th>
@@ -359,18 +201,18 @@ export default function PrintablePropertyLookupReport({ data }: PrintablePropert
             </tbody>
           </table>
         ) : (
-          <div className="p-2 text-center text-slate-400 text-[9.5px]">
+          <div className="p-1.5 text-center text-slate-400 text-[9px]">
             최근 국토교통부에 신고된 실거래가 내역이 없습니다.
           </div>
         )}
       </div>
 
-      {/* 6. AI 종합 브리핑 및 주요 규제 분석 */}
+      {/* 3. AI 종합 브리핑 및 주요 규제 분석 */}
       <div className="border border-blue-200 bg-blue-50/40 rounded p-1.5 mb-1.5">
-        <div className="font-bold text-[10px] text-blue-900 mb-0.5 flex items-center gap-1">
+        <div className="font-bold text-[9.5px] text-blue-900 mb-0.5 flex items-center gap-1">
           <span>✨ AI 부동산 종합 브리핑 및 권리·규제 분석</span>
         </div>
-        <div className="space-y-0.5 text-[9px] text-slate-800">
+        <div className="space-y-0.5 text-[8.5px] text-slate-800">
           {ai.points?.slice(0, 4).map((pt: string, idx: number) => (
             <div key={idx} className="flex items-start gap-1">
               <span className="text-blue-600 font-bold shrink-0">•</span>
@@ -378,7 +220,7 @@ export default function PrintablePropertyLookupReport({ data }: PrintablePropert
             </div>
           ))}
           {ai.riskAnalysis?.length > 0 && (
-            <div className="mt-0.5 pt-0.5 border-t border-blue-200 text-[8.5px] text-slate-600">
+            <div className="mt-0.5 pt-0.5 border-t border-blue-200 text-[8px] text-slate-600">
               <span className="font-bold text-slate-800">주요 규제 및 유의사항: </span>
               {ai.riskAnalysis.join(" ")}
             </div>
@@ -386,10 +228,10 @@ export default function PrintablePropertyLookupReport({ data }: PrintablePropert
         </div>
       </div>
 
-      {/* 7. 공인중개사 정보 및 안내 푸터 */}
-      <div className="border-t border-slate-300 pt-1 flex items-center justify-between text-[8.5px] text-slate-500">
+      {/* 4. 공인중개사 정보 및 안내 푸터 */}
+      <div className="border-t border-slate-300 pt-1 flex items-center justify-between text-[8px] text-slate-500">
         <div>
-          <span className="font-bold text-slate-800 text-[9px]">이가이버 공인중개사사무소</span> | 대표: 이강욱 |
+          <span className="font-bold text-slate-800 text-[8.5px]">이가이버 공인중개사사무소</span> | 대표: 이강욱 |
           인천광역시 강화군 강화읍 남문로 1, 1층 | ☎ 032-934-3120 · 010-4787-3120
         </div>
         <div className="text-slate-400">

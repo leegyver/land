@@ -113,17 +113,11 @@ export default function PropertyLookupPage() {
 
   return (
     <>
-      {/* 🖨️ A4 1장 인쇄 전용 브리핑 리포트 (화면에서는 hidden, 인쇄 시에만 block) */}
-      {data && data.success && (
-        <PrintablePropertyLookupReport data={data} />
-      )}
-
-      {/* 웹 대화형 화면 (인쇄 시에는 숨김) */}
-      <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8 print:hidden">
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8 print:p-0 print:m-0 print:bg-white print:min-h-0">
+      <div className="max-w-6xl mx-auto space-y-6 print:space-y-0 print:max-w-none">
         
         {/* 헤더 섹션 */}
-        <div className="text-center space-y-3">
+        <div className="text-center space-y-3 print:hidden">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-200 rounded-full text-blue-700 text-xs font-semibold">
             <Sparkles className="w-3.5 h-3.5" />
             공공데이터포털 & 브이월드 실시간 연동
@@ -137,7 +131,7 @@ export default function PropertyLookupPage() {
         </div>
 
         {/* 주소 검색창 */}
-        <Card className="border-slate-200 shadow-sm bg-white">
+        <Card className="border-slate-200 shadow-sm bg-white print:hidden">
           <CardContent className="pt-6">
             <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
@@ -188,7 +182,7 @@ export default function PropertyLookupPage() {
 
         {/* 에러 상태 안내 */}
         {isError && (
-          <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-900">
+          <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-900 print:hidden">
             <AlertTriangle className="h-4 w-4 text-red-600" />
             <AlertTitle className="font-semibold">조회 실패</AlertTitle>
             <AlertDescription className="text-sm mt-1">
@@ -199,31 +193,51 @@ export default function PropertyLookupPage() {
 
         {/* 조회 결과 영역 */}
         {data && data.success && (
-          <div className="space-y-6">
+          <div className="space-y-6 print:space-y-1">
             
+            {/* 🖨️ 인쇄 전용 공식 헤더 */}
+            <div className="hidden print:flex items-end justify-between border-b-2 border-slate-900 pb-1 mb-1">
+              <div>
+                <div className="flex items-center gap-1.5 text-blue-700 font-bold text-[10px] tracking-tight">
+                  <span>🏛️ 이가이버 부동산 · 공공데이터 실시간 연계</span>
+                </div>
+                <h1 className="text-lg font-black text-slate-900 tracking-tight mt-0.5">
+                  부동산 종합 분석 브리핑 리포트
+                </h1>
+              </div>
+              <div className="text-right text-[8.5px] text-slate-500 space-y-0.5">
+                <div>
+                  <span className="font-semibold text-slate-700">발행일자:</span> {new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" })}
+                </div>
+                <div>
+                  <span className="font-semibold text-slate-700">데이터출처:</span> 국토교통부 · 카카오맵(Kakao Maps)
+                </div>
+              </div>
+            </div>
+
             {/* 기본 주소 헤더 바 */}
-            <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="space-y-1">
+            <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 print:p-1.5 print:mb-1 print:rounded-md print:border-slate-300 print:shadow-none print:flex-row print:items-center print:justify-between">
+              <div className="space-y-1 print:space-y-0.5">
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="border-blue-300 bg-blue-50 text-blue-700 font-medium">
+                  <Badge variant="outline" className="border-blue-300 bg-blue-50 text-blue-700 font-medium print:text-[8px] print:h-4 print:px-1">
                     필지고유번호(PNU): {data.basicInfo.pnu}
                   </Badge>
                   {data.basicInfo.isMountain && (
-                    <Badge variant="secondary" className="bg-amber-100 text-amber-800">산(임야)</Badge>
+                    <Badge variant="secondary" className="bg-amber-100 text-amber-800 print:text-[8px] print:h-4 print:px-1">산(임야)</Badge>
                   )}
                 </div>
-                <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-900 print:text-base">
                   {data.basicInfo.addressName}
                 </h2>
                 {data.basicInfo.roadAddressName && (
-                  <p className="text-xs sm:text-sm text-slate-500 flex items-center gap-1">
+                  <p className="text-xs sm:text-sm text-slate-500 flex items-center gap-1 print:text-[8.5px]">
                     <span>도로명:</span> {data.basicInfo.roadAddressName}
                   </p>
                 )}
               </div>
 
               {/* 바로가기 및 인쇄 버튼 그룹 */}
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 print:hidden">
                 <Button
                   size="sm"
                   className="text-xs gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm"
@@ -257,7 +271,7 @@ export default function PropertyLookupPage() {
               </div>
             </div>
 
-            {/* 인터랙티브 지적도 지도 (클릭하여 지번 정보 즉시 조회) */}
+            {/* 인터랙티브 지적도 지도 (클릭하여 지번 정보 즉시 조회 / 인쇄 시 풀사이즈 지적도로 출력) */}
             <PropertyLookupMap
               lat={data.basicInfo.lat}
               lng={data.basicInfo.lng}
@@ -269,9 +283,12 @@ export default function PropertyLookupPage() {
               isLoading={isLoading || isFetching}
             />
 
-            {/* AI 스마트 분석 브리핑 패널 */}
+            {/* 🖨️ A4 1장 인쇄 전용 상세 테이블 (토지대장, 건축물대장, 실거래가, AI 분석, 푸터) */}
+            <PrintablePropertyLookupReport data={data} />
+
+            {/* AI 스마트 분석 브리핑 패널 (웹 화면 전용) */}
             {data.aiSummary && (
-              <Card className="border-blue-200 bg-gradient-to-br from-blue-50/70 to-indigo-50/40 shadow-sm">
+              <Card className="border-blue-200 bg-gradient-to-br from-blue-50/70 to-indigo-50/40 shadow-sm print:hidden">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-blue-900 font-bold">
                     <Sparkles className="w-5 h-5 text-blue-600" />
@@ -302,8 +319,8 @@ export default function PropertyLookupPage() {
               </Card>
             )}
 
-            {/* 3대 핵심 탭 대시보드 */}
-            <Tabs defaultValue="land" className="space-y-4">
+            {/* 3대 핵심 탭 대시보드 (웹 화면 전용) */}
+            <Tabs defaultValue="land" className="space-y-4 print:hidden">
               <TabsList className="grid grid-cols-3 w-full bg-slate-200/70 p-1 rounded-xl">
                 <TabsTrigger value="land" className="flex items-center gap-1.5 py-2.5 font-semibold text-sm">
                   <Landmark className="w-4 h-4 text-emerald-600" />

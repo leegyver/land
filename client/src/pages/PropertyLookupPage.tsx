@@ -19,7 +19,8 @@ import {
   Layers,
   ExternalLink,
   Users,
-  RefreshCw
+  RefreshCw,
+  Printer
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import PropertyLookupMap from "@/components/map/PropertyLookupMap";
+import PrintablePropertyLookupReport from "@/components/property/PrintablePropertyLookupReport";
 
 // 마지막 조회 주소 로컬 스토리지 키 및 기본값
 const LAST_LOOKUP_ADDRESS_KEY = "last_property_lookup_address";
@@ -110,7 +112,14 @@ export default function PropertyLookupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
+    <>
+      {/* 🖨️ A4 1장 인쇄 전용 브리핑 리포트 (화면에서는 hidden, 인쇄 시에만 block) */}
+      {data && data.success && (
+        <PrintablePropertyLookupReport data={data} />
+      )}
+
+      {/* 웹 대화형 화면 (인쇄 시에는 숨김) */}
+      <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8 print:hidden">
       <div className="max-w-6xl mx-auto space-y-6">
         
         {/* 헤더 섹션 */}
@@ -213,29 +222,39 @@ export default function PropertyLookupPage() {
                 )}
               </div>
 
-              {/* 카카오맵 바로가기 버튼 */}
-              {data.basicInfo.lat > 0 && (
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-xs gap-1.5"
-                    onClick={() => window.open(`https://map.kakao.com/link/map/${encodeURIComponent(data.basicInfo.addressName)},${data.basicInfo.lat},${data.basicInfo.lng}`, '_blank')}
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    카카오맵에서 보기
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-xs gap-1.5"
-                    onClick={() => window.open(`https://map.kakao.com/link/roadview/${data.basicInfo.lat},${data.basicInfo.lng}`, '_blank')}
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    로드뷰 보기
-                  </Button>
-                </div>
-              )}
+              {/* 바로가기 및 인쇄 버튼 그룹 */}
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  className="text-xs gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm"
+                  onClick={() => window.print()}
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>1장 요약 리포트 인쇄</span>
+                </Button>
+                {data.basicInfo.lat > 0 && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs gap-1.5"
+                      onClick={() => window.open(`https://map.kakao.com/link/map/${encodeURIComponent(data.basicInfo.addressName)},${data.basicInfo.lat},${data.basicInfo.lng}`, '_blank')}
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      카카오맵
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs gap-1.5"
+                      onClick={() => window.open(`https://map.kakao.com/link/roadview/${data.basicInfo.lat},${data.basicInfo.lng}`, '_blank')}
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      로드뷰
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* 인터랙티브 지적도 지도 (클릭하여 지번 정보 즉시 조회) */}
@@ -874,5 +893,6 @@ export default function PropertyLookupPage() {
 
       </div>
     </div>
+    </>
   );
 }

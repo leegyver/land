@@ -14,7 +14,7 @@ const MobileBottomNav = () => {
     ];
 
     return (
-        <nav aria-label="모바일 하단 내비게이션" className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 z-50 pb-safe pl-safe pr-safe shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+        <nav aria-label="모바일 하단 내비게이션" className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 z-50 pb-safe pl-safe pr-safe shadow-[0_-2px_10px_rgba(0,0,0,0.05)] print:hidden">
             <div className="grid grid-cols-5 h-14 sm:h-16 landscape:h-10 max-w-lg landscape:max-w-xl mx-auto px-1">
                 {navItems.map((item) => {
                     const isActive = location === item.path;

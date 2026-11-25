@@ -37,7 +37,7 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-white/95 backdrop-blur-sm shadow-sm sticky top-0 w-full z-50 border-b border-slate-200 pt-safe overflow-x-hidden">
+    <header className="bg-white/95 backdrop-blur-sm shadow-sm sticky top-0 w-full z-50 border-b border-slate-200 pt-safe overflow-x-hidden print:hidden">
       <div className="container mx-auto px-2 sm:px-4 py-1.5 md:py-2 landscape:py-1 max-w-7xl">
         <div className="flex justify-between items-center gap-1 sm:gap-2 min-w-0">
           {/* Logo Section - Compact & beautifully balanced in landscape */}

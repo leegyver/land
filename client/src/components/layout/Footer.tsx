@@ -4,7 +4,7 @@ import { Link } from "wouter";
 
 const Footer = () => {
   return (
-    <footer className="bg-slate-900 text-white pt-6 pb-24 landscape:pb-16 md:pb-8 pl-safe pr-safe border-t border-slate-800">
+    <footer className="bg-slate-900 text-white pt-6 pb-24 landscape:pb-16 md:pb-8 pl-safe pr-safe border-t border-slate-800 print:hidden">
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="mb-6">
           <NewsletterForm />

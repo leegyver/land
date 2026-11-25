@@ -24,7 +24,8 @@ import {
   Sparkles,
   HelpCircle,
   FileBadge,
-  Edit
+  Edit,
+  Printer
 } from "lucide-react";
 import { SiKakaotalk } from "react-icons/si";
 import { siteConfig } from "@/config/siteConfig";
@@ -44,6 +45,7 @@ import { getCompatibilityScore } from "@/lib/saju";
 import SajuFormModal from "@/components/saju/SajuFormModal";
 import TarotModal from "@/components/tarot/TarotModal";
 import { NaverBlogPostModal } from "@/components/admin/NaverBlogPostModal";
+import PrintablePropertyDetailReport from "@/components/property/PrintablePropertyDetailReport";
 
 // 타입 문제를 위한 전역 선언
 declare global {
@@ -319,40 +321,59 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
         : `${property.type || "매물"} - ${property.district || ""}`);
 
   return (
-    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8 max-w-7xl overflow-x-hidden">
-      {/* 관리자 전용 독립 툴바 - 본문 레이아웃에 전혀 지장을 주지 않는 상단 바 */}
-      {isAdminOrMaster && (
-        <div className="mb-4 p-2.5 sm:p-3 bg-slate-950 text-white rounded-2xl shadow-md flex items-center justify-between gap-2 border border-slate-800">
-          <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold min-w-0">
-            <span className="inline-flex items-center gap-1 bg-orange-500 text-slate-950 text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-md shrink-0">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              관리자 모드
-            </span>
-            <span className="text-slate-400 text-xs truncate">매물 #{property.id}</span>
+    <>
+      {/* 🖨️ A4 인쇄 전용: 매물 브리핑 시트 (화면에서는 hidden, 인쇄 시에만 block) */}
+      <PrintablePropertyDetailReport
+        property={property}
+        displayTitle={displayTitle}
+        displayAddress={displayAddress}
+        images={images}
+      />
+
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8 max-w-7xl overflow-x-hidden print:hidden">
+        {/* 관리자 전용 독립 툴바 - 본문 레이아웃에 전혀 지장을 주지 않는 상단 바 */}
+        {isAdminOrMaster && (
+          <div className="mb-4 p-2.5 sm:p-3 bg-slate-950 text-white rounded-2xl shadow-md flex items-center justify-between gap-2 border border-slate-800">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-bold min-w-0">
+              <span className="inline-flex items-center gap-1 bg-orange-500 text-slate-950 text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-md shrink-0">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                관리자 모드
+              </span>
+              <span className="text-slate-400 text-xs truncate">매물 #{property.id}</span>
+            </div>
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <Button
+                size="sm"
+                onClick={() => setIsNaverBlogModalOpen(true)}
+                className="h-8 px-2.5 sm:px-3 text-xs font-black bg-[#03C75A] hover:bg-[#02b350] text-white flex items-center gap-1.5 rounded-xl shadow-sm touch-manipulation whitespace-nowrap"
+              >
+                <span className="bg-white text-[#03C75A] font-black text-[9px] w-3.5 h-3.5 rounded flex items-center justify-center">N</span>
+                <span className="hidden sm:inline">네이버 블로그 포스팅</span>
+                <span className="sm:hidden">블로그 포스팅</span>
+              </Button>
+              <Link href={`/admin/properties/edit/${property.id}`}>
+                <Button size="sm" className="h-8 px-2.5 sm:px-3 text-xs font-black bg-slate-800 hover:bg-slate-700 text-white flex items-center gap-1.5 rounded-xl shadow-sm touch-manipulation whitespace-nowrap border border-slate-700">
+                  <Edit className="w-3.5 h-3.5" />
+                  <span>매물 수정</span>
+                </Button>
+              </Link>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        )}
+
+        {/* 헤더 섹션 - 매물 제목과 인쇄 버튼 */}
+        <div className="mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 tracking-tight leading-snug">{displayTitle}</h1>
             <Button
               size="sm"
-              onClick={() => setIsNaverBlogModalOpen(true)}
-              className="h-8 px-2.5 sm:px-3 text-xs font-black bg-[#03C75A] hover:bg-[#02b350] text-white flex items-center gap-1.5 rounded-xl shadow-sm touch-manipulation whitespace-nowrap"
+              onClick={() => window.print()}
+              className="self-start sm:self-auto h-8 px-3 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 rounded-lg shadow-sm shrink-0"
             >
-              <span className="bg-white text-[#03C75A] font-black text-[9px] w-3.5 h-3.5 rounded flex items-center justify-center">N</span>
-              <span className="hidden sm:inline">네이버 블로그 포스팅</span>
-              <span className="sm:hidden">블로그 포스팅</span>
+              <Printer className="w-3.5 h-3.5" />
+              <span>매물 브리핑 인쇄</span>
             </Button>
-            <Link href={`/admin/properties/edit/${property.id}`}>
-              <Button size="sm" className="h-8 px-2.5 sm:px-3 text-xs font-black bg-slate-800 hover:bg-slate-700 text-white flex items-center gap-1.5 rounded-xl shadow-sm touch-manipulation whitespace-nowrap border border-slate-700">
-                <Edit className="w-3.5 h-3.5" />
-                <span>매물 수정</span>
-              </Button>
-            </Link>
           </div>
-        </div>
-      )}
-
-      {/* 헤더 섹션 - 매물 제목이 100% 가로너비를 독점하여 방해받지 않음 */}
-      <div className="mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 tracking-tight leading-snug mb-2">{displayTitle}</h1>
         <div className="flex flex-wrap items-center gap-1 mb-1">
           {property.type && (
             <Badge className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-1">
@@ -584,6 +605,14 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
                 </Button>
               </Link>
             )}
+            <Button
+              variant="outline"
+              className="w-full flex items-center justify-center gap-2 h-12 border-blue-200 bg-blue-50/50 hover:bg-blue-100/50 text-blue-900 font-bold"
+              onClick={() => window.print()}
+            >
+              <Printer className="w-5 h-5 text-blue-600" />
+              매물 브리핑 인쇄 (A4)
+            </Button>
             <Button variant="outline" className="w-full flex items-center justify-center gap-2 h-12" onClick={toggleFavorite}>
               <Heart className={`w-5 h-5 ${favoriteData?.isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-500'}`} />
               {favoriteData?.isFavorite ? '관심매물 등록됨' : '관심매물'}
@@ -1006,7 +1035,8 @@ const PropertyDetail = ({ propertyId }: PropertyDetailProps) => {
           targetId={Number(property.id)}
         />
       )}
-    </div>
+      </div>
+    </>
   );
 };
 

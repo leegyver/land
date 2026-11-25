@@ -15,7 +15,7 @@ const FloatingCTA = () => {
             <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="fixed bottom-20 right-3.5 z-40 md:bottom-8 md:right-8 landscape:bottom-14 landscape:right-3 flex flex-col landscape:flex-row gap-2.5 sm:gap-3 items-end landscape:items-center pr-safe pb-safe"
+                className="fixed bottom-20 right-3.5 z-40 md:bottom-8 md:right-8 landscape:bottom-14 landscape:right-3 flex flex-col landscape:flex-row gap-2.5 sm:gap-3 items-end landscape:items-center pr-safe pb-safe print:hidden"
             >
                 <div className="flex flex-col landscape:flex-row gap-2.5 sm:gap-3 items-end">
                     {/* Phone Button (Secondary) */}

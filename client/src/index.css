@@ -165,3 +165,31 @@
     break-inside: avoid;
   }
 }
+
+/* 🖨️ 인쇄 전용 리포트 화면 모드 은닉 및 인쇄 모드 활성화 (카카오맵 타일 사전 렌더링 유지) */
+@media screen {
+  .printable-report-wrapper {
+    position: fixed !important;
+    left: -99999px !important;
+    top: 0 !important;
+    width: 210mm !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    z-index: -9999 !important;
+  }
+}
+
+@media print {
+  .printable-report-wrapper {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: 210mm !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
+    pointer-events: auto !important;
+    z-index: auto !important;
+  }
+}

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 
 interface PrintablePropertyLookupReportProps {
   data: any;
@@ -16,6 +16,100 @@ export default function PrintablePropertyLookupReport({ data }: PrintablePropert
 
   const mainBld = bld.buildings?.[0] || null;
   const isMultiBld = (bld.buildings?.length || 0) > 1;
+
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
+
+  // 카카오 지도(지적편집도) 초기화 및 갱신
+  useEffect(() => {
+    if (!mapContainerRef.current || !basic.lat || !basic.lng) return;
+
+    const initMap = () => {
+      if (!window.kakao || !window.kakao.maps || !mapContainerRef.current) return;
+
+      // 이미 생성된 지도가 있다면 위치 중심 및 마커만 갱신
+      if (mapInstanceRef.current) {
+        const center = new window.kakao.maps.LatLng(basic.lat, basic.lng);
+        mapInstanceRef.current.setCenter(center);
+        mapInstanceRef.current.relayout();
+        return;
+      }
+
+      // 지도 신규 생성
+      mapContainerRef.current.innerHTML = "";
+      const center = new window.kakao.maps.LatLng(basic.lat, basic.lng);
+      const options = {
+        center,
+        level: 3, // 필지 및 지번이 선명하게 보이는 최적 상세 레벨
+        draggable: false,
+        scrollwheel: false,
+        disableDoubleClickZoom: true
+      };
+
+      const map = new window.kakao.maps.Map(mapContainerRef.current, options);
+      mapInstanceRef.current = map;
+
+      // 화면에 나오는 카카오 지적편집도(USE_DISTRICT)와 동일하게 지번 및 필지경계선 활성화
+      map.addOverlayMapTypeId(window.kakao.maps.MapTypeId.USE_DISTRICT);
+
+      // 중심 마커 생성
+      new window.kakao.maps.Marker({
+        position: center,
+        map: map
+      });
+
+      // 중심 대상필지 빨간색 핀 라벨
+      const overlayContent = document.createElement("div");
+      overlayContent.className = "bg-red-600 text-white font-extrabold text-[9px] px-1.5 py-0.5 rounded shadow pointer-events-none -translate-y-8";
+      overlayContent.innerText = "📍 대상필지";
+
+      new window.kakao.maps.CustomOverlay({
+        position: center,
+        content: overlayContent,
+        yAnchor: 1.2,
+        map: map
+      });
+
+      setTimeout(() => {
+        map.relayout();
+        map.setCenter(center);
+      }, 100);
+    };
+
+    if (window.kakao && window.kakao.maps) {
+      if (window.kakao.maps.load) {
+        window.kakao.maps.load(initMap);
+      } else {
+        initMap();
+      }
+    } else {
+      const timer = setInterval(() => {
+        if (window.kakao && window.kakao.maps) {
+          clearInterval(timer);
+          if (window.kakao.maps.load) {
+            window.kakao.maps.load(initMap);
+          } else {
+            initMap();
+          }
+        }
+      }, 100);
+      return () => clearInterval(timer);
+    }
+  }, [basic.lat, basic.lng, basic.addressName]);
+
+  // 인쇄 직전 레이아웃 재정렬 (지도가 잘리지 않고 완벽하게 출력되도록 보장)
+  useEffect(() => {
+    const handleBeforePrint = () => {
+      if (mapInstanceRef.current && basic.lat && basic.lng) {
+        const center = new window.kakao.maps.LatLng(basic.lat, basic.lng);
+        mapInstanceRef.current.relayout();
+        mapInstanceRef.current.setCenter(center);
+      }
+    };
+
+    window.addEventListener("beforeprint", handleBeforePrint);
+    return () => window.removeEventListener("beforeprint", handleBeforePrint);
+  }, [basic.lat, basic.lng]);
 
   // 총 공시지가 한글 포맷팅
   const formatTotalWon = (val: number) => {
@@ -35,7 +129,7 @@ export default function PrintablePropertyLookupReport({ data }: PrintablePropert
   });
 
   return (
-    <div className="hidden print:block text-slate-900 bg-white font-sans p-0 m-0 max-w-[210mm] mx-auto text-[10px] leading-tight">
+    <div className="printable-report-wrapper text-slate-900 bg-white font-sans p-0 m-0 max-w-[210mm] mx-auto text-[10px] leading-tight">
       {/* 1. 상단 브랜딩 & 헤더 */}
       <div className="border-b-2 border-slate-900 pb-1.5 mb-1.5 flex items-end justify-between">
         <div>
@@ -51,7 +145,7 @@ export default function PrintablePropertyLookupReport({ data }: PrintablePropert
             <span className="font-semibold text-slate-700">발행일자:</span> {todayStr}
           </div>
           <div>
-            <span className="font-semibold text-slate-700">데이터출처:</span> 국토교통부 · 브이월드(VWorld)
+            <span className="font-semibold text-slate-700">데이터출처:</span> 국토교통부 · 카카오맵(Kakao Maps)
           </div>
         </div>
       </div>
@@ -85,37 +179,26 @@ export default function PrintablePropertyLookupReport({ data }: PrintablePropert
         </div>
       </div>
 
-      {/* 3. 2단 분할: [좌: 공인 지적도(연속지적도)] vs [우: 토지대장 및 소유 현황] */}
+      {/* 3. 2단 분할: [좌: 카카오 지도(지적편집도)] vs [우: 토지대장 및 소유 현황] */}
       <div className="grid grid-cols-2 gap-2 mb-1.5">
-        {/* (1) 지적도 (연속지적도 및 필지 경계선) */}
+        {/* (1) 카카오 지도 (화면과 동일한 지적편집도 및 필지 경계선) */}
         <div className="border border-slate-300 rounded overflow-hidden flex flex-col bg-white">
           <div className="bg-slate-800 text-white font-bold px-2 py-0.5 text-[10.5px] flex justify-between items-center">
-            <span>🗺️ 공인 지적도 (국토교통부 연속지적도)</span>
+            <span>🗺️ 카카오 지도 (지적편집도)</span>
             <span className="text-[8.5px] font-normal text-slate-300">필지경계·지번 확인</span>
           </div>
-          <div className="relative w-full h-[150px] bg-slate-50 overflow-hidden flex-1 flex items-center justify-center">
+          <div className="relative w-full h-[150px] min-h-[150px] bg-slate-50 overflow-hidden flex-1">
             {basic.lat && basic.lng ? (
-              <>
-                <img
-                  src={`/api/property/cadastral-map-image?lat=${basic.lat}&lng=${basic.lng}&delta=0.0012&width=500&height=320`}
-                  alt="지적도"
-                  className="w-full h-full object-cover"
-                />
-                {/* 대상 필지 중심 핀 오버레이 */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full flex flex-col items-center pointer-events-none drop-shadow">
-                  <div className="bg-red-600 text-white text-[8px] font-black px-1.5 py-0.2 rounded shadow">
-                    대상지
-                  </div>
-                  <div className="w-0 h-0 border-x-[3.5px] border-x-transparent border-t-[5px] border-t-red-600" />
-                </div>
-              </>
+              <div ref={mapContainerRef} className="w-full h-full min-h-[148px]" />
             ) : (
-              <div className="text-slate-400 text-[10px]">지적도 좌표 정보 없음</div>
+              <div className="flex items-center justify-center h-full text-slate-400 text-[10px]">
+                지적도 좌표 정보 없음
+              </div>
             )}
           </div>
           <div className="bg-slate-100 border-t border-slate-200 px-2 py-0.5 text-[8.5px] text-slate-600 flex justify-between">
             <span>※ 중심점(빨간핀): 해당 지번 필지</span>
-            <span>축척: 약 1/1,200</span>
+            <span>카카오맵 지적편집도 기반</span>
           </div>
         </div>
 

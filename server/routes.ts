@@ -6301,6 +6301,55 @@ https://leegyver.com/total-care?tab=estimates&estimateId=${updated.id}`;
     }
   });
 
+  // 지적도(국토교통부 브이월드 연속지적도 WMS) 이미지 API
+  app.get("/api/property/cadastral-map-image", async (req, res) => {
+    try {
+      const lat = parseFloat(req.query.lat as string);
+      const lng = parseFloat(req.query.lng as string);
+      const delta = parseFloat(req.query.delta as string) || 0.0012; // 약 100m~120m 반경
+      const width = parseInt(req.query.width as string, 10) || 600;
+      const height = parseInt(req.query.height as string, 10) || 380;
+
+      if (isNaN(lat) || isNaN(lng) || lat <= 0 || lng <= 0) {
+        return res.status(400).send("Invalid coordinates");
+      }
+
+      const bbox = `${lat - delta},${lng - delta},${lat + delta},${lng + delta}`;
+      const vworldKey = process.env.VWORLD_API_KEY || "C9D477C9-A419-4B79-B12F-BFCE3133ADBA";
+
+      const vworldRes = await axios.get("https://api.vworld.kr/req/wms", {
+        params: {
+          SERVICE: "WMS",
+          REQUEST: "GetMap",
+          VERSION: "1.3.0",
+          LAYERS: "lp_pa_cbnd_bubun,lp_pa_cbnd_bonbun",
+          STYLES: "lp_pa_cbnd_bubun,lp_pa_cbnd_bonbun",
+          CRS: "EPSG:4326",
+          BBOX: bbox,
+          WIDTH: String(width),
+          HEIGHT: String(height),
+          FORMAT: "image/png",
+          TRANSPARENT: "FALSE",
+          BGCOLOR: "0xFFFFFF",
+          KEY: vworldKey,
+          domain: "leegyver.com"
+        },
+        headers: {
+          Referer: "https://leegyver.com"
+        },
+        responseType: "arraybuffer",
+        timeout: 7000
+      });
+
+      res.setHeader("Content-Type", "image/png");
+      res.setHeader("Cache-Control", "public, max-age=86400"); // 24시간 캐시
+      res.send(Buffer.from(vworldRes.data));
+    } catch (error: any) {
+      console.error("지적도 이미지 생성 오류:", error.message);
+      res.status(500).send("Failed to load cadastral map");
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

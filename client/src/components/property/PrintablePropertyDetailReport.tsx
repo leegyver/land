@@ -83,25 +83,56 @@ export default function PrintablePropertyDetailReport({
         </div>
       </div>
 
-      {/* 3. 매물 사진 (대표 이미지 1~2장 가로 배치) */}
-      {images && images.length > 0 && (
-        <div className="grid grid-cols-2 gap-2 mb-2">
-          <div className="h-[155px] overflow-hidden rounded border border-slate-300 bg-slate-100">
+      {/* 3. 매물 사진 및 공인 지적도 (가로 2열 배치) */}
+      <div className="grid grid-cols-2 gap-2 mb-2">
+        <div className="h-[155px] overflow-hidden rounded border border-slate-300 bg-slate-100 flex flex-col">
+          <div className="bg-slate-700 text-white font-bold px-2 py-0.5 text-[9.5px]">
+            📷 매물 대표 현장 사진
+          </div>
+          <div className="flex-1 overflow-hidden">
             <img
-              src={images[0]}
+              src={images?.[0] || property.imageUrl}
               alt="매물 대표 사진"
               className="w-full h-full object-cover"
             />
           </div>
-          <div className="h-[155px] overflow-hidden rounded border border-slate-300 bg-slate-100">
-            <img
-              src={images[1] || images[0]}
-              alt="매물 상세 사진"
-              className="w-full h-full object-cover"
-            />
-          </div>
         </div>
-      )}
+
+        {property.latitude && property.longitude ? (
+          <div className="h-[155px] overflow-hidden rounded border border-slate-300 bg-slate-50 flex flex-col">
+            <div className="bg-slate-700 text-white font-bold px-2 py-0.5 text-[9.5px] flex justify-between items-center">
+              <span>🗺️ 공인 지적도 (국토교통부 연속지적도)</span>
+              <span className="text-[8px] font-normal text-slate-300">필지경계·지번</span>
+            </div>
+            <div className="relative flex-1 overflow-hidden flex items-center justify-center bg-white">
+              <img
+                src={`/api/property/cadastral-map-image?lat=${property.latitude}&lng=${property.longitude}&delta=0.0012&width=500&height=320`}
+                alt="매물 지적도"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full flex flex-col items-center pointer-events-none drop-shadow">
+                <div className="bg-red-600 text-white text-[8px] font-black px-1.5 py-0.2 rounded shadow">
+                  매물위치
+                </div>
+                <div className="w-0 h-0 border-x-[3.5px] border-x-transparent border-t-[5px] border-t-red-600" />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="h-[155px] overflow-hidden rounded border border-slate-300 bg-slate-100 flex flex-col">
+            <div className="bg-slate-700 text-white font-bold px-2 py-0.5 text-[9.5px]">
+              📷 매물 상세 사진
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <img
+                src={images?.[1] || images?.[0] || property.imageUrl}
+                alt="매물 상세 사진"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* 4. 매물 상세 제원 표 (2단 분할 테이블) */}
       <div className="border border-slate-300 rounded overflow-hidden mb-2">

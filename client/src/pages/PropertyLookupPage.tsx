@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { 
   Search, 
@@ -20,7 +20,8 @@ import {
   ExternalLink,
   Users,
   RefreshCw,
-  Printer
+  Printer,
+  Loader2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,42 @@ const SAMPLE_ADDRESSES = [
 export default function PropertyLookupPage() {
   const [selectedAddress, setSelectedAddress] = useState<string>(getInitialAddress);
   const [searchInput, setSearchInput] = useState<string>(getInitialAddress);
+  const [isPrintLayout, setIsPrintLayout] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
+
+  // 🖨️ 인쇄 전 지도 뷰포트를 A4 규격(730px x 260px)으로 사전 리사이징하고 중심점 정렬 후 인쇄 실행
+  const handlePrintReport = useCallback(() => {
+    if (isPrinting) return;
+    setIsPrinting(true);
+    setIsPrintLayout(true);
+
+    // 지도가 730px x 260px 규격으로 리사이징되고 relayout/setCenter 및 카카오맵 타일 정렬 완료 대기
+    setTimeout(() => {
+      const handleAfterPrint = () => {
+        setIsPrintLayout(false);
+        setIsPrinting(false);
+        window.removeEventListener("afterprint", handleAfterPrint);
+      };
+
+      window.addEventListener("afterprint", handleAfterPrint);
+      window.print();
+
+      // afterprint 미지원 브라우저 대비 안전 복구 타이머
+      setTimeout(handleAfterPrint, 800);
+    }, 300);
+  }, [isPrinting]);
+
+  // 단축키(Ctrl+P / Cmd+P) 인쇄 시에도 사전 정중앙 정렬 핸들러 연동
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "p") {
+        e.preventDefault();
+        handlePrintReport();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handlePrintReport]);
 
   // 선택된 주소 변경 시 localStorage에 저장
   useEffect(() => {
@@ -241,10 +278,15 @@ export default function PropertyLookupPage() {
                 <Button
                   size="sm"
                   className="text-xs gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm"
-                  onClick={() => window.print()}
+                  onClick={handlePrintReport}
+                  disabled={isPrinting}
                 >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>1장 요약 리포트 인쇄</span>
+                  {isPrinting ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Printer className="w-3.5 h-3.5" />
+                  )}
+                  <span>{isPrinting ? "인쇄 준비 중..." : "1장 요약 리포트 인쇄"}</span>
                 </Button>
                 {data.basicInfo.lat > 0 && (
                   <>
@@ -281,6 +323,7 @@ export default function PropertyLookupPage() {
                 setSelectedAddress(newAddr);
               }}
               isLoading={isLoading || isFetching}
+              isPrintLayout={isPrintLayout}
             />
 
             {/* 🖨️ A4 1장 인쇄 전용 상세 테이블 (토지대장, 건축물대장, 실거래가, AI 분석, 푸터) */}

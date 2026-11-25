@@ -9,6 +9,7 @@ interface PropertyLookupMapProps {
   addressName: string;
   onSelectAddress: (address: string) => void;
   isLoading?: boolean;
+  isPrintLayout?: boolean;
 }
 
 declare global {
@@ -22,7 +23,8 @@ export default function PropertyLookupMap({
   lng,
   addressName,
   onSelectAddress,
-  isLoading = false
+  isLoading = false,
+  isPrintLayout = false
 }: PropertyLookupMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
@@ -137,7 +139,36 @@ export default function PropertyLookupMap({
     }
   }, []);
 
-  // 2. 인쇄 이벤트 감지: 인쇄 시 실측 A4 규격에 맞게 지도 레이아웃 재정렬 및 중심좌표 유지
+  // 2. 인쇄 전용 레이아웃 전환 시 뷰포트 크기 변경에 맞춰 relayout() 및 정중앙(50%, 50%) 재정렬
+  useEffect(() => {
+    if (!mapInstance.current || !lat || !lng || lat <= 0 || lng <= 0) return;
+
+    const recenterMap = () => {
+      if (mapInstance.current && window.kakao) {
+        mapInstance.current.relayout();
+        const center = new window.kakao.maps.LatLng(lat, lng);
+        mapInstance.current.setCenter(center);
+        if (markerInstance.current) {
+          markerInstance.current.setPosition(center);
+        }
+        if (overlayInstance.current) {
+          overlayInstance.current.setPosition(center);
+        }
+      }
+    };
+
+    // DOM 너비/높이 리사이징 즉시 및 렌더링 완료 후 다단계 보정
+    recenterMap();
+    const timer1 = setTimeout(recenterMap, 60);
+    const timer2 = setTimeout(recenterMap, 180);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
+  }, [isPrintLayout, lat, lng]);
+
+  // 3. 브라우저 인쇄 이벤트 감지: 실측 A4 규격에 맞게 지도 레이아웃 재정렬 및 중심좌표 보정
   useEffect(() => {
     const handleBeforePrint = () => {
       if (mapInstance.current && window.kakao) {
@@ -145,6 +176,8 @@ export default function PropertyLookupMap({
         if (lat && lng && lat > 0 && lng > 0) {
           const center = new window.kakao.maps.LatLng(lat, lng);
           mapInstance.current.setCenter(center);
+          if (markerInstance.current) markerInstance.current.setPosition(center);
+          if (overlayInstance.current) overlayInstance.current.setPosition(center);
         }
       }
     };
@@ -154,6 +187,8 @@ export default function PropertyLookupMap({
         if (lat && lng && lat > 0 && lng > 0) {
           const center = new window.kakao.maps.LatLng(lat, lng);
           mapInstance.current.setCenter(center);
+          if (markerInstance.current) markerInstance.current.setPosition(center);
+          if (overlayInstance.current) overlayInstance.current.setPosition(center);
         }
       }
     };
@@ -166,7 +201,7 @@ export default function PropertyLookupMap({
     };
   }, [lat, lng]);
 
-  // 3. 검색 주소 변경 시 지도 중심 및 마커 갱신
+  // 4. 검색 주소 변경 시 지도 중심 및 마커 갱신
   useEffect(() => {
     if (!mapInstance.current || !lat || !lng || lat <= 0 || lng <= 0) return;
 
@@ -239,7 +274,7 @@ export default function PropertyLookupMap({
   };
 
   return (
-    <div className="relative w-full rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-slate-100 print:rounded-md print:border-slate-300 print:shadow-none print:mb-1">
+    <div className={`relative w-full rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-slate-100 print:rounded-md print:border-slate-300 print:shadow-none print:mb-1 print:max-w-[730px] print:mx-auto ${isPrintLayout ? "max-w-[730px] mx-auto shadow-none border-slate-300" : ""}`}>
       
       {/* 안내 툴팁 바 */}
       <div className="absolute top-3 left-3 z-20 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-lg shadow-md border border-slate-200/80 flex items-center gap-2 text-xs print:hidden">
@@ -308,7 +343,7 @@ export default function PropertyLookupMap({
       {/* 지도 렌더링 컨테이너 */}
       <div 
         ref={mapRef} 
-        className="w-full h-[320px] sm:h-[420px] print:h-[260px] cursor-crosshair"
+        className={`w-full cursor-crosshair ${isPrintLayout ? "h-[260px]" : "h-[320px] sm:h-[420px]"} print:h-[260px]`}
       />
 
       {/* 로딩 인디케이터 오버레이 */}
